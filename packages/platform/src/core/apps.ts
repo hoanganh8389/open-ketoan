@@ -20,6 +20,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { sql } from 'kysely';
 import { env } from '../config/env.js';
 import type { Db } from '../db/client.js';
+import { currentSiteId, ticketSiteAccepted } from '../db/site.js';
 import { defineSubscriber, registerSubscribers, type EventEnvelope, type SubscriberDef } from './events.js';
 
 /** Quyền Core cấp được cho khoá app. Quyền quản trị / duyệt / khoá kỳ / sửa phiếu người khác: không bao giờ (risk high). */
@@ -117,9 +118,10 @@ export interface AppTicketClaims { tenantId: string; app: string; userId: string
 
 const ticketKey = () => derive('bizcity.app.ticket');
 
+// [2026-11-22 12:47 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2b (R-SITE-4): vé ứng dụng mang sid; vé của site khác không hợp lệ
 export async function signAppTicket(c: AppTicketClaims): Promise<{ ticket: string; expiresAt: string }> {
   const exp = Math.floor(Date.now() / 1000) + APP_TICKET_TTL_SECONDS;
-  const ticket = await new SignJWT({ tid: c.tenantId, app: c.app, name: c.name, role: c.role })
+  const ticket = await new SignJWT({ tid: c.tenantId, sid: currentSiteId(), app: c.app, name: c.name, role: c.role })
     .setProtectedHeader({ alg: 'HS256' }).setSubject(c.userId).setAudience(TICKET_AUDIENCE).setIssuedAt().setExpirationTime(exp)
     .sign(ticketKey());
   return { ticket, expiresAt: new Date(exp * 1000).toISOString() };
@@ -129,6 +131,7 @@ export async function verifyAppTicket(ticket: string): Promise<AppTicketClaims |
   try {
     const { payload: p } = await jwtVerify(ticket, ticketKey(), { algorithms: ['HS256'], audience: TICKET_AUDIENCE });
     if (!p.sub || typeof p.tid !== 'string' || typeof p.app !== 'string') return null;
+    if (!ticketSiteAccepted(p.sid)) return null;
     return { tenantId: p.tid, app: p.app, userId: p.sub, name: String(p.name ?? ''), role: String(p.role ?? '') };
   } catch {
     return null;

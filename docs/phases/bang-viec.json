@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 212
+      "count": 211
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 337
+      "count": 338
     }
   ],
   "items": [
@@ -9978,15 +9978,15 @@
     {
       "id": "S039-6",
       "phase": "PHASE-039",
-      "title": "B2 — claim sid trong vé đăng nhập và vé ứng dụng; khoá API gắn site; từ chối vé lệch site",
+      "title": "B2b — claim sid trong vé đăng nhập và vé ứng dụng; vé lệch site bị từ chối; vé cũ không sid chỉ nhận ở chế độ single",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
       ],
-      "facet": "F8",
+      "facet": "F2",
       "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
       "line": 15
     },

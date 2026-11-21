@@ -8,10 +8,10 @@
 | Đang làm | 6 |
 | Chờ merge | 0 |
 | Bị chặn | 30 |
-| Chưa ai nhận | 212 |
+| Chưa ai nhận | 211 |
 | Chờ đủ tín hiệu | 72 |
 | Hoãn | 3 |
-| Xong | 337 |
+| Xong | 338 |
 | **Tổng** | **660** |
 
 ## Theo phân hệ (R-FLOW-10)
@@ -25,7 +25,7 @@
 | chung-tu | 67 | 5 | 0 | 26 | 98 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 155 | 23 | 2 | 73 | 253 |
+| he-thong | 156 | 23 | 2 | 72 | 253 |
 | *(chưa gắn phân hệ)* | 6 | 2 | 0 | 7 | 15 |
 
 ## Đang làm (6)
@@ -78,7 +78,7 @@
 | [S037-16](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L25) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân bổ nguồn (receiptorigin hoặc gộp valuationlayersources), thứ tự lấy nguồn khi xuất, ánh xạ dòng nguồn bề… | P0 | — |
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 
-## Chưa ai nhận (212)
+## Chưa ai nhận (211)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -279,7 +279,6 @@
 | [S038-13](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L27) | PHASE-038 | — | (D038-5 đã duyệt) ErrorBoundary theo màn, window.onerror, unhandledrejection → POST /api/v1/system/client-err… | — | — |
 | [S038-14](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L28) | PHASE-038 | — | Luật R-LOG-1..11 + SC-LOG-1..3; rà 16 chỗ nuốt lỗi (ghi warn hoặc chú thích nuot-loi:) | — | — |
 | [S038-15](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L29) | PHASE-038 | — | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | — | — |
-| [S039-6](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L15) | PHASE-039 | he-thong | B2 — claim sid trong vé đăng nhập và vé ứng dụng; khoá API gắn site; từ chối vé lệch site | P0 | — |
 | [S039-7](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L16) | PHASE-039 | he-thong | B2 — tiến trình nền forEachSite (dispatcher sự kiện, đồng hồ); pool theo site có trần và tự đóng khi rảnh | P0 | — |
 | [S039-8](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L17) | PHASE-039 | he-thong | B2 — bộ đệm trong bộ nhớ thêm khoá site (theo kết quả S039-3) + phép kiểm tĩnh chặn bộ đệm theo đơn vị thiếu … | P0 | — |
 | [S039-9](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L18) | PHASE-039 | he-thong | B3 — runMigrations(connectionString) cho lõi và module; schemaversion trong registry; cổng lược đồ SITEUPGRAD… | P0 | — |
@@ -380,6 +379,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (337)
+## Xong (338)
 
 Chỉ đếm; xem từng việc ở checklist của phase.
