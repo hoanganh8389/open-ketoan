@@ -9,6 +9,22 @@ Sổ tay này trả lời một câu: **có lỗi thì bắt đầu nhìn ở đ
 
 ## 0. Trước khi bắt đầu
 
+### 0.0 Nhận gói log từ bản cài của khách
+<!-- [2026-11-21 08:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): §0.0 đọc gói lay-log -->
+
+Bản cài thật thường **không** bật bộ giám sát. Người vận hành chạy `./scripts/lay-log.sh` và gửi `goi-bao-loi-<giờ>.tar.gz`. Giải nén, đọc theo thứ tự:
+
+| Tệp | Nhìn gì |
+|---|---|
+| `00-tom-tat.txt` | commit đang chạy; `docker compose ps -a`: `db-migrate Exited (1)` → lỗi nâng cấp CSDL, `api Restarting` → API chết khi khởi động; đĩa đầy |
+| `01-suc-khoe.txt` | `/health` và `/health/ready` qua cổng web: không trả lời / 502 = API không chạy; 503 `NOT_READY` = API chạy nhưng chưa sẵn sàng |
+| `logs/api-loi.log` | dòng `level ≥ 50`. Lỗi khởi động: `evt: bizcity.system.start_failed`, `reason` (`MIGRATION_PENDING`, `DB_UNREACHABLE`, `DB_AUTH_FAILED`, `ENV_INVALID`, `PORT_IN_USE`), `hint`. Lỗi 5xx: `reqId`, `err.stack` (trỏ tệp `.ts`) |
+| `logs/db-migrate.log` | khối mỗi lần chạy: `migrate_started` → dòng migration → `migrate_done` hoặc dòng `fatal` có tên tệp migration, mã PG |
+| `docker-*.log` | 2000 dòng cuối của từng dịch vụ (cả mức `info`), khi `logs/` chưa có (bản cài trước PHASE-038) |
+| `env-ten-bien.txt` | biến nào **trống** — thiếu `DB_APP_PASSWORD`, `JWT_SECRET` hay gặp. Không có giá trị |
+
+Thấy `reqId` / `traceId` mà máy dev có bộ giám sát cùng dữ liệu: tiếp ở §0.3. Giá trị trong gói đã che bằng `***`; đừng xin người vận hành gửi `.env`.
+
 ### 0.1 Bật bộ giám sát (máy dev)
 
 ```powershell
