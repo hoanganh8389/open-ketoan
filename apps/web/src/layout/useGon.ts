@@ -8,8 +8,7 @@ import { buildGon, groupOfPath, type GonGroup } from './menu-gon';
 import { usePhanRieng } from '@/lib/phanRieng';
 
 // [2026-11-10 11:30 PM Nguyễn Văn Thủy] PHASE-026 — tắt lý do hạch toán thì ẩn màn Lý do – Tài khoản, Mặt hàng – Tài khoản khỏi menu (đóng góp)
-// [2026-11-21 kiennt] NT-MH-005 — DM13 Nhà cung cấp không lên menu (kể cả mục Khác): NCC khai / xem ở MH01; đường dẫn vẫn mở được (đóng góp)
-const REASON_PATHS = new Set(['/cau-hinh/ly-do', '/cau-hinh/nhom-hach-toan', '/danh-muc/nha-cung-cap']);
+const REASON_PATHS = new Set(['/cau-hinh/ly-do', '/cau-hinh/nhom-hach-toan']);
 const dropPaths = (items: MenuItem[], drop: Set<string>): MenuItem[] => items.filter((m) => !m.path || !drop.has(m.path)).map((m) => (m.children ? { ...m, children: dropPaths(m.children, drop) } : m));
 
 const KEY = 'ketoan.gon';

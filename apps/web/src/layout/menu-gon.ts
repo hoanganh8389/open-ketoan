@@ -158,8 +158,7 @@ export const GON_DEFS: GonDef[] = [
   {
     key: 'danh-muc', label: 'Danh mục', icon: 'List', description: 'Đối tượng, vật tư hàng hóa, tổ chức, tài khoản, chi phí, tài sản', color: '#0d7a6f', module: 'danh-muc', homeLabel: 'Quy trình',
     sections: [
-      // [2026-11-21 kiennt] NT-MH-005 — bỏ Nhà cung cấp (DM13): chỉ giữ MH01 Nhà cung cấp mua hàng (đóng góp)
-      { label: 'Đối tượng', paths: ['/danh-muc/khach-hang', '/danh-muc/nhan-vien', '/danh-muc/nhom-doi-tuong'] },
+      { label: 'Đối tượng', paths: ['/danh-muc/khach-hang', '/danh-muc/nha-cung-cap', '/danh-muc/nhan-vien', '/danh-muc/nhom-doi-tuong'] },
       { label: 'Mặt hàng', paths: ['/danh-muc/mat-hang', '/danh-muc/phan-loai-hang', '/danh-muc/loai-kho', '/danh-muc/don-vi-tinh', '/danh-muc/bang-gia'] },
       // [2026-11-13 Nguyễn Văn Thủy] chi nhánh, kho, phòng ban khai chung ở Cơ cấu tổ chức (đóng góp)
       { label: 'Tổ chức', paths: ['/danh-muc/so-do-to-chuc'] },

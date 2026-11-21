@@ -17,15 +17,10 @@ import { api, errorText } from '@/lib/api';
 import { purchaseApi, today, vnd, type SupplierRow } from '../du-lieu';
 import { dmy } from '../chung';
 import { PartnerEditor } from '../../../features/catalog/PartnersPage';
-// [2026-11-21 kiennt] NT-MH-005 — MH01 là màn nhà cung cấp duy nhất trên menu: thêm Nhập Excel NCC, nhận ?them=1 của Thêm nhanh (đóng góp)
-import { NutNhapExcel } from '@/components/NhapExcelWizard';
-import { nhapLoai } from '@/lib/nhapExcel';
-import { useThemTuDiaChi } from '@/lib/themNhanh';
 import '../mua-hang.css';
 
 export function NhaCungCapPage() {
   const [adding, setAdding] = useState(false);
-  useThemTuDiaChi(() => setAdding(true));
   const navigate = useNavigate();
   const [scope, setScope] = useState<'active' | 'all'>('active');
   const [pick, setPick] = useState('');
@@ -100,7 +95,6 @@ export function NhaCungCapPage() {
           </div>
           <div style={{ width: 280 }}><PartnerPicker kind="supplier" value={pick} onChange={(c) => { setPick(c); if (c) open(c); }} placeholder="Mở NCC: gõ mã hoặc tên" /></div>
           <button className="btn btn-sm btn-primary" onClick={() => setAdding(true)}>+ Thêm nhà cung cấp</button>
-          <NutNhapExcel loai={nhapLoai('nha-cung-cap')!} />
           <label className="checkbox" title="Nhà cung cấp có đơn vị mẹ và chi nhánh: chi nhánh xếp ngay dưới đơn vị mẹ, cuối nhóm có dòng Cộng nhóm (nợ, quá hạn, hạn mức chung của cả nhóm)"><input type="checkbox" checked={gop} onChange={(e) => setGop(e.target.checked)} /> Xem theo nhóm mẹ – chi nhánh{nhomCount ? ` (${nhomCount} nhóm)` : ''}</label>
           <span className="muted" style={{ fontSize: 12 }}>{flat.length} nhà cung cấp · bấm đúp một dòng để mở hồ sơ</span>
         </div>
