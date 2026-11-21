@@ -15,7 +15,41 @@
 | F8 | `docker-compose.yml` ghi cứng tên database `ketoan` cho cả job migrate (vai trò chủ) và API (vai trò `ketoan_app`) | `docker-compose.yml` |
 | F9 | Không có chỗ nào đọc tên miền của yêu cầu để chọn dữ liệu | tìm `hostname`, `x-forwarded-host` trong `apps/api/src`, `packages/` |
 
-**Chưa kiểm kê (việc S039-3):** các bộ đệm trong bộ nhớ có khoá theo đơn vị (khoảng 270 chỗ `new Map<string, …>` cần lọc), script trong `scripts/` tự mở pool, số đo Prometheus có nhãn theo đơn vị.
+Kiểm kê chi tiết ở §1b.
+
+### 1b. Kiểm kê B1 (S039-3, main `ccc47fae`, 2026-11-21)
+<!-- [2026-11-21 10:34 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — S039-3: kiểm kê chỗ gọi thẳng pool, bộ đệm cấp tệp, script tự mở kết nối -->
+
+**Chỗ dùng thẳng `pool` (không qua `db`):** ở B1 `pool` là pool của site ngầm định nên vẫn đúng. Từ B2 mỗi chỗ phải nhận site:
+
+| Tệp | Dùng để | Việc ở bước |
+|---|---|---|
+| `packages/platform/src/db/migrate.ts`, `apps/api/src/db/migrate.ts` | chạy migration, đóng pool | B3 (`runMigrations(connectionString)`) |
+| `apps/api/src/db/setup.ts` | tạo / đặt mật khẩu vai trò `ketoan_app`, `ketoan_monitor` | B4 (vai trò riêng từng site, D039-19) |
+| `apps/api/src/cli/module.ts` | lệnh cài module, đóng pool | B3 (migration module theo site) |
+| `apps/api/src/modules/system/metrics.routes.ts` | số đo CSDL | B7 (số đo có nhãn site) |
+
+**Script tự mở kết nối:** `packages/platform/src/db/migrate.ts`, `module-db.ts` (`new pg.Client(env.DATABASE_URL)`, B3); `scripts/kiem-nang-cap.sh`, `scripts/mua-hang/nap-25-truong-hop.mjs` (công cụ dev, chạy trên một database — giữ nguyên).
+
+**Bộ đệm cấp tệp (biến `Map` / `Set` toàn cục) giữ dữ liệu lấy từ database** — khoá theo `tenantId` / `userId` có thể trùng giữa hai database, phải thêm mã site ở B2 (S039-8, R-SITE-6):
+
+| Tệp | Biến | Khoá hôm nay |
+|---|---|---|
+| `apps/api/src/modules/branches/branch-sites.ts` | `cache` | `tenantId` |
+| `apps/api/src/modules/system/presence.ts` | `tenants`, `today` | `tenantId` |
+| `packages/platform/src/core/authz/shadow.ts` | `enabledCache`, `byTenant` | `tenantId` |
+| `packages/platform/src/core/module-registry.ts` | `cache` | `tenantId` |
+| `packages/platform/src/core/security/role-assignments.ts` | `cache` | `userId` |
+| `packages/platform/src/core/security/session-state.ts` | `cache` | `userId` |
+| `packages/platform/src/core/libraries/usage.ts` | `buffer` (đệm rồi ghi xuống database) | `tenantId` + ngày + thư viện…; **lúc ghi phải về đúng site** |
+| `packages/kernel/src/modules/intake/trial-posting.ts` | `hits` (giới hạn tần suất) | `tenantId:actor` |
+
+**Không cần đổi:** sổ đăng ký trong mã (`registry`, `hooks`, `modulePermissions`, `documentTypes`, `collectors`, `readers`…), bộ đệm đọc tệp (`default-data.service.ts` theo đường dẫn, `libraries/context.ts` theo thư mục), giới hạn tần suất theo email / IP / người gọi (`auth.routes.ts`, `devtools.sources.ts`), tra mã số thuế qua mạng (`tra-mst.ts`).
+
+**Giới hạn của lần kiểm kê:** chỉ quét biến `Map` / `Set` khai ở cấp tệp. Bộ đệm nằm trong lớp, trong bao đóng, hay bộ đệm dạng khác chưa quét: S039-8 thêm phép kiểm tĩnh để bắt phần còn lại.
+
+**Việc nền:** `packages/platform/src/core/events.ts` có hai `setInterval` (dispatcher sự kiện, đồng hồ) gọi `withRequestContext` với ngữ cảnh mới không có `siteId` → dùng site ngầm định. Đúng ở B1; B2 bọc bằng `forEachSite` (S039-7).
+
 
 ## 2. Từ vựng
 
@@ -155,6 +189,9 @@ Cổng lược đồ (D039-11) làm quy trình này an toàn mà không cần lu
 | Bước | Việc | Người dùng thấy gì | Mức |
 |---|---|---|---|
 | **B1** | Thêm `siteId` vào ngữ cảnh yêu cầu; `db` đi qua `poolOf(site)`; chế độ `single` với site `default`. Kiểm kê F6, bộ đệm, script (S039-3) | Không gì đổi; toàn bộ test hiện có xanh | K3 |
+
+<!-- [2026-11-21 10:34 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — chữ chốt B1 -->
+**Chữ chốt B1 (đã làm):** tệp mới `packages/platform/src/db/site.ts` — `DEFAULT_SITE_ID`, `registerSitePool`, `listSiteIds`, `currentSiteId`, `poolOf` (site lạ → `SiteRoutingError` `SITE_NOT_FOUND`, không rơi về site khác), `withSite`, `forEachSite` (có `onError` thì lỗi một site không chặn site sau), `endAllSitePools`. `db/client.ts`: `pool` đăng ký làm site ngầm định; `tenantPool.connect()` lấy `poolOf()` của site đang chạy; `end` đóng mọi pool site. `RequestContext.siteId` (chưa ai gắn ở B1). Chưa có biến `SITE_MODE`: thêm cùng B2 khi có chế độ nhiều site, để không có công tắc chưa làm gì. Ca: `apps/api/test/site-context.test.ts` (6 ca).
 | **B2** | Database điều khiển + Site Registry; Site Resolver theo `Host`; `sid` trong vé; tiến trình nền `forEachSite`; `SITE_MODE=multi` | Hai tên miền trên một bản chạy ra hai sổ khác nhau | K3 |
 | **B3** | `runMigrations(connectionString)`; `site migrate`; cổng lược đồ (`SITE_UPGRADING`) | Nâng cấp từng site, site lỗi không kéo site khác | K3 |
 | **B4** | Site Provisioner + `kt_template`; CLI `bizcity site create / list / migrate / suspend / resume / drop / adopt` | Một lệnh có site mới trong vài giây | K2 |
