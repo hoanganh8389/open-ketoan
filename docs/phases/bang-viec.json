@@ -25,7 +25,7 @@
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 76
+      "count": 75
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 330
+      "count": 331
     }
   ],
   "items": [
@@ -9950,8 +9950,8 @@
       "phase": "PHASE-039",
       "title": "B1 — siteId trong ngữ cảnh yêu cầu; poolOf(site); db uỷ quyền theo site; chế độ single với site default; hành vi không đổi",
       "priority": "P0",
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
