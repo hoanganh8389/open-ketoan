@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 223
+      "count": 217
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 70
+      "count": 75
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 328
+      "count": 329
     }
   ],
   "items": [
@@ -9723,8 +9723,8 @@
       "phase": "PHASE-038",
       "title": "logging: json-file có trần cho mọi dịch vụ; bind mount ${LOGHOSTDIR:-./logs} → /app/logs cho api, db-migrate; LOGDIR, LOGFILELEVEL vào env.ts; .gitignore logs/",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9736,8 +9736,8 @@
       "phase": "PHASE-038",
       "title": "Logger multistream → logs/api-loi.log (≥ warn, xoay vòng, cùng redact)",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9749,8 +9749,8 @@
       "phase": "PHASE-038",
       "title": "Lỗi khởi động ghi fatal đồng bộ vào api-loi.log với evt: bizcity.system.startfailed + reason",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9762,8 +9762,8 @@
       "phase": "PHASE-038",
       "title": "Job db-migrate ghi logs/db-migrate.log (commit, migration áp, lỗi đầy đủ)",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9840,8 +9840,8 @@
       "phase": "PHASE-038",
       "title": "Bộ bắt uncaughtException / unhandledRejection ghi fatal đồng bộ (R-LOG-3); version, commit trong mọi dòng (R-LOG-5); Node --enable-source-maps + giữ .map trong…",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9918,10 +9918,10 @@
     {
       "id": "S039-2",
       "phase": "PHASE-039",
-      "title": "Chủ dự án duyệt D039-1..16, trả Q039-1..4 (D039-17, D039-18, Q039-5 đã chốt 2026-11-21); ADR (số kế tiếp) \"mỗi site một database\"",
+      "title": "Chủ dự án duyệt D039-1..19, trả Q039-1..5; ADR-0036 \"một bản mã, mỗi site một database\"; luật R-SITE",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -10053,7 +10053,7 @@
     {
       "id": "S039-11",
       "phase": "PHASE-039",
-      "title": "B4 — Site Provisioner: kttemplate, CREATE DATABASE … TEMPLATE, đơn vị đầu + tài khoản quản trị, sitejobs, dọn khi hỏng",
+      "title": "B4 — Site Provisioner: kttemplate, vai trò riêng kt<slug>owner / app (D039-19), CREATE DATABASE … TEMPLATE, đơn vị đầu + tài khoản quản trị, sitejobs, dọn khi …",
       "priority": "P0",
       "status": "todo",
       "column": "todo",
