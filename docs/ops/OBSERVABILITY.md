@@ -84,7 +84,7 @@ Lấy mẫu ở Collector (`infrastructure/monitoring/otel-collector/config.yml`
 Fastify pino, JSON một dòng, ra stdout. Docker / promtail đưa vào Loki. Mức theo `LOG_LEVEL` (mặc định `info`).
 
 <!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — trỏ luật R-LOG và nhật ký lỗi cố định logs/ -->
-**Ghi lỗi thế nào** (mức, trường `err`, không nuốt lỗi, không lộ dữ liệu, tác vụ nền, điểm vào mới): luật [R-LOG](../rules/RULE-LOG.md), CANON §0.12. **Nhật ký lỗi cố định của bản cài:** thư mục `logs/` ≤ 200 MB (R-LOG-9), bản sao lọc theo mức của stdout — stdout vẫn là đường chính vào Loki ([PHASE-038](../phases/PHASE-038-NHAT-KY-LOI-CO-DINH/README.md)).
+**Ghi lỗi thế nào** (mức, trường `err`, không nuốt lỗi, không lộ dữ liệu, tác vụ nền, điểm vào mới): luật [R-LOG](../rules/RULE-LOG.md), CANON §0.12. **Nhật ký lỗi cố định của bản cài:** thư mục `logs/` ≤ 200 MB (R-LOG-9), bản sao lọc theo mức của stdout — stdout vẫn là đường chính vào Loki ([PHASE-038](../phases/PHASE-038-NHAT-KY-LOI-CO-DINH/README.md)). Bản cài không bật bộ giám sát: `./scripts/lay-log.sh` gom `logs/`, log Docker, trạng thái container thành một gói gửi về (SO-TAY-DIEU-TRA-LOI §0.0).
 
 **Trường của mọi dòng log yêu cầu** (Core tự gắn, không viết tay):
 

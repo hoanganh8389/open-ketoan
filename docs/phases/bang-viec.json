@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 217
+      "count": 215
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 75
+      "count": 72
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 329
+      "count": 334
     }
   ],
   "items": [
@@ -9723,8 +9723,8 @@
       "phase": "PHASE-038",
       "title": "logging: json-file có trần cho mọi dịch vụ; bind mount ${LOGHOSTDIR:-./logs} → /app/logs cho api, db-migrate; LOGDIR, LOGFILELEVEL vào env.ts; .gitignore logs/",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9736,8 +9736,8 @@
       "phase": "PHASE-038",
       "title": "Logger multistream → logs/api-loi.log (≥ warn, xoay vòng, cùng redact)",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9749,8 +9749,8 @@
       "phase": "PHASE-038",
       "title": "Lỗi khởi động ghi fatal đồng bộ vào api-loi.log với evt: bizcity.system.startfailed + reason",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9762,8 +9762,8 @@
       "phase": "PHASE-038",
       "title": "Job db-migrate ghi logs/db-migrate.log (commit, migration áp, lỗi đầy đủ)",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9788,8 +9788,8 @@
       "phase": "PHASE-038",
       "title": "scripts/lay-log.sh theo README §4.4",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F7",
@@ -9801,8 +9801,8 @@
       "phase": "PHASE-038",
       "title": "Sổ tay: mục \"Lấy log gửi về\" trong runbook aaPanel + DEPLOY §4; OBSERVABILITY §2 thêm logs/; log aaPanel /www/wwwlogs/",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9840,8 +9840,8 @@
       "phase": "PHASE-038",
       "title": "Bộ bắt uncaughtException / unhandledRejection ghi fatal đồng bộ (R-LOG-3); version, commit trong mọi dòng (R-LOG-5); Node --enable-source-maps + giữ .map trong…",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F1",

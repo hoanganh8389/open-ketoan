@@ -2,6 +2,7 @@
 # [2026-10-29 10:24 PM Johnny Chu - Chu Hoàng Anh] INIT — khởi tạo Bizcity Core Framework: sổ cái chỉ thêm, cửa nạp sự việc, CANON, hợp đồng, bộ kiểm chuẩn.
 # [2026-11-13 08:39 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-9: kiểm bản sao lưu vừa tạo (hỏng thì dừng), in sắp đổi gì (commit, migration, db/seeds, SEEDS_DIR, bộ giả lập), hỏi xác nhận (--yes), lỗi thì in lệnh lùi
 # [2026-11-14 01:47 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-11: SEEDS_DIR đặt mà thư mục không có / thiếu tệp so với db/seeds của bản mới → dừng trước khi kéo mã
+# [2026-11-21 08:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): đặt BIZCITY_GIT_SHA để mỗi dòng log có commit (R-LOG-5); lỗi thì chỉ tới ./scripts/lay-log.sh
 # =============================================================================
 # Cập nhật phần mềm trên máy chủ: sao lưu → kiểm bản sao lưu → xem sắp đổi gì → xác nhận → lấy code mới → dựng lại → kiểm tra.
 #
@@ -109,6 +110,7 @@ OLD_COMMIT="$(git rev-parse HEAD)"
 in_lenh_lui() {
   echo "" >&2
   echo "== LỆNH LÙI về bản trước khi nâng cấp (chạy lần lượt từ $(pwd)):" >&2
+  echo "   Gom log gửi người sửa (trước khi lùi): ./scripts/lay-log.sh  → logs/goi-bao-loi-<giờ>.tar.gz" >&2
   echo "   git checkout $OLD_COMMIT" >&2
   if [ -n "$BACKUP_FILE" ]; then
     echo "   docker compose stop api" >&2
@@ -137,6 +139,9 @@ if ! grep -q '^DB_APP_PASSWORD=..*' .env; then
 fi
 
 echo "== 4. Dựng lại, nâng cấp cơ sở dữ liệu (db-migrate), khởi động"
+# commit đang chạy vào mọi dòng log của api / db-migrate (docker-compose.yml chuyển biến này vào container)
+export BIZCITY_GIT_SHA="$(git rev-parse HEAD)"
+echo "   Commit: ${BIZCITY_GIT_SHA:0:12}"
 if ! docker compose up -d --build; then
   echo "LỖI khi khởi động. Nhật ký nâng cấp cơ sở dữ liệu (db-migrate):" >&2
   docker compose logs --tail 60 db-migrate >&2 || true
