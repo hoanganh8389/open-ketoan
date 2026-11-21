@@ -21,7 +21,7 @@ export interface SoDo { title: string; rows: SoDoNode[][]; nhom?: { chuoi: SoDoN
 const mua = (loai: string) => `/mua-hang/tong-hop?loai=${loai}`;
 const L = {
   khach: { label: 'Khách hàng', icon: 'User', path: '/danh-muc/khach-hang' },
-  ncc: { label: 'Nhà cung cấp', icon: 'Truck', path: '/danh-muc/nha-cung-cap' },
+  ncc: { label: 'Nhà cung cấp', icon: 'Truck', path: '/mua-hang/nha-cung-cap' }, // [2026-11-21 kiennt] NT-MH-005 — NCC ở MH01 (đóng góp)
   nhanVien: { label: 'Nhân viên', icon: 'IdCard', path: '/danh-muc/nhan-vien' },
   vthh: { label: 'Mặt hàng', icon: 'Package', path: '/danh-muc/mat-hang' },
   coCau: { label: 'Cơ cấu tổ chức', icon: 'Network', path: '/danh-muc/so-do-to-chuc' },
