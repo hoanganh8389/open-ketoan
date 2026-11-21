@@ -110,3 +110,19 @@ export async function endAllSitePools(): Promise<void> {
   pools.clear();
   await Promise.all(all.map((p) => p.end()));
 }
+
+// [2026-11-22 12:47 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2b (D039-5, R-SITE-4): mã site trong vé đăng nhập / vé ứng dụng
+/**
+ * Claim `sid` của một vé có được nhận ở yêu cầu đang chạy không (R-SITE-4).
+ * - Có `sid`: phải đúng site của yêu cầu; ngoài ngữ cảnh site ở chế độ multi thì không nhận.
+ * - Không có `sid` (vé cấp trước PHASE-039 B2b): chỉ nhận ở chế độ single — vé của bản cài một công ty vẫn dùng được tới hết hạn.
+ */
+export function ticketSiteAccepted(sid: unknown): boolean {
+  if (sid === undefined) return mode === 'single';
+  if (typeof sid !== 'string' || !sid) return false;
+  try {
+    return sid === currentSiteId();
+  } catch {
+    return false;
+  }
+}

@@ -3,11 +3,13 @@
 // [2026-10-30 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-001 — migration đúng chuẩn, vai trò CSDL thường cho API, bộ test xanh.
 // [2026-10-30 09:58 AM Johnny Chu - Chu Hoàng Anh] PHASE-002 — nhãn lớp @bizcity-layer, đồ thị phụ thuộc mốc, bản nháp API module-sdk.
 // [2026-11-01 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — dời từ apps/api/src/core/security/tokens.ts sang packages/platform (@bizcity/platform, D010-7 chặng 2); import tương đối viết lại theo chỗ mới
+// [2026-11-22 12:47 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2b (D039-5, R-SITE-4): vé đăng nhập mang claim sid = site cấp vé; vé lệch site của yêu cầu → không hợp lệ
 /**
  * Phiên đăng nhập giao diện: JWT ký HS256 bằng JWT_SECRET.
  */
 import { SignJWT, jwtVerify } from 'jose';
 import { env } from '../../config/env.js';
+import { currentSiteId, ticketSiteAccepted } from '../../db/site.js';
 
 const secret = new TextEncoder().encode(env.JWT_SECRET);
 
@@ -23,7 +25,7 @@ export interface SessionClaims {
 }
 
 export async function signSession(claims: SessionClaims): Promise<string> {
-  return new SignJWT({ tid: claims.tid, role: claims.role, name: claims.name, sv: claims.sv ?? 0, ...(claims.perms ? { perms: claims.perms } : {}) })
+  return new SignJWT({ tid: claims.tid, sid: currentSiteId(), role: claims.role, name: claims.name, sv: claims.sv ?? 0, ...(claims.perms ? { perms: claims.perms } : {}) })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(claims.sub)
     .setIssuedAt()
@@ -35,6 +37,7 @@ export async function verifySession(token: string): Promise<SessionClaims | null
   try {
     const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] });
     if (!payload.sub || typeof payload.tid !== 'string') return null;
+    if (!ticketSiteAccepted(payload.sid)) return null; // vé của site khác (R-SITE-4)
     return {
       sub: payload.sub,
       tid: payload.tid,
