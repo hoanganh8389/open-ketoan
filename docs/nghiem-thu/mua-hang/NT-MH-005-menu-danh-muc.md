@@ -18,7 +18,7 @@ Nhóm **Khai báo** (Nhà cung cấp mua hàng MH01, Hợp đồng mua hàng MH2
 
 **Bổ sung (21/11) — Báo cáo bung ra:** trong bảng menu thả xuống, báo cáo của nhóm hiện danh sách như các mục khác (có ghim, mã màn, tô sáng màn đang mở). Nhóm có mục báo cáo trùng tên nhóm (Mua hàng, Bán hàng) **chỉ hiện mục đó**, tiêu đề **"Báo cáo"** — báo cáo công nợ phải trả / phải thu không hiện ở đây (xem ở Tổng hợp › Công nợ và trang Báo cáo chung). Nhóm khác (vd Tổng hợp nhiều mục) hiện mọi mục, tiêu đề "Báo cáo · <mục>". **Không** có dòng "Tất cả báo cáo" (trang Báo cáo chung mở ở dòng Báo cáo cuối menu trái). Số cột của bảng tính cả dòng báo cáo.
 
-**Bổ sung (21/11) — Một màn nhà cung cấp trên menu:** giữ **DM13 Nhà cung cấp** (Danh mục › Đối tượng); **MH01 Nhà cung cấp mua hàng** bỏ khỏi menu Mua hàng › Danh mục (và không rơi vào mục Khác của Thiết lập). Hai màn cùng một danh sách NCC, cùng form thêm / sửa — không mất dữ liệu.
+**Bổ sung (21/11) — Một màn nhà cung cấp trên menu:** giữ **DM13 Nhà cung cấp** (Danh mục › Đối tượng); **MH01 Nhà cung cấp mua hàng** bỏ khỏi menu (không rơi vào mục Khác của Thiết lập), chỗ của nó ở Mua hàng › Danh mục **thay bằng lối tắt tới DM13**. Hai màn cùng một danh sách NCC, cùng form thêm / sửa — không mất dữ liệu.
 - **Hồ sơ NCC** (hợp đồng, giá mua, công nợ đến hạn, nhận hàng) giữ nguyên: mở bằng bấm mã NCC trên lưới DM13 và từ các màn mua hàng (phiếu mua, chính sách…).
 - Sơ đồ quy trình: "1. Khai báo nhà cung cấp" và ô Nhà cung cấp trỏ DM13; ô "Giá mua của NCC" trỏ Hợp đồng mua hàng (MH29) như chú thích "Mở hợp đồng › Mặt hàng & giá".
 - Đường dẫn `/mua-hang/nha-cung-cap` vẫn mở được (liên kết cũ, ô tìm) — chỉ không hiện trên menu.
@@ -37,5 +37,5 @@ Nhóm **Khai báo** (Nhà cung cấp mua hàng MH01, Hợp đồng mua hàng MH2
 | 4 | Menu Mua hàng › Danh mục; menu Bán hàng | Không còn Cài đặt mua hàng (MH12) / mục Cài đặt (BH17) |
 | 5 | Menu Phần riêng | Có mục **Cấu hình**: Cài đặt mua hàng (MH12), Cài đặt bán hàng (BH17); mở đúng màn |
 | 6 | Rê chuột vào nhóm Mua hàng / Bán hàng | Mục **Báo cáo** chỉ gồm báo cáo của nhóm (Mua hàng: MH23, MH23A, MH21, ACC77, MH14, MH24, MH25, MH10); không có công nợ, không có Tất cả báo cáo — đã chụp màn kiểm 21/11 (code nhánh, API ketoan-dev) |
-| 7 | Menu Mua hàng › Danh mục | Chỉ còn Hợp đồng (MH29), Chính sách (MH04); không có MH01 — đã chụp màn kiểm 21/11 |
+| 7 | Menu Mua hàng › Danh mục | Nhà cung cấp (DM13), Hợp đồng (MH29), Chính sách (MH04); không có MH01 |
 | 8 | Menu Danh mục › Đối tượng → Nhà cung cấp; bấm mã một NCC | Mở DM13; bấm mã mở Hồ sơ NCC mua hàng |
