@@ -42,7 +42,8 @@ export const muaHangMenu: MenuItem[] = [
   },
   {
     key: 'mua-hang-danh-muc',
-    label: 'Khai báo',
+    // [2026-11-21 kiennt] NT-MH-005 — Khai báo → Danh mục (đóng góp)
+    label: 'Danh mục',
     children: [
       { key: 'mh-ncc', label: 'Nhà cung cấp mua hàng', path: '/mua-hang/nha-cung-cap', code: 'MH01' },
       { key: 'mh-hop-dong', label: 'Hợp đồng mua hàng', path: '/mua-hang/hop-dong', code: 'MH29' },

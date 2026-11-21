@@ -67,13 +67,14 @@ export const GON_DEFS: GonDef[] = [
   {
     key: 'mua-hang', label: 'Mua hàng', icon: 'ShoppingBag', description: 'Đơn đặt, nhập hàng, hoá đơn NCC, trả hàng, công nợ và thanh toán NCC', color: '#e8710a', module: 'mua-hang', homeLabel: 'Bàn làm việc',
     // [2026-11-20 Nguyễn Văn Thủy] UX MUA HÀNG GỌN — bấm Mua hàng ở menu trái vào thẳng Bàn làm việc (việc cần làm + lập nhanh);
-    // thẻ đầu trang chỉ 5 màn làm hằng ngày; danh sách theo việc: Hằng ngày / Định kỳ / Khai báo. Mỗi việc một lối vào (đóng góp)
+    // thẻ đầu trang chỉ 5 màn làm hằng ngày; danh sách theo việc: Hằng ngày / Định kỳ / Danh mục. Mỗi việc một lối vào (đóng góp)
     the: ['/mua-hang/tong-hop', '/mua-hang/hoa-don-ncc', '/mua-hang/dat-hang', '/mua-hang/han-muc', '/mua-hang/hop-dong'],
     sections: [
       { label: 'Hằng ngày', paths: ['/mua-hang/tong-hop', '/mua-hang/hoa-don-ncc', '/mua-hang/doi-chieu-hoa-don', '/mua-hang/han-muc'] },
       { label: 'Đặt hàng', paths: ['/mua-hang/dang-ky-max', '/mua-hang/ton-max', '/mua-hang/cong-thuc', '/mua-hang/dat-hang', '/mua-hang/chuyen-shop'] },
       { label: 'Định kỳ', paths: ['/mua-hang/thuong', '/mua-hang/phan-bo', '/mua-hang/lo-han', '/mua-hang/qua-tang'] },
-      { label: 'Khai báo', paths: ['/mua-hang/nha-cung-cap', '/mua-hang/hop-dong', '/mua-hang/chinh-sach', '/mua-hang/cai-dat'] },
+      // [2026-11-21 kiennt] NT-MH-005 — nhóm Khai báo của Mua hàng đổi tên thành Danh mục (đóng góp)
+      { label: 'Danh mục', paths: ['/mua-hang/nha-cung-cap', '/mua-hang/hop-dong', '/mua-hang/chinh-sach', '/mua-hang/cai-dat'] },
     ],
     reports: [
       { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/chi-tiet-chinh-sach', '/mua-hang/so-kho', '/mua-hang/ton-kho', '/mua-hang/nhat-ky'] },

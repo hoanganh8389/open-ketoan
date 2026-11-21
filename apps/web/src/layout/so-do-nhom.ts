@@ -41,7 +41,8 @@ export const SO_DO_V2: Record<string, SoDo> = {
     rows: [],
     nhom: {
       chuoi: [
-        { nhom: 'Khai báo', icon: 'Settings', viec: ['ncc_dup_tax', 'ncc_no_tax', 'contract_expiring', 'contract_no_price'], items: [
+        // [2026-11-21 kiennt] NT-MH-005 — Khai báo → Danh mục (đóng góp)
+        { nhom: 'Danh mục', icon: 'Settings', viec: ['ncc_dup_tax', 'ncc_no_tax', 'contract_expiring', 'contract_no_price'], items: [
           { label: 'Nhà cung cấp mua hàng', path: '/mua-hang/nha-cung-cap' }, { label: 'Hợp đồng mua hàng', path: '/mua-hang/hop-dong' },
           { label: 'Chính sách mua hàng', path: '/mua-hang/chinh-sach' }] },
         { nhom: 'Kế hoạch đặt hàng', icon: 'Gauge', items: [
