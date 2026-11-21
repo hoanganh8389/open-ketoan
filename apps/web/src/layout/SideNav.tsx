@@ -2,7 +2,8 @@
 /**
  * Thanh menu bên trái: mỗi nhóm một dòng có biểu tượng. [2026-11-20 Nguyễn Văn Thủy] Bấm tên nhóm là vào thẳng màn làm việc chính
  * của nhóm (trang chủ nhóm: Bàn làm việc / Quy trình); rê chuột vào nhóm (hoặc bấm mũi tên ›) thì bung danh sách mọi màn sang phải (đóng góp).
- *  - Báo cáo không nằm trong danh sách này, mỗi nhóm có một dòng Báo cáo dẫn tới trang Báo cáo chung.
+ *  - [2026-11-21 kiennt] NT-MH-005: báo cáo của nhóm bung ra như các mục khác (tiêu đề "Báo cáo · <mục>"), cuối có dòng Tất cả báo cáo
+ *    dẫn tới trang Báo cáo chung của nhóm (đóng góp).
  *  - Rê vào một màn có nút ghim; mã màn hiện ở chú thích, vẫn gõ mã tìm được bằng Ctrl + K.
  *  - Thu gọn (Ctrl + B) chỉ còn biểu tượng, bấm biểu tượng vẫn bung danh sách.
  */
@@ -32,7 +33,7 @@ export function GonIcon({ name, size, color }: { name: string; size?: number; co
 
 /** Số cột của danh sách bung theo số dòng, để danh mục dài không phải cuộn. */
 const columnsOf = (g: GonGroup) => {
-  const rows = g.sections.reduce((n, s) => n + s.items.length + (s.label ? 1 : 0), 0);
+  const rows = [...g.sections, ...g.reports].reduce((n, s) => n + s.items.length + (s.label ? 1 : 0), 0);
   return rows > 26 ? 3 : rows > 14 ? 2 : 1;
 };
 
@@ -43,7 +44,8 @@ export function SideNav({ menu, groups, active, onChoose, collapsed, onCollapse,
   const [open, setOpen] = useState<{ key: string; top: number; left: number } | null>(null);
   const root = useRef<HTMLElement>(null);
   const fly = useRef<HTMLDivElement>(null);
-  const best = active ? Math.max(0, ...active.sections.flatMap((s) => s.items.map((m) => matchHere(m.path, pathname, search)))) : 0;
+  // [2026-11-21 kiennt] NT-MH-005 — tính cả báo cáo (báo cáo đã bung trong danh sách) (đóng góp)
+  const best = active ? Math.max(0, ...[...active.sections, ...active.reports].flatMap((s) => s.items.map((m) => matchHere(m.path, pathname, search)))) : 0;
 
   useEffect(() => { setOpen(null); }, [pathname, search]);
   useEffect(() => {
@@ -126,7 +128,22 @@ export function SideNav({ menu, groups, active, onChoose, collapsed, onCollapse,
                 {s.soon?.map((label) => <span key={label} className="gon-fly-item disabled" title="Chức năng đang phát triển, sẽ có ở bản sau"><span>{label}</span><small>{DANG_PHAT_TRIEN}</small></span>)}
               </div>
             ))}
-            {openGroup.reports.length > 0 && <Link className="gon-fly-item gon-fly-report" to={`${REPORT_PAGE}?nhom=${openGroup.key}`} onClick={() => onChoose(openGroup.key)}><span>Báo cáo</span></Link>}
+            {/* [2026-11-21 kiennt] NT-MH-005 — báo cáo bung như các mục khác; một mục trùng tên nhóm thì chỉ ghi "Báo cáo" (đóng góp) */}
+            {openGroup.reports.map((s, i) => (
+              <div key={`bc-${s.label ?? i}`} className="gon-fly-sec">
+                <div className="gon-fly-head">{openGroup.reports.length === 1 || !s.label ? 'Báo cáo' : `Báo cáo · ${s.label}`}</div>
+                {s.items.map((m) => (
+                  <Link key={m.key} to={m.path!} onClick={() => onChoose(openGroup.key)} title={m.code ? `${m.label} (${m.code})` : m.label} className={`gon-fly-item${active?.key === openGroup.key && best > 0 && matchHere(m.path, pathname, search) === best ? ' active' : ''}${isPinned(m.key) ? ' pinned' : ''}`}>
+                    <span>{m.label}</span>
+                    {m.code && <small className="gon-fly-code">{m.code}</small>}
+                    <button type="button" className="pin-btn" title={isPinned(m.key) ? 'Bỏ ghim khỏi thanh trên cùng' : 'Ghim lên thanh trên cùng (màn hay dùng)'} onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePin(m.key); }}>
+                      {isPinned(m.key) ? <PinOff size={13} /> : <Pin size={13} />}
+                    </button>
+                  </Link>
+                ))}
+              </div>
+            ))}
+            {openGroup.reports.length > 0 && <Link className="gon-fly-item gon-fly-report" to={`${REPORT_PAGE}?nhom=${openGroup.key}`} onClick={() => onChoose(openGroup.key)}><span>Tất cả báo cáo</span></Link>}
           </div>
         </div>,
         document.body,
