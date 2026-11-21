@@ -2,8 +2,8 @@
 /**
  * Thanh menu bên trái: mỗi nhóm một dòng có biểu tượng. [2026-11-20 Nguyễn Văn Thủy] Bấm tên nhóm là vào thẳng màn làm việc chính
  * của nhóm (trang chủ nhóm: Bàn làm việc / Quy trình); rê chuột vào nhóm (hoặc bấm mũi tên ›) thì bung danh sách mọi màn sang phải (đóng góp).
- *  - [2026-11-21 kiennt] NT-MH-005: báo cáo của nhóm bung ra như các mục khác (tiêu đề "Báo cáo · <mục>"), cuối có dòng Tất cả báo cáo
- *    dẫn tới trang Báo cáo chung của nhóm (đóng góp).
+ *  - [2026-11-21 kiennt] NT-MH-005: báo cáo của nhóm bung ra như các mục khác. Nhóm có mục báo cáo trùng tên nhóm (Mua hàng, Bán hàng)
+ *    chỉ hiện mục đó, tiêu đề "Báo cáo" (công nợ xem ở Tổng hợp / trang Báo cáo); không có dòng Tất cả báo cáo (đóng góp).
  *  - Rê vào một màn có nút ghim; mã màn hiện ở chú thích, vẫn gõ mã tìm được bằng Ctrl + K.
  *  - Thu gọn (Ctrl + B) chỉ còn biểu tượng, bấm biểu tượng vẫn bung danh sách.
  */
@@ -31,9 +31,12 @@ export function GonIcon({ name, size, color }: { name: string; size?: number; co
   return <Icon size={size} color={color} />;
 }
 
+/** Báo cáo hiện trong danh sách bung: mục trùng tên nhóm thì chỉ mục đó, không thì mọi mục (NT-MH-005). */
+const baoCaoBung = (g: GonGroup) => { const rieng = g.reports.filter((s) => s.label === g.label); return rieng.length ? rieng : g.reports; };
+
 /** Số cột của danh sách bung theo số dòng, để danh mục dài không phải cuộn. */
 const columnsOf = (g: GonGroup) => {
-  const rows = [...g.sections, ...g.reports].reduce((n, s) => n + s.items.length + (s.label ? 1 : 0), 0);
+  const rows = [...g.sections, ...baoCaoBung(g)].reduce((n, s) => n + s.items.length + (s.label ? 1 : 0), 0);
   return rows > 26 ? 3 : rows > 14 ? 2 : 1;
 };
 
@@ -45,7 +48,7 @@ export function SideNav({ menu, groups, active, onChoose, collapsed, onCollapse,
   const root = useRef<HTMLElement>(null);
   const fly = useRef<HTMLDivElement>(null);
   // [2026-11-21 kiennt] NT-MH-005 — tính cả báo cáo (báo cáo đã bung trong danh sách) (đóng góp)
-  const best = active ? Math.max(0, ...[...active.sections, ...active.reports].flatMap((s) => s.items.map((m) => matchHere(m.path, pathname, search)))) : 0;
+  const best = active ? Math.max(0, ...[...active.sections, ...baoCaoBung(active)].flatMap((s) => s.items.map((m) => matchHere(m.path, pathname, search)))) : 0;
 
   useEffect(() => { setOpen(null); }, [pathname, search]);
   useEffect(() => {
@@ -128,10 +131,10 @@ export function SideNav({ menu, groups, active, onChoose, collapsed, onCollapse,
                 {s.soon?.map((label) => <span key={label} className="gon-fly-item disabled" title="Chức năng đang phát triển, sẽ có ở bản sau"><span>{label}</span><small>{DANG_PHAT_TRIEN}</small></span>)}
               </div>
             ))}
-            {/* [2026-11-21 kiennt] NT-MH-005 — báo cáo bung như các mục khác; một mục trùng tên nhóm thì chỉ ghi "Báo cáo" (đóng góp) */}
-            {openGroup.reports.map((s, i) => (
+            {/* [2026-11-21 kiennt] NT-MH-005 — báo cáo bung như các mục khác; chỉ một mục thì tiêu đề "Báo cáo" (đóng góp) */}
+            {baoCaoBung(openGroup).map((s, i, ds) => (
               <div key={`bc-${s.label ?? i}`} className="gon-fly-sec">
-                <div className="gon-fly-head">{openGroup.reports.length === 1 || !s.label ? 'Báo cáo' : `Báo cáo · ${s.label}`}</div>
+                <div className="gon-fly-head">{ds.length === 1 || !s.label ? 'Báo cáo' : `Báo cáo · ${s.label}`}</div>
                 {s.items.map((m) => (
                   <Link key={m.key} to={m.path!} onClick={() => onChoose(openGroup.key)} title={m.code ? `${m.label} (${m.code})` : m.label} className={`gon-fly-item${active?.key === openGroup.key && best > 0 && matchHere(m.path, pathname, search) === best ? ' active' : ''}${isPinned(m.key) ? ' pinned' : ''}`}>
                     <span>{m.label}</span>
@@ -143,7 +146,6 @@ export function SideNav({ menu, groups, active, onChoose, collapsed, onCollapse,
                 ))}
               </div>
             ))}
-            {openGroup.reports.length > 0 && <Link className="gon-fly-item gon-fly-report" to={`${REPORT_PAGE}?nhom=${openGroup.key}`} onClick={() => onChoose(openGroup.key)}><span>Tất cả báo cáo</span></Link>}
           </div>
         </div>,
         document.body,
