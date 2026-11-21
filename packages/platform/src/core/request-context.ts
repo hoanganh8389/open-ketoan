@@ -2,6 +2,7 @@
 // [2026-10-30 07:46 PM Johnny Chu - Chu Hoàng Anh] PHASE-006 — transactional outbox, subscriber, đồng hồ, correlation_id.
 // [2026-10-30 09:23 PM Johnny Chu - Chu Hoàng Anh] PHASE-007 — cô lập đơn vị bằng RLS.
 // [2026-11-01 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — dời từ apps/api/src/core/request-context.ts sang packages/platform (@bizcity/platform, D010-7 chặng 2); import tương đối viết lại theo chỗ mới
+// [2026-11-21 09:23 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B1 (ADR-0036): trường siteId — site của yêu cầu; pool CSDL chọn database theo trường này (db/site.ts)
 /**
  * Ngữ cảnh của yêu cầu đang chạy (AsyncLocalStorage): mã yêu cầu + mã tương quan, để bằng chứng (audit_logs.correlation_id)
  * và sự kiện miền (event_outbox.correlation_id) tự gắn mà không phải truyền qua từng hàm (C-8, bizcity_event@1 §3).
@@ -17,6 +18,11 @@ import type { FastifyInstance } from 'fastify';
 export interface RequestContext {
   requestId: string;
   correlationId: string;
+  /**
+   * Site của yêu cầu (ADR-0036): chọn database. Chưa gắn = site ngầm định của bản cài một công ty (PHASE-039 B1). Từ B2: Site
+   * Resolver gắn theo tên miền trước khi xác thực; chế độ nhiều site thiếu trường này thì không truy vấn nào chạy (R-SITE-3).
+   */
+  siteId?: string;
   /** Đơn vị của người gọi (đã xác thực); chưa có = chưa xác thực / việc nền. */
   tenantId?: string;
   /** [2026-11-21 Nguyễn Văn Thủy] Chi nhánh đang làm việc (header x-chi-nhanh — nút chi nhánh trên cùng); pool đặt bizcity.chi_nhanh_lam_viec để sổ chứng từ chung ghi nơi lập của mọi chứng từ mới (0177) (đóng góp) */

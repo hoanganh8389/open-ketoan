@@ -6,6 +6,7 @@
 // [2026-11-01 12:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-018 — readWithTimeout: giao dịch chỉ đọc có statement_timeout cho bộ thu số đo (trần thời gian ở CSDL, không hẹn giờ — SC-EVT-1)
 // [2026-11-01 04:13 PM Johnny Chu - Chu Hoàng Anh] ADR-0010 — OpenTelemetry từ lõi (PHASE-018 W5): span ở khớp nối Platform + cổng Kernel, lọc thuộc tính, traceparent qua outbox
 // [2026-11-01 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — dời từ apps/api/src/db/client.ts sang packages/platform (@bizcity/platform, D010-7 chặng 2); import tương đối viết lại theo chỗ mới
+// [2026-11-21 09:23 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B1 (ADR-0036): `pool` là pool của site ngầm định, đăng ký vào bộ định tuyến db/site.ts; mỗi lần mượn kết nối lấy pool của site đang chạy (poolOf); đóng db = đóng mọi pool site
 /**
  * Kết nối PostgreSQL dùng chung cho toàn ứng dụng.
  *
@@ -20,14 +21,20 @@ import type { Database } from './types.js';
 import { observeDbQuery } from '../core/metrics.js';
 import { currentRequest } from '../core/request-context.js';
 import { traceDbQuery } from '../core/tracing.js';
+import { DEFAULT_SITE_ID, endAllSitePools, poolOf, registerSitePool } from './site.js';
 
 // numeric (1700) và int8 (20): giữ dạng chuỗi để không mất chính xác; date (1082): giữ chuỗi YYYY-MM-DD.
 pg.types.setTypeParser(1082, (v) => v);
 
+/**
+ * Pool của site ngầm định (DATABASE_URL). Chế độ một site (PHASE-039 B1) chỉ có site này; mã cũ dùng thẳng `pool` (migration,
+ * script cài đặt, số đo) vẫn chạy như trước. Truy vấn nghiệp vụ đi qua `db`, mượn kết nối theo site đang chạy (db/site.ts).
+ */
 export const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
   max: 10,
 });
+registerSitePool(DEFAULT_SITE_ID, pool);
 
 /**
  * Cô lập đơn vị ở tầng CSDL (RLS, migration 0041, PHASE-007): mỗi lần mượn kết nối, đặt bizcity.tenant_id = đơn vị của yêu cầu
@@ -37,7 +44,8 @@ export const pool = new pg.Pool({
 const tenantOf = new WeakMap<pg.PoolClient, string>();
 const tenantPool = {
   async connect(): Promise<pg.PoolClient> {
-    const client = await pool.connect();
+    // Site trước, đơn vị sau (ADR-0036): pool chọn database của site; RLS bên trong database đó chọn đơn vị như trước.
+    const client = await poolOf().connect();
     const want = currentRequest()?.tenantId ?? '';
     // [2026-11-21 Nguyễn Văn Thủy] kèm chi nhánh đang làm việc của yêu cầu (sổ chứng từ chung ghi nơi lập, 0177) (đóng góp)
     const wb = currentRequest()?.workBranch ?? '';
@@ -57,7 +65,7 @@ const tenantPool = {
     }
     return client;
   },
-  end: () => pool.end(),
+  end: () => endAllSitePools(),
 };
 
 export const db = new Kysely<Database>({
