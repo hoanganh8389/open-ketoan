@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 213
+      "count": 212
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 336
+      "count": 337
     }
   ],
   "items": [
@@ -9963,10 +9963,10 @@
     {
       "id": "S039-5",
       "phase": "PHASE-039",
-      "title": "B2 — database điều khiển (CONTROLDATABASEURL, db/control-migrations/), bảng sites, sitedomains; Site Resolver theo Host; SITEMODE=multi; SITENOTFOUND, SITECONT…",
+      "title": "B2a — database điều khiển (CONTROLDATABASEURL, db/control-migrations/), bảng sites, sitedomains; Site Resolver theo Host; SITEMODE=multi; SITENOTFOUND, SITECON…",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
