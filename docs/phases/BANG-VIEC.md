@@ -8,10 +8,10 @@
 | Đang làm | 6 |
 | Chờ merge | 0 |
 | Bị chặn | 30 |
-| Chưa ai nhận | 215 |
-| Chờ đủ tín hiệu | 75 |
+| Chưa ai nhận | 213 |
+| Chờ đủ tín hiệu | 72 |
 | Hoãn | 3 |
-| Xong | 331 |
+| Xong | 336 |
 | **Tổng** | **660** |
 
 ## Theo phân hệ (R-FLOW-10)
@@ -26,7 +26,7 @@
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
 | he-thong | 154 | 23 | 2 | 74 | 253 |
-| *(chưa gắn phân hệ)* | 1 | 5 | 0 | 9 | 15 |
+| *(chưa gắn phân hệ)* | 6 | 2 | 0 | 7 | 15 |
 
 ## Đang làm (6)
 
@@ -78,7 +78,7 @@
 | [S037-16](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L25) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân bổ nguồn (receiptorigin hoặc gộp valuationlayersources), thứ tự lấy nguồn khi xuất, ánh xạ dòng nguồn bề… | P0 | — |
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 
-## Chưa ai nhận (215)
+## Chưa ai nhận (213)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -273,8 +273,6 @@
 | [S037-33](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L43) | PHASE-037 | he-thong | Cờ theo đơn vị (combocontractv1, comboinheritv1), chạy bóng, số đo costdiff, qtydiff, độ phủ truy vết | P0 | — |
 | [S037-35](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L42) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân kho chính phankhoid = 0: mỗi chi nhánh đúng một phân kho chính đang dùng (isdefault), phân giải ở biên A… | P0 | — |
 | [S038-6](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L16) | PHASE-038 | — | nginx web: web-loi.log (errorlog + truy cập ≥ 500); errorpage 502 503 504 trả JSON GATEWAYUNAVAILABLE | — | — |
-| [S038-7](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L17) | PHASE-038 | — | scripts/lay-log.sh theo README §4.4 | — | — |
-| [S038-8](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L18) | PHASE-038 | — | Sổ tay: mục "Lấy log gửi về" trong runbook aaPanel + DEPLOY §4; OBSERVABILITY §2 thêm logs/; log aaPanel /www… | — | — |
 | [S038-9](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L19) | PHASE-038 | — | Giao diện: một khay "Không kết nối được máy chủ phần mềm" cho GATEWAYUNAVAILABLE / 5xx không JSON; lùi dần lờ… | — | — |
 | [S038-10](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L20) | PHASE-038 | — | Thi hành R-LOG-9 (bản cài có logs/ cố định, có trần; luật đã khai ở RULE-LOG) + check SC-OBS-3 (compose khai … | — | — |
 | [S038-12](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L26) | PHASE-038 | — | logError chung: err chuẩn (type, stack, cause lồng, pgCode), errFp, evt; redact một danh sách dùng chung; sửa… | — | — |
@@ -298,7 +296,7 @@
 | [S039-19](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L28) | PHASE-039 | he-thong | B7 — nhật ký và số đo có site (trần số nhãn); màn chẩn đoán báo site đang phục vụ | P1 | — |
 | [S039-20](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L29) | PHASE-039 | he-thong | B7 — nghiệm thu T039-1..14 trên máy sạch; phối hợp Site Manager (repo bizcity-open-setup) tạo site thật | P0 | — |
 
-## Chờ đủ tín hiệu (75)
+## Chờ đủ tín hiệu (72)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -372,11 +370,8 @@
 | [S032-36](PHASE-032-INVENTORY-ENGINE-GIA-VON-KHO/40-MASTER-CHECKLIST.md#L45) | PHASE-032 | kho | Khoá thử hôm nay đủ năm bước (R-DIAG-14): periods/check + giá vốn tính tạm + closing/preview + kiểm sau kết c… | P0 | — |
 | [S032-39](PHASE-032-INVENTORY-ENGINE-GIA-VON-KHO/40-MASTER-CHECKLIST.md#L48) | PHASE-032 | kho | Bàn làm việc kế toán năm thẻ từ HT08 (Việc hôm nay · Khoá thử hôm nay · Kết quả từng tuần, tháng · Sổ theo dõ… | P1 | — |
 | [S035-3](PHASE-035-HT11-MODULES-MUC-DAT/40-MASTER-CHECKLIST.md#L12) | PHASE-035 | he-thong | B1 — docs/standard/modules.json (bizcitymodules@1, 12 × 8, ô liệt kê việc hiện có); R-FLOW-10 vào RULE-FLOW; … | P0 | — |
-| [S038-2](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L12) | PHASE-038 | — | logging: json-file có trần cho mọi dịch vụ; bind mount ${LOGHOSTDIR:-./logs} → /app/logs cho api, db-migrate;… | — | — |
-| [S038-3](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L13) | PHASE-038 | — | Logger multistream → logs/api-loi.log (≥ warn, xoay vòng, cùng redact) | — | — |
-| [S038-4](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L14) | PHASE-038 | — | Lỗi khởi động ghi fatal đồng bộ vào api-loi.log với evt: bizcity.system.startfailed + reason | — | — |
-| [S038-5](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L15) | PHASE-038 | — | Job db-migrate ghi logs/db-migrate.log (commit, migration áp, lỗi đầy đủ) | — | — |
-| [S038-11](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L25) | PHASE-038 | — | Bộ bắt uncaughtException / unhandledRejection ghi fatal đồng bộ (R-LOG-3); version, commit trong mọi dòng (R-… | — | — |
+| [S038-7](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L17) | PHASE-038 | — | scripts/lay-log.sh theo README §4.4 | — | — |
+| [S038-8](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L18) | PHASE-038 | — | Sổ tay: mục "Lấy log gửi về" trong runbook aaPanel + DEPLOY §4; OBSERVABILITY §2 thêm logs/; log aaPanel /www… | — | — |
 
 ## Hoãn (3)
 
@@ -386,6 +381,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (331)
+## Xong (336)
 
 Chỉ đếm; xem từng việc ở checklist của phase.
