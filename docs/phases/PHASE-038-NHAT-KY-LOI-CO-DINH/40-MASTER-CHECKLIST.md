@@ -23,13 +23,14 @@ Thứ tự theo giá trị: B1 một mình đã giải được sự cố 2026-1
 | Mã | Bước | Việc | Phạm vi | Xong khi | Trạng thái |
 |---|---|---|---|---|---|
 | S038-11 | B1 | Bộ bắt `uncaughtException` / `unhandledRejection` ghi `fatal` đồng bộ (R-LOG-3); `version`, `commit` trong mọi dòng (R-LOG-5); Node `--enable-source-maps` + giữ `.map` trong ảnh (R-LOG-8) | `apps/api/src/main.ts`; `apps/api/src/app.ts`; `docker/api.Dockerfile`; `docker/api-entrypoint.sh` | stack trong log trỏ tệp `.ts`; promise không bắt → dòng `fatal` trong tệp | 🟡 mã ở nhánh `feat/phase-038-b1-nhat-ky-loi` |
-| S038-12 | B1b | `logError` chung: `err` chuẩn (type, stack, `cause` lồng, `pgCode`), `errFp`, `evt`; `redact` một danh sách dùng chung; sửa `events.ts` bỏ `String(err)` | `packages/platform/src/core/**` (logger); `packages/platform/src/core/events.ts` | test che từng trường nhạy cảm; subscriber lỗi có stack + `traceId` sự kiện gốc | ☐ |
+| S038-12 | B1b | `logError` chung: `err` chuẩn (type, stack, `cause` lồng, `pgCode`), `errFp`, `evt`; `redact` một danh sách dùng chung; sửa `events.ts` bỏ `String(err)` | `packages/platform/src/core/**` (logger); `packages/platform/src/core/events.ts` | test che từng trường nhạy cảm; subscriber lỗi có stack + `traceId` sự kiện gốc | 🟡 mã ở nhánh `feat/phase-038-b1b-log-error` |
 | S038-13 | B4b | (D038-5 đã duyệt) ErrorBoundary theo màn, `window.onerror`, `unhandledrejection` → `POST /api/v1/system/client-errors` → `logs/web-client.log` | `apps/web/src/**` (khung app); `apps/api/src/modules/system/**` | lỗi render → màn có mã tra cứu, không trắng; một dòng trong tệp | ☐ |
 | S038-14 | B5 | Luật R-LOG-1..11 + SC-LOG-1..3; rà 16 chỗ nuốt lỗi (ghi `warn` hoặc chú thích `nuot-loi:`) | `docs/rules/RULE-LOG.md`; `tests/conformance/**`; các tệp ở 10 §4 G6 | SC-LOG xanh trên main | ☐ |
 | S038-15 | ngoài | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | `infrastructure/monitoring/**` — giao chủ PHASE-018 | log vẫn vào Loki, dashboard 06 chạy | ☐ |
 
 ## Nhật ký
 
+<!-- [2026-11-22 01:45 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1b -->- 2026-11-22 — B1b (S038-12): `logError` + `errFp` (băm loại lỗi + 3 khung stack trong `apps/` · `packages/`, chuẩn hoá đường dẫn); logger của Platform có `serializers.err`, `mixin` gắn `errFp` cho mọi dòng ≥ error, `redact` một danh sách `REDACT_PATHS`; lỗi Postgres giữ mã / bảng / ràng buộc, **không** `detail`. Lỗi subscriber vào log (warn khi còn lượt, error khi dead) có `job`, `fn`, `attempt`, `eventId`, `traceId` của sự kiện gốc; vòng sự kiện bỏ `String(err)` (G4). Migration lỗi giữ `cause` (G12). Test: 41 không CSDL, 2 có CSDL.
 <!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — luật R-LOG, CANON §0.12, chỉ dẫn agent -->
 - 2026-11-21 — Chủ dự án yêu cầu: ra luật chính thức và chỉ dẫn agent nhắc người đóng góp. Thêm [RULE-LOG](../../rules/RULE-LOG.md) (R-LOG-1..11, chấp nhận), CANON §0.12 + dòng §3 / §5 + v1.9, mục R-LOG trong `AGENTS.md` (Claude Code / Codex / Cursor đọc qua `CLAUDE.md`) và `.github/copilot-instructions.md`, trỏ ở OBSERVABILITY §2. Phần tài liệu của S038-14 xong; còn SC-LOG-1..3 và rà 16 chỗ nuốt lỗi (B5).
 

@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 217
+      "count": 216
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 75
+      "count": 76
     },
     {
       "key": "paused",
@@ -9853,8 +9853,8 @@
       "phase": "PHASE-038",
       "title": "logError chung: err chuẩn (type, stack, cause lồng, pgCode), errFp, evt; redact một danh sách dùng chung; sửa events.ts bỏ String(err)",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F1",

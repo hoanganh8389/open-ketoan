@@ -120,7 +120,8 @@ export async function runMigrations(log: (msg: string) => void = console.log): P
         applied.push(file);
       } catch (err) {
         await client.query('ROLLBACK');
-        throw new Error(`Migration ${file} lỗi: ${(err as Error).message}`);
+        // [2026-11-22 01:00 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1b (G12): giữ lỗi gốc của Postgres (mã PG, bảng, ràng buộc, stack) trong cause — logs/db-migrate.log đọc được
+        throw new Error(`Migration ${file} lỗi: ${(err as Error).message}`, { cause: err });
       }
     }
     // [2026-11-18 Nguyễn Văn Thủy] 0161: dòng nhật ký cũ (tự chẩn đoán, Kiểm chuẩn, số đếm thư viện) ra JSONL rồi bỏ bảng tạm (đóng góp)

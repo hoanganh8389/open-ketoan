@@ -12,6 +12,7 @@
  * Tệp này KHÔNG đọc config/env.ts: lỗi cấu hình môi trường (ENV_INVALID) cũng phải ghi được, mà env.ts dừng tiến trình ngay khi nạp.
  * Ghi tệp hỏng (thư mục không ghi được, đĩa đầy) không bao giờ làm hỏng yêu cầu: báo một lần ra stderr rồi bỏ qua tệp.
  */
+import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, renameSync, statSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { BUILD_VERSION } from './version.js';
@@ -129,20 +130,116 @@ export function loggerOptions(opts: { service: string; level: string; silent?: b
     level: name,
     base: { pid: process.pid, ...baseFields(opts.service) },
     stream: teeStream({ file, fileLevel, out: stdout }),
+    // B1b: `err` chuẩn (giữ cause, trường Postgres an toàn), errFp trên mọi dòng ≥ error có lỗi, che dữ liệu (R-LOG-1, R-LOG-4).
+    // Fastify khai serializers.err trả { type, message, stack }; serializeError trả đủ các trường đó với mọi Error
+    serializers: { err: (e: unknown) => serializeError(e) as { type: string; message: string; stack: string; [k: string]: unknown } },
+    mixin: (obj: object, level: number) => {
+      const o = obj as { err?: unknown; errFp?: unknown };
+      return level >= LEVELS.error && o.err !== undefined && o.errFp === undefined ? { errFp: errFp(o.err) } : {};
+    },
+    redact: { paths: REDACT_PATHS, censor: REDACT_CENSOR },
   };
 }
 
-/** Lỗi thành trường `err` (R-LOG-1 bản tối thiểu cho B1; B1b thêm errFp). Giữ chuỗi cause tối đa 5 lớp. */
+// [2026-11-22 12:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1b (S038-12): errFp, err chuẩn có trường lỗi Postgres (không detail), redact dùng chung, logError (R-LOG-1, R-LOG-4)
+
+/**
+ * Trường của lỗi Postgres (pg DatabaseError) được giữ: chỉ TÊN đối tượng CSDL, không giá trị.
+ * `detail` ("Key (tax_code)=(0101…) already exists"), `where`, `internalQuery` chứa dữ liệu / câu lệnh → KHÔNG ghi (R-LOG-4).
+ */
+const PG_FIELDS = ['severity', 'schema', 'table', 'column', 'constraint', 'routine'] as const;
+
+const FRAME_RE = /^\s*at (?:.*? \()?(?:file:\/\/)?(.+?):(\d+)(?::\d+)?\)?\s*$/;
+
+/**
+ * Khung stack đầu tiên trong mã của repo (apps/ hoặc packages/), dạng "apps/api/src/main.ts:33" — bỏ phần đường dẫn trước
+ * apps/ | packages/ (máy dev, container /app/… cho cùng một dấu), bỏ số cột.
+ */
+export function ownFrames(stack: string | undefined, n = 3): string[] {
+  const out: string[] = [];
+  for (const line of (stack ?? '').split('\n').slice(1)) {
+    const m = FRAME_RE.exec(line);
+    if (!m) continue;
+    const p = m[1]!.replace(/\\/g, '/');
+    const i = p.search(/(^|\/)(apps|packages)\//);
+    if (i < 0 || p.includes('/node_modules/')) continue;
+    out.push(`${p.slice(p[i] === '/' ? i + 1 : i)}:${m[2]}`);
+    if (out.length >= n) break;
+  }
+  return out;
+}
+
+/**
+ * Dấu vân lỗi (10 §5.4, G9): cùng loại lỗi ném từ cùng chỗ trong mã → cùng errFp, dù thông báo khác (mã chứng từ, số tiền).
+ * 1.000 dòng một lỗi gom thành một việc; errFp lạ sau bản cập nhật = lỗi mới. Không có khung nào trong repo (lỗi thư viện thuần)
+ * thì dùng thông báo đã thay chữ số / mã định danh.
+ */
+export function errFp(err: unknown): string {
+  const e = err instanceof Error ? err : null;
+  const type = e ? (e.name || 'Error') : typeof err;
+  const frames = ownFrames(e?.stack);
+  const basis = frames.length
+    ? frames.join(',')
+    : String(e ? e.message : err).replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '<id>').replace(/\d+/g, 'N').slice(0, 200);
+  return createHash('sha1').update(`${type}|${basis}`).digest('hex').slice(0, 12);
+}
+
+/** Lỗi thành trường `err` (R-LOG-1): loại, thông báo, mã, trường Postgres an toàn, stack, chuỗi cause tối đa 5 lớp. */
 export function serializeError(err: unknown, depth = 0): Record<string, unknown> {
-  if (!(err instanceof Error)) return { type: typeof err, message: String(err) };
-  const e = err as Error & { code?: unknown; cause?: unknown };
+  if (!(err instanceof Error)) {
+    // đã tuần tự hoá rồi (logError với lỗi không phải Error, dòng đọc lại từ tệp) → giữ nguyên, không bọc lần hai
+    const o = err as { type?: unknown; message?: unknown } | null;
+    if (o && typeof o === 'object' && typeof o.type === 'string' && typeof o.message === 'string') return o as Record<string, unknown>;
+    return { type: typeof err, message: String(err) };
+  }
+  const e = err as Error & Record<string, unknown> & { code?: unknown; cause?: unknown };
+  const pg: Record<string, unknown> = {};
+  if (typeof e.code === 'string' && /^[0-9A-Z]{5}$/.test(e.code) && typeof e.routine === 'string') {
+    for (const k of PG_FIELDS) if (typeof e[k] === 'string') pg[k] = e[k];
+  }
   return {
     type: e.name || e.constructor?.name || 'Error',
     message: e.message,
     ...(typeof e.code === 'string' ? { code: e.code } : {}),
+    ...pg,
     stack: e.stack,
     ...(e.cause !== undefined && depth < 5 ? { cause: serializeError(e.cause, depth + 1) } : {}),
   };
+}
+
+/**
+ * Lưới an toàn che dữ liệu (R-LOG-4) — MỘT danh sách cho mọi logger của Platform. Không thay việc người viết mã không ghi giá trị:
+ * pino chỉ che đúng tên trường, ở đúng độ sâu liệt kê. Thêm trường nhạy cảm mới vào đây, kèm test (nhat-ky-loi.test.ts).
+ */
+const SENSITIVE = ['password', 'passwd', 'token', 'accessToken', 'refreshToken', 'apiKey', 'secret', 'authorization', 'cookie',
+  'body', 'payload', 'taxCode', 'mst', 'phone', 'email', 'bankAccount', 'accountNumber', 'idNumber', 'cccd'] as const;
+export const REDACT_PATHS: string[] = [
+  ...SENSITIVE.flatMap((k) => [k, `*.${k}`]),
+  'req.headers.authorization', 'req.headers.cookie', 'req.headers["x-api-key"]', 'res.headers["set-cookie"]',
+];
+export const REDACT_CENSOR = '***';
+
+type LogFn = (obj: object, msg?: string) => void;
+type LoggerLike = { error: LogFn; warn: LogFn; fatal?: LogFn };
+
+/**
+ * Một đường ghi lỗi (R-LOG-1): `logError(req.log, err, { evt: 'bizcity.kho.ghi_so_loi', fn: 'postPhieu' }, 'Ghi sổ phiếu kho lỗi')`.
+ * Dòng có `err` (đối tượng lỗi — logger của Platform tuần tự hoá bằng serializeError), `errFp`, `evt`. Dùng được với logger
+ * không phải của Platform (logger con, logger test): errFp tính ở đây, không chờ mixin.
+ * `level`: 'warn' khi đã lùi / thử lại được (R-LOG-7), 'fatal' khi tiến trình sắp dừng.
+ */
+export function logError(
+  log: LoggerLike,
+  err: unknown,
+  ctx: { evt?: string; level?: 'warn' | 'error' | 'fatal'; [k: string]: unknown } = {},
+  msg?: string,
+): void {
+  const { level = 'error', evt = 'bizcity.error', ...rest } = ctx;
+  const line = { ...rest, evt, errFp: errFp(err), err: err instanceof Error ? err : serializeError(err) };
+  const text = msg ?? (err instanceof Error ? err.message : String(err));
+  if (level === 'fatal' && log.fatal) log.fatal(line, text);
+  else if (level === 'warn') log.warn(line, text);
+  else log.error(line, text);
 }
 
 /** Đoán lý do khởi động thất bại từ lỗi (mã PG / mã hệ thống / câu báo của main.ts). */
@@ -178,6 +275,7 @@ export function logStartFailure(err: unknown, opts: { service: string; file?: st
     reason,
     msg: `Khởi động thất bại: ${err instanceof Error ? err.message : String(err)}`,
     hint: START_HINTS[reason],
+    errFp: errFp(err),
     err: serializeError(err),
   }, opts);
   return reason;
@@ -193,7 +291,7 @@ export function installProcessHandlers(opts: { service: string; file?: string; d
   installed = true;
   const exit = opts.exit ?? ((c: number) => process.exit(c));
   const die = (kind: 'uncaughtException' | 'unhandledRejection') => (err: unknown) => {
-    writeSync('fatal', { evt: `bizcity.system.${kind === 'uncaughtException' ? 'uncaught_exception' : 'unhandled_rejection'}`, msg: `Lỗi không bắt (${kind}) — tiến trình dừng`, err: serializeError(err) }, opts);
+    writeSync('fatal', { evt: `bizcity.system.${kind === 'uncaughtException' ? 'uncaught_exception' : 'unhandled_rejection'}`, msg: `Lỗi không bắt (${kind}) — tiến trình dừng`, errFp: errFp(err), err: serializeError(err) }, opts);
     exit(1);
   };
   process.on('uncaughtException', die('uncaughtException'));
