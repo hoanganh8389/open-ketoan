@@ -12,8 +12,13 @@
  * - tenantId: gán sau khi xác thực (core/auth.ts). Pool CSDL (db/client.ts) đặt bizcity.tenant_id theo giá trị này mỗi lần mượn
  *   kết nối → RLS (migration 0041) chỉ cho thấy dữ liệu của đơn vị đó, kể cả khi một truy vấn quên lọc tenant_id (PHASE-007).
  */
+// [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a (D039-4, D039-6): SITE_MODE=multi — nhận site theo tên miền trước mọi hook khác; tên miền lạ → 404 SITE_NOT_FOUND; kiểm sống / sẵn sàng / số đo chạy trên site ngầm định
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { FastifyInstance } from 'fastify';
+import { DEFAULT_SITE_ID, siteMode } from '../db/site.js';
+
+/** Đường kiểm sống / sẵn sàng / số đo: bộ cân bằng tải gọi bằng địa chỉ máy, không có tên miền của site. */
+const SITELESS_PATHS = new Set(['/api/v1/system/health', '/api/v1/system/health/ready', '/metrics']);
 
 export interface RequestContext {
   requestId: string;
@@ -51,6 +56,27 @@ export function registerRequestContext(app: FastifyInstance): void {
     const wb = req.headers['x-chi-nhanh'];
     let workBranch: string | undefined;
     try { const x = decodeURIComponent(String(Array.isArray(wb) ? wb[0] : wb ?? '')).trim(); if (/^[A-Za-z0-9._-]{1,64}$/.test(x)) workBranch = x; } catch { /* header sai dạng: bỏ qua */ }
-    store.run({ requestId: String(req.id), correlationId, ...(workBranch ? { workBranch } : {}) }, done);
+    const base: RequestContext = { requestId: String(req.id), correlationId, ...(workBranch ? { workBranch } : {}) };
+    if (siteMode() === 'single') {
+      store.run(base, done);
+      return;
+    }
+    // Chế độ nhiều site (ADR-0036): site theo tên miền của yêu cầu, trước xác thực. Không có → 404, không truy vấn nào chạy.
+    if (SITELESS_PATHS.has(req.url.split('?')[0] ?? '')) {
+      store.run({ ...base, siteId: DEFAULT_SITE_ID }, done);
+      return;
+    }
+    import('../db/site-registry.js')
+      .then((m) => m.resolveSiteIdByHost(req.host))
+      .then(
+        (siteId) => {
+          if (!siteId) {
+            reply.code(404).send({ ok: false, error: { code: 'SITE_NOT_FOUND', message: 'Không tìm thấy phần mềm kế toán của tên miền này', requestId: String(req.id) } });
+            return;
+          }
+          store.run({ ...base, siteId }, done);
+        },
+        (err: unknown) => done(err as Error),
+      );
   });
 }

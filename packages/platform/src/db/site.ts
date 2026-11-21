@@ -16,11 +16,26 @@
  * và luật "đóng khi thiếu" (R-SITE-3): ở chế độ nhiều site, thiếu mã site trong ngữ cảnh phải báo SITE_CONTEXT_MISSING thay cho
  * việc dùng site ngầm định như dưới đây.
  */
+// [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a (R-SITE-3): chế độ multi đóng khi thiếu — không có site trong ngữ cảnh thì SITE_CONTEXT_MISSING, không dùng site ngầm định
 import type pg from 'pg';
+import { env } from '../config/env.js';
 import { currentRequest, withRequestContext } from '../core/request-context.js';
 
 /** Site ngầm định của bản cài một công ty (SITE_MODE=single): database của DATABASE_URL. */
 export const DEFAULT_SITE_ID = 'default';
+
+export type SiteMode = 'single' | 'multi';
+let mode: SiteMode = env.SITE_MODE;
+
+/** Chế độ site đang chạy (SITE_MODE). */
+export function siteMode(): SiteMode {
+  return mode;
+}
+
+/** Đổi chế độ lúc chạy. Chỉ cho test: bản cài đọc SITE_MODE một lần lúc khởi động. */
+export function setSiteModeForTest(next: SiteMode): void {
+  mode = next;
+}
 
 export type SiteErrorCode = 'SITE_NOT_FOUND' | 'SITE_CONTEXT_MISSING';
 
@@ -46,9 +61,15 @@ export function listSiteIds(): string[] {
   return [...pools.keys()];
 }
 
-/** Site của yêu cầu đang chạy. B1: chưa gắn site thì dùng site ngầm định (xem ghi chú đầu tệp về B2). */
+/**
+ * Site của yêu cầu đang chạy. Chế độ single: chưa gắn site thì là site ngầm định. Chế độ multi: chưa gắn site thì ném
+ * SITE_CONTEXT_MISSING — không truy vấn nào chạy, không rơi về site ngầm định (R-SITE-3).
+ */
 export function currentSiteId(): string {
-  return currentRequest()?.siteId ?? DEFAULT_SITE_ID;
+  const id = currentRequest()?.siteId;
+  if (id) return id;
+  if (mode === 'multi') throw new SiteRoutingError('SITE_CONTEXT_MISSING', 'Chưa xác định site của yêu cầu: không chạy truy vấn (SITE_MODE=multi)');
+  return DEFAULT_SITE_ID;
 }
 
 /** Pool của một site (mặc định: site đang chạy). Không có thì ném SITE_NOT_FOUND, không bao giờ trả pool của site khác. */
