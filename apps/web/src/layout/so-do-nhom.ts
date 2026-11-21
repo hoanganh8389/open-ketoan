@@ -43,7 +43,8 @@ export const SO_DO_V2: Record<string, SoDo> = {
       chuoi: [
         // [2026-11-21 kiennt] NT-MH-005 — Khai báo → Danh mục (đóng góp)
         { nhom: 'Danh mục', icon: 'Settings', viec: ['ncc_dup_tax', 'ncc_no_tax', 'contract_expiring', 'contract_no_price'], items: [
-          { label: 'Nhà cung cấp mua hàng', path: '/mua-hang/nha-cung-cap' }, { label: 'Hợp đồng mua hàng', path: '/mua-hang/hop-dong' },
+          { label: 'Nhà cung cấp', path: '/danh-muc/nha-cung-cap' }, // [2026-11-21 kiennt] NT-MH-005 — NCC ở DM13 (đóng góp)
+          { label: 'Hợp đồng mua hàng', path: '/mua-hang/hop-dong' },
           { label: 'Chính sách mua hàng', path: '/mua-hang/chinh-sach' }] },
         { nhom: 'Kế hoạch đặt hàng', icon: 'Gauge', items: [
           { label: 'Phiếu đăng ký tồn max (shop)', path: '/mua-hang/dang-ky-max' }, { label: 'Tồn max (kế toán mua hàng)', path: '/mua-hang/ton-max' },
@@ -180,7 +181,7 @@ export const SO_DO: Record<string, SoDo> = {
       { label: 'Tổng hợp mua hàng theo mặt hàng', path: '/mua-hang/tong-hop-mat-hang' }, { label: 'Tổng hợp công nợ phải trả nhà cung cấp', path: '/bao-cao/cong-no-phai-tra' },
       { label: 'Biên bản đối chiếu và xác nhận công nợ phải trả', path: '/cong-no/doi-chieu' },
     ],
-    links: [{ label: 'Nhà cung cấp', icon: 'Truck', path: '/mua-hang/nha-cung-cap' }, L.vthh, { label: 'Hợp đồng mua', icon: 'FileSignature', path: '/mua-hang/hop-dong' }, { label: 'Chính sách mua', icon: 'Tags', path: '/mua-hang/chinh-sach' }, { label: 'Công thức đặt hàng', icon: 'Sigma', path: '/mua-hang/cong-thuc' }, { label: 'Cài đặt mua hàng', icon: 'Settings', path: '/mua-hang/cai-dat' }],
+    links: [{ label: 'Nhà cung cấp', icon: 'Truck', path: '/danh-muc/nha-cung-cap' }, L.vthh, { label: 'Hợp đồng mua', icon: 'FileSignature', path: '/mua-hang/hop-dong' }, { label: 'Chính sách mua', icon: 'Tags', path: '/mua-hang/chinh-sach' }, { label: 'Công thức đặt hàng', icon: 'Sigma', path: '/mua-hang/cong-thuc' }, { label: 'Cài đặt mua hàng', icon: 'Settings', path: '/mua-hang/cai-dat' }],
   },
   'ban-hang': {
     title: 'Nghiệp vụ bán hàng',

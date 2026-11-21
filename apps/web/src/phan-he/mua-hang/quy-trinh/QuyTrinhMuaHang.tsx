@@ -52,7 +52,8 @@ const N = (kind: string) => `/mua-hang/tong-hop?moi=${kind}`;
 // → hoá đơn & công nợ → thanh toán → trả hàng / quyết toán / thanh lý (đóng góp)
 const STAGES: Stage[] = [
   {
-    node: { label: '1. Khai báo nhà cung cấp', code: 'MH01', icon: 'Building2', color: '#5b6cff', path: '/mua-hang/nha-cung-cap',
+    // [2026-11-21 kiennt] NT-MH-005 — khai NCC ở DM13 (MH01 bỏ khỏi menu); giá mua của NCC ở hợp đồng (đóng góp)
+    node: { label: '1. Khai báo nhà cung cấp', code: 'DM13', icon: 'Building2', color: '#5b6cff', path: '/danh-muc/nha-cung-cap',
       auto: ['Kiểm tra trùng mã số thuế', 'Mặt hàng: mã, ĐVT, lô / hạn dùng, thuế suất — nhãn, ngành tự theo nhóm hàng'] },
     // [2026-11-20 Nguyễn Văn Thủy] UX MUA HÀNG GỌN — mặt hàng, nhóm hàng, cơ cấu khai ở nhóm Danh mục, không lặp ở quy trình (đóng góp)
     config: [],
@@ -62,7 +63,7 @@ const STAGES: Stage[] = [
     node: { label: '2. Ký hợp đồng mua', code: 'MH29', icon: 'FileSignature', color: '#0f766e', path: '/mua-hang/hop-dong', newPath: '/mua-hang/hop-dong',
       auto: ['Một hợp đồng gom: bảng giá mua, chiết khấu, thưởng, quà, hạn mức, hạn thanh toán', 'Có hiệu lực từ – đến; sửa sau khi ký = phụ lục (giữ từng bản)', 'Lưu bản scan hợp đồng'] },
     config: [
-      { label: 'Giá mua của NCC', code: 'MH01', icon: 'Tags', color: '#64748b', path: '/mua-hang/nha-cung-cap', hint: 'Mở hợp đồng › Mặt hàng & giá' },
+      { label: 'Giá mua của NCC', code: 'MH29', icon: 'Tags', color: '#64748b', path: '/mua-hang/hop-dong', hint: 'Mở hợp đồng › Mặt hàng & giá' },
       { label: 'Chính sách mua hàng', code: 'MH04', icon: 'BadgePercent', color: '#64748b', path: '/mua-hang/chinh-sach', hint: 'Mở hợp đồng › Chiết khấu, Thưởng, Hạn mức; MH04 xem tổng hợp' },
     ],
     side: [],
