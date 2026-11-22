@@ -9,9 +9,9 @@
 | Chờ merge | 0 |
 | Bị chặn | 30 |
 | Chưa ai nhận | 194 |
-| Chờ đủ tín hiệu | 76 |
+| Chờ đủ tín hiệu | 74 |
 | Hoãn | 3 |
-| Xong | 352 |
+| Xong | 354 |
 | **Tổng** | **661** |
 
 ## Theo phân hệ (R-FLOW-10)
@@ -26,7 +26,7 @@
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
 | he-thong | 163 | 27 | 2 | 61 | 253 |
-| *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
+| *(chưa gắn phân hệ)* | 15 | 0 | 0 | 1 | 16 |
 
 ## Đang làm (6)
 
@@ -277,7 +277,7 @@
 | [S039-19](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L28) | PHASE-039 | he-thong | B7 — nhật ký và số đo có site (trần số nhãn); màn chẩn đoán báo site đang phục vụ | P1 | — |
 | [S039-20](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L29) | PHASE-039 | he-thong | B7 — nghiệm thu T039-1..14 trên máy sạch; phối hợp Site Manager (repo bizcity-open-setup) tạo site thật | P0 | — |
 
-## Chờ đủ tín hiệu (76)
+## Chờ đủ tín hiệu (74)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -351,8 +351,6 @@
 | [S032-36](PHASE-032-INVENTORY-ENGINE-GIA-VON-KHO/40-MASTER-CHECKLIST.md#L45) | PHASE-032 | kho | Khoá thử hôm nay đủ năm bước (R-DIAG-14): periods/check + giá vốn tính tạm + closing/preview + kiểm sau kết c… | P0 | — |
 | [S032-39](PHASE-032-INVENTORY-ENGINE-GIA-VON-KHO/40-MASTER-CHECKLIST.md#L48) | PHASE-032 | kho | Bàn làm việc kế toán năm thẻ từ HT08 (Việc hôm nay · Khoá thử hôm nay · Kết quả từng tuần, tháng · Sổ theo dõ… | P1 | — |
 | [S035-3](PHASE-035-HT11-MODULES-MUC-DAT/40-MASTER-CHECKLIST.md#L12) | PHASE-035 | he-thong | B1 — docs/standard/modules.json (bizcitymodules@1, 12 × 8, ô liệt kê việc hiện có); R-FLOW-10 vào RULE-FLOW; … | P0 | — |
-| [S038-10](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L20) | PHASE-038 | — | Thi hành R-LOG-9 (bản cài có logs/ cố định, có trần; luật đã khai ở RULE-LOG) + check SC-OBS-3 (compose khai … | — | — |
-| [S038-14](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L28) | PHASE-038 | — | Luật R-LOG-1..11 + SC-LOG-1..3; rà 16 chỗ nuốt lỗi (ghi warn hoặc chú thích nuot-loi:) | — | — |
 | [S039-8](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L17) | PHASE-039 | he-thong | B2 — bộ đệm trong bộ nhớ thêm khoá site (theo kết quả S039-3) + phép kiểm tĩnh chặn bộ đệm theo đơn vị thiếu … | P0 | — |
 | [S039-11](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L20) | PHASE-039 | he-thong | B4 — Site Provisioner: kttemplate, vai trò riêng kt<slug>owner / app (D039-19), CREATE DATABASE … TEMPLATE, đ… | P0 | — |
 | [S039-12](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L21) | PHASE-039 | he-thong | B4 — CLI bizcity site create / list / suspend / resume / drop / adopt (adopt: đưa bản cài một công ty vào cụm… | P1 | — |
@@ -366,6 +364,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (352)
+## Xong (354)
 
 Chỉ đếm; xem từng việc ở checklist của phase.
