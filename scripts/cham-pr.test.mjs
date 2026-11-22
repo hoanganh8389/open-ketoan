@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  ciOf, criteriaDiff, docMatrix, gradeOf, impactOf, isoWeek, kindOf, parseEvidence, pillarFacets, prScore, regressions,
-  releaseOf, renderBoard, suggestAxes, verdictOf,
+  ciOf, criteriaDiff, docMatrix, evidenceTemplate, gradeOf, identityOf, impactOf, isoWeek, kindOf, parseEvidence, personScores,
+  pillarFacets, prScore, regressions, releaseOf, renderBoard, renderPeople, suggestAxes, verdictOf,
 } from './cham-pr.lib.mjs';
 
 const doc = (pillars) => ({ contract: 'bizcity_pillars@1', pillars });
@@ -150,4 +150,52 @@ test('bảng TIEN-DO-PR: không giờ sinh, mới → cũ, gom tháng khi vượ
   assert.match(md, /60 → 61 % \(\+1\)/);
   assert.match(md, /\| 2026-W47 \| 61 % \| 62 % \| — \| 41 \|/);
   assert.doesNotMatch(md, /\d{2}:\d{2} UTC/);
+});
+
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3 (S040-8, 9): khuôn cũ / mẫu chưa điền, danh tính, điểm theo người
+test('khối bằng chứng: khuôn cũ "== BẰNG CHỨNG ==" đọc được; mẫu chưa điền không đúng khuôn', () => {
+  const old = parseEvidence('## Bằng chứng (bắt buộc với T0)\n```text\n== BẰNG CHỨNG ==\nselfcheck:   ĐẠT\nkiem-chuan:  ĐẠT\n```');
+  assert.equal(old.present, true);
+  assert.equal(old.wellFormed, true);
+  const blank = parseEvidence('## Bằng chứng chạy máy\n```text\n== BẰNG CHỨNG ==\nhead: <sha>   gộp main: <sha origin/main lúc chạy>\nbash scripts/kiem-chuan.sh → ĐẠT | KHÔNG ĐẠT\nnode tests/conformance/selfcheck.mjs --strict → ĐẠT | KHÔNG ĐẠT\n```');
+  assert.equal(blank.present, true);
+  assert.equal(blank.wellFormed, false);
+  assert.equal(blank.kiemChuan, null);
+  assert.equal(parseEvidence('## Bằng chứng chạy máy\nhead: ab12   gộp main: cd34\nkiem-chuan.sh → ĐẠT\nselfcheck → ĐẠT\nvitest → 41/52 qua').testsPassed, 41);
+});
+
+test('mẫu khối bằng chứng điền SHA và bộ đọc nhận ra chưa điền kết quả', () => {
+  const t = evidenceTemplate({ head: 'aaaa1111', main: 'bbbb2222' });
+  assert.match(t, /head: aaaa1111 {3}gộp main: bbbb2222/);
+  const ev = parseEvidence(t);
+  assert.equal(ev.present, true);
+  assert.equal(ev.wellFormed, false);
+});
+
+test('danh tính: tài khoản GitHub trước, rồi bí danh; trình tự động bị bỏ', () => {
+  const aliases = { 'Võ Hoàng': 'H-Joyy', kiennt: 'TrongKien125' };
+  assert.equal(identityOf({ login: 'Thuy2k', name: 'Nguyễn Văn Thủy' }, aliases), 'Thuy2k');
+  assert.equal(identityOf({ login: null, name: 'kiennt' }, aliases), 'TrongKien125');
+  assert.equal(identityOf({ login: null, name: 'Võ Hoàng' }, aliases), 'H-Joyy');
+  assert.equal(identityOf({ login: null, name: 'người lạ' }, aliases), 'người lạ');
+  assert.equal(identityOf({ login: 'dependabot[bot]', name: 'x' }, aliases), null);
+  assert.equal(identityOf({ login: null, name: 'Claude' }, aliases), null);
+});
+
+test('điểm theo người: chỉ PR VERIFIED; chưa đủ 3 PR / 4 tuần thì chưa đủ mẫu; review cho người khác được tính', () => {
+  const r = (pr, people, release, score, at = '2026-11-22', reviewers = []) => ({ pr, people, release, score, mergedAt: at, reviewers });
+  const rows = personScores([
+    r(1, ['a'], 'VERIFIED', 80, '2026-11-02', ['b']), r(2, ['a'], 'VERIFIED', 90, '2026-11-09'), r(3, ['a'], 'VERIFIED', 100, '2026-11-16'),
+    r(4, ['b'], 'UNVERIFIED', 100), r(5, ['b'], 'BLOCKED', 20),
+  ]);
+  const a = rows.find((x) => x.id === 'a');
+  const b = rows.find((x) => x.id === 'b');
+  assert.equal(a.state, 'đủ mẫu');
+  assert.equal(a.avgScore, 90);
+  assert.equal(a.total, 84); // (0.7·90 + 0.05·0) / 0.75
+  assert.equal(b.state, 'chưa đủ mẫu');
+  assert.equal(b.total, null);
+  assert.equal(b.reviewsGiven, 1);
+  assert.equal(b.blocked, 1);
+  assert.match(renderPeople(rows), /KHÔNG COMMIT/);
 });

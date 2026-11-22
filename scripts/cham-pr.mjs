@@ -9,6 +9,8 @@
  *   node scripts/cham-pr.mjs --last 10 --write         chấm 10 PR merge gần nhất, ghi PR-<n>.json, sinh lại bảng
  *   node scripts/cham-pr.mjs --since 2026-11-15 --write
  *   node scripts/cham-pr.mjs --board                   chỉ sinh lại docs/reviews/TIEN-DO-PR.md từ các PR-<n>.json
+ *   node scripts/cham-pr.mjs --mau-bang-chung          in khối "Bằng chứng chạy máy" điền sẵn SHA để dán vào mô tả PR
+ *   node scripts/cham-pr.mjs --nguoi                   điểm theo người → docs/reviews/tien-do/.local/ (không commit, Q040-5)
  *     --selfcheck   chạy thêm selfcheck ở commit trước / sau merge (worktree tạm) để lấy điểm ma trận tuân thủ C-* — chậm
  *     --no-keep-human  khi ghi đè PR-<n>.json đã có, mặc định giữ trục người duyệt đã sửa (`axesBy: "người"`); cờ này bỏ giữ
  *
@@ -21,8 +23,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  CONTRACT, ciOf, criteriaDiff, docMatrix, gradeOf, impactOf, kindOf, parseEvidence, pillarFacets, prScore, regressions, releaseOf,
-  renderBoard, suggestAxes, verdictOf,
+  CONTRACT, ciOf, criteriaDiff, docMatrix, evidenceTemplate, gradeOf, identityOf, impactOf, kindOf, parseEvidence, personScores,
+  pillarFacets, prScore, regressions, releaseOf, renderBoard, renderPeople, suggestAxes, verdictOf,
 } from './cham-pr.lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +32,9 @@ const OUT_DIR = path.join(ROOT, 'docs/reviews/tien-do');
 const BOARD = path.join(ROOT, 'docs/reviews/TIEN-DO-PR.md');
 const TRU_COT = 'docs/standard/tru-cot.json';
 const DOC_MATRIX = 'docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/10-MA-TRAN-CHUNG-TU.md';
+const IDENTITIES = path.join(ROOT, 'docs/reviews/tien-do/danh-tinh.json');
+const LOCAL_DIR = path.join(ROOT, 'docs/reviews/tien-do/.local');
+const ALIASES = existsSync(IDENTITIES) ? JSON.parse(readFileSync(IDENTITIES, 'utf8')).aliases ?? {} : {};
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
@@ -109,8 +114,9 @@ function scorePr(R, n, { withSelfcheck }) {
   const commits = gh(`repos/${R}/pulls/${n}/commits?per_page=100`);
   const authorCount = new Map();
   for (const c of commits) {
-    const id = c.author?.login ?? c.commit?.author?.name ?? '?';
-    authorCount.set(id, (authorCount.get(id) ?? 0) + 1);
+    // B3: gộp danh tính qua danh-tinh.json (tên commit → tài khoản); trình tự động không phải người đóng góp
+    const id = identityOf({ login: c.author?.login, name: c.commit?.author?.name }, ALIASES);
+    if (id) authorCount.set(id, (authorCount.get(id) ?? 0) + 1);
   }
   const authors = [...authorCount].map(([id, k]) => ({ id, commits: k })).sort((a, b) => b.commits - a.commits || a.id.localeCompare(b.id));
   const authorIds = new Set([pr.user.login, ...authorCount.keys()].map((s) => s.toLowerCase()));
@@ -152,7 +158,9 @@ function scorePr(R, n, { withSelfcheck }) {
     base: base.slice(0, 8),
     merge: merge.slice(0, 8),
     authors,
+    people: authors.map((a) => a.id),
     reviews: approvers.size,
+    reviewers: [...approvers].sort(),
     ci,
     evidenceBlock: evidence,
     files: files.length,
@@ -209,6 +217,20 @@ function writeRecord(rec) {
 
 function main() {
   const write = flag('--write');
+  if (flag('--mau-bang-chung')) {
+    const short = (r) => { try { return git('rev-parse', '--short=8', r).trim(); } catch { return '<chưa có>'; } }; // nuot-loi: chưa fetch origin/main thì để trống cho người điền
+    console.log(evidenceTemplate({ head: short('HEAD'), main: short('origin/main') }));
+    return;
+  }
+  if (flag('--nguoi')) {
+    // Q040-5: điểm theo người chỉ ở máy — .local/ bị .gitignore bỏ qua
+    mkdirSync(LOCAL_DIR, { recursive: true });
+    const f = path.join(LOCAL_DIR, 'DIEM-THEO-NGUOI.md');
+    const rows = personScores(readRecords());
+    writeFileSync(f, renderPeople(rows));
+    console.log(`đã ghi ${path.relative(ROOT, f)} (${rows.length} người) — không commit`);
+    return;
+  }
   if (flag('--board')) {
     writeFileSync(BOARD, renderBoard(readRecords()));
     console.log(`đã sinh ${path.relative(ROOT, BOARD)} từ ${readRecords().length} PR`);

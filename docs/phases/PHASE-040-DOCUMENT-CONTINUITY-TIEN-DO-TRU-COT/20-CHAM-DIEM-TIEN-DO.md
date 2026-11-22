@@ -138,7 +138,7 @@ Cuối bảng: đường tiến độ theo tuần của ba mặt và từng tr�
 
 - Chỉ từ PR đã merge có `VERIFIED`; cần **≥ 3 PR hoặc ≥ 4 tuần**; chưa đủ → `chưa đủ mẫu`.
 - 70 % trung bình điểm PR (trọng số độ khó do người duyệt ghi, không theo dòng mã) · 15 % lỗi lọt đã xác minh thuộc việc của người đó, theo mức · 10 % đóng đúng việc khắc phục · 5 % review / hỗ trợ người khác.
-- Danh tính: `.mailmap` gộp nhiều tên commit của một người (đo được: `kiennt` / `TrongKien125`, `Võ Hoàng` / `Võ Việt Hoàng` (`H-Joyy`), `Nguyễn Văn Thủy` (`Thuy2k`)). Trình tự động (`claude` trong tác giả commit) không phải người đóng góp; credit thuộc người chỉ đạo phiên (R-SIG).
+- Danh tính <!-- [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3: danh-tinh.json thay .mailmap -->: `docs/reviews/tien-do/danh-tinh.json` (tên commit → tài khoản GitHub, **không ghi email** vì repo công khai — thay `.mailmap`) gộp nhiều tên commit của một người (đo được: `kiennt` / `TrongKien125`, `Võ Hoàng` / `Võ Việt Hoàng` (`H-Joyy`), `Nguyễn Văn Thủy` (`Thuy2k`)). Trình tự động (`claude` trong tác giả commit) không phải người đóng góp; credit thuộc người chỉ đạo phiên (R-SIG).
 - Lỗi lọt: tìm PR gây ra bằng `git blame` + ca tái hiện; người bị gắn có quyền phản biện; không tự suy tội.
 - Không chấm số commit, dòng mã, giờ online; không bảng xếp hạng công khai (Q040-5); không dùng làm đánh giá nhân sự duy nhất.
 

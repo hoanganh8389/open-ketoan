@@ -9,7 +9,8 @@
  *   … --khong-fetch                         # không git fetch (máy không mạng)
  *   … --nhanh <tên>                         # kiểm nhánh khác (mặc định: nhánh hiện tại)
  *
- * Thoát 1 khi có ✘ (R-FLOW-1/2/3/5); ▲ (R-FLOW-4, dòng bỏ quên) chỉ cảnh báo. Bảng được kiểm tĩnh ở SC-FLOW-1 (selfcheck);
+ * Thoát 1 khi có ✘ (R-FLOW-1/2/3/5); ▲ (R-FLOW-4, dòng bỏ quên) chỉ cảnh báo.
+ * ▲ D040-8: PR của nhánh thiếu khối "Bằng chứng chạy máy" (đọc bằng gh; không có gh thì bỏ qua). Bảng được kiểm tĩnh ở SC-FLOW-1 (selfcheck);
  * phần cần git nằm ở đây — check của bộ kiểm chuẩn chỉ được đọc qua ctx, như so-tiep-theo.mjs với số migration.
  * Ngoại lệ không cần giữ chỗ (R-FLOW): chỉ tài liệu; một tệp không đụng thứ dùng chung.
  */
@@ -17,6 +18,8 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ALWAYS_OK, CLAIMS_FILE, inScope, isDocsOnly, parseClaims, sharedTouched } from '../tests/conformance/checks/flow/flow.lib.mjs';
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3 (S040-8): kiem nhắc (▲) khi PR của nhánh thiếu khối "Bằng chứng chạy máy" (D040-8); không đổi kiểm R-FLOW
+import { parseEvidence } from './cham-pr.lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -127,6 +130,23 @@ function kiem() {
     const files = String(e.stdout ?? '').split('\n').slice(1).map((l) => l.trim());
     const conflicted = files.slice(0, Math.max(0, files.indexOf(''))).filter(Boolean);
     add('fail', 'R-FLOW-5', `gộp thử với origin/main xung đột${conflicted.length ? `: ${conflicted.slice(0, 8).join(', ')}` : ''}`);
+  }
+
+  // D040-8 — khối bằng chứng chạy máy trong mô tả PR (CI chưa chạy được thì đây là bằng chứng duy nhất). Chỉ nhắc, không chặn.
+  if (!isDocsOnly(changed)) {
+    let prs = null;
+    try {
+      prs = JSON.parse(execFileSync('gh', ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number,body'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+    } catch { prs = null; } // nuot-loi: không có gh / chưa đăng nhập / không mạng → bỏ qua phần nhắc này, kiểm R-FLOW vẫn chạy
+    const how = 'in khối điền sẵn SHA: node scripts/cham-pr.mjs --mau-bang-chung';
+    if (prs == null) add('ok', 'D040-8', `không đọc được PR (gh) — nhớ dán khối "Bằng chứng chạy máy" vào mô tả PR (${how})`);
+    else if (!prs.length) add('ok', 'D040-8', `chưa có PR — khi mở PR, dán khối "Bằng chứng chạy máy" (${how})`);
+    else {
+      const ev = parseEvidence(prs[0].body);
+      if (!ev.present) add('warn', 'D040-8', `PR #${prs[0].number} chưa có khối "Bằng chứng chạy máy" — bộ chấm sẽ ghi UNVERIFIED (${how})`);
+      else if (!ev.wellFormed) add('warn', 'D040-8', `PR #${prs[0].number}: khối bằng chứng thiếu dòng kiem-chuan / selfcheck đã điền, hoặc còn chỗ trống của mẫu`);
+      else add('ok', 'D040-8', `PR #${prs[0].number} có khối bằng chứng: kiem-chuan ${ev.kiemChuan}, selfcheck ${ev.selfcheck}`);
+    }
   }
 
   const mark = { ok: '✔', fail: '✘', warn: '▲' };

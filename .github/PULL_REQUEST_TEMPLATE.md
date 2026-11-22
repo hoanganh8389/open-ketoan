@@ -34,16 +34,21 @@
 - [ ] **R-REL** — Đã thêm dòng vào `CHANGELOG.md` mục `[Chưa phát hành]` (đổi định khoản K2+ ghi ở mục riêng).
 - [ ] **Bộ kiểm** — `node tests/conformance/selfcheck.mjs` ĐẠT; không thêm nợ vào `baseline.json` (trừ khi nhóm Lõi duyệt, có `ref`).
 
-## Bằng chứng (bắt buộc với T0 — xem docs/ops/DIAGNOSTICS.md §4)
+## Bằng chứng chạy máy
+<!-- [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3 (S040-8): khối bằng chứng mọi PR, cùng khuôn scripts/cham-pr.mjs đọc (PHASE-040 · 20 §4, D040-8) -->
+
+<!-- Bắt buộc với mọi PR có mã khi CI chưa chạy được; với T0 thêm dòng diagnostics (docs/ops/DIAGNOSTICS.md §4).
+     In khối điền sẵn SHA: node scripts/cham-pr.mjs --mau-bang-chung
+     Thiếu khối hoặc thiếu dòng kiem-chuan / selfcheck → bộ chấm ghi PR là UNVERIFIED; khối dán khác kết quả chạy lại → ghi phát hiện. -->
 
 ```text
 == BẰNG CHỨNG ==
-commit:
-lệnh:        node tests/conformance/selfcheck.mjs && bash scripts/kiem-chuan.sh && npm run typecheck && npm test
-selfcheck:   <dán tests/conformance/output/latest/evidence.txt>
-kiem-chuan:
-typecheck:
-vitest:
-diagnostics:
+head: <sha>   gộp main: <sha origin/main lúc chạy>
+bash scripts/kiem-chuan.sh                       → ĐẠT | KHÔNG ĐẠT (<số phát hiện mới>)
+node tests/conformance/selfcheck.mjs --strict    → ĐẠT | KHÔNG ĐẠT; tuân chuẩn <x>; C <y>%
+(cd apps/api && npx vitest run <tệp>)            → <qua>/<tổng> qua   CSDL: <tên CSDL test>
+npm run typecheck                                → <số> lỗi
+diagnostics (T0)                                 → <DG-* đạt / không đạt>
+migration (nếu có): bảng trước <n> → sau <m> (sạch + nâng cấp)
 ghi chú:
 ```
