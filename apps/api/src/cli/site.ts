@@ -18,6 +18,9 @@
  *   bizcity site backups [--slug a] [--json]        các bản sao lưu đã ghi
  *   bizcity site backup-import --slug a --file x.dump [--json]   ghi tệp làm ngoài lệnh (vd từ PITR) làm bản sao lưu của site
  *   bizcity site restore --slug a --backup <mã> --yes [--drain-seconds 35] [--json]
+ *   bizcity site suspend --slug a [--reason "…"] · site resume --slug a        khoá chỉ đọc / mở lại (B6b, Q039-1)
+ *   bizcity site delete --slug a --yes · site undelete --slug a               xoá mềm (cần khoá + sao lưu ≤ 24 giờ) / lấy lại trong 30 ngày
+ *   bizcity site sweep [--dry-run] [--json]                                    dọn database _cu_ > 7 ngày, _kp_ > 1 ngày, xoá mềm > 30 ngày
  *       khôi phục site từ bản sao lưu của chính nó (database tạm → kiểm → đổi tên; database cũ giữ lại) — NHIEU-SITE.md §8
  *
  * Chạy trực tiếp: npx tsx --conditions=development apps/api/src/cli/site.ts <lệnh> …
@@ -38,6 +41,8 @@ import { discoverSdkModules } from '../core/sdk-modules.js';
 // [2026-11-22 12:06 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a (D039-13): lệnh site backup / backups / restore
 import { backupSite, importBackup, listBackups, restoreSite, SiteBackupError } from '@bizcity/platform/db/site-backup';
 import { listSites as listAllSites } from '../db/site-create.js';
+// [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b: khoá / mở / xoá mềm / lấy lại / dọn
+import { deleteSite, resumeSite, SiteLifecycleError, suspendSite, sweepSites, undeleteSite } from '@bizcity/platform/db/site-lifecycle';
 import { syncBundled } from '../core/module-lifecycle.js';
 
 type Args = { _: string[]; [flag: string]: string | boolean | string[] };
@@ -159,6 +164,35 @@ async function main(argv: string[]): Promise<number> {
       if (err instanceof SiteBackupError) { console.error(`✗ ${err.code}: ${err.message}`); return 1; }
       throw err;
     }
+  }
+  if (cmd === 'suspend' || cmd === 'resume' || cmd === 'delete' || cmd === 'undelete') {
+    const slug = typeof args.slug === 'string' ? args.slug : '';
+    if (!slug) { console.error(`Thiếu --slug: bizcity site ${cmd} --slug <ten>`); return 2; }
+    if (cmd === 'delete' && args.yes !== true) { console.error('Xoá mềm: site tắt hẳn, database đổi tên và giữ 30 ngày (lấy lại bằng site undelete). Chạy lại với --yes để xác nhận.'); return 2; }
+    try {
+      if (cmd === 'delete') {
+        const d = await deleteSite(slug);
+        if (json) console.log(JSON.stringify(d));
+        else console.log(`✓ Đã xoá mềm ${d.slug}: database giữ ở ${d.deletedDb} tới ${d.purgeAfter.slice(0, 10)} (lấy lại: bizcity site undelete --slug ${d.slug})`);
+        return 0;
+      }
+      const r = cmd === 'suspend' ? await suspendSite(slug, typeof args.reason === 'string' ? args.reason : '')
+        : cmd === 'resume' ? await resumeSite(slug)
+        : await undeleteSite(slug);
+      if (json) console.log(JSON.stringify(r));
+      else console.log(`✓ ${r.slug}: ${r.status}${cmd === 'suspend' ? ' (chỉ đọc; mọi tiến trình áp dụng trong ≤ 30 giây)' : ''}`);
+      return 0;
+    } catch (err) {
+      if (err instanceof SiteLifecycleError) { console.error(`✗ ${err.code}: ${err.message}`); return 1; }
+      throw err;
+    }
+  }
+  if (cmd === 'sweep') {
+    const actions = await sweepSites({ dryRun: args['dry-run'] === true });
+    if (json) console.log(JSON.stringify(actions));
+    else if (!actions.length) console.log('Không có gì để dọn.');
+    else for (const a of actions) console.log(`${args['dry-run'] === true ? '· sẽ' : '✓'} ${a.kind.padEnd(17)} ${a.slug.padEnd(30)} ${a.database}`);
+    return 0;
   }
   if (cmd === 'restore') {
     const slug = typeof args.slug === 'string' ? args.slug : '';

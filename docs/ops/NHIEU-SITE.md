@@ -5,7 +5,7 @@
 <!-- [2026-11-22 10:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a: Site Provisioner, biến SITE_TEMPLATE_DB, SITE_SECRET_KEY, PROVISION_DATABASE_URL, SITE_APP_PARENT_ROLE -->
 > **Trạng thái (2026-11-22):** có mã tới B4a (Site Provisioner). <!-- [2026-11-22 11:11 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c: việc nền theo site; còn thiếu B3 -->
 <!-- [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: nâng cấp theo site; còn thiếu sao lưu theo lịch / khôi phục (B6), cap-nhat.sh nhiều site (B7) -->
-**Chạy được, nâng cấp bằng lệnh:** `bizcity site migrate` nâng database mẫu rồi từng site, có cổng lược đồ (B3, §6). Chưa có: khoá site chỉ đọc và xoá mềm (B6b), <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: có sao lưu / khôi phục theo site (§8) --> `cap-nhat.sh` chế độ nhiều site (B7) — trước B7, nâng cấp làm tay theo §6. Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), việc nền theo site (B2c), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
+**Chạy được, nâng cấp bằng lệnh:** `bizcity site migrate` nâng database mẫu rồi từng site, có cổng lược đồ (B3, §6). Đủ lệnh vòng đời qua Provisioning API (B5b, hợp đồng PHASE-039 §30). Chưa có: khoá bản quyền `biz-…` (S039-14) <!-- [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b: khoá / xoá mềm có ở CLI (§9) -->, <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: có sao lưu / khôi phục theo site (§8) --> `cap-nhat.sh` chế độ nhiều site (B7) — trước B7, nâng cấp làm tay theo §6. Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), việc nền theo site (B2c), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
 
 ## 1. Biến môi trường
 
@@ -18,6 +18,7 @@
 | `PROVISION_DATABASE_URL` | `DATABASE_URL` | Kết nối có quyền `CREATEDB` + `CREATEROLE` để tạo database và vai trò của site |
 | `SITE_APP_PARENT_ROLE` | `ketoan_app` | Vai trò cha: vai trò ứng dụng của mỗi site là thành viên của nó, nên thừa hưởng quyền trên bảng mà migration cấp |
 | `SITE_ADMIN_HOST` | — | Tên miền điều hành: Provisioning API `/_sites/v1` chỉ trả lời trên tên miền này (chế độ `multi`). Trống = tắt Provisioning API |
+| `SITE_BACKUP_DIR` <!-- [2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b --> | `backups/sites` | Thư mục gốc chứa bản sao lưu khi sao lưu qua Provisioning API (`POST /sites/{id}/backups`, tiến trình API). **Phải gắn ra ngoài container** (vd `-v /opt/ketoan/backups:/app/backups`, `SITE_BACKUP_DIR=/app/backups/sites`) — không thì bản sao lưu mất khi dựng lại container |
 
 `DATABASE_URL` vẫn cần ở chế độ `multi`: đó là site ngầm định, dùng cho kiểm sống / sẵn sàng / số đo và lúc khởi động. **Không được trỏ vào `SITE_TEMPLATE_DB`** (API từ chối khởi động): kết nối giữ ở database mẫu làm `CREATE DATABASE … TEMPLATE` hỏng. Dùng một database nhỏ riêng. Việc nền không chạy trên site ngầm định ở chế độ `multi`. Site tạo bằng Site Provisioner kết nối bằng vai trò riêng; site ghi tay (§3b) chưa có vai trò riêng thì dùng tên đăng nhập + mật khẩu của `DATABASE_URL`.
 
@@ -145,7 +146,7 @@ Thư mục sao lưu phải nằm ngoài ổ của database và được chép ra
 3. ngắt kết nối tới database của site, đổi tên: database đang chạy → `kt_<slug>_cu_<giờ>` (**giữ lại để lùi**), database tạm → `kt_<slug>`; vai trò ứng dụng của site chỉ `CONNECT` được database mới;
 4. trả trạng thái cũ; registry ghi `restored_at`, `restored_from`, `previous_db`.
 
-Bản sao lưu có lược đồ cũ hơn ứng dụng → site báo 503 `SITE_UPGRADING` tới khi chạy `bizcity site migrate --slug <slug>` (lệnh khôi phục nhắc). Lùi lần khôi phục: đổi tên ngược bằng tay (`ALTER DATABASE … RENAME`, site đang chặn). Database `_cu_` xoá tay sau 7 ngày (`DROP DATABASE`), dọn tự động làm cùng xoá mềm (B6b).
+Bản sao lưu có lược đồ cũ hơn ứng dụng → site báo 503 `SITE_UPGRADING` tới khi chạy `bizcity site migrate --slug <slug>` (lệnh khôi phục nhắc). Lùi lần khôi phục: đổi tên ngược bằng tay (`ALTER DATABASE … RENAME`, site đang chặn). Database `_cu_` được `bizcity site sweep` xoá sau 7 ngày (§9).
 
 **Lấy một site ở một thời điểm (PITR, PHASE-008).** PITR là mức cả cụm: không khôi phục thẳng một site được.
 
@@ -153,3 +154,32 @@ Bản sao lưu có lược đồ cũ hơn ứng dụng → site báo 503 `SITE_U
 2. `pg_dump -Fc` riêng database `kt_<slug>` từ cụm tạm ra tệp `.dump`; tắt cụm tạm.
 3. `bizcity site backup-import --slug <slug> --file <tệp>` (tự kiểm, ghi `site_backups` lý do `import`).
 4. `bizcity site restore --slug <slug> --backup <mã vừa in> --yes`.
+
+## 9. Khoá, mở lại, xoá mềm, dọn
+<!-- [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b (D039-15, Q039-1, R-SITE-12) -->
+
+```bash
+bizcity site suspend --slug a [--reason "quá hạn thanh toán"]   # khoá: chỉ đọc
+bizcity site resume  --slug a                                    # mở lại
+bizcity site delete  --slug a --yes                              # xoá mềm (cần đang khoá + sao lưu ≤ 24 giờ)
+bizcity site undelete --slug a                                   # lấy lại trong 30 ngày (về trạng thái khoá)
+bizcity site sweep [--dry-run]                                   # dọn database cũ
+```
+
+**Khoá = chỉ đọc (Q039-1).** Người dùng vẫn đăng nhập, xem, in, xuất sổ; mọi yêu cầu ghi khác trả **423 `SITE_SUSPENDED`** (route không chạy). Được ghi khi khoá: `GET` / `HEAD` / `OPTIONS`, `/api/v1/auth/login`, `/auth/wp-sso`, `/auth/logout-others`, `/auth/change-password`, đường kết thúc bằng `/preview`. Database vẫn ghi được (phiên đăng nhập, việc nền). Mọi tiến trình áp dụng trong ≤ 30 giây (bộ đệm tên miền). Hết hạn bản quyền **không** khoá (D039-17, R-SITE-13).
+
+**Xoá mềm (D039-15, R-SITE-12).** Cần site đang khoá và có bản sao lưu **đã kiểm** trong 24 giờ (`bizcity site backup --slug a` ngay trước). Lệnh ngắt kết nối, thu `CONNECT` của vai trò ứng dụng, đổi tên database thành `kt_<slug>_xoa_<giờ UTC>`; site `deleted`, tên miền trả 404. Trong 30 ngày `site undelete` đổi tên lại (site về `suspended`, kiểm rồi `resume`). Slug và tên miền giữ cho site đó tới khi dọn.
+
+**Dọn (`site sweep`)** — chỉ chạm database có tên dựng từ site trong registry:
+
+| Database | Xoá khi |
+|---|---|
+| `kt_<slug>_cu_<giờ>` (trước lần khôi phục) | quá 7 ngày |
+| `kt_<slug>_kp_<giờ>` (khôi phục dở) | quá 1 ngày |
+| `kt_<slug>_xoa_<giờ>` (xoá mềm) | quá 30 ngày — kèm xoá vai trò ứng dụng, gỡ tên miền, ghi `purged_at`; **không lấy lại được nữa** |
+
+Tệp sao lưu của site đã dọn **không** bị xoá (dữ liệu của khách — người vận hành tự quyết). Chạy dọn sau lịch sao lưu đêm, cùng crontab §8:
+
+```cron
+50 2 * * * cd /opt/ketoan && docker compose run --rm --no-deps --entrypoint node -e CONTROL_DATABASE_URL -e SITE_SECRET_KEY -e SITE_TEMPLATE_DB db-migrate dist/cli/site.js sweep >> /opt/ketoan/logs/sao-luu-site.log 2>&1
+```

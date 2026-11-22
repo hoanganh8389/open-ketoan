@@ -132,6 +132,9 @@ const envSchema = z.object({
   // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): tên miền điều hành của Provisioning API
   /** Tên miền duy nhất Provisioning API /_sites/v1 trả lời (chế độ multi). Trống = tắt Provisioning API. */
   SITE_ADMIN_HOST: z.string().regex(/^[a-z0-9.-]{3,253}$/, 'Tên miền điều hành không hợp lệ').optional(),
+  // [2026-11-22 01:29 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: thư mục sao lưu của lệnh sao lưu gọi qua Provisioning API (tiến trình API)
+  /** Thư mục gốc chứa bản sao lưu từng site (`<thư mục>/<slug>/…dump`) khi sao lưu qua Provisioning API. Trống = backups/sites. Phải gắn ra ngoài container. */
+  SITE_BACKUP_DIR: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
