@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 209
+      "count": 208
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 74
+      "count": 75
     },
     {
       "key": "paused",
@@ -10070,8 +10070,8 @@
       "phase": "PHASE-039",
       "title": "B4 — CLI bizcity site create / list / suspend / resume / drop / adopt (adopt: đưa bản cài một công ty vào cụm, Q039-4)",
       "priority": "P1",
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [
         "he-thong"

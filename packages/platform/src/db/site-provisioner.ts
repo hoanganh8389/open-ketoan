@@ -1,5 +1,6 @@
 // @bizcity-layer P data
 // [2026-11-22 10:26 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a (ADR-0036, D039-9, D039-10, D039-19, R-SITE-2): Site Provisioner — database site từ database mẫu, vai trò ứng dụng riêng từng site, dọn khi hỏng
+// [2026-11-22 10:36 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4b: bước khởi tạo do lớp gọi truyền vào (đơn vị đầu + chủ site), chạy bằng kết nối quản trị tới database site mới; hỏng thì dọn như bước khác
 /**
  * SITE PROVISIONER (ADR-0036; PHASE-039 B4a). Tạo một site:
  *
@@ -14,13 +15,17 @@
  * Hỏng ở bước nào: dọn ngược — xoá database, vai trò, dòng registry đã tạo (R-JOB-1 phía Open Kế Toán). Tên database / vai trò
  * dựng từ slug đã kiểm; câu DDL do PostgreSQL tự trích dẫn bằng format(%I, %L) (hàm `ddl`) — không ghép chuỗi ở ứng dụng (R-SEC).
  *
- * CHƯA làm ở B4a: tạo đơn vị đầu + tài khoản chủ site (B4b), lệnh CLI `bizcity site` (B4b), vai trò sở hữu riêng `kt_<slug>_owner`
+ * 4b. (B4b) `initialize`: hàm của lớp gọi (vd `seed()` của Kernel qua lệnh `bizcity site create`) chạy trong ngữ cảnh một site tạm trỏ
+ *     tới database mới bằng kết nối QUẢN TRỊ (vai trò ứng dụng chịu RLS, không ghi được dữ liệu gốc). Platform không gọi Kernel.
+ *
+ * CHƯA làm: vai trò sở hữu riêng `kt_<slug>_owner`
  * (cần chạy migration theo site — B3), việc có trạng thái `site_jobs` + Idempotency-Key (B5). Database mẫu do người vận hành
  * chuẩn bị: tạo database `SITE_TEMPLATE_DB`, chạy `npm run db:migrate` với DATABASE_URL trỏ tới nó.
  */
 import { randomBytes } from 'node:crypto';
 import pg from 'pg';
 import { env } from '../config/env.js';
+import { registerSitePool, unregisterSitePool, withSite } from './site.js';
 import { controlPool, encryptSiteSecret, ensureControlSchema, invalidateSiteCache } from './site-registry.js';
 
 export type SiteProvisionCode = 'SITE_SLUG_INVALID' | 'SITE_DOMAIN_INVALID' | 'SITE_SLUG_TAKEN' | 'SITE_DOMAIN_TAKEN' | 'SITE_TEMPLATE_MISSING' | 'SITE_PROVISION_FAILED';
@@ -41,6 +46,9 @@ export interface CreateSiteInput {
   ownerEmail?: string;
   externalRef?: string;
 }
+
+/** Bước khởi tạo dữ liệu của site mới: chạy trong ngữ cảnh site tạm (`db` trỏ tới database mới, vai trò quản trị). */
+export type SiteInitializer<T> = (site: { siteId: string; slug: string; dbName: string }) => Promise<T>;
 
 export interface CreatedSite {
   siteId: string;
@@ -95,7 +103,7 @@ function adminClient(): pg.Client {
 }
 
 /** Tạo một site. Thành công: site `active`, nhận yêu cầu theo tên miền sau khi bộ đệm tên miền hết hạn (đã xoá bộ đệm ở tiến trình này). */
-export async function createSite(input: CreateSiteInput): Promise<CreatedSite> {
+export async function createSite<T = undefined>(input: CreateSiteInput, initialize?: SiteInitializer<T>): Promise<CreatedSite & { initialized?: T }> {
   const slug = String(input.slug ?? '').trim().toLowerCase();
   const domain = String(input.domain ?? '').trim().toLowerCase();
   if (!SLUG_RE.test(slug) || slug.endsWith('-') || slug.includes('--')) {
@@ -147,13 +155,27 @@ export async function createSite(input: CreateSiteInput): Promise<CreatedSite> {
     await ddl(admin, 'REVOKE CONNECT, TEMPORARY ON DATABASE %I FROM %I', dbName, cfg.parentRole);
     await ddl(admin, 'GRANT CONNECT ON DATABASE %I TO %I', dbName, appRole);
 
+    // 4b. khởi tạo dữ liệu (lớp gọi truyền vào): pool tạm bằng kết nối quản trị tới database mới
+    let initialized: T | undefined;
+    if (initialize) {
+      const tempId = `prov:${siteId}`;
+      const u = new URL(cfg.adminUrl);
+      u.pathname = `/${dbName}`;
+      registerSitePool(tempId, new pg.Pool({ connectionString: u.toString(), max: 2 }));
+      try {
+        initialized = await withSite(tempId, () => initialize({ siteId, slug, dbName }));
+      } finally {
+        await unregisterSitePool(tempId);
+      }
+    }
+
     // 5. registry: vai trò + mật khẩu mã hoá, site chạy
     await ctl.query(
       `UPDATE sites SET db_app_role = $2, db_secrets_enc = $3, status = 'active', updated_at = now() WHERE id = $1`,
       [siteId, appRole, encryptSiteSecret(password)],
     );
     invalidateSiteCache();
-    return { siteId, slug, dbName, appRole, domain };
+    return { siteId, slug, dbName, appRole, domain, ...(initialize ? { initialized } : {}) };
   } catch (err) {
     // dọn ngược; lỗi khi dọn không che lỗi gốc
     if (dbCreated) await ddl(admin, 'DROP DATABASE IF EXISTS %I WITH (FORCE)', dbName).catch(() => undefined);

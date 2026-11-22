@@ -11,6 +11,9 @@
  *                         kiểm kế toán của module: không đụng bảng sổ, không viết số tài khoản, docType / docKey đúng hợp đồng, chứng từ mẫu examples/*.json qua event check
  *   module list           module SDK trong modules/
  *   migrate               migration Core rồi migration từng module SDK (CSDL theo DATABASE_URL)
+ *   site create --slug <ten> --domain <ten.mien> [--name "Công ty A"] [--email chu@…] [--json]
+ *                         tạo site kế toán (PHASE-039): database từ mẫu, vai trò riêng, đơn vị đầu + chủ site; in mật khẩu chủ site một lần
+ *   site list [--json]    các site trong Site Registry (docs/ops/NHIEU-SITE.md)
  *   ledger verify         lane diagnostics (SQL đọc sổ) ở mức strict — sổ có toàn vẹn không
  *   evidence verify --dir <DATA_DIR/bang-chung/<đơn vị>> [--json]
  *                         kiểm bản niêm phong bằng chứng không cần CSDL: băm tệp, băm từng dòng, manifest nối ngày (ADR-0030)
@@ -136,6 +139,12 @@ function migrate() {
   if (!run('Migration Core', 'npm', ['run', 'db:migrate'])) process.exit(1);
   for (const key of sdkModules()) if (!run(`Migration module ${key}`, 'npm', ['run', 'module:dev', '-w', '@ketoan/api', '--', 'migrate', key])) process.exit(1);
   out('\n✔ migrate xong');
+}
+
+// [2026-11-22 10:36 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4b: lệnh site create / list gọi apps/api/src/cli/site.ts
+function siteCmd(sub, args) {
+  const ok = run(`Site ${sub}`, 'npx', ['tsx', '--conditions=development', 'src/cli/site.ts', sub, ...args], { cwd: path.join(ROOT, 'apps', 'api') });
+  process.exit(ok ? 0 : 1);
 }
 
 function ledgerVerify() {
@@ -295,6 +304,7 @@ else if (cmd === 'module' && sub === 'check') moduleCheck(rest);
 else if (cmd === 'module' && sub === 'accounting-check') await moduleAccounting(rest);
 else if (cmd === 'module' && sub === 'list') out(sdkModules().join('\n') || '(chưa có module SDK nào trong modules/)');
 else if (cmd === 'migrate') migrate();
+else if (cmd === 'site' && (sub === 'create' || sub === 'list')) siteCmd(sub, rest);
 else if (cmd === 'ledger' && sub === 'verify') ledgerVerify();
 else if (cmd === 'evidence' && sub === 'verify') await evidenceVerify(rest);
 else if (cmd === 'doctor') await doctor();
