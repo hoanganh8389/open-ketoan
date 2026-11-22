@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 198
+      "count": 199
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 76
+      "count": 75
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 347
+      "count": 348
     }
   ],
   "items": [
@@ -9866,8 +9866,8 @@
       "phase": "PHASE-038",
       "title": "(D038-5 đã duyệt) ErrorBoundary theo màn, window.onerror, unhandledrejection → POST /api/v1/system/client-errors → logs/web-client.log",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9899,6 +9899,19 @@
       "facet": "F6",
       "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
       "line": 29
+    },
+    {
+      "id": "S038-16",
+      "phase": "PHASE-038",
+      "title": "(D038-7) Nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục: logs/{api,db-migrate,web,web-client}/<YYYY-MM-DD>.log; giữ 30 ngày, trần từng thư mục (10 §7.3); …",
+      "priority": null,
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 30
     },
     {
       "id": "S039-1",
