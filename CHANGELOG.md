@@ -12,6 +12,21 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Bộ kiểm chuẩn đọc đúng thư viện mã và bảng giữ chỗ (PHASE-040 B10a) <!-- [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a: mục CHANGELOG (S040-22) -->
+
+- **Sửa:**
+  - SC-FIND-1 báo nhầm 93 mã "thư viện không có". Nguyên nhân: `CATALOG_HINTS` nay là phép gộp các bộ luật nhắc (`BASE_HINTS`, `quy-tac/*.ts`) mà check chỉ đọc phần viết thẳng; thêm nữa, `FINDING_BASIS` ghi nhiều mục trên một dòng mà check chỉ đọc mục đầu. Nay check đọc đủ cả hai. Không có mã nào thật sự thiếu căn cứ.
+  - SC-FLOW-1 và `nhan-viec.mjs` đọc trọn bảng giữ chỗ `CLAIMS.md`. Trước đây, một dòng chú thích nằm giữa bảng làm cả hai dừng đọc, nên các dòng phía sau không được kiểm.
+  - So khớp phạm vi giữ chỗ:
+    - Mẫu tên tệp như `mua-hang-*.test.ts` không còn bị hiểu thành cả thư mục.
+    - Sổ dùng chung (`CHANGELOG.md`, bảng việc, `baseline.json`) ghi ở nhiều dòng không bị tính là chồng.
+  - Đường dẫn, route và màn trong tài liệu được cập nhật theo việc gộp màn *Quy tắc hạch toán* (04980b5e) và bỏ màn MH27 (e40481c1). Phương án khắc phục dẫn tới đúng màn đang có trong menu.
+- **Thêm:** —
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
 ### Provisioning API cho trang dùng thử bizcity-web (PHASE-039 B8) <!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8: mục CHANGELOG (S039-21, S039-22) -->
 
 - **Thêm:**
@@ -1903,7 +1918,7 @@ Theo quy trình mua hàng của kế toán: khai báo → **ký hợp đồng** 
 
 ### Thay đổi định khoản
 <!-- [2026-11-04 02:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-024 — S024-8 (R-ITEM-7), PHASE-026 T026-G2 -->
-- **Định khoản theo phân loại hạch toán CỦA NGÀY chứng từ (mức K3, R-ITEM-7, PHASE-024 S024-8):** nhóm hạch toán và thuế bán ra của mặt hàng nay lấy từ bản phân loại có hiệu lực **tại ngày hạch toán** của chứng từ (qua định danh, nên mã cũ đã đổi vẫn tra ra), không còn lấy giá trị hiện tại ở danh mục. Trước đây đổi nhóm hạch toán của một mặt hàng rồi **định khoản lại** chứng từ cũ thì chứng từ cũ ra theo nhóm MỚI (tài khoản doanh thu, giá vốn đổi theo). Nay: chứng từ trước ngày đổi định khoản — kể cả định khoản lại — theo nhóm cũ, từ ngày đổi theo nhóm mới; sổ đã ghi vẫn không đổi (chỉ thêm). Mặt hàng chưa từng đổi nhóm, mặt hàng nháp và mã chưa có định danh: như cũ. Áp cả ở tính giá vốn (theo ngày cuối tháng). Ca chứng minh T026-G2: [dinh-khoan-phan-loai-theo-ngay.test.ts](apps/api/test/dinh-khoan-phan-loai-theo-ngay.test.ts) (bỏ bản sửa thì ca đỏ: chứng từ cũ ra 51112 thay vì 51111).
+- **Định khoản theo phân loại hạch toán CỦA NGÀY chứng từ (mức K3, R-ITEM-7, PHASE-024 S024-8):** nhóm hạch toán và thuế bán ra của mặt hàng nay lấy từ bản phân loại có hiệu lực **tại ngày hạch toán** của chứng từ (qua định danh, nên mã cũ đã đổi vẫn tra ra), không còn lấy giá trị hiện tại ở danh mục. Trước đây đổi nhóm hạch toán của một mặt hàng rồi **định khoản lại** chứng từ cũ thì chứng từ cũ ra theo nhóm MỚI (tài khoản doanh thu, giá vốn đổi theo). Nay: chứng từ trước ngày đổi định khoản — kể cả định khoản lại — theo nhóm cũ, từ ngày đổi theo nhóm mới; sổ đã ghi vẫn không đổi (chỉ thêm). Mặt hàng chưa từng đổi nhóm, mặt hàng nháp và mã chưa có định danh: như cũ. Áp cả ở tính giá vốn (theo ngày cuối tháng). Ca chứng minh T026-G2: `dinh-khoan-phan-loai-theo-ngay.test.ts` (đã bỏ ở 04980b5e cùng bộ định khoản cũ) (bỏ bản sửa thì ca đỏ: chứng từ cũ ra 51112 thay vì 51111).
 - **Luật định khoản mới `manual_journal` (mức K2, PHASES 3.15; đặc tả [50-DAC-TA-MANUAL-JOURNAL](docs/phases/PHASE-011-MODULE-SDK/50-DAC-TA-MANUAL-JOURNAL.md) phương án A, chủ dự án duyệt K1 / K3 / K4 theo ý kiến kế toán trưởng 02/11/2026):** mỗi dòng Nợ `debit_account` / Có `credit_account` của lý do journal, cả phiếu một bút toán; đối tượng theo dòng hoặc theo phiếu, tài khoản theo dõi đối tượng thiếu đối tượng → chặn; chế độ mặc định **chờ duyệt** ở ACC14. Chỉ áp cho loại chứng từ mới này — sổ và chứng từ đã có không đổi.
 - **Định khoản theo chính sách của ngày hạch toán (mức K3, ADR-0009):** chứng từ (cả khi định khoản lại) dùng phiên bản cấu hình định khoản có hiệu lực ở ngày hạch toán của nó.
   - Sửa cấu hình như trước vẫn có tác dụng ngay (hệ thống tự chụp bản bổ sung của chế độ đang áp).

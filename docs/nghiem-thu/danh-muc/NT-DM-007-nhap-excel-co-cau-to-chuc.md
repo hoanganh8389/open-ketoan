@@ -29,7 +29,7 @@
 | Ghi | Qua API sẵn có như form DM16 (org-units, dimensions/department, branches, warehouses) — không sửa API, không migration, không đụng lõi |
 | Bỏ | Trình nhập riêng 4 sheet (`NhapCoCau`) |
 
-Tệp: `apps/web/src/lib/nhapExcelDanhMuc.ts` (4 loại nhập), `apps/web/src/components/NhapExcelWizard.tsx` (tự chọn sheet theo loại — thêm trường `sheet` cho NhapLoai ở `apps/web/src/lib/nhapExcel.ts`), `apps/web/src/features/catalog/CoCauExcel.tsx` (xuất phòng ban; bỏ NhapCoCau), `apps/web/src/features/catalog/CoCauToChucPage.tsx` (nút), `docs/huong-dan/so-do-to-chuc.md`, `docs/huong-dan/nhap-excel.md`.
+Tệp: `apps/web/src/lib/nhapExcelDanhMuc.ts` (4 loại nhập), `apps/web/src/components/NhapExcelWizard.tsx` (tự chọn sheet theo loại — thêm trường `sheet` cho NhapLoai ở `apps/web/src/lib/nhapExcel.ts`), `apps/web/src/features/catalog/co-cau/CoCauExcel.tsx` (xuất phòng ban; bỏ NhapCoCau), `apps/web/src/features/catalog/co-cau/CoCauToChucPage.tsx` (nút), `docs/huong-dan/so-do-to-chuc.md`, `docs/huong-dan/nhap-excel.md`.
 
 ## 3. Kết quả mong đợi
 | Mục | Mong đợi |

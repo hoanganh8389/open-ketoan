@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 6
+      "count": 4
     },
     {
       "key": "merging",
@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 208
+      "count": 206
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 75
+      "count": 78
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 365
+      "count": 366
     }
   ],
   "items": [
@@ -4703,14 +4703,8 @@
       "title": "SC-ITEM-1..3 + ca tự kiểm fixtures/repo-bad",
       "priority": "P0",
       "status": "partial",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, core-ke-toan)",
-        "branch": "feat/phase-024-s024-16-sc-item",
-        "state": "đang làm",
-        "since": "2026-11-03",
-        "dot": "PHASE-024 · S024-16 — SC-ITEM-1..3 (sổ khoá theo itemid, không theo mã; luật định khoản không đọc s…"
-      },
+      "column": "partial",
+      "claim": null,
       "modules": [
         "danh-muc",
         "kho"
@@ -5906,14 +5900,8 @@
       "title": "W5: đợt 1 — quyền theo chi nhánh ở cửa nạp + luồng mẫu chuyển kho hai chiều (chữ chốt ADR-0027 Phụ lục A, W5 đợt 1); đợt 2 — thư viện phân quyền mẫu TGS (349 m…",
       "priority": "P1",
       "status": "partial",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, PHASE-028 authz)",
-        "branch": "feat/phase-028-w5-thu-vien-tgs",
-        "state": "đang làm",
-        "since": "2026-11-07",
-        "dot": "PHASE-028 · W5 đợt 2 — thư viện phân quyền mẫu từ bảng TGS: docs/standard/phan-quyen/ (349 mã, 28 n…"
-      },
+      "column": "partial",
+      "claim": null,
       "modules": [
         "he-thong"
       ],
@@ -8529,14 +8517,8 @@
       "title": "Bảng điểm tuần: mỗi (tuần, kỳ, phạm vi) một bản chụp chỉ thêm từ diagnosticruns + đối chiếu (chỉ số §9 của 60), sourceDigest; tuần vắt hai tháng tách hai dòng …",
       "priority": "P0",
       "status": "partial",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, PHASE-032)",
-        "branch": "feat/phase-032-b4a-ket-qua-tuan",
-        "state": "đang làm",
-        "since": "2026-11-11",
-        "dot": "PHASE-032 · B4a — thẻ Kết quả từng tuần (Bàn làm việc kế toán): GET /api/v1/system/diagnostics/week…"
-      },
+      "column": "partial",
+      "claim": null,
       "modules": [
         "kho"
       ],
@@ -10571,8 +10553,8 @@
       "phase": "PHASE-040",
       "title": "B10a — SC-FIND-1 đọc quy-tac/.ts; SC-FLOW-1 so khớp mẫu tên tệp; SC-DOC-1, -2, -4, -5; SC-FIX-1 (35)",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -10587,8 +10569,14 @@
       "title": "B10b — tầng 0: SC-SEC-5 + SC-CON-7, SC-API-3, SC-KERNEL-7, SC-SEC-2, SC-AUTH-03",
       "priority": "P0",
       "status": "todo",
-      "column": "todo",
-      "claim": null,
+      "column": "doing",
+      "claim": {
+        "who": "hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột)",
+        "branch": "fix/phase-040-b10b-tang-0",
+        "state": "đang làm",
+        "since": "2026-11-22",
+        "dot": "PHASE-040 · B10b — main sạch selfcheck, đợt rủi ro tầng 0: SC-SEC-5 + SC-CON-7 (mật khẩu tính năng …"
+      },
       "modules": [
         "he-thong"
       ],
@@ -10599,7 +10587,7 @@
     {
       "id": "S040-24",
       "phase": "PHASE-040",
-      "title": "B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2 — @Thuy2k",
+      "title": "B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2, DG-POLICY-1 tự kiểm — @Thuy2k",
       "priority": "P1",
       "status": "todo",
       "column": "todo",

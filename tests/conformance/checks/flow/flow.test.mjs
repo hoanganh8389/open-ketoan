@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkRegistry, findOverlaps, inScope, isDocsOnly, normPath, overlaps, parseClaims, sharedTouched } from './flow.lib.mjs';
+import { checkRegistry, findOverlaps, inScope, isDocsOnly, matchScope, normPath, overlaps, parseClaims, scopesOverlap, sharedTouched } from './flow.lib.mjs';
 import { buildBoard, facetOf, parseAllChecklists, parseChecklist, parsePhaseModules, renderJson, renderMd, splitRowModules, viecProblems } from './board.lib.mjs';
 
 // [2026-11-03 11:52 PM Johnny Chu - Chu Hoàng Anh] FLOW — FLOW-2: khuôn CLAIMS.md có cột Việc (mặc định — trong các ca cũ)
@@ -162,4 +162,31 @@ test('bảng CLAIMS.md thật trong kho đúng khuôn và không chồng', () =>
 
 test('mẫu đúng khuôn đi qua checkRegistry', () => {
   assert.deepEqual(checkRegistry(doc(OK_ROW)).problems, []);
+});
+
+// [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a (S040-22): chú thích giữa bảng, mẫu tên tệp, sổ dùng chung
+test('chú thích giữa bảng không làm bảng dừng: dòng sau chú thích vẫn được đọc', () => {
+  const md = doc(row('A', '`a/**`', 'x', '`b/a`', 'đang làm', '2026-11-03'), '<!-- [2026-11-22] nhả chỗ X -->', row('B', '`c/**`', 'x', '`b/b`', 'đang làm', '2026-11-03'));
+  const { rows, problems } = parseClaims(md);
+  assert.deepEqual(problems, []);
+  assert.deepEqual(rows.map((r) => r.nhanh), ['b/a', 'b/b']);
+});
+
+test('mẫu tên tệp so khớp đúng mẫu, không cắt thành cả thư mục', () => {
+  assert.ok(matchScope('apps/api/test/mua-hang-a.test.ts', 'apps/api/test/mua-hang-*.test.ts'));
+  assert.ok(!matchScope('apps/api/test/hoa-don-xml.test.ts', 'apps/api/test/mua-hang-*.test.ts'));
+  assert.ok(matchScope('a/b/c/d.ts', 'a/b/**'));
+  assert.ok(!scopesOverlap('apps/api/test/mua-hang-*.test.ts', 'apps/api/test/hoa-don-xml.test.ts'));
+  assert.ok(scopesOverlap('apps/api/test/mua-hang-*.test.ts', 'apps/api/test/mua-hang-hop-dong.test.ts'));
+  assert.ok(scopesOverlap('apps/api/test/mua-hang-*.test.ts', 'apps/api/test/**'));
+  assert.ok(scopesOverlap('apps/api/test', 'apps/api/test/mua-hang-*.test.ts'));
+  assert.ok(scopesOverlap('apps/api/test/*.test.ts', 'apps/api/test/mua-hang-*.test.ts'));
+  assert.ok(!scopesOverlap('apps/web/**', 'apps/api/test/mua-hang-*.test.ts'));
+  assert.ok(inScope('apps/api/test/mua-hang-x.test.ts', ['apps/api/test/mua-hang-*.test.ts']));
+  assert.ok(!inScope('apps/api/test/khac.test.ts', ['apps/api/test/mua-hang-*.test.ts']));
+});
+
+test('sổ dùng chung (CHANGELOG, bảng việc, baseline) ở hai dòng không phải chồng phạm vi', () => {
+  const md = doc(row('A', '`CHANGELOG.md`; `a/x.ts`', 'x', '`b/a`', 'đang làm', '2026-11-03'), row('B', '`CHANGELOG.md`; `docs/phases/BANG-VIEC.md`; `c/y.ts`', 'y', '`b/b`', 'đang làm', '2026-11-03'));
+  assert.deepEqual(checkRegistry(md).problems, []);
 });
