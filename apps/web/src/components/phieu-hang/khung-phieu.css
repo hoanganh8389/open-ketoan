@@ -63,3 +63,7 @@
   .kp-sheet .mh-side { border-left: 0; border-top: 1px solid var(--line); }
   .kp-sheet .mh-head { grid-template-columns: 1fr 1fr 1fr; }
 }
+
+/* [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: ô chọn (.picker mặc định inline-block) dãn hết ô như trong hộp thoại cũ (.modal-body .picker) — ô Cửa hàng BH20 hết hẹp (đóng góp) */
+.kp-sheet .picker { display: block; }
+.kp-sheet .picker > .input { width: 100%; }
