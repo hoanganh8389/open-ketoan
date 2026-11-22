@@ -8,10 +8,10 @@
 | Đang làm | 6 |
 | Chờ merge | 0 |
 | Bị chặn | 30 |
-| Chưa ai nhận | 200 |
+| Chưa ai nhận | 198 |
 | Chờ đủ tín hiệu | 76 |
 | Hoãn | 3 |
-| Xong | 345 |
+| Xong | 347 |
 | **Tổng** | **660** |
 
 ## Theo phân hệ (R-FLOW-10)
@@ -25,7 +25,7 @@
 | chung-tu | 67 | 5 | 0 | 26 | 98 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 159 | 27 | 2 | 65 | 253 |
+| he-thong | 161 | 27 | 2 | 63 | 253 |
 | *(chưa gắn phân hệ)* | 10 | 2 | 0 | 3 | 15 |
 
 ## Đang làm (6)
@@ -78,7 +78,7 @@
 | [S037-16](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L25) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân bổ nguồn (receiptorigin hoặc gộp valuationlayersources), thứ tự lấy nguồn khi xuất, ánh xạ dòng nguồn bề… | P0 | — |
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 
-## Chưa ai nhận (200)
+## Chưa ai nhận (198)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -276,8 +276,6 @@
 | [S038-14](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L28) | PHASE-038 | — | Luật R-LOG-1..11 + SC-LOG-1..3; rà 16 chỗ nuốt lỗi (ghi warn hoặc chú thích nuot-loi:) | — | — |
 | [S038-15](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L29) | PHASE-038 | — | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | — | — |
 | [S039-14](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L23) | PHASE-039 | he-thong | B5 — khoá bản quyền biz-… (D039-17): gắn khoá cho site, hỏi trạng thái ở bizcity-llm-router (bộ đệm 1 giờ), d… | P1 | — |
-| [S039-15](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L24) | PHASE-039 | he-thong | B6 — Backup Manager: site backup, tự kiểm, sitebackups, lịch đêm, chính sách giữ | P0 | — |
-| [S039-16](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L25) | PHASE-039 | he-thong | B6 — site restore vào database tạm → kiểm → đổi tên; sổ tay docs/ops/ (kể cả lấy một site từ PITR) | P0 | — |
 | [S039-17](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L26) | PHASE-039 | he-thong | B6 — khoá site (chỉ đọc, Q039-1) và xoá mềm (D039-15) | P1 | — |
 | [S039-18](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L27) | PHASE-039 | he-thong | B7 — cap-nhat.sh nhiều site theo 00 §6; docker-compose.yml không ghi cứng tên database ở chế độ multi | P0 | — |
 | [S039-19](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L28) | PHASE-039 | he-thong | B7 — nhật ký và số đo có site (trần số nhãn); màn chẩn đoán báo site đang phục vụ | P1 | — |
@@ -372,6 +370,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (345)
+## Xong (347)
 
 Chỉ đếm; xem từng việc ở checklist của phase.

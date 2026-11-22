@@ -10,7 +10,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { execSync } from 'node:child_process';
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,6 +28,8 @@ import {
 } from '@bizcity/platform/db/site-registry';
 import { configureProvisionerForTest, siteDbNames } from '@bizcity/platform/db/site-provisioner';
 import { migrateSites, SiteMigrateError, type SiteBackup } from '@bizcity/platform/db/site-migrate';
+// [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: ca thiếu pg_dump dùng công cụ giả, không đổi process.env.PATH (đổi PATH làm chết worker vitest khi chạy song song trên Windows)
+import { localPgTools, setPgToolsForTest } from '@bizcity/platform/db/site-backup';
 import { createSiteWithOwner } from '../src/db/site-create.js';
 
 const API_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -78,7 +80,8 @@ beforeAll(async () => {
   configureProvisionerForTest({ templateDb: TPL, adminUrl: env.DATABASE_URL, parentRole: 'ketoan_app' });
   for (const [i, slug] of SLUGS.entries()) sites[slug] = await createSiteWithOwner({ slug, domain: `s${i + 1}.migrate.test`, name: slug });
   tmpDir = mkdtempSync(path.join(os.tmpdir(), 'okt-b3-'));
-  cpSync(MIGRATIONS_DIR, tmpDir, { recursive: true });
+  // [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: chép từng tệp, không fs.cpSync({ recursive }) — nghi làm chết worker vitest (thoát không báo lỗi) khi chạy song song trên Windows
+  for (const f of readdirSync(MIGRATIONS_DIR)) copyFileSync(path.join(MIGRATIONS_DIR, f), path.join(tmpDir, f));
   writeNext(true);
   OLD = requiredSchemaVersion();
 }, 240_000);
@@ -100,12 +103,11 @@ describe('PHASE-039 B3 — migration theo site, cổng lược đồ', () => {
   });
 
   it('thiếu pg_dump (không --skip-backup): dừng trước khi chạm registry', async () => {
-    const path0 = process.env.PATH;
-    process.env.PATH = '';
+    setPgToolsForTest({ ...localPgTools, available: async () => false });
     try {
       await expect(migrateSites({ dir: tmpDir, drainMs: 0 })).rejects.toMatchObject({ code: 'SITE_BACKUP_UNAVAILABLE' });
     } finally {
-      process.env.PATH = path0;
+      setPgToolsForTest(undefined);
     }
     expect(await hasProbe(TPL)).toBe(false);
     for (const r of Object.values(await status())) expect(r.status).toBe('active');

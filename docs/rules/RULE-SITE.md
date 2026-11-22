@@ -12,14 +12,14 @@
 |---|---|
 | **Frappe — Site Manager** (repo `bizcity-open-setup`) | Giao diện điều hành và quản lý site. Một Frappe site quản trị. Không giữ dữ liệu kế toán, không chạm PostgreSQL |
 | **Open Kế Toán — ứng dụng dùng chung** (repo này) | Một bản mã. Site Registry + Database Router. Chạy được khi Frappe tắt |
-| **PostgreSQL** | Mỗi site một database `kt_<slug>` + một cặp vai trò `kt_<slug>_owner` / `kt_<slug>_app` |
+| **PostgreSQL** | Mỗi site một database `kt_<slug>` + một vai trò ứng dụng `kt_<slug>_app` (vai trò sở hữu `kt_<slug>_owner` hoãn, D039-20) <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: theo D039-20 --> |
 
 ## 2. Luật
 
 | Mã | Luật | Kiểm bằng |
 |---|---|---|
 | **R-SITE-1** *(T0)* | **Site = database.** Mỗi site một database riêng. Đơn vị (`tenant_id`), chi nhánh, RLS giữ nguyên **bên trong** site; không thay RLS bằng database, không thay database bằng RLS | T039-2 |
-| **R-SITE-2** *(T0)* | **Mỗi site một vai trò PostgreSQL riêng.** API của site chạy bằng `kt_<slug>_app` (không superuser, R-SEC-6); migration bằng `kt_<slug>_owner`. Vai trò của site này không có `CONNECT` vào database site khác. Mật khẩu vai trò sinh ngẫu nhiên, lưu mã hoá trong database điều khiển bằng khoá ở biến môi trường, không ghi vào nhật ký | test: vai trò site A `CONNECT` vào DB site B bị từ chối |
+| **R-SITE-2** *(T0)* | **Mỗi site một vai trò PostgreSQL riêng.** API của site chạy bằng `kt_<slug>_app` (không superuser, R-SEC-6); migration chạy bằng vai trò quản trị của cụm — vai trò sở hữu riêng `kt_<slug>_owner` hoãn (D039-20, PHASE-039) <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: R-SITE-2 theo D039-20 -->. Vai trò của site này không có `CONNECT` vào database site khác. Mật khẩu vai trò sinh ngẫu nhiên, lưu mã hoá trong database điều khiển bằng khoá ở biến môi trường, không ghi vào nhật ký | test: vai trò site A `CONNECT` vào DB site B bị từ chối |
 | **R-SITE-3** *(T0)* | **Đóng khi thiếu.** Ở `SITE_MODE=multi`, không có site trong ngữ cảnh yêu cầu thì không truy vấn nào chạy (`SITE_CONTEXT_MISSING`); tên miền lạ → 404 `SITE_NOT_FOUND`. Không bao giờ rơi về database mặc định | T039-4 |
 | **R-SITE-4** *(T0)* | **Vé gắn site.** Vé đăng nhập và vé ứng dụng mang claim `sid`; `sid` khác site của tên miền → 401 | T039-3 |
 | **R-SITE-5** | **Một bản mã.** Kernel, module, Rulepack không đọc mã site, không chọn database. Chỉ Database Router (`packages/platform/src/db/`) và tiến trình nền (`forEachSite`) biết có nhiều site | review; phép kiểm tĩnh (PHASE-039 B2) |

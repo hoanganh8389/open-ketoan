@@ -18,6 +18,9 @@
  *                         khoá prov_… gọi Provisioning API /_sites/v1 (in một lần)
  *   site migrate (--all | --slug a,b) [--skip-backup] [--backup-dir …] [--json]
  *                         nâng lược đồ database mẫu rồi từng site; site lỗi bị chặn riêng (PHASE-039 B3)
+ *   site backup (--all | --slug a,b) [--keep 14] [--json] · site backups [--slug a]
+ *   site restore --slug a --backup <mã> --yes · site backup-import --slug a --file x.dump
+ *                         sao lưu / khôi phục từng site (PHASE-039 B6a, docs/ops/NHIEU-SITE.md §8)
  *   ledger verify         lane diagnostics (SQL đọc sổ) ở mức strict — sổ có toàn vẹn không
  *   evidence verify --dir <DATA_DIR/bang-chung/<đơn vị>> [--json]
  *                         kiểm bản niêm phong bằng chứng không cần CSDL: băm tệp, băm từng dòng, manifest nối ngày (ADR-0030)
@@ -309,7 +312,7 @@ else if (cmd === 'module' && sub === 'accounting-check') await moduleAccounting(
 else if (cmd === 'module' && sub === 'list') out(sdkModules().join('\n') || '(chưa có module SDK nào trong modules/)');
 else if (cmd === 'migrate') migrate();
 // [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: lệnh site migrate
-else if (cmd === 'site' && (sub === 'create' || sub === 'list' || sub === 'key-create' || sub === 'migrate')) siteCmd(sub, rest);
+else if (cmd === 'site' && (sub === 'create' || sub === 'list' || sub === 'key-create' || sub === 'migrate' || sub === 'backup' || sub === 'backups' || sub === 'backup-import' || sub === 'restore')) siteCmd(sub, rest); // [2026-11-22 12:06 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: backup / backups / restore
 else if (cmd === 'ledger' && sub === 'verify') ledgerVerify();
 else if (cmd === 'evidence' && sub === 'verify') await evidenceVerify(rest);
 else if (cmd === 'doctor') await doctor();
