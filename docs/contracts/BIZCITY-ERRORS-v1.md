@@ -275,6 +275,12 @@ Module thêm mã chi tiết của mình ở mục này (tiền tố = key module
 | `PHIEU_BAN_NO_COD_METHOD` | `VALIDATION_ERROR` | Chuyến giao có tiền COD mà hãng chưa có hình thức thanh toán "COD — <hãng>" (`bizcity.phieu_ban.cod_methods`, BH17; tài khoản phải thu hãng khai ở hình thức, không ở module); kèm `carrier` | module `phieu-ban` (đề xuất, chưa gộp) |
 | `PHIEU_BAN_SHIPMENT_STATE` | `CONFLICT` | Đổi trạng thái chuyến giao sai bước (Chờ lấy → Đang giao / Hoàn; Đang giao → Đã giao / Hoàn; Đã giao, Hoàn là cuối) hoặc sửa số lượng hàng của phiếu bán sinh từ chuyến; kèm `status` | module `phieu-ban` (đề xuất, chưa gộp) |
 | `PHIEU_BAN_COPY_SOURCE` | `VALIDATION_ERROR` | Copy đơn: không có đơn đặt hàng / phiếu bán BH10 / đơn máy bán gốc, phiếu BH10 chưa duyệt, đơn máy bán chưa hoàn tất / đã huỷ, số đơn có ở nhiều cửa hàng, không còn dòng hàng; kèm `status` khi có | module `phieu-ban` (đề xuất, chưa gộp) |
+| **Khoá cài đặt open-pos** (1.23.0-draft) <!-- [2026-11-23 10:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037 --> | | | |
+| `BLOG_UNKNOWN` | `FORBIDDEN` | Blog mang `X-OKT-Blog` chưa đăng ký với khoá cài đặt — bridge gọi `POST /api/v1/pos-installation/blogs` trước; kèm `blogId` | `packages/platform/src/core/auth.ts` |
+| `BLOG_NOT_LINKED` | `FORBIDDEN` | Blog của khoá cài đặt chưa được kế toán nối vào sổ (chờ mã nối) hoặc đã thu hồi — bridge xếp hàng, không mất đơn (R-OKT-CONN-11); kèm `blogId`, `status` | `packages/platform/src/core/auth.ts` |
+| `BLOG_REQUIRED` | `FORBIDDEN` | Khoá cài đặt không mang `X-OKT-Blog` gọi route ngoài route của bản cài (`/api/v1/pos-installation/*`) | `packages/platform/src/core/auth.ts` |
+| `POS_LINK_CODE_INVALID` | `VALIDATION_ERROR` | Nhận cửa hàng (`core.pos-installation.link`): mã nối sai khuôn / không có / đã dùng / hết hạn, hoặc khoá cài đặt đã thu hồi | `apps/api/src/modules/connections/pos-installation.service.ts` |
+| `TENANT_ALREADY_LINKED` | `CONFLICT` | Nhận cửa hàng vào sổ đã nối một blog khác — một blog = một tenant (ADR-0037, P-0) | `apps/api/src/modules/connections/pos-installation.service.ts` |
 | **Hoá đơn tại quầy** (1.22.0-draft) <!-- [2026-11-19 03:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-034 người mua hoá đơn tại quầy (đóng góp) --> | | | |
 | `POS_INVOICE_BUYER` | `VALIDATION_ERROR` | Lưu người mua hoá đơn điện tử của đơn máy bán (`pos.order.invoice-buyer`) thiếu / sai theo luật POS cũ: có mã số thuế (10 / 12 / 13 số) thì tên người mua không được là nhãn "Khách lẻ" (thiếu tên chỉ nhận khi có tên công ty) và phải có địa chỉ; căn cước 12 số phải có email; email đã gõ phải đúng định dạng; kèm `field` (`name` / `address` / `email` / `taxCode`) | module `pos` (đề xuất, chưa gộp) |
 | **Máy bán bán đúng bảng giá** (1.13.0-draft) <!-- [2026-11-17 Võ Hoàng] NGHIEM-THU — NT-BH-022 (đóng góp) --> | | | |
@@ -317,6 +323,8 @@ Quy tắc đọc bảng §5 (chữ chốt S029-33, 1.3.0-draft):
 ## 7. Changelog
 
 <!-- [2026-11-11 03:30 PM Võ Hoàng] POS-W2 — 1.8.0-draft (đóng góp, chờ chủ dự án duyệt) -->
+<!-- [2026-11-23 10:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — 1.23.0-draft (chờ chủ dự án duyệt cùng PR) -->
+- **1.23.0-draft (2026-11-23, khoá cài đặt open-pos — ADR-0037):** §4c thêm `BLOG_UNKNOWN`, `BLOG_NOT_LINKED`, `BLOG_REQUIRED`, `POS_LINK_CODE_INVALID`, `TENANT_ALREADY_LINKED`. Không thêm `code`, không đổi HTTP.
 <!-- [2026-11-19 03:30 PM Võ Hoàng] NGHIEM-THU — 1.22.0-draft (đóng góp, chờ chủ dự án duyệt) -->
 - **1.22.0-draft (2026-11-19, hoá đơn tại quầy):** §4c thêm `POS_INVOICE_BUYER` (module pos, phiếu NT-BH-034); `pos.order.invoice-buyer` nhận căn cước 12 số. Không thêm `code`, không đổi HTTP.
 <!-- [2026-11-18 11:30 PM Võ Hoàng] NGHIEM-THU — 1.21.0-draft (đóng góp, chờ chủ dự án duyệt) -->

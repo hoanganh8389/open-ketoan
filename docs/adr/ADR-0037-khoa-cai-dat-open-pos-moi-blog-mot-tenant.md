@@ -71,6 +71,21 @@ Tenant chủ: danh sách bản cài, cửa hàng ↔ tenant, trạng thái, ping
 - Bảng của bản cài nằm trong database của **site** (ADR-0036); một bản cài thuộc một site; cách tìm site theo yêu cầu giữ nguyên.
 - **P-0 ý 3** ("mỗi book là một pháp nhân, không có pháp nhân theo tenant id"): khoá cài đặt chỉ chọn **tenant kỹ thuật** để ghi; không đặt tên, không suy pháp nhân. Việc chuyển hồ sơ kế toán (`accounting_profiles`) sang khoá theo sổ là việc riêng (OKT-P0-3).
 
+## Thi hành (OKT-SET-1): chỗ khác với bản đề xuất
+<!-- [2026-11-23 10:55 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ghi chỗ thi hành lệch đề xuất, chờ chủ dự án duyệt cùng PR code -->
+
+| Đề xuất | Thi hành | Vì sao |
+|---|---|---|
+| Quyền mới `pos-installation:manage`, `pos-installation:link` | Dùng quyền có sẵn **`settings:write`**, chỉ người dùng đăng nhập (khoá API bị từ chối) | Thêm quyền Core phải sửa danh mục quyền (`authz/catalog.ts`), bảng vai trò và web — ngoài phạm vi đợt; tạo khoá / nhận cửa hàng là việc cài đặt của quản trị. Tách quyền riêng khi làm màn K-6 nếu cần |
+| `pos_installations.owner_tenant_id` | Cột tên **`tenant_id`** (= tenant chủ) | Bảng nghiệp vụ phải có `tenant_id` (SC-DATA-5). `pos_installation_blogs` giữ `owner_tenant_id` + `tenant_id` (tenant đã nối) |
+| Audit ở cả tenant chủ và tenant đích | Hàm `pos_installation_link()` ghi `audit_logs` ở **tenant đích** (mang `owner_tenant_id`, mã bản cài trong `after_data`); tạo / thu hồi khoá có biên nhận action ở tenant chủ | Hàm chạy với `bizcity.tenant_id` = tenant đích; ghi sang tenant chủ phải mở RLS chéo |
+| Blog lạ → `404 BLOG_UNKNOWN` | **`403 FORBIDDEN`**, `details.reason` = `BLOG_UNKNOWN` / `BLOG_NOT_LINKED` / `BLOG_REQUIRED` | Một mã lỗi cho bridge xử lý, không lộ có hay không. Thêm 5 reason vào `ERROR_REASONS` (BIZCITY-ERRORS 1.23.0-draft §4c) |
+| Route người dùng chưa đặt tên | `GET` / `POST /api/v1/pos-installations`, `POST …/:code/revoke`, `POST …/link` (số nhiều); route bridge `/api/v1/pos-installation/*` (số ít) | Khoá cài đặt không mang blog chỉ gọi danh sách đóng `INSTALLATION_ROUTES` (`auth.ts`) |
+| — | Tenant đích **đọc** được dòng bản cài đã nối vào mình (policy `linked_tenant_read`, chỉ SELECT) | Hiện tên / mã bản cài ở màn của tenant đích; ghi vẫn chỉ tenant chủ. `key_hash` là băm của khoá ngẫu nhiên 192 bit |
+| Mã nối 8 ký tự | Bảng chữ Crockford (bỏ I, L, O, U), nhập không phân biệt hoa thường, bỏ qua `-` / khoảng trắng | Đọc qua điện thoại không nhầm |
+
+Tài liệu API: [docs/api/pos-installation.md](../api/pos-installation.md).
+
 ## Phương án đã loại
 
 | Phương án | Vì sao loại |
