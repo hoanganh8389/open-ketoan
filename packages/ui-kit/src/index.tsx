@@ -8,6 +8,7 @@
  *                useQuery / useMutation / useQueryClient — cùng bộ đệm với khung giao diện
  *   Quyền        useCan()(permission) — ẩn nút theo quyền (máy chủ vẫn kiểm lại)
  *   Bảng / lọc   DataGrid · KpiCards · FilterLayout · PeriodField · BranchCheckList · ItemPicker · BranchPicker (1.4.0-draft, §3b)
+ *   Khung phiếu  DocSheet · DocSheetPanel — form chứng từ cùng mẫu phiếu mua, cột Trợ lý (1.5.0-draft, §3c; chữ ký ở src/doc-sheet.tsx)
  *   Lớp CSS      `btn` `btn-primary` `btn-xs` · `card` `card-body` · `grid` (bảng) · `input` · `badge` `badge-ok|warn|bad|info|gray` · `muted`
  *
  * Mặt tiền mỏng: mỗi thành phần chuyển sang bản thật khung giao diện đăng ký bằng provideUiKit lúc khởi động — giao diện của
@@ -18,6 +19,8 @@ import { createElement, type ComponentType, type ReactElement, type ReactNode } 
 import type {
   BranchCheckListProps, DataGridProps, FilterLayoutProps, KpiCardsProps, PeriodFieldProps, PickerProps, UiKitGridImpl,
 } from './grid';
+// [2026-11-22 10:40 PM Võ Hoàng] NT-BH-037 — 1.5.0-draft §3c: kiểu khung phiếu DocSheet / DocSheetPanel (đóng góp)
+import type { DocSheetPanelProps, DocSheetProps, UiKitDocSheetImpl } from './doc-sheet';
 
 export type ApiQuery = Record<string, string | number | boolean | null | undefined>;
 
@@ -38,7 +41,8 @@ export interface ModalProps { title: ReactNode; onClose: () => void; children: R
 export interface MoneyProps { value: number | null | undefined; blankZero?: boolean; bold?: boolean }
 
 /** Bản thật khung giao diện cung cấp. */
-export interface UiKitImpl extends UiKitGridImpl {
+// [2026-11-22 10:40 PM Võ Hoàng] NT-BH-037 — 1.5.0-draft §3c: bản thật phải cung cấp DocSheet / DocSheetPanel (đóng góp)
+export interface UiKitImpl extends UiKitGridImpl, UiKitDocSheetImpl {
   PageHeader: ComponentType<PageHeaderProps>;
   Loading: ComponentType<{ text?: string }>;
   ErrorBox: ComponentType<{ error: string | null | undefined }>;
@@ -86,6 +90,11 @@ export const BranchPicker = (p: PickerProps) => createElement(kit().BranchPicker
 export type {
   BranchCheckListProps, DataGridProps, FilterLayoutProps, GridColType, GridColumn, KpiCardsProps, KpiItem, PeriodFieldProps, PickerProps, SavedParams,
 } from './grid';
+
+// [2026-11-22 10:40 PM Võ Hoàng] NT-BH-037 — 1.5.0-draft §3c: hàm chuyển tới khung phiếu Core KhungPhieu và khối Trợ lý (đóng góp)
+export const DocSheet = (p: DocSheetProps) => createElement(kit().DocSheet, p);
+export const DocSheetPanel = (p: DocSheetPanelProps) => createElement(kit().DocSheetPanel, p);
+export type { DocSheetPanelProps, DocSheetProps } from './doc-sheet';
 
 /** Client API có phiên đăng nhập. Đường dẫn module: `/api/v1/m/<key>/…`. */
 export function useApi(): UiKitApi {
