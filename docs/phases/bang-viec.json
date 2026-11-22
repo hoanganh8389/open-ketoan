@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 204
+      "count": 202
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 341
+      "count": 343
     }
   ],
   "items": [
@@ -10025,8 +10025,8 @@
       "phase": "PHASE-039",
       "title": "B3 — runMigrations(connectionString) cho lõi và module; schemaversion trong registry; cổng lược đồ SITEUPGRADING / SITEMIGRATIONFAILED",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -10040,8 +10040,8 @@
       "phase": "PHASE-039",
       "title": "B3 — lệnh site migrate <slug> / --all: sao lưu trước, site lỗi dừng riêng, bảng tổng kết, chạy lại được",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"

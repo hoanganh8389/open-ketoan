@@ -21,6 +21,8 @@ import pg from 'pg';
 import { env } from '../config/env.js';
 import { listSiteIds, registerSitePool } from './site.js';
 import { DB_DIR } from './paths.js';
+// [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3 (D039-11, R-SITE-9): cổng lược đồ — chỉ phục vụ site có schema_version đúng bản ứng dụng cần
+import { requiredSchemaVersion } from './migrate.js';
 
 export const CONTROL_MIGRATIONS_DIR = path.join(DB_DIR, 'control-migrations');
 const CACHE_MS = 30_000;
@@ -36,6 +38,7 @@ export interface SiteRecord {
   db_name: string;
   db_app_role: string | null;
   db_secrets_enc: string | null;
+  schema_version?: string | null;
 }
 
 let controlUrl: string | undefined = env.CONTROL_DATABASE_URL;
@@ -97,16 +100,61 @@ export function normalizeHost(host: string | undefined): string | null {
   return /^[a-z0-9.-]{3,253}$/.test(h) ? h : null;
 }
 
-/** Tên miền → mã site đang phục vụ được (active / suspended). Không có, đã xoá, đang tạo → null. Mở pool của site khi cần. */
-export async function resolveSiteIdByHost(host: string | undefined): Promise<string | null> {
+export type SiteGateCode = 'SITE_UPGRADING' | 'SITE_MIGRATION_FAILED';
+let required: string | undefined;
+
+/** Đặt phiên bản lược đồ ứng dụng cần (trống = đọc lại từ db/migrations). Chỉ cho test. */
+export function setRequiredSchemaVersionForTest(v: string | undefined): void {
+  required = v;
+  gatedAt = 0;
+}
+
+/** Phiên bản lược đồ bản ứng dụng này cần (tên migration lõi cuối cùng trong ảnh đang chạy), đọc một lần. */
+export function appSchemaVersion(): string {
+  required ??= requiredSchemaVersion();
+  return required;
+}
+
+/**
+ * Cổng lược đồ (R-SITE-9): site đang nâng → SITE_UPGRADING; nâng lỗi → SITE_MIGRATION_FAILED; lược đồ khác bản ứng dụng cần
+ * (ứng dụng cũ gặp site đã nâng, hoặc ứng dụng mới gặp site chưa nâng) → SITE_UPGRADING. `schema_version` trống (site ghi tay
+ * trước B3, chưa chạy `site migrate` lần nào) → phục vụ. null = phục vụ được.
+ */
+export function siteGate(site: { status: string; schema_version?: string | null }): SiteGateCode | null {
+  if (site.status === 'migration_failed') return 'SITE_MIGRATION_FAILED';
+  if (site.status === 'upgrading') return 'SITE_UPGRADING';
+  if (site.schema_version && site.schema_version !== appSchemaVersion()) return 'SITE_UPGRADING';
+  return null;
+}
+
+export type SiteResolution = { siteId: string } | { gate: SiteGateCode } | null;
+
+/** Tên miền → site phục vụ được, hoặc mã cổng lược đồ (503), hoặc null (không có, đã xoá, đang tạo → 404). */
+export async function resolveSiteByHost(host: string | undefined): Promise<SiteResolution> {
   const h = normalizeHost(host);
   if (!h) return null;
+  const site = await lookupHost(h);
+  if (!site) return null;
+  const gate = siteGate(site);
+  if (gate) return { gate };
+  if (!SERVABLE.has(site.status)) return null;
+  ensurePool(site);
+  return { siteId: site.id };
+}
+
+/** Tên miền → mã site đang phục vụ được (active / suspended, qua cổng lược đồ). Còn lại → null. Mở pool của site khi cần. */
+export async function resolveSiteIdByHost(host: string | undefined): Promise<string | null> {
+  const r = await resolveSiteByHost(host);
+  return r && 'siteId' in r ? r.siteId : null;
+}
+
+async function lookupHost(h: string): Promise<SiteRecord | null> {
   const now = Date.now();
   let hit = byHost.get(h);
   if (!hit || now - hit.at > CACHE_MS) {
     await ensureControlSchema();
     const r = await controlPool().query<SiteRecord>(
-      `SELECT s.id, s.slug, s.status, s.db_host, s.db_port, s.db_name, s.db_app_role, s.db_secrets_enc
+      `SELECT s.id, s.slug, s.status, s.db_host, s.db_port, s.db_name, s.db_app_role, s.db_secrets_enc, s.schema_version
          FROM site_domains d JOIN sites s ON s.id = d.site_id
         WHERE d.domain = $1`,
       [h],
@@ -114,10 +162,7 @@ export async function resolveSiteIdByHost(host: string | undefined): Promise<str
     hit = { at: now, site: r.rows[0] ?? null };
     byHost.set(h, hit);
   }
-  const site = hit.site;
-  if (!site || !SERVABLE.has(site.status)) return null;
-  ensurePool(site);
-  return site.id;
+  return hit.site;
 }
 
 /**
@@ -139,6 +184,7 @@ function siteConnectionString(site: SiteRecord): string {
 export function invalidateSiteCache(): void {
   byHost.clear();
   activeAt = 0;
+  gatedAt = 0;
 }
 
 // [2026-11-22 11:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c (D039-7, D039-8): pool của site — tối đa 4 kết nối, kết nối rảnh 30 giây thì đóng; việc nền nạp pool của mọi site đang chạy
@@ -169,6 +215,23 @@ export async function registerActiveSitePools(now = Date.now()): Promise<number>
     if (!listSiteIds().includes(site.id)) { ensurePool(site); added++; }
   }
   return added;
+}
+
+// [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3 (R-SITE-9): việc nền bỏ site bị cổng lược đồ chặn; đọc lại mỗi giây để `site migrate` dừng được việc nền nhanh
+const GATE_REFRESH_MS = 1_000;
+let gatedAt = 0;
+let gated = new Set<string>();
+
+/** Mã các site bị cổng lược đồ chặn (đang nâng / nâng lỗi / lệch lược đồ). Đọc registry tối đa mỗi giây một lần. */
+export async function gatedSiteIds(now = Date.now()): Promise<Set<string>> {
+  if (now - gatedAt < GATE_REFRESH_MS) return gated;
+  await ensureControlSchema();
+  const r = await controlPool().query<{ id: string; status: string; schema_version: string | null }>(
+    `SELECT id, status, schema_version FROM sites WHERE status IN ('active', 'suspended', 'upgrading', 'migration_failed')`,
+  );
+  gated = new Set(r.rows.filter((s) => siteGate(s) !== null).map((s) => s.id));
+  gatedAt = now;
+  return gated;
 }
 
 /** Đóng pool của database điều khiển (tắt ứng dụng / test). Pool của từng site đóng cùng db (endAllSitePools). */

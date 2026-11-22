@@ -417,11 +417,14 @@ const siteOfContext = (): { siteId?: string } => { const s = currentRequest()?.s
  * chưa có yêu cầu nào vẫn được giao sự kiện. Lỗi của một site được báo qua `onError`, các site sau vẫn chạy.
  */
 export async function eachSite(fn: () => Promise<void>, onError: (siteId: string, err: unknown) => void): Promise<void> {
+  let gated: Set<string> | undefined;
   if (siteMode() === 'multi') {
-    const { registerActiveSitePools } = await import('../db/site-registry.js');
+    const { registerActiveSitePools, gatedSiteIds } = await import('../db/site-registry.js');
     await registerActiveSitePools();
+    // [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3 (R-SITE-9): site đang nâng / nâng lỗi / lệch lược đồ: việc nền không chạy
+    gated = await gatedSiteIds();
   }
-  await forEachSite(async () => { await fn(); }, onError);
+  await forEachSite(async (siteId) => { if (gated?.has(siteId)) return; await fn(); }, onError);
 }
 
 /** Dispatcher trên mọi site; cộng số sự kiện hết lượt thử (dead). */

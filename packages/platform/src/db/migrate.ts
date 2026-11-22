@@ -14,6 +14,7 @@
  *
  * Dùng: npm run db:migrate · Docker: job db-migrate (dist/db/setup.js) · API tự chạy khi AUTO_MIGRATE=1 (dev).
  */
+import { readdirSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -88,10 +89,19 @@ async function adoptBaseline(client: { query: typeof pool.query }, done: Set<str
   return true;
 }
 
-export async function runMigrations(log: (msg: string) => void = console.log): Promise<string[]> {
+// [2026-11-22 11:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3 (D039-12): nhận chuỗi kết nối (migration từng database site) và thư mục migration (ca kiểm); mặc định như trước
+export interface RunMigrationsOptions {
+  /** Database cần nâng; trống = DATABASE_URL. */
+  connectionString?: string;
+  /** Thư mục migration; trống = db/migrations. */
+  dir?: string;
+}
+
+export async function runMigrations(log: (msg: string) => void = console.log, opts: RunMigrationsOptions = {}): Promise<string[]> {
   // Kết nối RIÊNG bằng vai trò của DATABASE_URL (chủ sở hữu bảng), không mượn pool của API: kết nối trong pool có thể đã chuyển
   // sang vai trò ứng dụng (DB_SET_ROLE) hoặc gắn đơn vị (RLS, PHASE-007) — migration cần quyền DDL và thấy đủ mọi đơn vị.
-  const client = new pg.Client({ connectionString: env.DATABASE_URL });
+  const dir = opts.dir ?? MIGRATIONS_DIR;
+  const client = new pg.Client({ connectionString: opts.connectionString ?? env.DATABASE_URL });
   await client.connect();
   const applied: string[] = [];
   try {
@@ -106,11 +116,11 @@ export async function runMigrations(log: (msg: string) => void = console.log): P
     const done = new Set((await client.query<{ name: string }>('SELECT name FROM schema_migrations')).rows.map((r) => r.name));
     if (await adoptBaseline(client as unknown as { query: typeof pool.query }, done)) log(`→ Cơ sở dữ liệu đã đủ cấu trúc (tới ${LAST_OLD}): ghi nhận ${BASELINE.length} file gốc, không chạy lại`);
     for (const r of await adoptRenamed(client as unknown as { query: typeof pool.query }, done)) log(`→ File đã đổi tên, đã áp từ trước: ${r} (ghi nhận, không chạy lại)`);
-    const files = (await readdir(MIGRATIONS_DIR)).filter((f) => /^\d{4}_.+\.sql$/.test(f)).sort();
+    const files = (await readdir(dir)).filter((f) => /^\d{4}_.+\.sql$/.test(f)).sort();
 
     for (const file of files) {
       if (done.has(file)) continue;
-      const sql = await readFile(path.join(MIGRATIONS_DIR, file), 'utf8');
+      const sql = await readFile(path.join(dir, file), 'utf8');
       log(`→ Áp migration ${file}`);
       await client.query('BEGIN');
       try {
@@ -137,6 +147,20 @@ export async function runMigrations(log: (msg: string) => void = console.log): P
   } finally {
     await client.end();
   }
+}
+
+// [2026-11-22 11:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3 (D039-11, R-SITE-9): phiên bản lược đồ = tên migration Core cuối cùng
+/** Phiên bản lược đồ bản ứng dụng này cần: tên tệp migration Core cuối cùng trong thư mục (cổng lược đồ, R-SITE-9). */
+export function requiredSchemaVersion(dir: string = MIGRATIONS_DIR): string {
+  const files = readdirSync(dir).filter((f) => /^\d{4}_.+\.sql$/.test(f)).sort();
+  return files[files.length - 1] ?? '';
+}
+
+/** Phiên bản lược đồ của một database: tên migration Core lớn nhất đã áp (không tính migration module `key/…`). Chưa có bảng schema_migrations → null. */
+export async function appliedSchemaVersion(c: { query: (q: string) => Promise<{ rows: Array<{ v: string | null }> }> }): Promise<string | null> {
+  if (!(await c.query("SELECT to_regclass('public.schema_migrations')::text AS v")).rows[0]?.v) return null;
+  const r = await c.query("SELECT max(name) AS v FROM schema_migrations WHERE name ~ '^[0-9]{4}_'");
+  return r.rows[0]?.v ?? null;
 }
 
 /** Các file migration CHƯA áp (API dùng khi khởi động: thiếu thì không chạy, báo chạy job db-migrate). */
