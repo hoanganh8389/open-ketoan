@@ -12,11 +12,12 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { mergePrintProfile, printProfileSchema, type PrintProfileInput } from '@ketoan/contracts';
-import { db } from '../../db/client.js';
-import { authOf, requireAuthenticated, requirePermission } from '../../core/auth.js';
+import { db, type Db } from '../../db/client.js';
+import { authOf, requireAuthenticated } from '../../core/auth.js';
 import { Errors } from '../../core/errors.js';
 import { ok } from '../../core/http.js';
 import { writeAudit } from '../../core/audit.js';
+import { defineAction, mountActions, type AnyActionDef } from '../../core/actions.js';
 
 const tags = ['Mẫu in'];
 const branchQ = z.object({ branchCode: z.string().trim().max(64).default('') });
@@ -63,38 +64,49 @@ export async function printProfileRoutes(app: FastifyInstance): Promise<void> {
     },
   });
 
-  r.put('/api/v1/print-profile', {
-    preHandler: requirePermission('settings:write'),
-    schema: { tags, summary: 'Ghi hồ sơ in của cả đơn vị hoặc một chi nhánh', body: z.object({ branchCode: z.string().trim().max(64).default(''), profile: printProfileSchema }) },
-    handler: async (req) => {
-      const auth = authOf(req);
-      const { branchCode } = req.body;
+  mountActions(app, PRINT_PROFILE_ACTIONS);
+}
+
+// [2026-11-23 02:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-2 (S040-24, SC-ACT-1): ghi / bỏ hồ sơ in qua defineAction (quyền, zod, bằng chứng do runtime) — cùng đường, cùng thân, cùng kết quả như route cũ
+type Ctx = Parameters<AnyActionDef['handler']>[0];
+const actorName = (ctx: Ctx) => ctx.legacyAuth.actorName || ctx.legacyAuth.actor;
+
+export const PRINT_PROFILE_ACTIONS: AnyActionDef[] = [
+  defineAction({
+    id: 'core.print-profile.save', title: 'Ghi hồ sơ in của cả đơn vị hoặc một chi nhánh', tags,
+    permission: 'settings:write', effect: 'write', sideEffects: ['settings'], idempotency: 'natural',
+    input: z.object({ branchCode: z.string().trim().max(64).default(''), profile: printProfileSchema }), output: z.any(),
+    expose: { http: { method: 'PUT', path: '/api/v1/print-profile' }, mcp: false, ai: 'deny' },
+    evidence: { objectType: 'print_profile', objectId: (i) => i.branchCode || 'tenant' },
+    handler: async (ctx, input) => {
+      const trx = ctx.data.tx as unknown as Db;
+      const auth = ctx.legacyAuth;
+      const { branchCode } = input;
       if (branchCode) {
-        const br = await db.selectFrom('branches').select('id').where('tenant_id', '=', auth.tenantId).where('code', '=', branchCode).executeTakeFirst();
+        const br = await trx.selectFrom('branches').select('id').where('tenant_id', '=', auth.tenantId).where('code', '=', branchCode).executeTakeFirst();
         if (!br) throw Errors.validation(`Không có chi nhánh ${branchCode}`);
       }
-      const profile = compact(req.body.profile);
-      await db.transaction().execute(async (trx) => {
-        await trx.insertInto('print_profiles').values({ tenant_id: auth.tenantId, branch_code: branchCode, profile: JSON.stringify(profile), updated_by: auth.actorName })
-          .onConflict((oc) => oc.columns(['tenant_id', 'branch_code']).doUpdateSet({ profile: JSON.stringify(profile), updated_by: auth.actorName, updated_at: new Date() }))
-          .execute();
-        await writeAudit(trx, { tenantId: auth.tenantId, actor: auth.actor, action: 'print_profile.update', objectType: 'print_profile', objectId: branchCode || 'tenant', after: profile });
-      });
-      return ok({ branchCode, profile });
+      const profile = compact(input.profile);
+      await trx.insertInto('print_profiles').values({ tenant_id: auth.tenantId, branch_code: branchCode, profile: JSON.stringify(profile), updated_by: actorName(ctx) })
+        .onConflict((oc) => oc.columns(['tenant_id', 'branch_code']).doUpdateSet({ profile: JSON.stringify(profile), updated_by: actorName(ctx), updated_at: new Date() }))
+        .execute();
+      await writeAudit(trx, { tenantId: auth.tenantId, actor: auth.actor, action: 'print_profile.update', objectType: 'print_profile', objectId: branchCode || 'tenant', after: profile });
+      return { branchCode, profile };
     },
-  });
-
-  r.delete('/api/v1/print-profile', {
-    preHandler: requirePermission('settings:write'),
-    schema: { tags, summary: 'Bỏ hồ sơ in riêng của một chi nhánh (về theo cả đơn vị)', querystring: branchQ },
-    handler: async (req) => {
-      const auth = authOf(req);
-      if (!req.query.branchCode) throw Errors.validation('Chỉ bỏ được hồ sơ riêng của chi nhánh');
-      await db.transaction().execute(async (trx) => {
-        await trx.deleteFrom('print_profiles').where('tenant_id', '=', auth.tenantId).where('branch_code', '=', req.query.branchCode).execute();
-        await writeAudit(trx, { tenantId: auth.tenantId, actor: auth.actor, action: 'print_profile.delete', objectType: 'print_profile', objectId: req.query.branchCode });
-      });
-      return ok({ branchCode: req.query.branchCode });
+  }),
+  defineAction({
+    id: 'core.print-profile.delete', title: 'Bỏ hồ sơ in riêng của một chi nhánh (về theo cả đơn vị)', tags,
+    permission: 'settings:write', effect: 'write', sideEffects: ['settings'], idempotency: 'natural',
+    input: branchQ, output: z.any(),
+    expose: { http: { method: 'DELETE', path: '/api/v1/print-profile', query: branchQ }, mcp: false, ai: 'deny' },
+    evidence: { objectType: 'print_profile', objectId: (i) => i.branchCode || 'tenant' },
+    handler: async (ctx, input) => {
+      const trx = ctx.data.tx as unknown as Db;
+      const auth = ctx.legacyAuth;
+      if (!input.branchCode) throw Errors.validation('Chỉ bỏ được hồ sơ riêng của chi nhánh');
+      await trx.deleteFrom('print_profiles').where('tenant_id', '=', auth.tenantId).where('branch_code', '=', input.branchCode).execute();
+      await writeAudit(trx, { tenantId: auth.tenantId, actor: auth.actor, action: 'print_profile.delete', objectType: 'print_profile', objectId: input.branchCode });
+      return { branchCode: input.branchCode };
     },
-  });
-}
+  }),
+];

@@ -1,4 +1,4 @@
-// @bizcity-layer P cli
+// @bizcity-layer K kernel/posting
 // [2026-11-10 10:30 PM Nguyễn Văn Thủy] PHASE-026 — đối chiếu định khoản trước / sau khi đổi bộ định khoản (bỏ lý do hạch toán) (đóng góp)
 /**
  * ĐỐI CHIẾU ĐỊNH KHOẢN — định khoản lại MỌI chứng từ đã ghi sổ bằng bộ định khoản hiện tại, trong giao dịch thử (luôn huỷ, không ghi
