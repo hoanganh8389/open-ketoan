@@ -87,6 +87,14 @@ Các bước bên trong (chỉ đọc, chạy trong worktree tạm):
 6. Chấm 12 trục: trục máy chấm được (T1, T2, T4, T5, T6, T10, T12 phần tĩnh) điền sẵn; trục cần người (T7, T8, T9, T11) để `cần người duyệt`.
 7. Ghi `PR-<số>.json`; sinh lại `TIEN-DO-PR.md`.
 
+**Đã có (B2, 2026-11-22)** <!-- [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B2: ghi chỗ thi hành khác bản W0 -->: `scripts/cham-pr.mjs` + `scripts/cham-pr.lib.mjs` (hàm thuần, test `scripts/cham-pr.test.mjs`). Khác bản W0 ở năm điểm:
+
+- **Ma trận chứng từ không có bản máy đọc thứ hai:** bộ chấm đọc thẳng bảng §2 của [10](10-MA-TRAN-CHUNG-TU.md) ở từng commit (R-FLOW-7, một nguồn).
+- **Ma trận tuân thủ C-* chỉ khi `--selfcheck`** (selfcheck trong worktree tạm ở commit trước / sau merge, vài phút mỗi PR); không có cờ thì ghi "không chạy", không đoán.
+- **Loại PR thứ ba "mở thước đo":** PR chỉ thêm tiêu chí / trụ cột / ma trận mới. Điểm có thể giảm (đo được phần còn thiếu) — không tính là lùi. "Lùi" chỉ khi tiêu chí **đã có** bị hạ mức, và tự mở việc theo sau.
+- **H-FRAMEWORK không trừ T2 khi mọi tác giả có trong `.github/CODEOWNERS`** (luật dò viết cho người đóng góp ngoài nhóm giữ framework).
+- **Trục máy là gợi ý** (`axesBy: "máy"`, kèm `axesBasis`): chạm trục mà có H-* chặn → 0, cảnh báo → 1, không phát hiện → 2. Người duyệt sửa `axes` và đặt `axesBy: "người"` trong `PR-<n>.json`; chạy lại giữ bản của người.
+
 ### 5.1 Khuôn `PR-<số>.json` (`bizcity_pr_progress@1`, nháp)
 
 ```json

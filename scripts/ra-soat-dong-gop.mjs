@@ -4,6 +4,7 @@
 // [2026-11-01 12:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-018 — thêm H-METRIC-LABEL (chặn): nhãn số đo theo đơn vị / chứng từ / người / yêu cầu (R-OBS-4, S018-20).
 // [2026-11-01 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — luật dò H-* áp cả packages/platform/src
 // [2026-11-01 04:39 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — H-KERNEL-IMPORT bắt cả đường con @bizcity/kernel/<đường>
+// [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B2: cờ --json (cho scripts/cham-pr.mjs); không đổi luật dò
 /**
  * Rà soát việc của người đóng góp — lượt đầu tự động (docs/rules/RULE-REVIEW.md §3, R-REV-3).
  *
@@ -11,6 +12,7 @@
  *     --range   mặc định HEAD..origin/main (những gì sắp kéo về); đã kéo rồi thì đưa range cụ thể, vd e2ada98..origin/main
  *     --author  chỉ commit của người này (git log --author, khớp một phần tên / email)
  *     --out     ghi biên bản Markdown (mặc định in ra màn hình)
+ *     --json    in JSON { commits, files, findings } thay biên bản (scripts/cham-pr.mjs dùng); cùng mã thoát
  *
  * Chỉ đọc dòng THÊM của từng commit (git show -U0), không đọc cả tệp: phát hiện là việc của commit đó, không phải nợ cũ.
  * Phát hiện = gợi ý cho người rà (có thể dương tính giả); "chặn" = phải sửa hoặc giải thích trước khi nhận. Không thay
@@ -27,6 +29,7 @@ const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[
 const range = opt('--range', 'HEAD..origin/main');
 const author = opt('--author');
 const out = opt('--out');
+const asJson = args.includes('--json');
 const git = (...a) => execFileSync('git', a, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
 
 const logArgs = ['log', '--no-merges', '--format=%H%x09%h%x09%an%x09%ad%x09%s', '--date=format:%Y-%m-%d %H:%M', range];
@@ -110,6 +113,16 @@ findings.sort((a, b) => order[a.level] - order[b.level] || a.id.localeCompare(b.
 const count = (lv) => findings.filter((x) => x.level === lv).length;
 const byLayer = {};
 for (const [f, s] of files) { const l = layerOf(f); byLayer[l] ??= { files: 0, added: 0, removed: 0 }; byLayer[l].files++; byLayer[l].added += s.added; byLayer[l].removed += s.removed; }
+
+if (asJson) {
+  console.log(JSON.stringify({
+    range,
+    commits: commits.map(({ sha, short, name, date, subject }) => ({ sha, short, name, date, subject })),
+    files: [...files].map(([file, s]) => ({ file, added: s.added, removed: s.removed })),
+    findings: findings.map(({ id, level, rule, file, line, commit, msg }) => ({ id, level, rule, file, line, commit, msg })),
+  }));
+  process.exit(count('chặn') ? 1 : 0);
+}
 
 const md = [];
 md.push(`# Rà soát lượt đầu — ${range}${author ? ` · tác giả "${author}"` : ''}`, '');

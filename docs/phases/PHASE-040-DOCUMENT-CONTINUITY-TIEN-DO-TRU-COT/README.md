@@ -4,7 +4,7 @@
 > **Việc lộ trình:** — (mở rộng PHASE-026 bảng trụ cột, PHASE-029 truy vết chứng từ, docs/reviews nhịp review)
 > **Phân hệ:** chung-tu · mua-hang · ban-hang · he-thong
 > **Checklist công bố:** —
-> **Trạng thái:** 🟡 **W0 chốt 2026-11-22; B1 xong (S040-3..5)** — chủ dự án đồng ý D040-1..12 và toàn bộ đề xuất Q040-1..6 ở [30](30-PHAN-TICH-CAU-HOI-MO.md) (S040-2). Tiếp theo: B2 bộ chấm tiến độ PR (S040-6, 7).
+> **Trạng thái:** 🟡 **W0 chốt 2026-11-22; B1, B2 xong (S040-3..7)** — chủ dự án đồng ý D040-1..12 và toàn bộ đề xuất Q040-1..6 ở [30](30-PHAN-TICH-CAU-HOI-MO.md) (S040-2). Tiếp theo: B3 mẫu PR có khối bằng chứng + `.mailmap` (S040-8, 9).
 > **Mức Kernel:** W0 K0 (tài liệu). B1–B3 K0–K1 (tài liệu chuẩn, `tru-cot.json`, công cụ chỉ đọc). B4–B8 K1–K2 (mã lỗi, meta chứng từ, màn, chẩn đoán). **Không migration tạo bảng** (D040-3).
 > **Nền:** [Doc 26 Sổ chứng từ chung](../../nghiep-vu/26-so-chung-tu-quy-chuan.md) · [Doc 25 Mã lỗi khai báo](../../nghiep-vu/25-quy-tac-ma-loi-khai-bao.md) · [bizcity_document@1](../../contracts/BIZCITY-DOCUMENT-v1.md) · [R-WF](../../rules/RULE-WORKFLOW.md) · [R-REV §7](../../rules/RULE-REVIEW.md) · [bảng trụ cột](../../standard/tru-cot.json) · [docs/reviews](../../reviews/README.md) · tài liệu làm việc *BIZCITY-DOCUMENT-CONTINUITY-CONFORMANCE-v1* (bản làm việc ngoài repo, R-FLOW-7: phase này là bản có hiệu lực khi đã vào `main`)
 > **Phụ thuộc:** PHASE-029 (lịch sử chứng từ, `document_links`), PHASE-026 (bảng trụ cột HT10), PHASE-031 (chính sách), PHASE-038 (R-LOG)
