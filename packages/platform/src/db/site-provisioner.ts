@@ -27,6 +27,8 @@ import pg from 'pg';
 import { env } from '../config/env.js';
 import { registerSitePool, unregisterSitePool, withSite } from './site.js';
 import { controlPool, encryptSiteSecret, ensureControlSchema, invalidateSiteCache } from './site-registry.js';
+// [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3 (R-SITE-9): site mới ghi schema_version (lược đồ của database mẫu) ngay khi tạo
+import { appliedSchemaVersion } from './migrate.js';
 
 export type SiteProvisionCode = 'SITE_SLUG_INVALID' | 'SITE_DOMAIN_INVALID' | 'SITE_SLUG_TAKEN' | 'SITE_DOMAIN_TAKEN' | 'SITE_TEMPLATE_MISSING' | 'SITE_PROVISION_FAILED';
 
@@ -72,6 +74,19 @@ let cfg = {
 /** Đổi cấu hình lúc chạy. Chỉ cho test. */
 export function configureProvisionerForTest(next: Partial<typeof cfg>): void {
   cfg = { ...cfg, ...next };
+}
+
+// [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: Migration Runner theo site dùng cùng kết nối quản trị
+/** Cấu hình đang dùng (database mẫu, vai trò cha). Không trả chuỗi kết nối quản trị. */
+export function provisionerConfig(): { templateDb: string | undefined; parentRole: string } {
+  return { templateDb: cfg.templateDb, parentRole: cfg.parentRole };
+}
+
+/** Chuỗi kết nối quản trị (PROVISION_DATABASE_URL, trống = DATABASE_URL) tới một database. */
+export function adminUrlFor(dbName: string): string {
+  const u = new URL(cfg.adminUrl);
+  u.pathname = `/${dbName}`;
+  return u.toString();
 }
 
 /** Tên database và vai trò của site, dựng từ slug đã kiểm. */
@@ -163,9 +178,7 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
     let initialized: T | undefined;
     if (initialize) {
       const tempId = `prov:${siteId}`;
-      const u = new URL(cfg.adminUrl);
-      u.pathname = `/${dbName}`;
-      registerSitePool(tempId, new pg.Pool({ connectionString: u.toString(), max: 2 }));
+      registerSitePool(tempId, new pg.Pool({ connectionString: adminUrlFor(dbName), max: 2 }));
       try {
         initialized = await withSite(tempId, () => initialize({ siteId, slug, dbName }));
       } finally {
@@ -173,10 +186,14 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
       }
     }
 
-    // 5. registry: vai trò + mật khẩu mã hoá, site chạy
+    // 5. registry: vai trò + mật khẩu mã hoá, lược đồ (cổng lược đồ, R-SITE-9), site chạy
+    const vc = new pg.Client({ connectionString: adminUrlFor(dbName) });
+    await vc.connect();
+    let schemaVersion: string | null;
+    try { schemaVersion = await appliedSchemaVersion(vc); } finally { await vc.end(); }
     await ctl.query(
-      `UPDATE sites SET db_app_role = $2, db_secrets_enc = $3, status = 'active', updated_at = now() WHERE id = $1`,
-      [siteId, appRole, encryptSiteSecret(password)],
+      `UPDATE sites SET db_app_role = $2, db_secrets_enc = $3, schema_version = $4, status = 'active', updated_at = now() WHERE id = $1`,
+      [siteId, appRole, encryptSiteSecret(password), schemaVersion],
     );
     invalidateSiteCache();
     return { siteId, slug, dbName, appRole, domain, ...(initialize ? { initialized } : {}) };
