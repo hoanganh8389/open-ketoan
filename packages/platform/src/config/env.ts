@@ -111,6 +111,15 @@ const envSchema = z.object({
    */
   DOANHNGHIEP_API_KEY: z.string().default(''),
   TAX_LOOKUP: z.enum(['on', 'off']).default('on'),
+  // [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a (ADR-0036, D039-3): chế độ site và database điều khiển của Site Registry
+  /**
+   * single (mặc định): bản cài một công ty — một site ngầm định là DATABASE_URL, hành vi như trước PHASE-039.
+   * multi: nhiều site, mỗi site một database; site nhận theo tên miền của yêu cầu qua Site Registry (CONTROL_DATABASE_URL);
+   * thiếu site thì không truy vấn nào chạy (R-SITE-3). Chưa dùng cho bản cài thật tới khi xong PHASE-039 B2c (việc nền theo site).
+   */
+  SITE_MODE: z.enum(['single', 'multi']).default('single'),
+  /** Database điều khiển giữ Site Registry (bảng sites, site_domains). Bắt buộc khi SITE_MODE=multi. */
+  CONTROL_DATABASE_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -133,6 +142,10 @@ function loadEnv(): Env {
   }
   if (parsed.data.NODE_ENV === 'production' && parsed.data.JWT_SECRET.startsWith('dev-secret')) {
     throw new EnvError('Cấu hình môi trường không hợp lệ: JWT_SECRET đang dùng giá trị mặc định. Hãy đặt khoá riêng ở môi trường thật.');
+  }
+  // [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a: SITE_MODE=multi cần CONTROL_DATABASE_URL
+  if (parsed.data.SITE_MODE === 'multi' && !parsed.data.CONTROL_DATABASE_URL) {
+    throw new EnvError('Cấu hình môi trường không hợp lệ: SITE_MODE=multi cần CONTROL_DATABASE_URL (database điều khiển giữ Site Registry).', { CONTROL_DATABASE_URL: ['bắt buộc khi SITE_MODE=multi'] });
   }
   if (parsed.data.NODE_ENV === 'production' && parsed.data.BIZCITY_DEV_MODULES) {
     throw new EnvError('Cấu hình môi trường không hợp lệ: BIZCITY_DEV_MODULES=true bị cấm ở bản thật: API phải chỉ nạp module đúng hash trong registry (ADR-0011 D2).');

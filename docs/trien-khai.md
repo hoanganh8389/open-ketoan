@@ -197,6 +197,26 @@ Site nâng lỗi báo "đang nâng cấp / nâng cấp lỗi" và dừng riêng;
 
 **Không bao giờ chạy `docker compose down -v`**: tham số `-v` xoá luôn toàn bộ dữ liệu kế toán.
 
+## 7b. Có lỗi: lấy log gửi về
+<!-- [2026-11-21 08:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): mục lấy log gửi về -->
+
+Màn báo lỗi, trang trắng, hay mọi chức năng báo "không kết nối được": **đừng khởi động lại trước**. Gom log rồi gửi:
+
+```bash
+cd /www/wwwroot/tgs-ketoan && ./scripts/lay-log.sh
+```
+
+Lệnh in đường dẫn một tệp `logs/goi-bao-loi-<giờ>.tar.gz` (vài trăm KB). Tải về bằng aaPanel → Files rồi gửi kèm ba ý: **lỗi lúc mấy giờ**, **ở màn nào**, **vừa làm gì**. Lệnh chạy được cả khi phần mềm đã dừng. Gói không chứa mật khẩu, khoá trong `.env`: mọi giá trị dài từ 8 ký tự bị thay bằng `***`; còn sót thì lệnh không tạo gói.
+
+| Muốn | Lệnh |
+|---|---|
+| Lấy log từ một ngày | `./scripts/lay-log.sh --tu 2026-11-20` |
+| Lấy nhiều dòng log Docker hơn | `./scripts/lay-log.sh --dong 5000` |
+| Xem ngay lỗi API | `tail -50 logs/api-loi.log` |
+| Xem ngay lỗi nâng cấp cơ sở dữ liệu | `tail -80 logs/db-migrate.log` |
+
+Thư mục `logs/` có sẵn trong thư mục cài, tổng không quá 200 MB, tự xoay vòng. Đặt `LOG_HOST_DIR` trong `.env` để để chỗ khác. Lỗi do proxy aaPanel trả (ví dụ 502 khi phần mềm chưa chạy) nằm ở `/www/wwwlogs/<tên miền>.error.log`.
+
 ## 8. Kiểm tra sau khi cài
 
 - [ ] `https://…` mở được, có ổ khoá HTTPS.

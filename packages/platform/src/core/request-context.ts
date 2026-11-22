@@ -2,6 +2,7 @@
 // [2026-10-30 07:46 PM Johnny Chu - Chu Hoàng Anh] PHASE-006 — transactional outbox, subscriber, đồng hồ, correlation_id.
 // [2026-10-30 09:23 PM Johnny Chu - Chu Hoàng Anh] PHASE-007 — cô lập đơn vị bằng RLS.
 // [2026-11-01 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — dời từ apps/api/src/core/request-context.ts sang packages/platform (@bizcity/platform, D010-7 chặng 2); import tương đối viết lại theo chỗ mới
+// [2026-11-21 09:23 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B1 (ADR-0036): trường siteId — site của yêu cầu; pool CSDL chọn database theo trường này (db/site.ts)
 /**
  * Ngữ cảnh của yêu cầu đang chạy (AsyncLocalStorage): mã yêu cầu + mã tương quan, để bằng chứng (audit_logs.correlation_id)
  * và sự kiện miền (event_outbox.correlation_id) tự gắn mà không phải truyền qua từng hàm (C-8, bizcity_event@1 §3).
@@ -11,12 +12,22 @@
  * - tenantId: gán sau khi xác thực (core/auth.ts). Pool CSDL (db/client.ts) đặt bizcity.tenant_id theo giá trị này mỗi lần mượn
  *   kết nối → RLS (migration 0041) chỉ cho thấy dữ liệu của đơn vị đó, kể cả khi một truy vấn quên lọc tenant_id (PHASE-007).
  */
+// [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a (D039-4, D039-6): SITE_MODE=multi — nhận site theo tên miền trước mọi hook khác; tên miền lạ → 404 SITE_NOT_FOUND; kiểm sống / sẵn sàng / số đo chạy trên site ngầm định
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { FastifyInstance } from 'fastify';
+import { DEFAULT_SITE_ID, siteMode } from '../db/site.js';
+
+/** Đường kiểm sống / sẵn sàng / số đo: bộ cân bằng tải gọi bằng địa chỉ máy, không có tên miền của site. */
+const SITELESS_PATHS = new Set(['/api/v1/system/health', '/api/v1/system/health/ready', '/metrics']);
 
 export interface RequestContext {
   requestId: string;
   correlationId: string;
+  /**
+   * Site của yêu cầu (ADR-0036): chọn database. Chưa gắn = site ngầm định của bản cài một công ty (PHASE-039 B1). Từ B2: Site
+   * Resolver gắn theo tên miền trước khi xác thực; chế độ nhiều site thiếu trường này thì không truy vấn nào chạy (R-SITE-3).
+   */
+  siteId?: string;
   /** Đơn vị của người gọi (đã xác thực); chưa có = chưa xác thực / việc nền. */
   tenantId?: string;
   /** [2026-11-21 Nguyễn Văn Thủy] Chi nhánh đang làm việc (header x-chi-nhanh — nút chi nhánh trên cùng); pool đặt bizcity.chi_nhanh_lam_viec để sổ chứng từ chung ghi nơi lập của mọi chứng từ mới (0177) (đóng góp) */
@@ -45,6 +56,27 @@ export function registerRequestContext(app: FastifyInstance): void {
     const wb = req.headers['x-chi-nhanh'];
     let workBranch: string | undefined;
     try { const x = decodeURIComponent(String(Array.isArray(wb) ? wb[0] : wb ?? '')).trim(); if (/^[A-Za-z0-9._-]{1,64}$/.test(x)) workBranch = x; } catch { /* header sai dạng: bỏ qua */ }
-    store.run({ requestId: String(req.id), correlationId, ...(workBranch ? { workBranch } : {}) }, done);
+    const base: RequestContext = { requestId: String(req.id), correlationId, ...(workBranch ? { workBranch } : {}) };
+    if (siteMode() === 'single') {
+      store.run(base, done);
+      return;
+    }
+    // Chế độ nhiều site (ADR-0036): site theo tên miền của yêu cầu, trước xác thực. Không có → 404, không truy vấn nào chạy.
+    if (SITELESS_PATHS.has(req.url.split('?')[0] ?? '')) {
+      store.run({ ...base, siteId: DEFAULT_SITE_ID }, done);
+      return;
+    }
+    import('../db/site-registry.js')
+      .then((m) => m.resolveSiteIdByHost(req.host))
+      .then(
+        (siteId) => {
+          if (!siteId) {
+            reply.code(404).send({ ok: false, error: { code: 'SITE_NOT_FOUND', message: 'Không tìm thấy phần mềm kế toán của tên miền này', requestId: String(req.id) } });
+            return;
+          }
+          store.run({ ...base, siteId }, done);
+        },
+        (err: unknown) => done(err as Error),
+      );
   });
 }

@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 216
+      "count": 210
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 76
+      "count": 72
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 329
+      "count": 339
     }
   ],
   "items": [
@@ -9723,8 +9723,8 @@
       "phase": "PHASE-038",
       "title": "logging: json-file có trần cho mọi dịch vụ; bind mount ${LOGHOSTDIR:-./logs} → /app/logs cho api, db-migrate; LOGDIR, LOGFILELEVEL vào env.ts; .gitignore logs/",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9736,8 +9736,8 @@
       "phase": "PHASE-038",
       "title": "Logger multistream → logs/api-loi.log (≥ warn, xoay vòng, cùng redact)",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9749,8 +9749,8 @@
       "phase": "PHASE-038",
       "title": "Lỗi khởi động ghi fatal đồng bộ vào api-loi.log với evt: bizcity.system.startfailed + reason",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -9762,8 +9762,8 @@
       "phase": "PHASE-038",
       "title": "Job db-migrate ghi logs/db-migrate.log (commit, migration áp, lỗi đầy đủ)",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9788,8 +9788,8 @@
       "phase": "PHASE-038",
       "title": "scripts/lay-log.sh theo README §4.4",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F7",
@@ -9801,8 +9801,8 @@
       "phase": "PHASE-038",
       "title": "Sổ tay: mục \"Lấy log gửi về\" trong runbook aaPanel + DEPLOY §4; OBSERVABILITY §2 thêm logs/; log aaPanel /www/wwwlogs/",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9935,8 +9935,8 @@
       "phase": "PHASE-039",
       "title": "B1 — kiểm kê: chỗ gọi thẳng pool (apps/api/src/db/setup.ts), bộ đệm trong bộ nhớ có khoá theo đơn vị, script tự mở pool, số đo có nhãn đơn vị; ghi bảng kết quả…",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -9950,8 +9950,8 @@
       "phase": "PHASE-039",
       "title": "B1 — siteId trong ngữ cảnh yêu cầu; poolOf(site); db uỷ quyền theo site; chế độ single với site default; hành vi không đổi",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -9963,10 +9963,10 @@
     {
       "id": "S039-5",
       "phase": "PHASE-039",
-      "title": "B2 — database điều khiển (CONTROLDATABASEURL, db/control-migrations/), bảng sites, sitedomains; Site Resolver theo Host; SITEMODE=multi; SITENOTFOUND, SITECONT…",
+      "title": "B2a — database điều khiển (CONTROLDATABASEURL, db/control-migrations/), bảng sites, sitedomains; Site Resolver theo Host; SITEMODE=multi; SITENOTFOUND, SITECON…",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -9978,15 +9978,15 @@
     {
       "id": "S039-6",
       "phase": "PHASE-039",
-      "title": "B2 — claim sid trong vé đăng nhập và vé ứng dụng; khoá API gắn site; từ chối vé lệch site",
+      "title": "B2b — claim sid trong vé đăng nhập và vé ứng dụng; vé lệch site bị từ chối; vé cũ không sid chỉ nhận ở chế độ single",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
       ],
-      "facet": "F8",
+      "facet": "F2",
       "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
       "line": 15
     },
