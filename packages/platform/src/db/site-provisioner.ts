@@ -49,7 +49,12 @@ export interface CreateSiteInput {
   displayName?: string;
   ownerEmail?: string;
   externalRef?: string;
+  // [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21): 
+  /** Báo bước thật cho việc có trạng thái (Provisioning API): validate → create_database → seed_owner → activate. Lỗi của hàm này bị bỏ qua. */
+  onStep?: (key: SiteStepKey, status: 'running' | 'done') => void | Promise<void>;
 }
+
+export type SiteStepKey = 'validate' | 'create_database' | 'seed_owner' | 'activate';
 
 /** Bước khởi tạo dữ liệu của site mới: chạy trong ngữ cảnh site tạm (`db` trỏ tới database mới, vai trò quản trị). */
 export type SiteInitializer<T> = (site: { siteId: string; slug: string; dbName: string }) => Promise<T>;
@@ -133,10 +138,15 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
   const siteId = input.siteId ?? newSiteId();
   const base = new URL(env.DATABASE_URL);
 
+  // [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21): báo bước; hàm báo hỏng không làm hỏng việc tạo site
+  const step = async (key: SiteStepKey, status: 'running' | 'done'): Promise<void> => {
+    try { await input.onStep?.(key, status); } catch { /* nuot-loi: báo bước chỉ để hiện tiến độ */ }
+  };
   await ensureControlSchema();
   const ctl = controlPool();
 
   // 2. registry
+  await step('validate', 'running');
   try {
     await ctl.query('BEGIN');
     await ctl.query(
@@ -146,6 +156,7 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
     );
     await ctl.query('INSERT INTO site_domains (domain, site_id, is_primary) VALUES ($1, $2, true)', [domain, siteId]);
     await ctl.query('COMMIT');
+    await step('validate', 'done');
   } catch (err) {
     await ctl.query('ROLLBACK').catch(() => undefined);
     const e = err as { code?: string; constraint?: string };
@@ -159,6 +170,7 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
   let dbCreated = false;
   try {
     await admin.connect();
+    await step('create_database', 'running');
     const tpl = await admin.query('SELECT 1 FROM pg_database WHERE datname = $1', [cfg.templateDb]);
     if (!tpl.rowCount) throw new SiteProvisionError('SITE_TEMPLATE_MISSING', `Chưa có database mẫu ${cfg.templateDb}: chuẩn bị nó trước khi tạo site (docs/ops/NHIEU-SITE.md)`);
 
@@ -173,9 +185,11 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
     await ddl(admin, 'REVOKE CONNECT, TEMPORARY ON DATABASE %I FROM PUBLIC', dbName);
     await ddl(admin, 'REVOKE CONNECT, TEMPORARY ON DATABASE %I FROM %I', dbName, cfg.parentRole);
     await ddl(admin, 'GRANT CONNECT ON DATABASE %I TO %I', dbName, appRole);
+    await step('create_database', 'done');
 
     // 4b. khởi tạo dữ liệu (lớp gọi truyền vào): pool tạm bằng kết nối quản trị tới database mới
     let initialized: T | undefined;
+    await step('seed_owner', 'running');
     if (initialize) {
       const tempId = `prov:${siteId}`;
       registerSitePool(tempId, new pg.Pool({ connectionString: adminUrlFor(dbName), max: 2 }));
@@ -186,7 +200,10 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
       }
     }
 
+    await step('seed_owner', 'done');
+
     // 5. registry: vai trò + mật khẩu mã hoá, lược đồ (cổng lược đồ, R-SITE-9), site chạy
+    await step('activate', 'running');
     const vc = new pg.Client({ connectionString: adminUrlFor(dbName) });
     await vc.connect();
     let schemaVersion: string | null;
@@ -196,6 +213,7 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
       [siteId, appRole, encryptSiteSecret(password), schemaVersion],
     );
     invalidateSiteCache();
+    await step('activate', 'done');
     return { siteId, slug, dbName, appRole, domain, ...(initialize ? { initialized } : {}) };
   } catch (err) {
     // dọn ngược; lỗi khi dọn không che lỗi gốc

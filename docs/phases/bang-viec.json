@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 364
+      "count": 366
     }
   ],
   "items": [
@@ -10194,6 +10194,36 @@
       "facet": "F1",
       "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
       "line": 29
+    },
+    {
+      "id": "S039-21",
+      "phase": "PHASE-039",
+      "title": "B8 — trang dùng thử bizcity-web (PHASE-02 của bizcity-web): createSiteWithOwner lưu externalRef; sample: true → tạo Công ty mẫu (PHASE-036 createSampleTenant, …",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 30
+    },
+    {
+      "id": "S039-22",
+      "phase": "PHASE-039",
+      "title": "B8 — lệnh POST /sites/v1/sites/{siteId}/owner/reset-password (việc resetownerpassword): mật khẩu ban đầu mới cho email chủ site ở mọi đơn vị của site, sessionv…",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 31
     },
     {
       "id": "S040-1",

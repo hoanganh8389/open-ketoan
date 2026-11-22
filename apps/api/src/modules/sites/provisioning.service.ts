@@ -15,7 +15,9 @@ import { appSchemaVersion, controlPool, decryptSiteSecret, encryptSiteSecret, en
 // [2026-11-22 01:29 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: lệnh vòng đời + sao lưu / khôi phục của lõi
 import { addSiteDomain, deleteSite, removeSiteDomain, resumeSite, SiteLifecycleError, suspendSite } from '@bizcity/platform/db/site-lifecycle';
 import { backupSite, listBackups, restoreSite, SiteBackupError } from '@bizcity/platform/db/site-backup';
-import { createSiteWithOwner } from '../../db/site-create.js';
+import { createSiteWithOwner, ownerPassword } from '../../db/site-create.js';
+// [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): mật khẩu mới cho chủ site
+import { hashPassword } from '@bizcity/platform/core/security/password';
 
 export const CONTRACT = 'bizcity_site_provisioning@1';
 
@@ -66,16 +68,23 @@ export async function authenticateKey(authorization: string | undefined, ip: str
 
 export interface ProvisionBody { slug: string; domain: string; displayName?: string; owner: { email: string; name?: string; phone?: string }; sample?: boolean; externalRef?: string }
 
-export type JobKind = 'provision' | 'suspend' | 'resume' | 'backup' | 'restore' | 'delete';
+export type JobKind = 'provision' | 'suspend' | 'resume' | 'backup' | 'restore' | 'delete' | 'reset_owner_password';
 type StepStatus = 'pending' | 'running' | 'done' | 'failed';
 const STEPS: Record<JobKind, readonly string[]> = {
   provision: ['validate', 'create_database', 'seed_owner', 'activate'],
   suspend: ['suspend'], resume: ['resume'], backup: ['dump', 'verify'], restore: ['restore', 'swap'], delete: ['rename_database'],
+  reset_owner_password: ['reset_password'],
 };
-const stepsOf = (kind: JobKind, status: StepStatus) => STEPS[kind].map((key) => ({ key, status }));
+// [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): tạo site có dữ liệu mẫu thêm bước load_sample (trước activate)
+const stepKeys = (kind: JobKind, sample = false): readonly string[] =>
+  kind === 'provision' && sample ? ['validate', 'create_database', 'seed_owner', 'load_sample', 'activate'] : STEPS[kind];
+const stepsOf = (kind: JobKind, status: StepStatus, sample = false) => stepKeys(kind, sample).map((key) => ({ key, status }));
+type Step = { key: string; status: StepStatus };
+/** `run` báo bước thật (việc tạo site, đặt lại mật khẩu); việc khác không báo thì cả danh sách chạy / xong cùng lúc như trước. */
+type ReportStep = (key: string, status: StepStatus) => Promise<void>;
 /** Việc `queued` / `running` không cập nhật quá ngưỡng này = tiến trình chạy nó đã chết. */
 const STALE_MS = 2 * 3_600_000;
-const SITE_JOB_KINDS: JobKind[] = ['suspend', 'resume', 'backup', 'restore', 'delete'];
+const SITE_JOB_KINDS: JobKind[] = ['suspend', 'resume', 'backup', 'restore', 'delete', 'reset_owner_password'];
 /** Thời gian đợi bộ đệm tên miền của các tiến trình khác hết hạn trước khi đổi database lúc khôi phục (mặc định của restoreSite: 35 giây). */
 let restoreDrainMs: number | undefined;
 /** Chỉ cho test: khôi phục không đợi. */
@@ -91,8 +100,13 @@ async function failStaleJobs(siteId?: string): Promise<void> {
 }
 
 /** Lỗi đã biết của lõi → mã + câu cho phía gọi; lỗi lạ → câu chung (chi tiết chỉ ở nhật ký máy chủ). */
+// [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): lỗi của lệnh đặt lại mật khẩu chủ site
+export class OwnerResetError extends Error {
+  constructor(readonly code: 'SITE_OWNER_NOT_FOUND', message: string) { super(message); this.name = 'OwnerResetError'; }
+}
+
 function knownError(err: unknown, fallback: string): { code: string; message: string } {
-  if (err instanceof SiteProvisionError || err instanceof SiteLifecycleError || err instanceof SiteBackupError) return { code: err.code, message: err.message };
+  if (err instanceof SiteProvisionError || err instanceof SiteLifecycleError || err instanceof SiteBackupError || err instanceof OwnerResetError) return { code: err.code, message: err.message };
   return { code: fallback, message: 'Không làm được việc này. Đội vận hành đã được báo.' };
 }
 
@@ -102,7 +116,7 @@ function knownError(err: unknown, fallback: string): { code: string; message: st
  */
 async function startJob(
   keyId: string, idempotencyKey: string, kind: JobKind, target: string | null, body: unknown,
-  run: (jobId: string, siteId: string) => Promise<string | undefined>,
+  run: (jobId: string, siteId: string, report: ReportStep) => Promise<string | undefined>, sample = false,
 ): Promise<{ created: boolean; jobId: string; siteId: string }> {
   await ensureControlSchema();
   const ctl = controlPool();
@@ -123,33 +137,59 @@ async function startJob(
   const ins = await ctl.query<{ id: string }>(
     `INSERT INTO site_jobs (id, key_id, idempotency_key, request_hash, kind, site_id, status, steps)
      VALUES ($1, $2, $3, $4, $5, $6, 'queued', $7) ON CONFLICT (key_id, idempotency_key) DO NOTHING RETURNING id`,
-    [jobId, keyId, idempotencyKey, hash, kind, siteId, JSON.stringify(stepsOf(kind, 'pending'))],
+    [jobId, keyId, idempotencyKey, hash, kind, siteId, JSON.stringify(stepsOf(kind, 'pending', sample))],
   );
-  if (!ins.rowCount) return startJob(keyId, idempotencyKey, kind, target, body, run); // hai lệnh trùng tới cùng lúc: lấy việc của lệnh kia
-  void runJob(jobId, siteId, kind, run);
+  if (!ins.rowCount) return startJob(keyId, idempotencyKey, kind, target, body, run, sample); // hai lệnh trùng tới cùng lúc: lấy việc của lệnh kia
+  void runJob(jobId, siteId, kind, run, sample);
   return { created: true, jobId, siteId };
 }
 
 /** Chạy việc ở nền; mọi lỗi ghi vào việc, không ném ra ngoài. `run` trả bí mật cần trả một lần (đã mã hoá) nếu có. */
-async function runJob(jobId: string, siteId: string, kind: JobKind, run: (jobId: string, siteId: string) => Promise<string | undefined>): Promise<void> {
+// [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): bước ghi ngay khi `run` báo (console tiến trình của trang dùng thử); không báo thì như cũ — cả danh sách chạy rồi xong
+async function runJob(
+  jobId: string, siteId: string, kind: JobKind, run: (jobId: string, siteId: string, report: ReportStep) => Promise<string | undefined>, sample = false,
+): Promise<void> {
   const ctl = controlPool();
   const SET = 'UPDATE site_jobs SET status = $2, steps = $3, result_enc = $4, error_code = $5, error_message = $6, updated_at = now() WHERE id = $1';
+  const steps: Step[] = stepsOf(kind, 'pending', sample);
+  let reported = false;
+  let chain: Promise<unknown> = Promise.resolve();
+  const report: ReportStep = (key, status) => {
+    const s = steps.find((x) => x.key === key);
+    if (!s) return Promise.resolve();
+    reported = true;
+    s.status = status;
+    const snap = JSON.stringify(steps);
+    chain = chain
+      .then(() => ctl.query('UPDATE site_jobs SET steps = $2, updated_at = now() WHERE id = $1', [jobId, snap]))
+      .catch(() => undefined); // nuot-loi: bước chỉ để hiện tiến độ, việc vẫn chạy
+    return chain.then(() => undefined);
+  };
   try {
-    await ctl.query(SET, [jobId, 'running', JSON.stringify(stepsOf(kind, 'running')), null, null, null]);
-    const secret = await run(jobId, siteId);
-    await ctl.query(SET, [jobId, 'done', JSON.stringify(stepsOf(kind, 'done')), secret ?? null, null, null]);
+    await ctl.query(SET, [jobId, 'running', JSON.stringify(kind === 'provision' ? steps : stepsOf(kind, 'running')), null, null, null]);
+    const secret = await run(jobId, siteId, report);
+    await chain;
+    const done = reported ? steps.map((s) => ({ key: s.key, status: s.status === 'failed' ? 'failed' : 'done' })) : stepsOf(kind, 'done', sample);
+    await ctl.query(SET, [jobId, 'done', JSON.stringify(done), secret ?? null, null, null]);
   } catch (err) {
+    await chain;
     const e = knownError(err, kind === 'provision' ? 'SITE_PROVISION_FAILED' : 'SITE_JOB_FAILED');
-    await ctl.query(SET, [jobId, 'failed', JSON.stringify(stepsOf(kind, 'failed')), null, e.code, e.message]).catch(() => undefined);
+    const failed = reported ? steps.map((s) => ({ key: s.key, status: s.status === 'running' ? 'failed' : s.status })) : stepsOf(kind, 'failed', sample);
+    await ctl.query(SET, [jobId, 'failed', JSON.stringify(failed), null, e.code, e.message]).catch(() => undefined); // nuot-loi: không ghi được trạng thái lỗi thì failStaleJobs đánh dấu việc kẹt
   }
 }
 
 /** Nhận lệnh tạo site → việc `provision` (mã site cấp ngay). */
 export function startProvision(keyId: string, idempotencyKey: string, body: ProvisionBody): Promise<{ created: boolean; jobId: string; siteId: string }> {
-  return startJob(keyId, idempotencyKey, 'provision', null, body, async (_jobId, siteId) => {
-    const r = await createSiteWithOwner({ siteId, slug: body.slug, domain: body.domain, ...(body.displayName ? { name: body.displayName } : {}), email: body.owner.email });
+  // [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22):externalRef lưu vào site, sample nạp Công ty mẫu, bước báo thật
+  return startJob(keyId, idempotencyKey, 'provision', null, body, async (_jobId, siteId, report) => {
+    const r = await createSiteWithOwner({
+      siteId, slug: body.slug, domain: body.domain, ...(body.displayName ? { name: body.displayName } : {}), email: body.owner.email,
+      ...(body.externalRef ? { externalRef: body.externalRef } : {}), sample: body.sample === true,
+      onStep: (key, status) => report(key, status),
+    });
     return encryptSiteSecret(JSON.stringify({ email: r.ownerEmail, initialPassword: r.ownerPassword }));
-  });
+  }, body.sample === true);
 }
 
 /** Site phải có trong registry (chưa dọn) mới nhận lệnh vòng đời. */
@@ -186,7 +226,38 @@ export async function startSiteJob(
   });
 }
 
-/** Trạng thái việc. Việc tạo site xong: lần đọc ĐẦU trả kèm email + mật khẩu ban đầu của chủ site rồi xoá khỏi database. */
+// [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): lệnh đặt lại mật khẩu chủ site (trang dùng thử: khách quên mật khẩu → WordPress gửi email liên kết một lần → lệnh này)
+/**
+ * Mật khẩu ban đầu MỚI cho email chủ site (`sites.owner_email`) ở mọi đơn vị trong database của site; `session_version + 1` thu mọi
+ * phiên đang mở. Mật khẩu trả MỘT lần ở `GET /jobs/{jobId}` (trường `owner`) như lúc tạo site. Site phải đang chạy (`active`).
+ */
+export async function startOwnerReset(keyId: string, idempotencyKey: string, siteId: string): Promise<{ created: boolean; jobId: string; siteId: string }> {
+  await mustSite(siteId);
+  const again = await controlPool().query('SELECT 1 FROM site_jobs WHERE key_id = $1 AND idempotency_key = $2', [keyId, idempotencyKey]);
+  if (!again.rowCount) {
+    const s = (await controlPool().query<{ status: string; owner_email: string | null }>('SELECT status, owner_email FROM sites WHERE id = $1', [siteId])).rows[0]!;
+    if (s.status !== 'active') throw new ProvisionHttpError(409, 'SITE_STATE_INVALID', 'Chỉ đặt lại mật khẩu khi site đang chạy');
+    if (!s.owner_email) throw new ProvisionHttpError(409, 'SITE_OWNER_NOT_FOUND', 'Site này không ghi email chủ site');
+  }
+  return startJob(keyId, idempotencyKey, 'reset_owner_password', siteId, {}, async (_jobId, id, report) => {
+    await report('reset_password', 'running');
+    const s = (await controlPool().query<{ db_name: string; owner_email: string }>('SELECT db_name, owner_email FROM sites WHERE id = $1', [id])).rows[0]!;
+    const password = ownerPassword();
+    const hash = await hashPassword(password);
+    const c = new pg.Client({ connectionString: adminUrlFor(s.db_name), connectionTimeoutMillis: 5_000 });
+    await c.connect();
+    try {
+      const r = await c.query('UPDATE users SET password_hash = $1, session_version = session_version + 1 WHERE lower(email) = lower($2)', [hash, s.owner_email]);
+      if (!r.rowCount) throw new OwnerResetError('SITE_OWNER_NOT_FOUND', 'Không thấy tài khoản của email chủ site trong site này');
+    } finally {
+      await c.end().catch(() => undefined); // nuot-loi: đóng kết nối hỏng không đổi kết quả
+    }
+    await report('reset_password', 'done');
+    return encryptSiteSecret(JSON.stringify({ email: s.owner_email, initialPassword: password }));
+  });
+}
+
+/** Trạng thái việc. Việc tạo site / đặt lại mật khẩu chủ site xong: lần đọc ĐẦU trả kèm email + mật khẩu ban đầu rồi xoá khỏi database. */
 export async function getJob(keyId: string, jobId: string): Promise<Record<string, unknown>> {
   await ensureControlSchema();
   const ctl = controlPool();
