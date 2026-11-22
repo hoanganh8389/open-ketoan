@@ -19,6 +19,7 @@
     { "route": "POST /api/v1/presence/ping", "class": "tu-phuc-vu" },
     { "route": "POST /api/v1/connections/:code/pull", "class": "giao-thuc" },
     { "route": "POST /mcp", "class": "giao-thuc" },
+    { "route": "POST /_sites/v1/sites", "class": "giao-thuc", "$comment": "[2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; tạo database + vai trò của site, không ghi sổ (chủ dự án duyệt)" },
     { "route": "POST /api/v1/documents", "class": "giao-thuc" },
     { "route": "POST /api/v1/documents/batch", "class": "giao-thuc" },
     { "route": "POST /api/v1/system/modules/:key/seed", "class": "quyen" },

@@ -129,6 +129,9 @@ const envSchema = z.object({
   PROVISION_DATABASE_URL: z.string().url().optional(),
   /** Vai trò cha của vai trò ứng dụng từng site: site thừa hưởng quyền trên bảng mà migration cấp cho vai trò này. */
   SITE_APP_PARENT_ROLE: z.string().regex(/^[a-z_][a-z0-9_]{0,62}$/, 'Tên vai trò không hợp lệ').default('ketoan_app'),
+  // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): tên miền điều hành của Provisioning API
+  /** Tên miền duy nhất Provisioning API /_sites/v1 trả lời (chế độ multi). Trống = tắt Provisioning API. */
+  SITE_ADMIN_HOST: z.string().regex(/^[a-z0-9.-]{3,253}$/, 'Tên miền điều hành không hợp lệ').optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -153,6 +156,10 @@ function loadEnv(): Env {
     throw new EnvError('Cấu hình môi trường không hợp lệ: JWT_SECRET đang dùng giá trị mặc định. Hãy đặt khoá riêng ở môi trường thật.');
   }
   // [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a: SITE_MODE=multi cần CONTROL_DATABASE_URL
+  // [2026-11-22 11:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c: DATABASE_URL trùng database mẫu thì kiểm sống / việc nền giữ kết nối vào mẫu → CREATE DATABASE … TEMPLATE hỏng
+  if (parsed.data.SITE_MODE === 'multi' && new URL(parsed.data.DATABASE_URL).pathname.slice(1) === parsed.data.SITE_TEMPLATE_DB) {
+    throw new EnvError('Cấu hình môi trường không hợp lệ: SITE_MODE=multi — DATABASE_URL không được trỏ vào database mẫu SITE_TEMPLATE_DB (kết nối giữ ở mẫu làm hỏng việc tạo site).', { DATABASE_URL: ['trùng SITE_TEMPLATE_DB'] });
+  }
   if (parsed.data.SITE_MODE === 'multi' && !parsed.data.CONTROL_DATABASE_URL) {
     throw new EnvError('Cấu hình môi trường không hợp lệ: SITE_MODE=multi cần CONTROL_DATABASE_URL (database điều khiển giữ Site Registry).', { CONTROL_DATABASE_URL: ['bắt buộc khi SITE_MODE=multi'] });
   }

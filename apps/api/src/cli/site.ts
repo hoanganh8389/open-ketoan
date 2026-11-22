@@ -8,6 +8,8 @@
  *       tạo site; in MỘT LẦN email + mật khẩu của chủ site (đổi sau khi đăng nhập). Không ghi mật khẩu vào nhật ký.
  *   bizcity site list [--json]
  *       danh sách site trong registry: mã, slug, trạng thái, database, tên miền
+ *   bizcity site key-create --label "Site Manager" [--ips 1.2.3.4,5.6.7.8] [--json]
+ *       tạo khoá prov_… gọi Provisioning API (in MỘT LẦN; database chỉ giữ băm)
  *
  * Chạy trực tiếp: npx tsx --conditions=development apps/api/src/cli/site.ts <lệnh> …
  */
@@ -16,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { SiteProvisionError } from '@bizcity/platform/db/site-provisioner';
 import { closeSiteRegistry } from '@bizcity/platform/db/site-registry';
 import { createSiteWithOwner, listSites } from '../db/site-create.js';
+import { createProvisionKey } from '../modules/sites/provisioning.service.js';
 import { closeDb } from '../db/client.js';
 
 type Args = { _: string[]; [flag: string]: string | boolean | string[] };
@@ -62,7 +65,16 @@ async function main(argv: string[]): Promise<number> {
     else for (const s of rows) console.log(`${s.slug.padEnd(30)} ${s.status.padEnd(17)} ${s.db_name.padEnd(34)} ${s.domains}  [${s.id}]`);
     return 0;
   }
-  console.error('Lệnh: site create --slug <ten> --domain <ten.mien> [--name …] [--email …] [--json] | site list [--json]');
+  // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: khoá prov_… cho Provisioning API
+  if (cmd === 'key-create') {
+    const label = typeof args.label === 'string' ? args.label : '';
+    const ips = typeof args.ips === 'string' ? args.ips.split(',').map((x) => x.trim()).filter(Boolean) : [];
+    const k = await createProvisionKey(label, ips);
+    if (json) console.log(JSON.stringify(k));
+    else console.log(`✓ Khoá Provisioning ${k.prefix}… (${k.id})\n  Khoá (chỉ in lần này, lưu vào Site Manager): ${k.key}`);
+    return 0;
+  }
+  console.error('Lệnh: site create --slug <ten> --domain <ten.mien> [--name …] [--email …] [--json] | site list [--json] | site key-create --label … [--ips …] [--json]');
   return 2;
 }
 

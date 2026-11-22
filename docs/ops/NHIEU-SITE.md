@@ -3,7 +3,8 @@
 
 > **Kiến trúc:** [ADR-0036](../adr/ADR-0036-mot-ban-ma-moi-site-mot-database.md), luật [R-SITE](../rules/RULE-SITE.md), [PHASE-039](../phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/README.md).
 <!-- [2026-11-22 10:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a: Site Provisioner, biến SITE_TEMPLATE_DB, SITE_SECRET_KEY, PROVISION_DATABASE_URL, SITE_APP_PARENT_ROLE -->
-> **Trạng thái (2026-11-22):** có mã tới B4a (Site Provisioner). **Chưa dùng cho bản cài thật**: việc nền (dispatcher sự kiện, đồng hồ) chưa chạy theo site (B2c); migration theo site và vai trò sở hữu riêng chưa có (B3). Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a).
+> **Trạng thái (2026-11-22):** có mã tới B4a (Site Provisioner). <!-- [2026-11-22 11:11 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c: việc nền theo site; còn thiếu B3 -->
+**Chạy được, chưa nâng cấp tự động:** việc nền (dispatcher sự kiện, đồng hồ) chạy theo từng site (B2c). Còn thiếu **migration theo site** (B3): nâng cấp phải chạy `db:migrate` cho từng database site bằng tay, nên chưa dùng cho khách thật. Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
 
 ## 1. Biến môi trường
 
@@ -15,8 +16,9 @@
 | `SITE_SECRET_KEY` | — | Khoá (≥ 32 ký tự) mã hoá mật khẩu vai trò của từng site trong registry. Thiếu thì không tạo site được và không mở được kết nối tới site có vai trò riêng. **Mất khoá = mất mật khẩu của mọi site**: sao lưu khoá riêng, ngoài database |
 | `PROVISION_DATABASE_URL` | `DATABASE_URL` | Kết nối có quyền `CREATEDB` + `CREATEROLE` để tạo database và vai trò của site |
 | `SITE_APP_PARENT_ROLE` | `ketoan_app` | Vai trò cha: vai trò ứng dụng của mỗi site là thành viên của nó, nên thừa hưởng quyền trên bảng mà migration cấp |
+| `SITE_ADMIN_HOST` | — | Tên miền điều hành: Provisioning API `/_sites/v1` chỉ trả lời trên tên miền này (chế độ `multi`). Trống = tắt Provisioning API |
 
-`DATABASE_URL` vẫn cần ở chế độ `multi`: đó là site ngầm định, dùng cho kiểm sống / sẵn sàng / số đo. Site tạo bằng Site Provisioner kết nối bằng vai trò riêng; site ghi tay (§3b) chưa có vai trò riêng thì dùng tên đăng nhập + mật khẩu của `DATABASE_URL`.
+`DATABASE_URL` vẫn cần ở chế độ `multi`: đó là site ngầm định, dùng cho kiểm sống / sẵn sàng / số đo và lúc khởi động. **Không được trỏ vào `SITE_TEMPLATE_DB`** (API từ chối khởi động): kết nối giữ ở database mẫu làm `CREATE DATABASE … TEMPLATE` hỏng. Dùng một database nhỏ riêng. Việc nền không chạy trên site ngầm định ở chế độ `multi`. Site tạo bằng Site Provisioner kết nối bằng vai trò riêng; site ghi tay (§3b) chưa có vai trò riêng thì dùng tên đăng nhập + mật khẩu của `DATABASE_URL`.
 
 ## 2. Database điều khiển
 
@@ -61,3 +63,8 @@ Chỉ site `active` hoặc `suspended` được phục vụ. `provisioning`, `up
 `/api/v1/system/health`, `/api/v1/system/health/ready`, `/metrics` không cần tên miền của site: chạy trên site ngầm định (`DATABASE_URL`). Mọi đường dẫn khác gọi bằng tên miền lạ hoặc địa chỉ máy đều nhận **404 `SITE_NOT_FOUND`**, không truy vấn nào chạy (R-SITE-3).
 
 Đặt proxy (Apache / nginx / Cloudflare) **giữ nguyên tên miền** (`ProxyPreserveHost On`, `proxy_set_header Host $host`): API nhận site theo tên miền của yêu cầu.
+
+## 5. Việc nền (dispatcher sự kiện, đồng hồ)
+<!-- [2026-11-22 11:11 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c -->
+
+Mỗi giây dispatcher chạy lần lượt qua **mọi site `active` / `suspended`** trong registry (đọc lại registry tối đa mỗi 30 giây, nên site mới tạo được giao sự kiện trong vòng 30 giây); đồng hồ mỗi phút cũng vậy. Mỗi lượt chạy trong ngữ cảnh của site đó. Một site lỗi kết nối: ghi `bizcity.event.runtime_failed` kèm `site`, các site khác vẫn chạy. Pool của mỗi site tối đa 4 kết nối, kết nối rảnh 30 giây thì đóng. Nhiều trăm site: cân nhắc PgBouncer (Q039-3).
