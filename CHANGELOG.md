@@ -24,6 +24,15 @@ Mỗi bản ghi đủ sáu mục:
 - **Đổi:** —
 - **Thay đổi định khoản:** —
 
+### Chú thích cột còn thiếu (PHASE-040 B10d-a) <!-- [2026-11-23 01:00 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10d-a: mục CHANGELOG (S040-25) -->
+
+- **Thêm:** migration `0181_chu_thich_cot_con_thieu.sql`. Migration chỉ thêm `COMMENT ON` tiếng Việt cho 102 cột còn thiếu chú thích: chứng từ mang định danh đơn vị / phân kho / bộ phận, phiên bản mã số thuế và cơ cấu, loại kho, mục đích xuất, thùng rác danh mục, lần tính và công thức giá vốn.
+- **Sửa:** bộ kiểm chuẩn đọc migration hiểu được `DROP TABLE` / `DROP COLUMN`, theo đúng thứ tự lệnh. Trước đây bảng và cột đã xoá vẫn bị đòi chú thích.
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có. Migration tự chạy khi nâng cấp: chỉ ghi chú thích, không đổi dữ liệu hay cấu trúc.
+- **Bảo mật:** —
+
 ### Bộ kiểm chuẩn đọc đúng thư viện mã và bảng giữ chỗ (PHASE-040 B10a) <!-- [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a: mục CHANGELOG (S040-22) -->
 
 - **Sửa:**
