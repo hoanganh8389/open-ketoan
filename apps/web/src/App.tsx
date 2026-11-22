@@ -4,13 +4,16 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { MA_MAT_KET_NOI } from '@ketoan/contracts';
 import { AuthProvider, useAuth } from './lib/auth';
+import { ApiError } from './lib/api';
 import { AppLayout } from './layout/AppLayout';
 import { Loading } from './components/ui';
 import { LoginPage } from './features/auth/LoginPage';
 
+// [2026-11-22 02:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4 (S038-9): mất kết nối máy chủ thì không thử lại từng màn (lib/ketNoi.ts thử một chỗ, nối lại thì tải lại cả)
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+  defaultOptions: { queries: { retry: (lan, err) => lan < 1 && !(err instanceof ApiError && err.code === MA_MAT_KET_NOI), refetchOnWindowFocus: false } },
 });
 
 function Protected() {

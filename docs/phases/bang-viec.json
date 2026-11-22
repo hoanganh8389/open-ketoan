@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 202
+      "count": 201
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 343
+      "count": 344
     }
   ],
   "items": [
@@ -9775,8 +9775,8 @@
       "phase": "PHASE-038",
       "title": "nginx web: web-loi.log (errorlog + truy cập ≥ 500); errorpage 502 503 trả JSON (không 504 — báo cáo chạy lâu) GATEWAYUNAVAILABLE",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F4",
@@ -9814,8 +9814,8 @@
       "phase": "PHASE-038",
       "title": "Giao diện: một khay \"Không kết nối được máy chủ phần mềm\" cho GATEWAYUNAVAILABLE / 5xx không JSON; lùi dần lời gọi lặp",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F1",
