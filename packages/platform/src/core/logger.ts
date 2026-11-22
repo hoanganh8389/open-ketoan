@@ -16,6 +16,9 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readdirSync, renameSync, statSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { BUILD_VERSION } from './version.js';
+// [2026-11-22 02:25 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7b-1 (S039-19): dòng nhật ký trong ngữ cảnh một site (khác site ngầm định) có trường site — chế độ nhiều site biết lỗi của site nào
+import { currentRequest } from './request-context.js';
+import { DEFAULT_SITE_ID } from '../db/site.js';
 
 /** Số mức của pino (OBSERVABILITY §2; OpenTelemetry SeverityNumber ở 10 §5.1). */
 export const LEVELS = { trace: 10, debug: 20, info: 30, warn: 40, error: 50, fatal: 60 } as const;
@@ -255,11 +258,18 @@ export function loggerOptions(opts: { service: string; level: string; silent?: b
     // Fastify khai serializers.err trả { type, message, stack }; serializeError trả đủ các trường đó với mọi Error
     serializers: { err: (e: unknown) => serializeError(e) as { type: string; message: string; stack: string; [k: string]: unknown } },
     mixin: (obj: object, level: number) => {
-      const o = obj as { err?: unknown; errFp?: unknown };
-      return level >= LEVELS.error && o.err !== undefined && o.errFp === undefined ? { errFp: errFp(o.err) } : {};
+      const o = obj as { err?: unknown; errFp?: unknown; site?: unknown };
+      const fp = level >= LEVELS.error && o.err !== undefined && o.errFp === undefined ? { errFp: errFp(o.err) } : {};
+      return o.site === undefined ? { ...siteField(), ...fp } : fp;
     },
     redact: { paths: REDACT_PATHS, censor: REDACT_CENSOR },
   };
+}
+
+/** Mã site của ngữ cảnh đang chạy, trừ site ngầm định (bản cài một công ty: dòng nhật ký không đổi). Mã site là ULID: tập nhỏ, không phải dữ liệu khách. */
+export function siteField(): { site?: string } {
+  const s = currentRequest()?.siteId;
+  return s && s !== DEFAULT_SITE_ID ? { site: s } : {};
 }
 
 // [2026-11-22 12:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1b (S038-12): errFp, err chuẩn có trường lỗi Postgres (không detail), redact dùng chung, logError (R-LOG-1, R-LOG-4)

@@ -92,6 +92,9 @@ export const metrics = {
   idempotency: new Counter('bizcity_idempotency_requests_total', 'Action ghi có Idempotency-Key theo kết quả (new, replayed, conflict)'),
   tenants: new Gauge('bizcity_tenants', 'Số đơn vị theo dải hoạt động 24 giờ (idle 0 · small 1–100 · medium 101–1000 · large > 1000 dòng posting_log) — không lộ đơn vị nào'),
   tenantsWithBacklog: new Gauge('bizcity_tenants_with_backlog', 'Số đơn vị có sự việc pending / error quá 1 giờ'),
+  // [2026-11-22 02:25 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7b-1 (S039-19): số site theo trạng thái / dấu cần chú ý (chế độ multi) — nhãn tập nhỏ cố định, KHÔNG nhãn theo từng site (R-OBS-4)
+  sites: new Gauge('bizcity_sites', 'Số site trong Site Registry theo trạng thái (provisioning, active, suspended, upgrading, migration_failed, deleted) — chỉ chế độ multi'),
+  sitesAttention: new Gauge('bizcity_sites_attention', 'Số site có dấu cần chú ý theo loại (backup_missing, backup_stale, schema_behind, migration_failed, upgrading, suspended) — chỉ chế độ multi'),
   // [2026-11-09 02:35 PM kiennt] PHASE-028 — S028-16: số đo so song song bộ tính quyền mới ↔ đường cũ (nhãn result: tập nhỏ cố định, R-OBS-4)
   authzShadow: new Counter('bizcity_authz_shadow_total', 'So quyết định quyền: bộ tính mới ↔ đường cũ theo kết quả (match, only_legacy, only_engine, skipped_admin, error)'),
   collectorErrors: new Counter('bizcity_collector_errors_total', 'Bộ thu số đo lỗi hoặc quá giờ (số đo của bộ đó giữ giá trị cũ)'),

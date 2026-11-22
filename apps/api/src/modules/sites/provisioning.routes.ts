@@ -27,6 +27,8 @@ import { z } from 'zod';
 import { env } from '@bizcity/platform/config/env';
 import { siteMode } from '@bizcity/platform/db/site';
 import { normalizeHost } from '@bizcity/platform/db/site-registry';
+// [2026-11-22 02:25 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7b-1: bộ thu số đo bizcity_sites / bizcity_sites_attention (mỗi 5 phút, chỉ chế độ multi)
+import { metrics, registerCollector } from '@bizcity/platform/core/metrics';
 import {
   addDomain, authenticateKey, getJob, getSite, health, listSiteBackups, listSitesDto, ProvisionHttpError, removeDomain, startProvision, startSiteJob,
 } from './provisioning.service.js';
@@ -73,7 +75,19 @@ function handle<T>(fn: (req: FastifyRequest, keyId: string, reply: FastifyReply)
 
 const siteIdOf = (req: FastifyRequest) => (req.params as { siteId: string }).siteId;
 
+const SITE_STATUSES = ['provisioning', 'active', 'suspended', 'upgrading', 'migration_failed', 'deleted'] as const;
+const ATTENTION_FLAGS = ['backup_missing', 'backup_stale', 'schema_behind', 'migration_failed', 'upgrading', 'suspended'] as const;
+
+/** Số site theo trạng thái / dấu cần chú ý, đặt đủ mọi nhãn (0 khi không có) để giá trị cũ không đọng. Chế độ single: không làm gì. */
+export async function collectSiteMetrics(): Promise<void> {
+  if (siteMode() !== 'multi') return;
+  const h = await health();
+  for (const s of SITE_STATUSES) metrics.sites.set({ status: s }, h.sites[s] ?? 0);
+  for (const f of ATTENTION_FLAGS) metrics.sitesAttention.set({ flag: f }, h.attention[f] ?? 0);
+}
+
 export async function provisioningRoutes(app: FastifyInstance): Promise<void> {
+  registerCollector('sites', collectSiteMetrics, 5 * 60_000);
   const r = app.withTypeProvider<ZodTypeProvider>();
   r.get('/_sites/v1/health', { config: { public: true }, schema: { tags, summary: 'Provisioning API: hợp đồng, bản ứng dụng, số site theo trạng thái / dấu cần chú ý' }, handler: handle(async () => health()) });
 
