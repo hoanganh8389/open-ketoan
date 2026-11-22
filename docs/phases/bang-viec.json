@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 211
+      "count": 208
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 356
+      "count": 359
     }
   ],
   "items": [
@@ -10254,8 +10254,8 @@
       "phase": "PHASE-040",
       "title": "B1 — bizcitydocument@1 1.5.0-draft: STD-DOC-4 sáu nhóm, §5 ghi \"Trình\" là pending bỏ qua được; CONF-MAN-4; CANON §4",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "chung-tu"
@@ -10269,8 +10269,8 @@
       "phase": "PHASE-040",
       "title": "B1 — ADR-0038 Document Continuity; docs/rules/RULE-DOCUMENT-CONTINUITY.md (R-DOC-CONT-0..9); CANON §0.14 + danh mục luật",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "chung-tu"
@@ -10284,8 +10284,8 @@
       "phase": "PHASE-040",
       "title": "B1 — trụ cột X vào tru-cot.json (DC-1..11, 00 §2.2); mã IX → TV-; xác minh T040-24..27",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"

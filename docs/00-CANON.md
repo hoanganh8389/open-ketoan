@@ -20,7 +20,7 @@
 
 > **Tệp này:** một trang liệt kê **mọi** luật và hợp đồng đang chi phối lõi. Không lặp nội dung luật — chỉ mã, cấp, nơi kiểm.
 > **Dùng khi:** sửa lõi → tra bảng §4 để biết phải sửa tài liệu / hợp đồng nào **trong cùng PR**.
-> **Phiên bản:** 1.11 · 2026-11-22 (nhật ký §6) · **Người giữ:** nhóm Lõi (CODEOWNERS `/docs/00-CANON.md`)
+> **Phiên bản:** 1.12 · 2026-11-22 (nhật ký §6) · **Người giữ:** nhóm Lõi (CODEOWNERS `/docs/00-CANON.md`)
 > **Hai lớp chuẩn:** luật `R-*` dưới đây giữ **Kernel** (sổ cái). Luật `STD-*` của [Bizcity Framework Standard v1](standard/README.md) giữ **module** (7 hợp đồng, bộ kiểm cài đặt). Module tuân `STD-*`; nhờ SDK nó tự tuân `R-*`.
 
 <!-- [2026-11-03 01:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-024 — ADR-0020 tôn chỉ Core -->
@@ -62,6 +62,7 @@ Hệ quả bắt buộc: mặc định cho phép, nhắc khi sai (R-GATE-9); m�
 | VI · Bằng chứng và quan sát được | nhật ký chuỗi băm; tự chẩn đoán; Lịch sử · Tác động · tiến độ hiện trên màn | STD-EVD, R-DIAG |
 | VII · Cô lập đơn vị và phân quyền | RLS theo đơn vị; phân quyền theo quyền, không theo chức danh; nhóm đơn vị không lẫn số | R-SEC, ADR-0020 |
 | VIII · Mở rộng bằng module, kiểm chuẩn tự động | SDK / manifest / năng lực; bộ kiểm chuẩn; Golden Tests là cổng phát hành | R-MOD, R-QG |
+| X · Liên tục chứng từ (Document Continuity) <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — ADR-0038 --> | mọi chứng từ nối nhau từ nháp tới hoàn tất qua bốn bảng Document Kernel; hợp đồng xuyên suốt chuỗi mua; hoàn tất ≠ ghi sổ; không bảng mới — §0.14 | R-DOC-CONT, ADR-0038 |
 
 Mức đạt từng tiêu chí: `docs/standard/tru-cot.json` → màn **HT10 Trụ cột & mức đạt** và thẻ **Trụ cột** ở trang chủ mỗi phân hệ; đi theo bằng chứng, không tích tay (R-CONT-7).
 
@@ -246,6 +247,18 @@ Tất cả site dùng chung mã mới
 
    Ứng dụng chỉ phục vụ site có lược đồ đúng bản nó cần; site nâng lỗi dừng riêng, site khác chạy tiếp.
 
+### 0.14 Liên tục chứng từ — chứng từ nào cũng trả lời được "từ đâu, tới đâu" (chủ dự án 2026-11-22; [ADR-0038](adr/ADR-0038-document-continuity-lien-tuc-chung-tu.md), luật [R-DOC-CONT](rules/RULE-DOCUMENT-CONTINUITY.md), [PHASE-040](phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/README.md))
+<!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — §0.14 trụ cột X -->
+
+> **Mọi chứng từ vào sổ chứng từ chung; nối nhau bằng liên kết có nghĩa; đổi nội dung là phiên bản mới; hoàn tất không có nghĩa là đã ghi sổ.**
+
+1. **Bốn bảng, không bảng thứ năm.** `business_documents` (chứng từ gì), `document_versions` (đổi thế nào), `document_links` (liên quan gì — chín vai), `document_attachments` (bản gốc). Lịch sử / phiên bản / đính kèm / liên kết / gửi nhận không có bảng riêng (R-DOC-CONT-9).
+2. **Sáu nhóm trạng thái:** Nháp → (Trình) → Duyệt → Đang thực hiện → Hoàn tất, cộng Huỷ. Trạng thái riêng của phân hệ giữ ở `status_raw`.
+3. **Ba chiều, chỉ một chiều được lưu.** Nghiệp vụ lưu ở `status`; gửi / nhận ghi vết; kế toán suy ra khi đọc. `accounting_events` chỉ được ghi khi chứng từ tới điểm ghi sổ của loại đó (`ledger[].on`).
+4. **Hợp đồng xuyên suốt chuỗi mua:** phiếu nào thuộc hợp đồng cũng mang số hợp đồng; thiếu thì nhắc, kế toán trưởng bật chặn cho đơn vị (R-GATE-9).
+5. **Ranh giới:** MDG giữ định danh đối tượng; trụ cột X giữ chuỗi chứng từ; trụ cột III giữ chuỗi con số sau khi vào sổ. Ba chuỗi nối nhau ở liên kết `ledger` (`doc_ref` = `doc_key`).
+6. **Tiền tố mã:** `STD-DOC-*` = chuẩn dữ liệu (hợp đồng), `R-DOC-CONT-*` = luật nghiệp vụ, `DOC-nnn` = dòng ma trận chứng từ, `SC-DOC-*` = kiểm tài liệu, `IN-DOC-*` = mã lỗi cho người dùng, `DC-n` = tiêu chí trụ cột X ở HT10.
+
 ## 1. Bốn câu không thương lượng
 
 1. **Không chứng từ thì không có bút toán.** Mọi dòng sổ cái trỏ về một `accounting_events` (R-EVENT-1).
@@ -297,6 +310,7 @@ Tất cả site dùng chung mã mới
 | R-OKT-CONN <!-- [2026-11-21 01:23 PM Johnny Chu - Chu Hoàng Anh] R-OKT-CONN — dòng danh mục luật (chủ dự án 2026-11-21) --> | [rules/RULE-OPEN-POS-CONNECTION.md](rules/RULE-OPEN-POS-CONNECTION.md) | 1 (luật tối thượng phía open-pos) | **Chấp nhận 2026-11-21 (chỉnh 05:31 PM), chưa có mã:** open-pos (repo `open-pos`, trước `tgs_pos`) / open-pos-backend (repo `open-pos-backend`, trước `tgs_shop_management`): **admin chọn nguồn danh mục theo shop** — `local`: shop tự quản đầy đủ trong bảng theo prefix; `ketoan`: open-ketoan là nguồn sự thật, trường gốc chỉ đọc (R-MD-1), open-pos-backend **tự cấu hình ánh xạ mặc định** và đối chứng; mất kết nối thì không sửa danh mục. **Bảng local ở giữa luôn có; kế toán tắt hay dừng kết nối thì quầy vẫn bán, không mất đơn, luồng bán và sổ của open-pos giữ nguyên** (R-OKT-CONN-11); tạm dừng kết nối theo shop (R-OKT-CONN-12). Một blog = một shop = một tenant; một bộ kéo; mã mới của shop `ketoan` gửi thẳng kế toán | `tgs_catalog_source` + cổng ghi, `tgs_okt_connected()` ở open-pos-backend (sẽ có); feed theo tenant (R-TEN) |
 | R-LOG <!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — R-LOG dòng danh mục luật --> | [rules/RULE-LOG.md](rules/RULE-LOG.md) | 0 (R-LOG-1..4), 1 (R-LOG-5..9), 2 (R-LOG-10..11) | **Chấp nhận 2026-11-21** (Johnny Chu – Chu Hoàng Anh khởi tạo, §0.12, PHASE-038): một đường ghi lỗi có đối tượng `err` (giữ stack, `cause`); không nuốt lỗi im lặng; tiến trình không chết câm (ghi `fatal` đồng bộ rồi thoát); không lộ dữ liệu; mỗi dòng có bản + commit; tác vụ nền có `job` / `traceId`; chọn mức theo ai phải sửa; stack trỏ `.ts`; nhật ký lỗi cố định `logs/` ≤ 200 MB; giao diện có ErrorBoundary | review; SC-EVD-1 (ngoại lệ hẹp logger); SC-LOG-1..3, SC-OBS-3 (PHASE-038 B5; mã cũ là nợ trong baseline) <!-- [2026-11-22 10:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5: bộ kiểm R-LOG đã có --> |
 | R-SITE <!-- [2026-11-21 08:12 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — R-SITE dòng danh mục luật (ADR-0036) --> | [rules/RULE-SITE.md](rules/RULE-SITE.md) | 0 (R-SITE-1..4, -8..10, -12), 1 (còn lại) | **Chấp nhận 2026-11-21, chưa có mã** (PHASE-039): mỗi site một database + vai trò riêng; một bản mã; đóng khi thiếu site; vé gắn site; nâng cấp = build → migration từng site → chuyển ứng dụng; cổng lược đồ | ca T039-* (PHASE-039) |
+| R-DOC-CONT <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — R-DOC-CONT dòng danh mục luật (ADR-0038) --> | [rules/RULE-DOCUMENT-CONTINUITY.md](rules/RULE-DOCUMENT-CONTINUITY.md) | 0 (R-DOC-CONT-0, -1, -9), 1 (còn lại) | **Chấp nhận 2026-11-22, thi hành từng bước** (PHASE-040): mọi chứng từ vào sổ chứng từ chung bằng trigger; `doc_ref` bất biến; sáu nhóm trạng thái; phiên bản khi nội dung đổi; liên kết có nghĩa; hợp đồng xuyên suốt chuỗi mua (mặc định nhắc); hoàn tất ≠ ghi sổ; bản gốc có băm; lỗi có mã vào HT19; không bảng mới | SC-PILLAR-1 (trụ cột X); các kiểm còn lại theo bước B4–B8 |
 
 ## 4. Hợp đồng (contracts)
 
@@ -381,6 +395,8 @@ Trạng thái: **Ổn định** = đã có code, đổi phá vỡ phải ra `@2`
 
 ## 6. Nhật ký thay đổi CANON
 
+<!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — CANON v1.12 -->
+- **v1.12 (2026-11-22):** Thêm §0.14 **Liên tục chứng từ** và luật **R-DOC-CONT** ([ADR-0038](adr/ADR-0038-document-continuity-lien-tuc-chung-tu.md), PHASE-040); dòng trụ cột X ở §0.2; `bizcity_document@1` lên 1.5.0-draft (sáu nhóm trạng thái). Nguồn: chủ dự án 2026-11-22.
 <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — CANON v1.11 -->
 - **v1.11 (2026-11-22):** §0.12 điểm 4 và R-LOG-9: nhật ký lỗi cố định **chia theo ngày, mỗi dịch vụ một thư mục** `logs/<dịch vụ>/<YYYY-MM-DD>.log`, **giữ 30 ngày**, cả `logs/` vẫn ≤ 200 MB (D038-7). Nguồn: chủ dự án 2026-11-22.
 <!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — CANON v1.9 (§0.12, R-LOG) -->
