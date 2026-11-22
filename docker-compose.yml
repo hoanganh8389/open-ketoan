@@ -81,7 +81,8 @@ services:
       # [2026-11-14 01:47 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-11: SEEDS_DIR (.env, đường dẫn trên máy chủ) = bộ danh mục của công ty, gắn chỉ đọc; trống = db/seeds trong ảnh (bộ giả lập)
       SEEDS_DIR: ${SEEDS_DIR:+/srv/bizcity-seeds}
       # [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a (ADR-0036): nhiều site — docs/ops/NHIEU-SITE.md; trống = bản cài một công ty (biến rỗng coi như chưa đặt)
-      SITE_MODE: ${SITE_MODE:-single}
+      # job db-migrate chỉ làm database ngầm định (DATABASE_URL) và lệnh `site …` (đọc thẳng database điều khiển): luôn chạy một site — chế độ multi làm seed() báo SITE_CONTEXT_MISSING (E2E B7a)
+      SITE_MODE: single
       CONTROL_DATABASE_URL: ${CONTROL_DATABASE_URL:-}
       SITE_TEMPLATE_DB: ${SITE_TEMPLATE_DB:-}
       SITE_SECRET_KEY: ${SITE_SECRET_KEY:-}
