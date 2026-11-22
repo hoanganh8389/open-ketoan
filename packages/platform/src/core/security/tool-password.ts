@@ -23,3 +23,21 @@ export function checkToolPassword(given: string | undefined, what = 'công cụ'
   const b = Buffer.from(expected, 'utf8');
   if (a.length !== b.length || !timingSafeEqual(a, b)) throw Errors.forbidden(`Sai mật khẩu ${what}`);
 }
+
+// [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b (S040-23): cùng khuôn CK-3 cho mật khẩu tính năng khác (xoá hết danh mục, đổi công thức giá vốn…) — mật khẩu viết sẵn đã công bố (T027-SEC-4) đã quay lại trong mã ở ba chỗ (SC-SEC-5)
+/** Biến đầu tiên đã đặt trong `envs` (thứ tự = ưu tiên); không biến nào → null. */
+export const envPassword = (envs: readonly string[]): string | null => envs.map((k) => process.env[k]).find((v) => Boolean(v)) ?? null;
+
+/**
+ * Chặn khi tính năng chưa bật (chưa đặt biến nào trong `envs`) hoặc mật khẩu sai. Không có giá trị mặc định trong mã.
+ * Câu lỗi nêu biến đầu tiên của `envs` — biến người quản trị nên đặt.
+ */
+export function checkEnvPassword(given: string | undefined, what: string, envs: readonly string[]): void {
+  const expected = envPassword(envs);
+  if (!expected) {
+    throw Errors.forbidden(`Tính năng ${what} đang tắt trên máy chủ này: quản trị đặt biến môi trường ${envs[0]} (mật khẩu ${what}) rồi khởi động lại API để bật`);
+  }
+  const a = Buffer.from(given ?? '', 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  if (a.length !== b.length || !timingSafeEqual(a, b)) throw Errors.forbidden(`Sai mật khẩu ${what}`);
+}

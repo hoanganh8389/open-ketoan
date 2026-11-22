@@ -12,6 +12,18 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Mật khẩu tính năng nguy hiểm không còn viết sẵn trong mã (PHASE-040 B10b) <!-- [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b: mục CHANGELOG (S040-23) -->
+
+- **Bảo mật:**
+  - Hai thao tác *Xoá hết* (cả danh mục / cả thùng rác) và *Đổi công thức giá vốn* không còn mật khẩu mặc định viết trong mã. Mật khẩu cũ đã công bố trong repo công khai và không còn mở được.
+  - Chưa đặt biến `CATALOG_WIPE_PASSWORD` / `COSTING_FORMULA_PASSWORD` thì tính năng đó **tắt**. API trả 403 kèm câu chỉ rõ biến cần đặt.
+  - `POST /api/v1/validation-log/form` khai rõ chỉ người dùng đăng nhập mới gọi được; khoá API bị từ chối.
+- **Sửa:** kiểm cơ cấu tổ chức đọc sổ qua khung nhìn chỉ đọc `bizcity_read.ledger_entries`.
+- **Nâng cấp cần làm:** bản cài nào cần dùng *Xoá hết* hoặc *Đổi công thức giá vốn* thì đặt `CATALOG_WIPE_PASSWORD` và / hoặc `COSTING_FORMULA_PASSWORD` trong `.env` (xem `.env.example`), rồi khởi động lại API.
+- **Thêm:** —
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+
 ### Bộ kiểm chuẩn đọc đúng thư viện mã và bảng giữ chỗ (PHASE-040 B10a) <!-- [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a: mục CHANGELOG (S040-22) -->
 
 - **Sửa:**

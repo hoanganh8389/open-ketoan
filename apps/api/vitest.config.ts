@@ -27,7 +27,8 @@ export default defineConfig({
   test: {
     // Kiểm thử chạy trên PostgreSQL thật (CSDL test ở trên), mỗi lần tạo một đơn vị riêng nên các tệp không đụng dữ liệu của nhau.
     // PURCHASE_SEED_PASSWORD: mật khẩu công cụ dữ liệu mẫu chỉ cho test (mã không có giá trị mặc định — SC-SEC-5).
-    env: { NODE_ENV: 'test', DATABASE_URL: databaseUrl, PURCHASE_SEED_PASSWORD: 'Thuy!@#' },
+    // [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b: mật khẩu tính năng chỉ cho test (mã không còn mặc định — SC-SEC-5)
+    env: { NODE_ENV: 'test', DATABASE_URL: databaseUrl, PURCHASE_SEED_PASSWORD: 'Thuy!@#', CATALOG_WIPE_PASSWORD: 'Thuy!@#', COSTING_FORMULA_PASSWORD: 'Thuy!@#' },
     globalSetup: ['./test/global-setup.ts'],
     testTimeout: 60_000,
     hookTimeout: 120_000,
