@@ -7,7 +7,7 @@
  *     Dòng đang được chứng từ / sổ dùng (khoá ngoại) thì không xoá được — báo lại, các dòng khác vẫn xoá.
  *   - Khôi phục: chèn lại đúng dòng cũ (giữ id; mặt hàng giữ item_id — mở lại mã hàng đã đóng).
  *   - Xoá vĩnh viễn: bỏ khỏi thùng rác; mặt hàng: xoá luôn item_id, mã, phân loại nếu chưa có chứng từ dùng.
- *   - Xoá hết (cả danh mục) / Xoá hết vĩnh viễn (cả thùng rác): cần mật khẩu (CATALOG_WIPE_PASSWORD, mặc định trong mã).
+ *   - Xoá hết (cả danh mục) / Xoá hết vĩnh viễn (cả thùng rác): cần mật khẩu (CATALOG_WIPE_PASSWORD; không có mặc định trong mã — chưa đặt thì hai thao tác này tắt).
  *
  *   GET  /api/v1/catalog-trash?catalog=…       thùng rác của một danh mục
  *   POST /api/v1/catalog-trash/trash           { catalog, keys[] } | { catalog, all: true, password }
@@ -22,12 +22,14 @@ import { db, type Db } from '../../db/client.js';
 import { authOf, requirePermission } from '../../core/auth.js';
 import { ok } from '../../core/http.js';
 import { Errors } from '../../core/errors.js';
+// [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b (S040-23): bỏ mật khẩu viết sẵn trong mã (SC-SEC-5) — khuôn CK-3
+import { checkEnvPassword } from '@bizcity/platform/core/security/tool-password';
 import { writeAudit } from '../../core/audit.js';
 import { defineAction, mountActions, type AnyActionDef } from '../../core/actions.js';
 import { addTombstones } from '../catalog/catalog.service.js';
 
 const tags = ['Thùng rác danh mục'];
-const WIPE_PASSWORD = process.env.CATALOG_WIPE_PASSWORD || 'Thuy!@#';
+const WIPE_ENVS = ['CATALOG_WIPE_PASSWORD'] as const;
 
 interface Child { table: string; col: string; parentCol: string }
 // [2026-11-17 07:30 PM kiennt] NT-DM-002 L02, L03 — trước khi xoá: còn mục con (cột cha cùng bảng) hoặc đang được danh mục khác trỏ tới
@@ -132,7 +134,7 @@ async function listTrash(trx: Db, tenantId: string, catalog: string) {
 
 async function trashRows(trx: Db, tenantId: string, actor: string, i: { catalog: string; keys?: string[]; all?: boolean; password?: string }) {
   const { cat, scope } = resolve(i.catalog);
-  if (i.all && i.password !== WIPE_PASSWORD) throw Errors.forbidden('Sai mật khẩu xoá hết');
+  if (i.all) checkEnvPassword(i.password, 'xoá hết', WIPE_ENVS);
   if (!i.all && !i.keys?.length) throw Errors.validation('Chưa chọn dòng nào để xoá');
   const rows = (await sql<{ j: Row }>`SELECT to_jsonb(x) AS j FROM ${t(cat.table)} x WHERE x.tenant_id = ${tenantId}
     ${scope ? sql`AND x.${c(cat.scopeCol!)} = ${scope}` : sql``}
@@ -205,7 +207,7 @@ async function restoreRows(trx: Db, tenantId: string, actor: string, i: { catalo
 
 async function purgeRows(trx: Db, tenantId: string, actor: string, i: { catalog: string; ids?: string[]; all?: boolean; password?: string }) {
   const { cat } = resolve(i.catalog);
-  if (i.all && i.password !== WIPE_PASSWORD) throw Errors.forbidden('Sai mật khẩu xoá hết vĩnh viễn');
+  if (i.all) checkEnvPassword(i.password, 'xoá hết vĩnh viễn', WIPE_ENVS);
   const rows = await pick(trx, tenantId, i.catalog, i.ids, i.all);
   let done = 0, keptItems = 0;
   for (const tr of rows) {
