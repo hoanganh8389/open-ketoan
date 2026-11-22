@@ -1,6 +1,7 @@
 // @bizcity-layer P module-sdk
 // [2026-11-02 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-011 — 3.13 (ADR-0011 D1, D2): registry module — hash thư mục module, quyết định nạp (active + hash khớp), ghi kết quả nạp, bật / tắt theo đơn vị (bộ đệm ngắn), cổng MODULE_DISABLED cho route
 // [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d (R-SITE-6): đệm module tắt theo (site, đơn vị)
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * REGISTRY MODULE (ADR-0011 D1, D2; PHASES 3.13). Hai mức bật:
  *
@@ -92,7 +93,7 @@ export async function recordLoad(decisions: LoadDecision[], missingInCode: strin
       await db.updateTable('module_registry').set({ last_load_at: now, last_load_result: 'skipped_missing', last_load_hash: null }).where('key', 'in', missingInCode).execute();
     }
   } catch {
-    /* registry chưa có (bản cài cũ) */
+    /* nuot-loi: registry chưa có (bản cài cũ) */
   }
 }
 

@@ -6,6 +6,7 @@
 // [2026-10-30 09:03 PM Johnny Chu - Chu Hoàng Anh] PHASE-005 — chính sách kế toán có phiên bản + ngày hiệu lực (ADR-0009).
 // [2026-10-30 10:05 PM Johnny Chu - Chu Hoàng Anh] PHASE-009 — trạm định khoản ACC14 nhận ra phiếu nháp nhập tay (accounting.journal.post), chỉ đường duyệt ở màn phiếu.
 // [2026-11-01 04:39 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — dời từ apps/api/src/modules/documents/document.service.ts sang packages/kernel (@bizcity/kernel, D010-7 chặng 3); import Platform qua @bizcity/platform
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * Nhận và xử lý chứng từ gốc.
  *
@@ -175,6 +176,7 @@ async function stockContext(trx: Db, tenantId: string, doc: IngestDocument, bran
     // cổng nhận khi thiếu / trùng kho — hệ thống bán hàng vẫn gửi phiếu cùng chi nhánh không ghi kho (xuất rồi nhận lại cùng kho
     // mặc định, tồn không đổi); màn nhập tay (KHO01) tự bắt chọn hai kho khác nhau.
     // Phiếu một đầu: mã chi nhánh bên kia chưa có trong danh mục thì bỏ qua (chỉ để mô tả), không chặn cả phiếu.
+    // nuot-loi: phiếu một đầu — mã chi nhánh bên kia chỉ để mô tả, chưa có trong danh mục thì bỏ qua (chú thích trên)
     const to = other ? (leg ? await findBranch(trx, tenantId, other).catch(() => null) : await findBranch(trx, tenantId, other)) : null;
     if (to) {
       ctx.toBranchId = to.id;

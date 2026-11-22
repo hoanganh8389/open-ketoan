@@ -1,5 +1,6 @@
 // @bizcity-layer K kernel/intake
 // [2026-11-09 08:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-030 — S030-51b (B5b, PHASE-030 · 26 §4.2, K1): kiểm trường chứng từ theo thư viện dùng chung — chỉ cảnh báo, kênh riêng libraryFindings[]; một hàm cho tiền kiểm và cửa nạp (R-INTAKE-4)
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * Với mỗi gắn trong LIBRARY_BINDINGS (@ketoan/contracts), lấy giá trị có thật ở đường gắn của chứng từ và hỏi CÙNG bộ kiểm với
  * POST /api/v1/libraries/:id/validate (validateInLibrary) tại ngày chứng từ, áp cấu hình của đơn vị (§7.1: tắt thư viện tuỳ chọn,
@@ -63,5 +64,5 @@ export async function countLibraryUsage(trx: Db, tenantId: string, doc: { source
     const src = typeof doc.sourceSystem === 'string' && /^[a-z0-9][a-z0-9._-]{0,60}$/i.test(doc.sourceSystem) ? doc.sourceSystem.toLowerCase() : 'khac';
     await libraryFindings(trx, tenantId, doc, { usageSource: `intake/${src}` });
     // Ghi bộ đếm xuống CSDL KHÔNG làm ở đây (cùng giao dịch với chứng từ): runAction ghi theo lượt sau commit (actions.ts).
-  } catch { /* số đếm là quan sát: lỗi không làm hỏng chứng từ */ }
+  } catch { /* nuot-loi: số đếm là quan sát — lỗi không làm hỏng chứng từ */ }
 }

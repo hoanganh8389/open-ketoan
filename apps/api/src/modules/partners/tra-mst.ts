@@ -1,4 +1,5 @@
 // @bizcity-layer A adapters/tax-lookup
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * TRA CỨU DOANH NGHIỆP THEO MÃ SỐ THUẾ — điền sẵn form nhà cung cấp / khách hàng (tên trên hoá đơn, địa chỉ đăng ký, tên viết
  * tắt, người đại diện), kèm trạng thái thuế để cảnh báo NCC đã ngừng hoạt động.
@@ -61,6 +62,7 @@ async function fetchJson(url: string, headers: Record<string, string>) {
   const t = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(url, { headers: { accept: 'application/json', 'user-agent': UA, ...headers }, signal: ctl.signal });
+    // nuot-loi: thân không phải JSON (trang lỗi của nguồn tra) — bên gọi xét theo mã HTTP
     const body = await res.json().catch(() => null) as Record<string, unknown> | null;
     return { status: res.status, body, retryAfter: Number(res.headers.get('retry-after')) || 0 };
   } finally { clearTimeout(t); }
@@ -96,6 +98,7 @@ function vietQrCall(url: string) {
     if (wait > 0) await sleep(wait);
     try { return await fetchJson(url, {}); } finally { vietQrLast = Date.now(); }
   });
+  // nuot-loi: hàng đợi chỉ giữ nhịp gọi; lỗi của lượt đã trả cho người gọi qua `run`
   vietQrQueue = run.catch(() => undefined);
   return run;
 }

@@ -1,5 +1,6 @@
 // @bizcity-layer P cli
 // [2026-11-22 10:36 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4b (ADR-0036, D039-9): lệnh site (chỉ đọc tham số, in kết quả; việc tạo ở db/site-create.ts) — tạo site (database từ mẫu, vai trò riêng, đơn vị đầu + chủ site) và liệt kê Site Registry
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * LỆNH SITE (PHASE-039, docs/ops/NHIEU-SITE.md). Cần CONTROL_DATABASE_URL, SITE_SECRET_KEY; tạo site cần quyền CREATEDB + CREATEROLE
  * (PROVISION_DATABASE_URL, trống = DATABASE_URL) và database mẫu SITE_TEMPLATE_DB đã chạy đủ migration.
@@ -248,5 +249,6 @@ function printReport(r: SiteMigrateReport): void {
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   main(process.argv.slice(2))
     .then(async (code) => { await closeSiteRegistry(); await closeDb(); process.exit(code); })
+    // nuot-loi: đang thoát vì lỗi đã in ra — đóng kết nối hỏng không đổi kết quả
     .catch(async (err: unknown) => { console.error((err as Error).message); await closeSiteRegistry().catch(() => undefined); await closeDb().catch(() => undefined); process.exit(1); });
 }
