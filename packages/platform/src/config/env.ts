@@ -120,6 +120,15 @@ const envSchema = z.object({
   SITE_MODE: z.enum(['single', 'multi']).default('single'),
   /** Database điều khiển giữ Site Registry (bảng sites, site_domains). Bắt buộc khi SITE_MODE=multi. */
   CONTROL_DATABASE_URL: z.string().url().optional(),
+  // [2026-11-22 10:26 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a (D039-9, D039-19): biến của Site Provisioner
+  /** Database mẫu (đã chạy đủ migration) để tạo database site bằng CREATE DATABASE … TEMPLATE. Không ai được kết nối vào nó lúc tạo site. */
+  SITE_TEMPLATE_DB: z.string().regex(/^[a-z_][a-z0-9_]{0,62}$/, 'Tên database mẫu không hợp lệ').default('kt_template'),
+  /** Khoá mã hoá mật khẩu vai trò của từng site trong Site Registry (≥ 32 ký tự). Không có thì không tạo site được. */
+  SITE_SECRET_KEY: z.string().min(32, 'SITE_SECRET_KEY phải dài ít nhất 32 ký tự').optional(),
+  /** Kết nối có quyền CREATEDB + CREATEROLE để tạo database / vai trò của site. Trống = DATABASE_URL. */
+  PROVISION_DATABASE_URL: z.string().url().optional(),
+  /** Vai trò cha của vai trò ứng dụng từng site: site thừa hưởng quyền trên bảng mà migration cấp cho vai trò này. */
+  SITE_APP_PARENT_ROLE: z.string().regex(/^[a-z_][a-z0-9_]{0,62}$/, 'Tên vai trò không hợp lệ').default('ketoan_app'),
 });
 
 export type Env = z.infer<typeof envSchema>;

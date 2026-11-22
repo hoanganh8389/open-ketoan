@@ -135,3 +135,12 @@ export function ticketSiteAccepted(sid: unknown): boolean {
 export function siteScopedKey(key: string): string {
   return `${currentSiteId()}\u0001${key}`;
 }
+
+// [2026-11-22 10:36 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4b: gỡ pool tạm của Site Provisioner
+/** Gỡ một site khỏi bộ định tuyến và đóng pool của nó (pool tạm lúc khởi tạo site). Không có thì bỏ qua. */
+export async function unregisterSitePool(siteId: string): Promise<void> {
+  const pool = pools.get(siteId);
+  if (!pool) return;
+  pools.delete(siteId);
+  await pool.end();
+}

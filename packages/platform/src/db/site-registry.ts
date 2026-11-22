@@ -1,5 +1,6 @@
 // @bizcity-layer P data
 // [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a (ADR-0036, D039-2, D039-4, D039-6): Site Registry trong database điều khiển; tên miền → site (bộ đệm 30 giây); mở pool của site khi cần
+// [2026-11-22 10:26 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a (D039-19, R-SITE-2): kết nối bằng vai trò riêng của site (mật khẩu mã hoá AES-256-GCM bằng SITE_SECRET_KEY); xuất pool điều khiển cho Site Provisioner
 /**
  * SITE REGISTRY (ADR-0036; PHASE-039 B2a). Chỉ dùng khi SITE_MODE=multi.
  *
@@ -9,10 +10,11 @@
  *   invalidateSiteCache()       xoá bộ đệm tên miền (sau khi registry đổi)
  *   ensureControlSchema()       áp migration của database điều khiển (khoá tư vấn, chạy lại không hại)
  *
- * Mở pool của site lần đầu nó được nhận (registerSitePool ở db/site.ts). B2a: kết nối bằng thông tin đăng nhập của
- * DATABASE_URL, chỉ đổi máy chủ / cổng / tên database theo registry. Vai trò PostgreSQL riêng từng site (D039-19) thay ở B4.
+ * Mở pool của site lần đầu nó được nhận (registerSitePool ở db/site.ts). Site có vai trò riêng (B4a, D039-19): kết nối bằng
+ * vai trò đó, mật khẩu giải mã bằng SITE_SECRET_KEY. Site ghi tay chưa có vai trò riêng: thông tin đăng nhập của DATABASE_URL.
  * Trần pool và tự đóng pool rảnh (D039-7) làm ở B2c.
  */
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';
@@ -32,20 +34,25 @@ export interface SiteRecord {
   db_host: string;
   db_port: number;
   db_name: string;
+  db_app_role: string | null;
+  db_secrets_enc: string | null;
 }
 
 let controlUrl: string | undefined = env.CONTROL_DATABASE_URL;
+let secretKey: string | undefined = env.SITE_SECRET_KEY;
 let control: pg.Pool | undefined;
 let schemaReady: Promise<void> | undefined;
 const byHost = new Map<string, { at: number; site: SiteRecord | null }>();
 
-/** Đổi database điều khiển lúc chạy. Chỉ cho test; bản cài đọc CONTROL_DATABASE_URL một lần. */
-export async function configureSiteRegistryForTest(url: string | undefined): Promise<void> {
+/** Đổi database điều khiển (và khoá mã hoá) lúc chạy. Chỉ cho test; bản cài đọc CONTROL_DATABASE_URL, SITE_SECRET_KEY một lần. */
+export async function configureSiteRegistryForTest(url: string | undefined, key?: string): Promise<void> {
   await closeSiteRegistry();
   controlUrl = url;
+  if (key !== undefined) secretKey = key;
 }
 
-function controlPool(): pg.Pool {
+/** Pool của database điều khiển (Site Provisioner ghi registry qua đây). */
+export function controlPool(): pg.Pool {
   if (!controlUrl) throw new Error('Thiếu CONTROL_DATABASE_URL: Site Registry chỉ chạy khi SITE_MODE=multi có database điều khiển');
   control ??= new pg.Pool({ connectionString: controlUrl, max: 4 });
   return control;
@@ -99,7 +106,7 @@ export async function resolveSiteIdByHost(host: string | undefined): Promise<str
   if (!hit || now - hit.at > CACHE_MS) {
     await ensureControlSchema();
     const r = await controlPool().query<SiteRecord>(
-      `SELECT s.id, s.slug, s.status, s.db_host, s.db_port, s.db_name
+      `SELECT s.id, s.slug, s.status, s.db_host, s.db_port, s.db_name, s.db_app_role, s.db_secrets_enc
          FROM site_domains d JOIN sites s ON s.id = d.site_id
         WHERE d.domain = $1`,
       [h],
@@ -113,9 +120,16 @@ export async function resolveSiteIdByHost(host: string | undefined): Promise<str
   return site.id;
 }
 
-/** Chuỗi kết nối của site: thông tin đăng nhập của DATABASE_URL (B2a), máy chủ / cổng / database theo registry. */
+/**
+ * Chuỗi kết nối của site: máy chủ / cổng / database theo registry. Có vai trò riêng (B4a): đăng nhập bằng vai trò đó với mật khẩu
+ * giải mã từ registry; không có: thông tin đăng nhập của DATABASE_URL (site ghi tay, B2a).
+ */
 function siteConnectionString(site: SiteRecord): string {
   const u = new URL(env.DATABASE_URL);
+  if (site.db_app_role && site.db_secrets_enc) {
+    u.username = site.db_app_role;
+    u.password = decryptSiteSecret(site.db_secrets_enc);
+  }
   u.hostname = site.db_host;
   u.port = String(site.db_port);
   u.pathname = `/${site.db_name}`;
@@ -133,4 +147,29 @@ export async function closeSiteRegistry(): Promise<void> {
   const p = control;
   control = undefined;
   await p?.end();
+}
+
+// ── Mã hoá mật khẩu vai trò của site (D039-19) ─────────────────────────────────────────────────────────────────────────────
+// [2026-11-22 10:26 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a: AES-256-GCM, khoá = SHA-256(SITE_SECRET_KEY); dạng lưu v1:<base64(iv 12 | tag 16 | bản mã)>
+
+function keyBytes(): Buffer {
+  if (!secretKey) throw new Error('Thiếu SITE_SECRET_KEY: không mã hoá / giải mã được mật khẩu vai trò của site');
+  return createHash('sha256').update(secretKey, 'utf8').digest();
+}
+
+/** Mã hoá một chuỗi bí mật để lưu ở registry. Không bao giờ ghi giá trị gốc vào nhật ký. */
+export function encryptSiteSecret(plain: string): string {
+  const iv = randomBytes(12);
+  const c = createCipheriv('aes-256-gcm', keyBytes(), iv);
+  const body = Buffer.concat([c.update(plain, 'utf8'), c.final()]);
+  return `v1:${Buffer.concat([iv, c.getAuthTag(), body]).toString('base64')}`;
+}
+
+/** Giải mã chuỗi đã lưu ở registry. Sai khoá / bị sửa → ném lỗi (không trả chuỗi rỗng). */
+export function decryptSiteSecret(stored: string): string {
+  if (!stored.startsWith('v1:')) throw new Error('Mật khẩu của site không đúng khuôn v1');
+  const raw = Buffer.from(stored.slice(3), 'base64');
+  const d = createDecipheriv('aes-256-gcm', keyBytes(), raw.subarray(0, 12));
+  d.setAuthTag(raw.subarray(12, 28));
+  return Buffer.concat([d.update(raw.subarray(28)), d.final()]).toString('utf8');
 }
