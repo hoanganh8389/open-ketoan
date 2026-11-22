@@ -103,7 +103,7 @@ Vị trí: đứng cạnh nền móng MDG. MDG giữ **định danh của đối
 |---|---|---|---|---|
 | DC-1 | Mọi chứng từ ERP có dòng sổ chứng từ chung, ghi bằng trigger | một phần | 0158, 0165, 0166, 0179, NT-BH-033; thiếu BH12, kiểm kê, phiếu thu / chi quỹ, đề nghị điều chuyển | S040-17, S040-21 |
 | DC-2 | `doc_ref` bất biến, theo đơn vị; module ghi qua hàm `SECURITY DEFINER` kiểm đơn vị | một phần | 0167; chưa có check tĩnh `doc_ref` = `doc_key` | S040-18 |
-| DC-3 | Sáu nhóm trạng thái thống nhất ở Doc 26, hợp đồng, CANON | tài liệu | Doc 26 §4; hợp đồng còn 5 nhóm | S040-3 |
+| DC-3 | Sáu nhóm trạng thái thống nhất ở Doc 26, hợp đồng, CANON | ~~tài liệu~~ **đạt** (B1: mã đã có `STATUS_GROUPS` sáu nhóm từ 0166, chỉ hợp đồng lệch — đã sửa 1.5.0-draft) | Doc 26 §4; `workflow.ts` | S040-3 |
 | DC-4 | Phiên bản + băm khi nội dung đổi; đổi trạng thái không tăng | một phần | `document_versions.content_hash`, test `so-chung-tu`; B1 xác minh từng loại có ca | S040-5 |
 | DC-5 | Liên kết có ngữ nghĩa, không mồ côi nguồn | một phần | chín vai, `lich-su-chung-tu`; chưa có chẩn đoán mồ côi | S040-18 |
 | DC-6 | Hợp đồng xuyên suốt chuỗi mua, phiếu nào cũng hiện số HĐ | một phần | 0165, `hop-dong-mua`, `cong-no-theo-hop-dong`, `golden-hop-dong`; thiếu hoá đơn NCC / đề nghị TT / chi / trả / thưởng mang HĐ, thiếu nhắc | S040-13, S040-14 |

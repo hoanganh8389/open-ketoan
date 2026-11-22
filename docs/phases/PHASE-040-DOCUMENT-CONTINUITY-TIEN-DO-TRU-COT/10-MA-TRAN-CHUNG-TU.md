@@ -133,10 +133,10 @@ Cột "Test gần nhất đã có" là **gợi ý đối chiếu**, chưa xác m
 | T040-21 | POS | Đóng ca khi QR chưa đối soát | tiền đang chuyển | `nt-bh-009-pos-thanh-toan-qr` | — |
 | T040-22 | Kho | Chuyển kho hai đầu, nhận thiếu | hai đầu xác nhận, có luồng chênh lệch | `phieu-chuyen-kho` | — |
 | T040-23 | Kho | Combo 3+1 rồi tách bán | mỗi SKU một `item_id` | PHASE-037 | — |
-| T040-24 | Chứng từ | Sửa PO sau duyệt, chưa ghi sổ | `version` tăng, không tự sinh đảo | `so-chung-tu` | B1 xác minh |
-| T040-25 | Chứng từ | Sửa phiếu đã ghi sổ | điều chỉnh + phiên bản; đảo do Kernel | `so-chung-tu`, `lich-su-chung-tu` | B1 xác minh |
-| T040-26 | Chứng từ | Chỉ đổi `status_raw` | `status` đổi, `version` không tăng | `so-chung-tu` | B1 xác minh |
-| T040-27 | Chứng từ | Xoá dòng nguồn | `cancelled`, lịch sử còn | `so-chung-tu` | B1 xác minh |
+| T040-24 | Chứng từ | Sửa PO sau duyệt, chưa ghi sổ | `version` tăng, không tự sinh đảo | `so-chung-tu` | ✅ B1 2026-11-22 — `so-chung-tu` "đổi trạng thái không thêm phiên bản; đổi nội dung thì thêm" (đơn đặt đã duyệt sửa tổng → `version` 2; đơn đặt không có bút toán) |
+| T040-25 | Chứng từ | Sửa phiếu đã ghi sổ | điều chỉnh + phiên bản; đảo do Kernel | `so-chung-tu`, `lich-su-chung-tu` | ✅ B1 2026-11-22 — `lich-su-chung-tu` "V2 (sửa số tiền)…": bút toán V1 bị đảo, bút toán mới thuộc V2 |
+| T040-26 | Chứng từ | Chỉ đổi `status_raw` | `status` đổi, `version` không tăng | `so-chung-tu` | ✅ B1 2026-11-22 — cùng ca T040-24: `pending_approval` → nhóm `pending`, `approved` → `version` vẫn 1 |
+| T040-27 | Chứng từ | Xoá dòng nguồn | `cancelled`, lịch sử còn | `so-chung-tu` | 🟡 B1 2026-11-22 — mới phủ `pricing.policy` (xoá → `cancelled` / `retired`, giữ dòng); phiếu mua / kho chưa có ca → S040-21 |
 | T040-28 | Chứng từ | Đính kèm trùng / bản sửa | băm chống trùng; chữ ký cũ hết hiệu lực khi nội dung đổi | `dinh-kem-chung-tu` | B8 |
 | T040-29 | Chứng từ | Hoá đơn XML trùng mã ngoài | không thêm chứng từ; nhật ký thử lại | `hoa-don-ncc-so-chung-tu` | B4 |
 | T040-30 | Chứng từ | Ba ô sai cùng lúc | trả đủ ba phát hiện, tô đúng ô | Doc 25 §3.2 (`error.fields`) | B4 |
