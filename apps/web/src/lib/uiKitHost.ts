@@ -1,6 +1,6 @@
 // [2026-11-02 09:33 PM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W2 (PHASES 3.8): khung giao diện cung cấp bản thật cho @bizcity/ui-kit — module dùng đúng thành phần, client API của Core
 /** Gọi một lần trước khi vẽ (main.tsx). Màn của module SDK lấy thành phần + client API qua @bizcity/ui-kit, không import src/*. */
-import { createElement } from 'react';
+import { Suspense, createElement, lazy } from 'react';
 import { provideUiKit } from '@bizcity/ui-kit';
 import { PageHeader } from '@/components/PageHeader';
 // [2026-11-12 10:00 PM Võ Hoàng] POS-UIKIT — BIZCITY-EXTENSION 1.4.0-draft §3b: bản thật của bảng lưới, thẻ chỉ số, bộ tham số, ô chọn (đóng góp)
@@ -12,6 +12,11 @@ import { ItemPicker } from '@/components/pickers';
 import { Empty, ErrorBox, Field, Loading, Modal, Money, StatusBadge } from '@/components/ui';
 import { api, errorText } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+
+// [2026-11-22 10:45 PM Võ Hoàng] NT-BH-037 — BIZCITY-EXTENSION 1.5.0-draft §3c: bản thật của khung phiếu DocSheet / DocSheetPanel (đóng góp)
+// Nạp lười: khung phiếu (kèm HelpDrawer, CSS) chỉ tải khi module mở form — không làm nặng gói khởi động.
+const KhungPhieu = lazy(() => import('@/components/phieu-hang/KhungPhieu').then((m) => ({ default: m.KhungPhieu })));
+const KhoiTroLy = lazy(() => import('@/components/phieu-hang/KhungPhieu').then((m) => ({ default: m.KhoiTroLy })));
 
 export function installUiKit(): void {
   provideUiKit({
@@ -25,6 +30,10 @@ export function installUiKit(): void {
     ItemPicker: (p) => createElement(ItemPicker, p),
     BranchPicker: (p) => createElement(BranchPicker, p),
     Modal: (p) => createElement(Modal, { ...p, footer: p.footer ?? null }),
+    // [2026-11-22 10:45 PM Võ Hoàng] NT-BH-037 — DocSheet → KhungPhieu: total { label, value } → totalLabel / total; còn lại trùng tên (đóng góp)
+    DocSheet: ({ total, ...p }) => createElement(Suspense, { fallback: null },
+      createElement(KhungPhieu, { ...p, ...(total ? { totalLabel: total.label, total: total.value } : {}) })),
+    DocSheetPanel: (p) => createElement(Suspense, { fallback: null }, createElement(KhoiTroLy, p)),
     api: {
       get: (path, query) => api.get(path, query),
       getPage: (path, query) => api.getPage(path, query),

@@ -1,10 +1,13 @@
 /**
  * Hộp thêm / sửa chương trình có hạn mức theo cửa hàng (thẻ *Có hạn mức* của BH18, phiếu NT-BH-018 — chuyển từ màn BH12): mặt hàng chính,
  * tặng hàng hoặc giảm giá, thời gian, hạn mức từng cửa hàng (không hạ dưới số đã dùng). Lưu = POST / PUT /api/v1/sale-programs (giữ nguyên API).
+ * NT-BH-037: khung phiếu `DocSheet` cùng mẫu phiếu mua — khối đầu (mã, tên, loại, hiệu lực), thân như cũ, cột Trợ lý (Kiểm tra, Tóm tắt);
+ * chương trình có sẵn mở ở chế độ xem (Sửa / F2 / bấm đúp để sửa).
  */
 // [2026-11-15 09:40 AM Võ Hoàng] NGHIEM-THU — NT-BH-018: form chương trình có hạn mức trong module pos (đóng góp)
+// [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: form chương trình có hạn mức dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 import { useState, type ReactNode } from 'react';
-import { ErrorBox, Field, ItemPicker, Modal, errorText, useApi, useMutation, useQuery } from '@bizcity/ui-kit';
+import { DocSheet, DocSheetPanel, Field, ItemPicker, errorText, useApi, useMutation, useQuery } from '@bizcity/ui-kit';
 import { QUOTA_KINDS, emptyProgramForm, fromProgram, toProgramBody, type Program, type ProgramForm, type ProgramKind } from './han-muc';
 
 type Branch = { code: string; name: string; isActive?: boolean };
@@ -37,29 +40,60 @@ export function HanMucForm({ program, mode, today, writable, onClose, onDone }: 
     <input className="input num" style={{ width: w }} disabled={ro} title={title} value={v ? money(v) : ''} onChange={(e) => on(n(e.target.value))} />
   );
 
+  const usedTotal = [...used.values()].reduce((x, y) => x + y, 0);
+  const branchCount = Object.values(f.quotas).filter((x) => x > 0).length;
+  const offer = f.mode === 'gift'
+    ? `Mua ${f.buyQty || '…'} tặng ${f.giftQty || '…'}${f.giftSku ? ` ${f.giftSku}` : ' (chính mặt hàng)'}`
+    : `${f.discountWay === 'pct' ? `Giảm ${f.discountValue || '…'}%` : f.discountWay === 'amount' ? `Giảm ${f.discountValue ? money(f.discountValue) : '…'}đ / đơn vị` : `Giá ${f.discountValue ? money(f.discountValue) : '…'}đ / đơn vị`}`;
+
   return (
-    <Modal wide title={program ? `Chương trình ${program.code}` : `Thêm — ${QUOTA_KINDS[f.mode].label}`} onClose={onClose} footer={(
-      <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-        {editing && problems.length > 0 && <span className="muted" style={{ maxWidth: 520 }}>{problems.join(' · ')}</span>}
+    <DocSheet
+      title={program ? `Chương trình ${program.code}` : `Thêm — ${QUOTA_KINDS[f.mode].label}`}
+      badges={<span className={`badge ${f.isActive ? 'badge-ok' : 'badge-gray'}`}>{f.isActive ? 'Đang áp dụng' : 'Ngừng'}</span>}
+      viewing={ro && writable} readOnly={ro && !writable} onEdit={() => setEditing(true)}
+      onClose={onClose}
+      sideTitle="Trợ lý khuyến mại"
+      keys="Ctrl + S - Lưu · F2 - Sửa · Esc - Thoát"
+      footNote={save.error ? <span className="mh-bad">{errorText(save.error)}</span> : editing && problems.length > 0 ? <span className="muted">Chưa lưu được: {problems.join(' · ')}</span> : null}
+      footer={<>
         {editing
           ? <button type="button" className="btn btn-primary" disabled={!writable || save.isPending || problems.length > 0} title={!writable ? 'Cần quyền ghi danh mục (catalog:write)' : problems.join('; ')} onClick={() => save.mutate()}>{save.isPending ? 'Đang lưu…' : 'Lưu'}</button>
           : <button type="button" className="btn btn-primary" disabled={!writable} title={writable ? '' : 'Cần quyền ghi danh mục (catalog:write)'} onClick={() => setEditing(true)}>Sửa</button>}
         <button type="button" className="btn" onClick={onClose}>Đóng</button>
+      </>}
+      side={<>
+        <DocSheetPanel title="Kiểm tra" badge={editing ? (problems.length ? <span className="badge badge-warn">{problems.length}</span> : <span className="badge badge-ok">ổn</span>) : undefined}>
+          {!editing ? <div className="mh-check ok">✓ Đang xem — bấm Sửa để thay đổi</div>
+            : problems.length ? problems.map((p) => <div key={p} className="mh-check warn">⚠ {p}</div>)
+            : <div className="mh-check ok">✓ Đủ thông tin — bấm Lưu</div>}
+        </DocSheetPanel>
+        <DocSheetPanel title="Tóm tắt">
+          <div className="mh-kv">
+            <span>Mặt hàng chính</span><span>{f.sku || '—'}</span>
+            <span>Ưu đãi</span><span>{offer}</span>
+            <span>Hiệu lực</span><span>{f.validFrom || '…'} – {f.validTo || '…'}</span>
+            <span>Cửa hàng có hạn mức</span><span>{branchCount}</span>
+            <span className="total">Tổng hạn mức</span><span className="total">{money(total)}</span>
+            {usedTotal > 0 && <><span>Đã dùng</span><span>{money(usedTotal)}</span></>}
+          </div>
+        </DocSheetPanel>
+      </>}>
+      <p className="muted" style={{ margin: '0 0 8px' }}>Hàng tặng / giảm giá vẫn là <b>mặt hàng chính, không sinh mã mới</b>. Cửa hàng chỉ bán theo chương trình khi còn hạn và còn hạn mức; phiếu bán ghi sổ thì hạn mức tự trừ, huỷ thì tự trả.</p>
+      <div className="mh-head">
+        <Field label="Mã chương trình (*)" hint="Không đổi được sau khi lưu"><input className="input mono" disabled={ro || Boolean(program)} value={f.code} placeholder="vd KM-T11-LY" onChange={(e) => set({ code: e.target.value.toUpperCase().trim() })} /></Field>
+        <div className="span2"><Field label="Tên chương trình (*)"><input className="input" disabled={ro} value={f.name} placeholder="vd Mua sữa tặng ly tháng 11" onChange={(e) => set({ name: e.target.value })} /></Field></div>
+        <div className="span2"><Field label="Loại chương trình" hint={kindNote || 'Nhóm chương trình để báo cáo'}>
+          <select className="select input" disabled={ro} value={f.programKind} onChange={(e) => set({ programKind: e.target.value })}>
+            {kinds.length === 0 && <option value={f.programKind}>{f.programKind}</option>}
+            {kinds.map((k) => <option key={k.code} value={k.code}>{k.code} — {k.name}</option>)}
+          </select>
+        </Field></div>
+        <Field label="Trạng thái"><label className="checkbox" title="Bỏ tích để ngừng sớm"><input type="checkbox" disabled={ro} checked={f.isActive} onChange={(e) => set({ isActive: e.target.checked })} /> Đang áp dụng</label></Field>
+        <Field label="Từ ngày (*)"><input type="date" className="input" disabled={ro} value={f.validFrom} onChange={(e) => set({ validFrom: e.target.value })} /></Field>
+        <Field label="Đến ngày (*)" hint="Gồm cả ngày này"><input type="date" className="input" disabled={ro} value={f.validTo} onChange={(e) => set({ validTo: e.target.value })} /></Field>
+        <div style={{ gridColumn: 'span 4' }}><Field label="Ghi chú"><input className="input" disabled={ro} value={f.note} onChange={(e) => set({ note: e.target.value })} /></Field></div>
       </div>
-    )}>
-      <div style={{ display: 'grid', gap: 10, gridColumn: '1 / -1' }}>
-        {save.error && <ErrorBox error={errorText(save.error)} />}
-        <p className="muted" style={{ margin: 0 }}>Hàng tặng / giảm giá vẫn là <b>mặt hàng chính, không sinh mã mới</b>. Cửa hàng chỉ bán theo chương trình khi còn hạn và còn hạn mức; phiếu bán ghi sổ thì hạn mức tự trừ, huỷ thì tự trả.</p>
-        <Row>
-          <Field label="Mã chương trình (*)" hint="Dòng bán gắn mã này; không đổi được sau khi lưu"><input className="input mono" disabled={ro || Boolean(program)} value={f.code} placeholder="vd KM-T11-LY" onChange={(e) => set({ code: e.target.value.toUpperCase().trim() })} /></Field>
-          <Field label="Tên chương trình (*)"><input className="input" style={{ width: 320 }} disabled={ro} value={f.name} placeholder="vd Mua sữa tặng ly tháng 11" onChange={(e) => set({ name: e.target.value })} /></Field>
-          <Field label="Loại chương trình" hint={kindNote || 'Nhóm chương trình để báo cáo'}>
-            <select className="select input" disabled={ro} value={f.programKind} onChange={(e) => set({ programKind: e.target.value })}>
-              {kinds.length === 0 && <option value={f.programKind}>{f.programKind}</option>}
-              {kinds.map((k) => <option key={k.code} value={k.code}>{k.code} — {k.name}</option>)}
-            </select>
-          </Field>
-        </Row>
+      <div style={{ display: 'grid', gap: 10 }}>
         <Row>
           <Field label="Mặt hàng chính (*)"><ItemPicker value={f.sku} disabled={ro} onChange={(v) => set({ sku: v ?? '' })} /></Field>
           <Field label="Kiểu ưu đãi">
@@ -81,12 +115,6 @@ export function HanMucForm({ program, mode, today, writable, onClose, onDone }: 
               <input className="input num" style={{ width: 120 }} disabled={ro} value={f.discountValue ? String(f.discountValue).replace('.', ',') : ''} onChange={(e) => set({ discountValue: n(e.target.value) })} />
             </Field>
           </>}
-        </Row>
-        <Row>
-          <Field label="Từ ngày (*)"><input type="date" className="input" disabled={ro} value={f.validFrom} onChange={(e) => set({ validFrom: e.target.value })} /></Field>
-          <Field label="Đến ngày (*)" hint="Gồm cả ngày này"><input type="date" className="input" disabled={ro} value={f.validTo} onChange={(e) => set({ validTo: e.target.value })} /></Field>
-          <label className="checkbox" title="Bỏ tích để ngừng sớm"><input type="checkbox" disabled={ro} checked={f.isActive} onChange={(e) => set({ isActive: e.target.checked })} /> Đang áp dụng</label>
-          <Field label="Ghi chú"><input className="input" style={{ width: 320 }} disabled={ro} value={f.note} onChange={(e) => set({ note: e.target.value })} /></Field>
         </Row>
 
         <fieldset style={{ border: '1px solid var(--line, #ddd)', borderRadius: 6, padding: '8px 10px', display: 'grid', gap: 8 }}>
@@ -117,6 +145,6 @@ export function HanMucForm({ program, mode, today, writable, onClose, onDone }: 
           </div>
         </fieldset>
       </div>
-    </Modal>
+    </DocSheet>
   );
 }

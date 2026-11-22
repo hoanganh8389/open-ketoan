@@ -10,6 +10,8 @@
 .kp-sheet .mh-sheet-head .ct-total { margin-left: 0; }
 .kp-sheet .mh-sheet-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 400px; position: relative; }
 .kp-sheet .mh-sheet-body.an-tro-ly { grid-template-columns: minmax(0, 1fr) 26px; }
+/* [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: không có cột Trợ lý (DocSheet không truyền side) = thân một cột (đóng góp) */
+.kp-sheet .mh-sheet-body.kp-mot-cot { grid-template-columns: minmax(0, 1fr); }
 .kp-sheet .mh-main { overflow: auto; padding: 10px 14px; background: var(--form-bg); }
 .kp-sheet .mh-main fieldset { min-width: 0; max-width: 100%; }
 .kp-sheet .mh-side { overflow: auto; border-left: 1px solid var(--line); background: #f7f9fc; padding: 10px 12px; position: relative; }

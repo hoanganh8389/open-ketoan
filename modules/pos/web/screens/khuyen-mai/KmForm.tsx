@@ -3,11 +3,14 @@
  * NĐ81) + phần riêng của từng loại. Phát hành = POST /api/v1/policies (Core kiểm lại nội dung, lỗi hiện nguyên câu của Core).
  * 18/11 (NT-BH-025): Lưu = BẢN NHÁP ở module pos (chưa áp); người có quyền Duyệt khuyến mại duyệt rồi mới phát hành. Khai hạn mức lượt theo
  * cửa hàng. Lưu xong hiện cảnh báo chương trình trùng (cùng mã hàng, cùng cửa hàng, giao thời gian) — chỉ cảnh báo.
+ * NT-BH-037: khung phiếu `DocSheet` cùng mẫu phiếu mua — khối đầu (mã, loại, ngày áp, thời gian chiến dịch, tên, cửa hàng), thân theo loại,
+ * cột Trợ lý (Kiểm tra, Tóm tắt, Trùng chương trình). Dữ liệu gửi, lời gọi API giữ nguyên.
  */
 // [2026-11-14 01:10 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: form khuyến mại 6 loại (đóng góp)
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: lưu nháp + gửi duyệt, hạn mức lượt, cảnh báo trùng (đóng góp)
+// [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: form khuyến mại dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 import { useState, type ReactNode } from 'react';
-import { BranchCheckList, ErrorBox, Field, Modal, errorText, useApi, useMutation } from '@bizcity/ui-kit';
+import { BranchCheckList, DocSheet, DocSheetPanel, ErrorBox, Field, Loading, Modal, errorText, useApi, useMutation, useQuery } from '@bizcity/ui-kit';
 import { M } from '../../lib';
 import { OverlapList, type Overlap } from './Drafts';
 import { KIND_INFO, toParams, toQuota, type Form, type TierMode } from './model';
@@ -27,6 +30,8 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
   const { params } = tp;
   const q = toQuota(f);
   const problems = [...tp.problems, ...q.problems];
+  // Bản nháp đã lưu: đọc cảnh báo trùng đang có (cùng API hộp Duyệt); bản mới thì máy chủ báo khi Lưu.
+  const ov = useQuery({ queryKey: ['km', 'overlaps', draftId], enabled: Boolean(draftId), queryFn: () => api.get<Overlap[]>(`${M}/promo/drafts/${draftId}/overlaps`) });
   const publish = useMutation({
     mutationFn: (submit: boolean) => {
       const body = {
@@ -59,29 +64,73 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
     </>
   );
 
+  const branchText = f.branchCodes.length ? f.branchCodes.join(', ') : 'Mọi cửa hàng';
+  const skuCount = (s: string) => s.split(/[\s,;]+/).filter(Boolean).length;
+  const reward = (() => {
+    switch (f.kind) {
+      case 'tiered': return `${f.tiers.length} bậc theo ${f.basis === 'qty' ? 'số lượng' : 'tiền hàng của nhóm'} · nhóm ${skuCount(f.skus)} mã`;
+      case 'order_discount': return `${f.orderTiers.length} bậc theo tổng đơn${skuCount(f.skus) ? ` · chỉ tính ${skuCount(f.skus)} mã` : ''}`;
+      case 'order_gift': return `${f.giftTiers.length} bậc quà theo tổng đơn${skuCount(f.skus) ? ` · chỉ tính ${skuCount(f.skus)} mã` : ''}`;
+      case 'combo': return `Bộ ${f.items.filter((x) => x.sku.trim()).length} món · ${f.comboMode === 'comboPrice' ? 'giá cả bộ' : f.comboMode === 'discountPct' ? 'giảm % cả bộ' : 'giảm tiền / bộ'} ${f.comboValue || '…'}`;
+      case 'cheapest_free': return `Mua ${f.buyQty || '…'} tặng ${f.freeQty || '…'} món rẻ nhất · nhóm ${skuCount(f.skus)} mã${f.repeat ? ' · lặp lại' : ''}`;
+      case 'buy_x_get_y': return `Mua ${f.buy.sku || '…'} × ${f.buy.qty || '…'} tặng ${f.get.sku || '…'} × ${f.get.qty || '…'}${f.repeat ? ' · lặp lại' : ''}`;
+      default: return '';
+    }
+  })();
+  const quotaText = f.quotaPerBranch.trim() || f.quotaBranches.trim()
+    ? [f.quotaPerBranch.trim() && `${f.quotaPerBranch.trim()} đơn / cửa hàng`, f.quotaBranches.trim() && `riêng ${f.quotaBranches.trim()}`].filter(Boolean).join(' · ')
+    : 'Không giới hạn';
+
   return (
-    <Modal wide title={`${editing ? 'Sửa' : 'Thêm'} khuyến mại — ${KIND_INFO[f.kind].label}`} onClose={onClose} footer={(
-      <div className="row" style={{ gap: 8, alignItems: 'center' }}>
-        {problems.length > 0 && <span className="muted" style={{ maxWidth: 520 }}>{problems.join(' · ')}</span>}
+    <DocSheet
+      title={`${editing ? 'Sửa' : 'Thêm'} khuyến mại${f.key.trim() ? ` ${f.key.trim()}` : ''}`}
+      badges={<span className="badge badge-info">{KIND_INFO[f.kind].label}</span>}
+      onClose={onClose}
+      sideTitle="Trợ lý khuyến mại"
+      keys="Ctrl + S - Lưu và gửi duyệt · Esc - Thoát"
+      footNote={publish.error ? <span className="mh-bad">{errorText(publish.error)}</span> : problems.length > 0 ? <span className="muted">Chưa lưu được: {problems.join(' · ')}</span> : null}
+      footer={<>
         <button type="button" className="btn" disabled={problems.length > 0 || publish.isPending} title={problems.join('; ')} onClick={() => publish.mutate(false)}>Lưu nháp</button>
         <button type="button" className="btn btn-primary" disabled={problems.length > 0 || publish.isPending} title={problems.join('; ')} onClick={() => publish.mutate(true)}>Lưu và gửi duyệt</button>
         <button type="button" className="btn" onClick={onClose}>Đóng</button>
+      </>}
+      side={<>
+        <DocSheetPanel title="Kiểm tra" badge={problems.length ? <span className="badge badge-warn">{problems.length}</span> : <span className="badge badge-ok">ổn</span>}>
+          {problems.length ? problems.map((p) => <div key={p} className="mh-check warn">⚠ {p}</div>)
+            : <div className="mh-check ok">✓ Đủ thông tin — Lưu nháp hoặc Lưu và gửi duyệt</div>}
+          <ol className="mh-guide" style={{ marginTop: 6 }}>
+            <li><b>Lưu</b> là bản nháp — chưa áp ở máy bán</li>
+            <li>Người có quyền Duyệt khuyến mại (không phải người lập) <b>duyệt</b> thì mới phát hành</li>
+            <li>Máy bán áp từ <b>ngày áp dụng</b>; đổi về sau thì Sửa (bản mới), không xoá</li>
+          </ol>
+        </DocSheetPanel>
+        <DocSheetPanel title="Tóm tắt">
+          <div className="mh-kv">
+            <span>Áp cho</span><span>{branchText}</span>
+            <span>Áp từ ngày</span><span>{f.effectiveFrom || '—'}</span>
+            <span>Chiến dịch</span><span>{f.validFrom || '…'} – {f.validTo || 'không hạn'}</span>
+            <span>Hạn mức lượt</span><span>{quotaText}</span>
+          </div>
+          <div style={{ fontSize: 12.5, marginTop: 6 }}><span className="muted">Mức thưởng: </span>{reward}</div>
+        </DocSheetPanel>
+        <DocSheetPanel title="Trùng chương trình" badge={ov.data?.length ? <span className="badge badge-warn">{ov.data.length}</span> : undefined}>
+          {!draftId ? <div className="muted" style={{ fontSize: 12 }}>Lưu xong máy chủ báo chương trình trùng (cùng mã hàng, cùng cửa hàng, giao thời gian) — chỉ cảnh báo.</div>
+            : ov.isLoading ? <Loading /> : ov.error ? <ErrorBox error={errorText(ov.error)} /> : <OverlapList overlaps={ov.data ?? []} />}
+          {draftId && <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>Theo bản nháp đã lưu; sửa xong bấm Lưu để kiểm lại.</div>}
+        </DocSheetPanel>
+      </>}>
+      <p className="muted" style={{ margin: '0 0 8px' }}>{KIND_INFO[f.kind].hint}.</p>
+      <div className="mh-head">
+        <Field label="Mã khuyến mại (*)" hint="vd KM-TET-2026"><input className="input" value={f.key} disabled={editing} onChange={(e) => set({ key: e.target.value })} /></Field>
+        <div className="span2"><Field label="Loại"><input className="input" value={KIND_INFO[f.kind].label} disabled title="Chọn loại lúc Thêm chương trình" /></Field></div>
+        <Field label="Áp dụng từ ngày (*)"><input className="input" type="date" value={f.effectiveFrom} onChange={(e) => set({ effectiveFrom: e.target.value })} /></Field>
+        <Field label="Chiến dịch từ ngày"><input className="input" type="date" value={f.validFrom} onChange={(e) => set({ validFrom: e.target.value })} /></Field>
+        <Field label="đến ngày" hint="Trống = không hạn"><input className="input" type="date" value={f.validTo} onChange={(e) => set({ validTo: e.target.value })} /></Field>
+        <div className="span4"><Field label="Tên / ghi chú" hint="Lưu ở lý do phát hành; lùi ngày áp về trước hôm nay phải ghi lý do"><input className="input" value={f.reason} onChange={(e) => set({ reason: e.target.value })} /></Field></div>
+        <div className="span4"><Field label="Cửa hàng áp dụng" hint="Không chọn = mọi cửa hàng"><BranchCheckList value={f.branchCodes.join(',')} onChange={(v) => set({ branchCodes: v.split(',').filter(Boolean) })} /></Field></div>
       </div>
-    )}>
-      {/* Thân hộp rộng là lưới 4 cột: khối form trải hết bề ngang. */}
-      <div style={{ display: 'grid', gap: 10, gridColumn: '1 / -1' }}>
-        <p className="muted" style={{ margin: 0 }}>{KIND_INFO[f.kind].hint}. Lưu là bản nháp — người có quyền Duyệt khuyến mại (không phải người lập) duyệt thì mới phát hành; máy bán áp từ ngày áp dụng; {editing ? 'bản cũ tự kết thúc hôm trước, chứng từ đã bán giữ bản cũ.' : 'muốn đổi về sau thì Sửa (bản mới), không xoá.'}</p>
-        <Row>
-          <Field label="Mã khuyến mại (*)" hint="vd KM-TET-2026; trùng mã = sửa khuyến mại đó"><input className="input" value={f.key} disabled={editing} onChange={(e) => set({ key: e.target.value })} /></Field>
-          <Field label="Áp dụng từ ngày (*)"><input className="input" type="date" value={f.effectiveFrom} onChange={(e) => set({ effectiveFrom: e.target.value })} /></Field>
-          <Field label="Tên / ghi chú" hint="Lưu ở lý do phát hành; lùi ngày áp về trước hôm nay phải ghi lý do"><input className="input" style={{ width: 320 }} value={f.reason} onChange={(e) => set({ reason: e.target.value })} /></Field>
-        </Row>
-        <Field label="Cửa hàng áp dụng" hint="Không chọn = mọi cửa hàng"><BranchCheckList value={f.branchCodes.join(',')} onChange={(v) => set({ branchCodes: v.split(',').filter(Boolean) })} /></Field>
-        <Row>
-          <Field label="Chiến dịch từ ngày"><input className="input" type="date" value={f.validFrom} onChange={(e) => set({ validFrom: e.target.value })} /></Field>
-          <Field label="đến ngày" hint="Trống = không hạn"><input className="input" type="date" value={f.validTo} onChange={(e) => set({ validTo: e.target.value })} /></Field>
-        </Row>
 
+      <div style={{ display: 'grid', gap: 10 }}>
         {f.kind === 'tiered' && (
           <Box title="Nhóm hàng và các bậc">
             <Field label="Mã hàng trong nhóm (*)" hint="Cách nhau dấu phẩy"><textarea className="input" rows={2} value={f.skus} onChange={(e) => set({ skus: e.target.value })} /></Field>
@@ -149,8 +198,7 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
             · riêng {inp(f.quotaBranches, (v) => set({ quotaBranches: v }), 220, 'CN01=2, CN02=5')}</Row>
           <span className="muted">Hết lượt: máy bán báo trước khi thanh toán và không nhận đơn còn áp chương trình này; phiếu bán BH10 không duyệt được. Trả cả đơn → trả lại lượt.</span>
         </Box>
-        {publish.error && <ErrorBox error={errorText(publish.error)} />}
       </div>
-    </Modal>
+    </DocSheet>
   );
 }
