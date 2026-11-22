@@ -8,11 +8,11 @@
 | Đang làm | 6 |
 | Chờ merge | 0 |
 | Bị chặn | 31 |
-| Chưa ai nhận | 204 |
+| Chưa ai nhận | 208 |
 | Chờ đủ tín hiệu | 75 |
 | Hoãn | 3 |
 | Xong | 363 |
-| **Tổng** | **682** |
+| **Tổng** | **686** |
 
 ## Theo phân hệ (R-FLOW-10)
 
@@ -26,7 +26,7 @@
 | chung-tu | 71 | 5 | 0 | 29 | 105 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 172 | 26 | 2 | 63 | 263 |
+| he-thong | 172 | 26 | 2 | 67 | 267 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
 ## Đang làm (6)
@@ -80,7 +80,7 @@
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 | [S040-20](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L29) | PHASE-040 | he-thong | Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ main — PR + 1 người duyệt, check bắt buộc sau khi C… | P0 | — |
 
-## Chưa ai nhận (204)
+## Chưa ai nhận (208)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -288,6 +288,10 @@
 | [S040-18](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L27) | PHASE-040 | chung-tu | B8 — trạng thái kế toán suy ra trên HT18; chẩn đoán mồ côi nguồn, hoàn tất thiếu sổ, tệp đổi băm, docref ≠ do… | P1 | — |
 | [S040-19](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L28) | PHASE-040 | he-thong | B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản docs/reviews/REVIEW-R2-.md | P0 | — |
 | [S040-21](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L30) | PHASE-040 | kho · quy · ban-hang | Sau phase — đưa vào sổ các dòng ☐ "sau phase" ở 10 §2 | P1 | — |
+| [S040-22](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L31) | PHASE-040 | he-thong | B10a — SC-FIND-1 đọc quy-tac/.ts; SC-FLOW-1 so khớp mẫu tên tệp; SC-DOC-1, -2, -4, -5; SC-FIX-1 (35) | P0 | — |
+| [S040-23](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L32) | PHASE-040 | he-thong | B10b — tầng 0: SC-SEC-5 + SC-CON-7, SC-API-3, SC-KERNEL-7, SC-SEC-2, SC-AUTH-03 | P0 | — |
+| [S040-24](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L33) | PHASE-040 | he-thong | B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2 — @Thuy2k | P1 | — |
+| [S040-25](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L34) | PHASE-040 | he-thong | B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT | P1 | — |
 
 ## Chờ đủ tín hiệu (75)
 
