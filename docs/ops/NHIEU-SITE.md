@@ -5,7 +5,7 @@
 <!-- [2026-11-22 10:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a: Site Provisioner, biến SITE_TEMPLATE_DB, SITE_SECRET_KEY, PROVISION_DATABASE_URL, SITE_APP_PARENT_ROLE -->
 > **Trạng thái (2026-11-22):** có mã tới B4a (Site Provisioner). <!-- [2026-11-22 11:11 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c: việc nền theo site; còn thiếu B3 -->
 <!-- [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: nâng cấp theo site; còn thiếu sao lưu theo lịch / khôi phục (B6), cap-nhat.sh nhiều site (B7) -->
-**Chạy được, nâng cấp bằng lệnh:** `bizcity site migrate` nâng database mẫu rồi từng site, có cổng lược đồ (B3, §6). Chưa có: lệnh vòng đời qua Provisioning API (B5b) <!-- [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b: khoá / xoá mềm có ở CLI (§9) -->, <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: có sao lưu / khôi phục theo site (§8) --> `cap-nhat.sh` chế độ nhiều site (B7) — trước B7, nâng cấp làm tay theo §6. Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), việc nền theo site (B2c), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
+**Chạy được, nâng cấp bằng lệnh:** `bizcity site migrate` nâng database mẫu rồi từng site, có cổng lược đồ (B3, §6). Đủ lệnh vòng đời qua Provisioning API (B5b, hợp đồng PHASE-039 §30). Chưa có: khoá bản quyền `biz-…` (S039-14) <!-- [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b: khoá / xoá mềm có ở CLI (§9) -->, <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: có sao lưu / khôi phục theo site (§8) --> `cap-nhat.sh` chế độ nhiều site (B7) — trước B7, nâng cấp làm tay theo §6. Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), việc nền theo site (B2c), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
 
 ## 1. Biến môi trường
 
@@ -18,6 +18,7 @@
 | `PROVISION_DATABASE_URL` | `DATABASE_URL` | Kết nối có quyền `CREATEDB` + `CREATEROLE` để tạo database và vai trò của site |
 | `SITE_APP_PARENT_ROLE` | `ketoan_app` | Vai trò cha: vai trò ứng dụng của mỗi site là thành viên của nó, nên thừa hưởng quyền trên bảng mà migration cấp |
 | `SITE_ADMIN_HOST` | — | Tên miền điều hành: Provisioning API `/_sites/v1` chỉ trả lời trên tên miền này (chế độ `multi`). Trống = tắt Provisioning API |
+| `SITE_BACKUP_DIR` <!-- [2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b --> | `backups/sites` | Thư mục gốc chứa bản sao lưu khi sao lưu qua Provisioning API (`POST /sites/{id}/backups`, tiến trình API). **Phải gắn ra ngoài container** (vd `-v /opt/ketoan/backups:/app/backups`, `SITE_BACKUP_DIR=/app/backups/sites`) — không thì bản sao lưu mất khi dựng lại container |
 
 `DATABASE_URL` vẫn cần ở chế độ `multi`: đó là site ngầm định, dùng cho kiểm sống / sẵn sàng / số đo và lúc khởi động. **Không được trỏ vào `SITE_TEMPLATE_DB`** (API từ chối khởi động): kết nối giữ ở database mẫu làm `CREATE DATABASE … TEMPLATE` hỏng. Dùng một database nhỏ riêng. Việc nền không chạy trên site ngầm định ở chế độ `multi`. Site tạo bằng Site Provisioner kết nối bằng vai trò riêng; site ghi tay (§3b) chưa có vai trò riêng thì dùng tên đăng nhập + mật khẩu của `DATABASE_URL`.
 

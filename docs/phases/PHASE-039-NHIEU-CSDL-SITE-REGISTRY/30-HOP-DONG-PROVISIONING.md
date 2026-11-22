@@ -7,7 +7,9 @@
 > **Chủ hợp đồng:** Open Kế Toán. **Phía gọi:** Site Manager (`bizcity_site_manager`), CLI, script vận hành.
 
 <!-- [2026-11-22 10:56 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: đã có mã cho health, POST /sites, GET /sites, GET /sites/{id}, GET /jobs/{id}; khuôn phản hồi; trường owner trả một lần -->
-> **Đã có mã (B5a, 2026-11-22):** `GET /health`, `POST /sites`, `GET /sites`, `GET /sites/{siteId}`, `GET /jobs/{jobId}` — `apps/api/src/modules/sites/`. Các lệnh còn lại của §3 (khoá / mở / tên miền / sao lưu / khôi phục / bản quyền / xoá): B5b, B6.
+> **Đã có mã (B5a + B5b, 2026-11-22):** mọi lệnh của §3 — `apps/api/src/modules/sites/`. <!-- [2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: đủ lệnh §3, Site có trường sức khoẻ --> Còn: khoá bản quyền `biz-…` (§8, S039-14), lọc `updatedAfter` + phân trang con trỏ (hôm nay `next` luôn `null`, trả hết), chuyển hợp đồng sang `docs/contracts/`.
+>
+> **Phía gọi dự kiến:** plugin WordPress (chủ dự án 2026-11-22: chưa làm giao diện quản lý site; WordPress gọi API này sau).
 >
 > **Khuôn phản hồi:** thân thành công là đối tượng của hợp đồng, **không** bọc `{ ok, data }` như `/api/v1`. Lỗi theo khuôn chung `{ ok: false, error: { code, message, requestId } }`. Tên miền khác `SITE_ADMIN_HOST` hoặc `SITE_MODE=single` → 404 như đường không tồn tại.
 
@@ -34,18 +36,20 @@
 | Phương thức | Đường dẫn | Việc | Trả |
 |---|---|---|---|
 | `POST` | `/sites` | Tạo site | `202 { jobId, siteId }` |
-| `GET` | `/sites` | Danh sách (lọc `status`, `updatedAfter`, phân trang con trỏ) | `200 { items, next }` |
-| `GET` | `/sites/{siteId}` | Một site | `200 Site` |
+| `GET` | `/sites` | Danh sách (lọc `status`; `attention=1` = chỉ site cần chú ý; `updatedAfter`, phân trang con trỏ: chưa có) | `200 { items, next }` |
+| `GET` | `/sites/{siteId}` | Một site, kèm thử kết nối database (`database`) | `200 Site` |
 | `POST` | `/sites/{siteId}/suspend` | Khoá (chỉ đọc) | `202 { jobId }` |
 | `POST` | `/sites/{siteId}/resume` | Mở lại | `202 { jobId }` |
-| `POST` | `/sites/{siteId}/domains` | Thêm tên miền | `200 Site` |
+| `POST` | `/sites/{siteId}/domains` | Thêm tên miền — thân `{ "domain": "…", "primary": false }`; `primary: true` đổi tên miền chính | `200 Site` |
 | `DELETE` | `/sites/{siteId}/domains/{domain}` | Bỏ tên miền (không bỏ được tên miền chính) | `200 Site` |
 | `POST` | `/sites/{siteId}/backups` | Sao lưu ngay | `202 { jobId }` |
 | `GET` | `/sites/{siteId}/backups` | Danh sách bản sao lưu | `200 { items }` |
-| `POST` | `/sites/{siteId}/restore` | Khôi phục từ một bản | `202 { jobId }` |
+| `POST` | `/sites/{siteId}/restore` | Khôi phục từ một bản — thân `{ "backupId": "…" }`; database cũ giữ 7 ngày | `202 { jobId }` |
 | `DELETE` | `/sites/{siteId}` | Xoá mềm (cần đang khoá + bản sao lưu ≤ 24 giờ đã kiểm) | `202 { jobId }` |
 | `GET` | `/jobs/{jobId}` | Trạng thái việc | `200 Job` |
-| `GET` | `/health` | Bản ứng dụng, lược đồ cần, số site theo trạng thái | `200` |
+| `GET` | `/health` | `{ contract, appVersion, requiredSchema, sites: {trạng thái: số}, attention: {dấu: số} }` | `200` |
+
+**Mọi lệnh ghi** (kể cả tên miền) cần header `Idempotency-Key`. Lệnh `202` là việc chạy nền: hỏi `GET /jobs/{jobId}` tới `done` / `failed`. Một site chỉ chạy một việc vòng đời (khoá / mở / sao lưu / khôi phục / xoá) cùng lúc — việc thứ hai trả `409 SITE_BUSY`. Việc không cập nhật quá 2 giờ (máy chủ khởi động lại giữa chừng) thành `failed` mã `JOB_INTERRUPTED`.
 
 ## 4. Khuôn dữ liệu
 
@@ -88,6 +92,22 @@
 }
 ```
 
+<!-- [2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: trường sức khoẻ của Site -->
+**Trường sức khoẻ (B5b)** — phía gọi tô đỏ theo `attention`, không phải tự suy:
+
+| Trường | Ý nghĩa |
+|---|---|
+| `schemaCurrent` | `true` khi `schemaVersion` đúng bản ứng dụng đang chạy cần; `false` = site đang bị chặn `SITE_UPGRADING`; `null` = chưa ghi |
+| `dbSizeBytes` | cỡ database (`null` khi đã xoá / không đọc được) |
+| `lastBackupAt`, `backupAgeHours` | bản sao lưu đã kiểm gần nhất |
+| `suspendedAt`, `suspendReason` | khi đang khoá |
+| `deletedAt`, `purgeAfter`, `purgedAt` | xoá mềm: lấy lại được tới `purgeAfter` |
+| `migratedAt`, `migrationError`, `restoredAt` | lần nâng lược đồ / khôi phục gần nhất |
+| `database` | chỉ ở `GET /sites/{siteId}`: `{ "reachable": true, "latencyMs": 4 }` — thử kết nối thật, chờ tối đa 3 giây |
+| `attention` | mảng dấu: `suspended` · `deleted` · `migration_failed` · `upgrading` · `schema_behind` · `backup_missing` · `backup_stale` (> 26 giờ) · `unreachable`; rỗng = ổn |
+
+Bản sao lưu (`GET /sites/{siteId}/backups`): `{ "items": [{ "backupId", "createdAt", "bytes", "tables", "schemaVersion", "reason" }] }` — không trả đường dẫn tệp trên máy chủ.
+
 `status`: `provisioning` · `active` · `suspended` · `upgrading` · `migration_failed` · `deleted`.
 
 ### 4.3 `Job`
@@ -121,13 +141,18 @@
 | 401 | `PROVISION_KEY_INVALID` | thiếu / sai / đã thu hồi khoá, hoặc IP không được phép |
 | 404 | `SITE_NOT_FOUND` | không có site |
 | 409 | `SITE_SLUG_TAKEN` · `SITE_DOMAIN_TAKEN` | trùng |
+| 400 | `SITE_DOMAIN_INVALID` · `VALIDATION_FAILED` | tên miền sai khuôn · thiếu trường (vd `backupId`) |
+| 404 | `SITE_DOMAIN_UNKNOWN` · `JOB_NOT_FOUND` | site không có tên miền này · không có việc |
 | 409 | `SITE_BUSY` | site đang có việc khác chạy |
+| 409 | `SITE_DOMAIN_PRIMARY` | bỏ tên miền chính (đặt tên miền chính khác trước) |
 | 409 | `SITE_NOT_SUSPENDED` | xoá khi site chưa khoá |
 | 409 | `SITE_BACKUP_REQUIRED` | xoá / khôi phục khi chưa có bản sao lưu mới đã kiểm |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | cùng khoá nhưng thân lệnh khác |
 | 503 | `SITE_LIMIT_REACHED` | chạm trần số site của cụm |
 
-Mã phía cửa nghiệp vụ (không thuộc Provisioning API, phía gọi cần biết): `SITE_NOT_FOUND` (404), `SITE_UPGRADING` (503), `SITE_MIGRATION_FAILED` (503), `SITE_SUSPENDED` (403 cho lệnh ghi).
+Mã phía cửa nghiệp vụ (không thuộc Provisioning API, phía gọi cần biết): `SITE_NOT_FOUND` (404), `SITE_UPGRADING` (503), `SITE_MIGRATION_FAILED` (503), `SITE_SUSPENDED` (**423** cho lệnh ghi khi site đang khoá — B6b; đăng nhập / xem / in / xuất vẫn được).
+
+Mã của việc thất bại (`error.code` ở `GET /jobs/{jobId}`): mã của lõi (`SITE_SLUG_TAKEN`, `SITE_STATE_INVALID`, `SITE_BACKUP_FAILED`, `SITE_BACKUP_NOT_FOUND`, `SITE_RESTORE_FAILED`, `SITE_BACKUP_UNAVAILABLE`…), `JOB_INTERRUPTED`, hoặc `SITE_JOB_FAILED` / `SITE_PROVISION_FAILED` cho lỗi lạ (chi tiết chỉ ở nhật ký máy chủ).
 
 ## 6. Ví dụ một lượt
 

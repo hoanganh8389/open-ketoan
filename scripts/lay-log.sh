@@ -3,7 +3,7 @@
 # =============================================================================
 # Gom mọi thứ cần để người sửa / trợ lý AI đọc lỗi mà không phải vào máy chủ:
 #   commit, trạng thái container, kiểm sức khoẻ, log Docker của db-migrate / api / web / db,
-#   các tệp logs/*.log (nhật ký lỗi cố định, R-LOG-9), tên biến trong .env (KHÔNG giá trị).
+#   các tệp logs/<dịch vụ>/<ngày>.log (nhật ký lỗi cố định, R-LOG-9, D038-7), tên biến trong .env (KHÔNG giá trị).
 #
 #   ./scripts/lay-log.sh                     log 14 ngày gần nhất, 2000 dòng Docker mỗi dịch vụ
 #   ./scripts/lay-log.sh --tu 2026-11-20     tệp logs/ sửa từ ngày đó
@@ -89,9 +89,14 @@ done
 echo "   5. Nhật ký lỗi cố định ($LOG_DIR_HOST)"
 if [ -d "$LOG_DIR_HOST" ]; then
   if [ -n "$TU" ]; then LOC=(-newermt "$TU"); else LOC=(-mtime -14); fi
-  find "$LOG_DIR_HOST" -maxdepth 1 -type f -name '*.log*' ! -name 'goi-bao-loi-*' "${LOC[@]}" -print 2>/dev/null \
-    | while IFS= read -r f; do cp "$f" "$D/logs/" 2>/dev/null || echo "không đọc được $f" >> "$D/00-tom-tat.txt"; done
-  ls -la "$LOG_DIR_HOST" >> "$D/00-tom-tat.txt" 2>&1
+  # [2026-11-22 08:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B6 (D038-7): mỗi dịch vụ một thư mục logs/<dịch vụ>/<ngày>.log — giữ nguyên cấu trúc thư mục trong gói; tệp kiểu cũ ở gốc logs/ vẫn lấy
+  find "$LOG_DIR_HOST" -maxdepth 2 -type f -name '*.log*' ! -name 'goi-bao-loi-*' "${LOC[@]}" -print 2>/dev/null \
+    | while IFS= read -r f; do
+        rel="${f#"$LOG_DIR_HOST"/}"
+        mkdir -p "$D/logs/$(dirname "$rel")"
+        cp "$f" "$D/logs/$rel" 2>/dev/null || echo "không đọc được $f" >> "$D/00-tom-tat.txt"
+      done
+  { echo "\$ ls -la $LOG_DIR_HOST $LOG_DIR_HOST/*/"; ls -la "$LOG_DIR_HOST" "$LOG_DIR_HOST"/*/ 2>&1; echo; } >> "$D/00-tom-tat.txt"
 else
   echo "Chưa có thư mục $LOG_DIR_HOST (bản cài trước PHASE-038 B1)" >> "$D/00-tom-tat.txt"
 fi

@@ -9,6 +9,7 @@
  *   deleteSite    XOÁ MỀM (D039-15, R-SITE-12): cần site đang khoá + bản sao lưu đã kiểm ≤ 24 giờ. Ngắt kết nối, thu CONNECT của vai
  *                 trò ứng dụng, đổi tên database thành `kt_<slug>_xoa_<giờ>`; `deleted` → tên miền trả 404. Lấy lại được 30 ngày.
  *   undeleteSite  deleted (chưa dọn) → đổi tên lại, cấp lại CONNECT, `suspended` (người vận hành mở lại sau khi kiểm).
+ *   addSiteDomain / removeSiteDomain   thêm / bỏ tên miền (B5b); không bỏ được tên miền chính; `primary` đổi tên miền chính.
  *   sweepSites    dọn: database `_cu_` (trước lần khôi phục) quá 7 ngày, `_kp_` (khôi phục dở) quá 1 ngày, site xoá mềm quá 30
  *                 ngày (DROP database + vai trò ứng dụng, gỡ tên miền, ghi purged_at). `dryRun` chỉ liệt kê.
  *
@@ -19,7 +20,9 @@ import { unregisterSitePool } from './site.js';
 import { adminUrlFor, provisionerConfig } from './site-provisioner.js';
 import { controlPool, ensureControlSchema, invalidateSiteCache } from './site-registry.js';
 
-export type SiteLifecycleCode = 'SITE_UNKNOWN' | 'SITE_STATE_INVALID' | 'SITE_BACKUP_REQUIRED';
+export type SiteLifecycleCode = 'SITE_UNKNOWN' | 'SITE_STATE_INVALID' | 'SITE_BACKUP_REQUIRED'
+  // [2026-11-22 01:29 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: tên miền của site
+  | 'SITE_DOMAIN_INVALID' | 'SITE_DOMAIN_TAKEN' | 'SITE_DOMAIN_PRIMARY' | 'SITE_DOMAIN_UNKNOWN';
 
 export class SiteLifecycleError extends Error {
   constructor(readonly code: SiteLifecycleCode, message: string, options?: { cause?: unknown }) {
@@ -149,6 +152,49 @@ export async function undeleteSite(ref: string): Promise<SiteState> {
     [s.id]);
   invalidateSiteCache();
   return { siteId: s.id, slug: s.slug, status: 'suspended' };
+}
+
+// [2026-11-22 01:29 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: tên miền của site (Provisioning API POST / DELETE /sites/{id}/domains)
+const DOMAIN_RE = /^(?=.{3,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/;
+
+/** Thêm tên miền cho site (chữ thường, không cổng). `primary`: thành tên miền chính. Đã thuộc chính site này → chỉ cập nhật chính / phụ. */
+export async function addSiteDomain(ref: string, domain: string, primary = false): Promise<SiteState> {
+  const s = await findSite(ref);
+  if (s.status === 'deleted') throw new SiteLifecycleError('SITE_STATE_INVALID', `Site ${s.slug} đã xoá`);
+  const d = domain.trim().toLowerCase().replace(/\.$/, '');
+  if (!DOMAIN_RE.test(d)) throw new SiteLifecycleError('SITE_DOMAIN_INVALID', `Tên miền không hợp lệ: ${domain}`);
+  const c = await controlPool().connect();
+  try {
+    await c.query('BEGIN');
+    const owner = (await c.query<{ site_id: string }>('SELECT site_id FROM site_domains WHERE domain = $1 FOR UPDATE', [d])).rows[0];
+    if (owner && owner.site_id !== s.id) throw new SiteLifecycleError('SITE_DOMAIN_TAKEN', `Tên miền ${d} đã thuộc site khác`);
+    if (primary) await c.query('UPDATE site_domains SET is_primary = false WHERE site_id = $1 AND is_primary', [s.id]);
+    if (owner) await c.query('UPDATE site_domains SET is_primary = is_primary OR $2 WHERE domain = $1', [d, primary]);
+    else await c.query('INSERT INTO site_domains (domain, site_id, is_primary) VALUES ($1, $2, $3)', [d, s.id, primary]);
+    await c.query('UPDATE sites SET updated_at = now() WHERE id = $1', [s.id]);
+    await c.query('COMMIT');
+  } catch (err) {
+    await c.query('ROLLBACK').catch(() => undefined);
+    if ((err as { code?: string }).code === '23505') throw new SiteLifecycleError('SITE_DOMAIN_TAKEN', `Tên miền ${d} đã thuộc site khác`, { cause: err });
+    throw err;
+  } finally {
+    c.release();
+  }
+  invalidateSiteCache();
+  return { siteId: s.id, slug: s.slug, status: s.status };
+}
+
+/** Bỏ một tên miền phụ của site. Tên miền chính không bỏ được (đổi tên miền chính trước bằng addSiteDomain(…, true)). */
+export async function removeSiteDomain(ref: string, domain: string): Promise<SiteState> {
+  const s = await findSite(ref);
+  const d = domain.trim().toLowerCase();
+  const row = (await controlPool().query<{ is_primary: boolean }>('SELECT is_primary FROM site_domains WHERE domain = $1 AND site_id = $2', [d, s.id])).rows[0];
+  if (!row) throw new SiteLifecycleError('SITE_DOMAIN_UNKNOWN', `Site ${s.slug} không có tên miền ${d}`);
+  if (row.is_primary) throw new SiteLifecycleError('SITE_DOMAIN_PRIMARY', `${d} là tên miền chính của site ${s.slug}: đặt tên miền chính khác trước khi bỏ`);
+  await controlPool().query('DELETE FROM site_domains WHERE domain = $1 AND site_id = $2', [d, s.id]);
+  await controlPool().query('UPDATE sites SET updated_at = now() WHERE id = $1', [s.id]);
+  invalidateSiteCache();
+  return { siteId: s.id, slug: s.slug, status: s.status };
 }
 
 export interface SweepAction { kind: 'drop_previous' | 'drop_restore_tmp' | 'purge_deleted'; slug: string; database: string }
