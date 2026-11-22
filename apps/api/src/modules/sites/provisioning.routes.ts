@@ -5,7 +5,7 @@
  * Provisioning API `bizcity_site_provisioning@1` (máy chủ gọi máy chủ: WordPress, Site Manager, script vận hành).
  *   GET    /_sites/v1/health                         hợp đồng, bản ứng dụng, lược đồ cần, số site theo trạng thái / dấu cần chú ý
  *   POST   /_sites/v1/sites                          tạo site → 202 { jobId, siteId }
- *   GET    /_sites/v1/sites                          danh sách (?status=, ?attention=1 chỉ site cần chú ý)
+ *   GET    /_sites/v1/sites                          danh sách (?status=, ?attention=1, ?updatedAfter=, ?limit=, ?cursor=) → { items, next }
  *   GET    /_sites/v1/sites/:siteId                  một site, kèm thử kết nối database (trường database)
  *   POST   /_sites/v1/sites/:siteId/suspend          khoá chỉ đọc → 202 { jobId }          thân: { reason? }
  *   POST   /_sites/v1/sites/:siteId/resume           mở lại → 202 { jobId }
@@ -30,7 +30,7 @@ import { normalizeHost } from '@bizcity/platform/db/site-registry';
 // [2026-11-22 02:25 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7b-1: bộ thu số đo bizcity_sites / bizcity_sites_attention (mỗi 5 phút, chỉ chế độ multi)
 import { metrics, registerCollector } from '@bizcity/platform/core/metrics';
 import {
-  addDomain, authenticateKey, getJob, getSite, health, listSiteBackups, listSitesDto, ProvisionHttpError, removeDomain, startProvision, startSiteJob,
+  addDomain, authenticateKey, getJob, getSite, health, listSiteBackups, listSitesDto, PAGE_MAX, ProvisionHttpError, removeDomain, startProvision, startSiteJob,
 } from './provisioning.service.js';
 
 const tags = ['Provisioning API (nhiều site)'];
@@ -102,10 +102,23 @@ export async function provisioningRoutes(app: FastifyInstance): Promise<void> {
 
   r.get('/_sites/v1/sites', {
     config: { public: true },
-    schema: { tags, summary: 'Danh sách site (kèm trường sức khoẻ)', querystring: z.object({ status: z.enum(['provisioning', 'active', 'suspended', 'upgrading', 'migration_failed', 'deleted']).optional(), attention: z.enum(['1', 'true']).optional() }) },
+    schema: {
+      tags, summary: 'Danh sách site (kèm trường sức khoẻ), sắp theo lần đổi; phân trang con trỏ',
+      // [2026-11-22 03:26 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5c: updatedAfter (ISO 8601), limit 1–500 (mặc định 100), cursor = "next" của trang trước
+      querystring: z.object({
+        status: z.enum(['provisioning', 'active', 'suspended', 'upgrading', 'migration_failed', 'deleted']).optional(),
+        attention: z.enum(['1', 'true']).optional(),
+        updatedAfter: z.string().datetime({ offset: true }).optional(),
+        limit: z.coerce.number().int().min(1).max(PAGE_MAX).optional(),
+        cursor: z.string().min(8).max(400).optional(),
+      }),
+    },
     handler: handle(async (req) => {
-      const q = req.query as { status?: string; attention?: string };
-      return listSitesDto({ ...(q.status ? { status: q.status } : {}), attention: q.attention !== undefined });
+      const q = req.query as { status?: string; attention?: string; updatedAfter?: string; limit?: number; cursor?: string };
+      return listSitesDto({
+        ...(q.status ? { status: q.status } : {}), attention: q.attention !== undefined,
+        ...(q.updatedAfter ? { updatedAfter: q.updatedAfter } : {}), ...(q.limit ? { limit: q.limit } : {}), ...(q.cursor ? { cursor: q.cursor } : {}),
+      });
     }),
   });
 
