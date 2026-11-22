@@ -30,3 +30,5 @@ tests/conformance/output/
 /.agents/skills/
 **/.bizcity/ketoan.json
 /build/
+# [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — Q040-5: điểm theo người sinh cục bộ, không commit (repo công khai)
+/docs/reviews/tien-do/.local/

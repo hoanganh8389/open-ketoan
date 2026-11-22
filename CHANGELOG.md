@@ -12,6 +12,22 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Bộ chấm tiến độ theo PR (PHASE-040 B2) <!-- [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B2: mục CHANGELOG (S040-6, 7) -->
+
+- **Thêm:**
+  - `node scripts/cham-pr.mjs`: chấm một PR đã merge, hoặc chạy lùi bằng `--last` / `--since`. Lệnh chỉ đọc repo và GitHub. Mỗi PR được chấm:
+    - Ba mặt tiến độ trước và sau merge: nền móng, trụ cột, ma trận chứng từ. Thêm `--selfcheck` thì có cả ma trận tuân thủ C-*.
+    - Các tiêu chí đổi mức, kèm cảnh báo khi một tiêu chí bị hạ mức.
+    - Mười hai trục gợi ý, lấy từ luật dò H-* của `ra-soat-dong-gop.mjs`.
+    - CI, người duyệt và khối *Bằng chứng chạy máy*, từ đó ra trạng thái phát hành `VERIFIED` / `UNVERIFIED` / `BLOCKED`.
+  - Kết quả ghi ở `docs/reviews/tien-do/PR-<n>.json` (`bizcity_pr_progress@1`). Bảng tổng hợp sinh ra ở `docs/reviews/TIEN-DO-PR.md`, kèm đường tiến độ theo tuần của từng trụ cột.
+  - `ra-soat-dong-gop.mjs --json`. Luật dò không đổi.
+- **Đổi:** —
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có. Lệnh này là công cụ cho người làm dự án, không chạy trong bản cài.
+- **Bảo mật:** điểm theo người không commit vào repo, vì repo công khai (Q040-5). Thư mục `docs/reviews/tien-do/.local/` được bỏ qua khi commit.
+
 ### Liên tục chứng từ — trụ cột X (PHASE-040 B1, luật R-DOC-CONT) <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B1: mục CHANGELOG (S040-3..5) -->
 
 - **Thêm:**
