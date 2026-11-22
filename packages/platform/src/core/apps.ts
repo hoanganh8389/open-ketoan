@@ -1,5 +1,6 @@
 // @bizcity-layer P apps.external
 // [2026-11-02 10:43 AM Johnny Chu - Chu Hoàng Anh] PHASE-011 — 3.14 (ADR-0011 mức 2): app ngoài tiến trình — registry manifest kind "app", phạm vi quyền cho phép, webhook ký HMAC từ outbox, vé iframe ngắn hạn (khoá dẫn xuất riêng, không dùng được làm phiên)
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * APP NGOÀI TIẾN TRÌNH (ADR-0011 mức 2, PHASES 3.14) — dịch vụ riêng (ngôn ngữ bất kỳ) nói chuyện với Core CHỈ qua API công khai.
  *
@@ -186,6 +187,7 @@ async function postWebhook(url: string, secret: string, evt: EventEnvelope): Pro
     throw new Error(`webhook ${new URL(url).host}: ${(err as Error).name === 'TimeoutError' ? `quá ${WEBHOOK_TIMEOUT_MS} ms` : (err as Error).message}`);
   }
   // Chỉ đọc mã trạng thái; thân trả về của app không vào nhật ký (có thể chứa dữ liệu của app).
+  // nuot-loi: huỷ đọc thân trả về; lỗi huỷ không đổi kết quả (chỉ xét mã trạng thái ở dòng dưới)
   await res.body?.cancel().catch(() => {});
   if (res.status < 200 || res.status >= 300) throw new Error(`webhook ${new URL(url).host}: HTTP ${res.status}`);
 }

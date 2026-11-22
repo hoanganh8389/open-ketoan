@@ -1,5 +1,6 @@
 // @bizcity-layer P observability
 // [2026-11-19 Nguyễn Văn Thủy] nhật ký kiểm khai báo (JSONL, docs/nghiep-vu/25 §3.5): mỗi lần lưu danh mục / chứng từ ghi các quy tắc chưa đạt / đã qua, kèm mã tra cứu (đóng góp)
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * NHẬT KÝ KIỂM KHAI BÁO — tệp JSONL (run-log, luồng `kiem-khai-bao`), không dùng bảng.
  * Một dòng = một lần lưu (thêm / sửa / xoá) một đối tượng: đạt hay không, mã quy tắc chưa đạt, mã tra cứu (requestId) để nối sang
@@ -35,7 +36,7 @@ export interface KiemRow {
 
 /** Ghi một lượt kiểm; lỗi ghi tệp không làm hỏng thao tác của người dùng. */
 export async function ghiKiem(tenantId: string, row: KiemRow): Promise<void> {
-  try { await appendRunLog(LUONG_KIEM, tenantId, row); } catch { /* nhật ký phụ — bỏ qua lỗi ghi */ }
+  try { await appendRunLog(LUONG_KIEM, tenantId, row); } catch { /* nuot-loi: nhật ký phụ — lỗi ghi không làm hỏng thao tác của người dùng */ }
 }
 
 /** Đọc nhật ký kiểm (mới nhất trước), lọc theo đối tượng / mã quy tắc / khoá / người / chỉ lượt bị chặn. */

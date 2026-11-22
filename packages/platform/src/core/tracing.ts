@@ -1,5 +1,6 @@
 // @bizcity-layer P observability
 // [2026-11-01 04:13 PM Johnny Chu - Chu Hoàng Anh] ADR-0010 — OpenTelemetry từ lõi (PHASE-018 W5): span ở khớp nối Platform + cổng Kernel, lọc thuộc tính, traceparent qua outbox
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * TRUY VẾT OpenTelemetry (ADR-0010; docs/ops/OBSERVABILITY.md §1.1) — lớp 3 của sáu lớp bảo đảm: CHỈ QUAN SÁT.
  * Span không chứng minh việc đã ghi sổ (giao dịch bọc ngoài vẫn có thể huỷ); sự thật nằm ở posting_log / ledger_* / audit_logs.
@@ -124,6 +125,7 @@ let unregister: (() => void) | null = null;
 
 /** Gửi nốt span còn trong hàng đợi khi tắt tiến trình (main.ts). Lỗi bỏ qua. */
 export async function shutdownTracing(): Promise<void> {
+  // nuot-loi: tắt tiến trình — gửi nốt span hỏng thì thôi, không chặn việc dừng
   await provider?.shutdown().catch(() => undefined);
 }
 

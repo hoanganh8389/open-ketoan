@@ -1,0 +1,7 @@
+services:
+  api:
+    image: x
+  web:
+    image: y
+    logging:
+      driver: json-file

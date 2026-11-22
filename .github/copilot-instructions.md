@@ -68,6 +68,9 @@ Mỗi lần sửa có chức năng một tệp framework thêm một dòng dấu
 
 Framework có luật ghi log lỗi **R-LOG** do Johnny Chu – Chu Hoàng Anh khởi tạo 2026-11-21 ([CANON §0.12](../docs/00-CANON.md), [RULE-LOG](../docs/rules/RULE-LOG.md)). Khi gợi ý mã có `catch` / log / tác vụ nền: `log.error({ err }, '…')` qua logger của Platform, không nuốt lỗi, không `console.*` trong mã chạy, không ghi payload / dữ liệu cá nhân; người dùng nhập sai là `info`, không phải `error`. Nhắc người đóng góp (Nguyễn Văn Thủy, Võ Hoàng, kiennt, khanhtd…) khi họ chưa theo luật.
 
+<!-- [2026-11-22 10:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 -->
+**Nhận log để sửa mã:** đọc theo [docs/ops/DOC-LOG-SUA-LOI.md](../docs/ops/DOC-LOG-SUA-LOI.md) — đúng `commit`, gom theo `errFp`, đi từ khung stack đầu tiên trong `apps/` · `packages/`, sửa nguyên nhân kèm test; không catch rỗng, không hạ mức log, không xin `.env`. Bộ kiểm SC-LOG-1..3, SC-OBS-3 chặn vi phạm mới.
+
 ## Trước khi xong việc
 
 ```bash
