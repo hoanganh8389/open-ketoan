@@ -3,7 +3,7 @@
 
 > © 2026 Johnny Chu (Chu Hoàng Anh) / BizCity — kiến trúc Bizcity Core Framework.
 
-- Trạng thái: **Đề xuất** — có hiệu lực khi chủ dự án merge PR chứa tệp này vào `main` (R-FLOW-2, R-FLOW-7).
+- Trạng thái: **Chấp nhận 2026-11-23** (chủ dự án merge #578; chữ chốt lúc thi hành #579) · **Đã thi hành**: #580 (migration 0180, xác thực, route) · chạy thật với open-ketoan-bridge 0.6.0: ma trận ba mô hình 0 sai (open-pos-backend #49, OKT-SET-4). <!-- [2026-11-23 03:50 PM Johnny Chu - Chu Hoàng Anh] OKT-TOPO-10 — trạng thái sau merge -->
 - Nguồn: luật tối thượng **P-0** của chủ dự án 2026-11-23 ([RULE-OPEN-POS-CONNECTION](../rules/RULE-OPEN-POS-CONNECTION.md) mục P-0): *"Bên ngoài hệ thống bizcity, người dùng cài selfhost, sẽ ưu tiên khóa chung cho cả mạng để người dùng có thể setup chuỗi nhiều cửa hàng dùng POS nhưng vẫn về 1 open-ketoan tương ứng mỗi tenant id = blog_id"*; chủ chốt nghĩa **(a)**: *"Một bản open-ketoan, một khoá chung, nhưng mỗi blog là một tenant riêng bên trong bản open-ketoan đó (tenant id ứng với blog_id). Mỗi cửa hàng có sổ riêng, cùng nằm trên một máy kế toán."*
 - Ngày: 2026-11-23 · Người quyết: Johnny Chu – Chu Hoàng Anh · Mức Kernel: **K0** (nguyên tắc + ranh giới); thi hành **K3** (migration, xác thực).
 - Luật liên quan: [R-TEN](../rules/RULE-TENANT-SECURITY.md) (sửa R-TEN-4), [R-OKT-CONN](../rules/RULE-OPEN-POS-CONNECTION.md) (P-0), [R-DB](../rules/RULE-DATABASE.md). Nền: [ADR-0011](ADR-0011-plugin-ba-muc-tin-cay.md) (khoá app), [ADR-0036](ADR-0036-mot-ban-ma-moi-site-mot-database.md) (mỗi site một database).
