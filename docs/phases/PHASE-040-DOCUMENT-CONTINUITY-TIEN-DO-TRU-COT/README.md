@@ -16,6 +16,7 @@
 | [10-MA-TRAN-CHUNG-TU](10-MA-TRAN-CHUNG-TU.md) | ma trận chứng từ toàn luồng DOC-001..061 đối chiếu với sổ thật (đã có / dùng lại loại có sẵn / đề xuất), ca nghiệm thu T040-* |
 | [20-CHAM-DIEM-TIEN-DO](20-CHAM-DIEM-TIEN-DO.md) | mỗi PR merge chấm ba mặt (nền móng · trụ cột · ma trận tuân thủ) + 12 trục R-REV, cổng, `UNVERIFIED`, điểm người đóng góp, ảnh chụp đầu tiên #576–#578 |
 | [30-PHAN-TICH-CAU-HOI-MO](30-PHAN-TICH-CAU-HOI-MO.md) | phương án + đề xuất cho Q040-1..6, số đo thêm trên GitHub |
+| [35-MAIN-SACH-SELFCHECK](35-MAIN-SACH-SELFCHECK.md) <!-- [2026-11-22 10:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10: main sạch selfcheck --> | B10: đưa selfcheck trên `main` về ĐẠT (27 check, 709 phát hiện) — điều kiện để có PR `VERIFIED` |
 | [40-MASTER-CHECKLIST](40-MASTER-CHECKLIST.md) | việc `S040-*`, ca `T040-*`, nhật ký |
 
 ## Đề bài (chủ dự án, 2026-11-22)

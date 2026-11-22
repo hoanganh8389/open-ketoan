@@ -28,6 +28,10 @@ Ký hiệu: ☐ chưa · 🟡 đang · ✅ xong · ⛔ chờ người ngoài nh�
 | S040-19 | B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản `docs/reviews/REVIEW-R2-*.md` {he-thong} | W9 | P0 | không | ☐ |
 | S040-20 | Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ `main` — PR + 1 người duyệt, check bắt buộc sau khi CI chạy được (Q040-4) {he-thong} | — | P0 | không | ⛔ chủ tài khoản GitHub |
 | S040-21 | Sau phase — đưa vào sổ các dòng ☐ "sau phase" ở [10 §2](10-MA-TRAN-CHUNG-TU.md) {kho, quy, ban-hang} | — | P1 | có | ☐ |
+| S040-22 | B10a — SC-FIND-1 đọc `quy-tac/*.ts`; SC-FLOW-1 so khớp mẫu tên tệp; SC-DOC-1, -2, -4, -5; SC-FIX-1 ([35](35-MAIN-SACH-SELFCHECK.md)) {he-thong} | W10 | P0 | có | ☐ |
+| S040-23 | B10b — tầng 0: SC-SEC-5 + SC-CON-7, SC-API-3, SC-KERNEL-7, SC-SEC-2, SC-AUTH-03 {he-thong} | W10 | P0 | có | ☐ |
+| S040-24 | B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2 — @Thuy2k {he-thong} | W10 | P1 | có | ☐ |
+| S040-25 | B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT {he-thong} | W10 | P1 | có | ☐ |
 
 ## Ca nghiệm thu
 
@@ -42,3 +46,4 @@ T040-1..36 ở [10 §3](10-MA-TRAN-CHUNG-TU.md). Xác minh ca nào thì ghi tên
 | 2026-11-22 | S040-2 chốt: chủ dự án đồng ý D040-1..12 và đề xuất Q040-1..6 ([30](30-PHAN-TICH-CAU-HOI-MO.md)). Mã IX đổi sang `TV-*` thay `LIB-*` (trùng mã phát hiện thư viện). Giữ chỗ B1 (S040-3, 4, 5) ở CLAIMS.md |
 | 2026-11-22 | B1 xong (S040-3, 4, 5). Bằng chứng chạy máy trên CSDL test riêng `ketoan_test_040` (okt-thu-db-1): `so-chung-tu`, `lich-su-chung-tu`, `hop-dong-mua`, `dinh-kem-chung-tu`, `cong-no-theo-hop-dong`, `nt-bh-033-so-chung-tu-ban`, `nen-mong`, `engines` đều qua; `gates.test` lỗi 1 ca "mỗi mã có trụ cột…" — **lỗi có sẵn trên main**, chạy lại không có thay đổi B1 vẫn lỗi y như vậy. Selfcheck: chỉ khác main ở SC-CON-4 (đã sửa bằng `bizcity-standard.json`). Mức trụ cột X khởi điểm: (1 + 6·½ + 2·¼) / 11 = 41 %; nhóm nền móng (0, V, IX, X) 68 % → 60 % vì thêm X — đúng điều muốn thấy |
 | 2026-11-22 | B2 xong (S040-6, 7). Chạy lùi #572..#581 có `--selfcheck`: **10 / 10 `UNVERIFIED`** (9 CI không chạy vì khoá thanh toán, #573 mọi job bị huỷ; 0 PR có người duyệt), **0 PR đổi mức tiêu chí nào** — `tru-cot.json` không được cập nhật theo mã trong 10 PR này (kể cả #572, #576, #580 có mã); ma trận tuân thủ C đứng 73 %; ma trận chứng từ P0 69 % (lần đo đầu, #581). Đúng điều bộ chấm phải cho thấy: tiến độ thật chưa được ghi vào thước đo |
+| 2026-11-22 | B10 mở ([35](35-MAIN-SACH-SELFCHECK.md)): chủ dự án chọn sửa nợ cho `main` sạch selfcheck, không nới. Đo main `b29049a4`: 27 check đỏ, 709 phát hiện mới (`block` / `ratchet`); SC-FIND-1 (93) là lỗi công cụ kiểm, SC-FLOW-1 có 15 / 18 chồng giả. Giữ chỗ B10a, B10b |
