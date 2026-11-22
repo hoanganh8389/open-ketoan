@@ -3,6 +3,7 @@
 # [2026-11-13 08:39 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-9: kiểm bản sao lưu vừa tạo (hỏng thì dừng), in sắp đổi gì (commit, migration, db/seeds, SEEDS_DIR, bộ giả lập), hỏi xác nhận (--yes), lỗi thì in lệnh lùi
 # [2026-11-14 01:47 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-11: SEEDS_DIR đặt mà thư mục không có / thiếu tệp so với db/seeds của bản mới → dừng trước khi kéo mã
 # [2026-11-21 08:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): đặt BIZCITY_GIT_SHA để mỗi dòng log có commit (R-LOG-5); lỗi thì chỉ tới ./scripts/lay-log.sh
+# [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a (S039-18, R-SITE-8, R-SITE-10): SITE_MODE=multi trong .env — sao lưu thêm database điều khiển; dựng ảnh mới (ảnh cũ vẫn phục vụ) → site migrate --all bằng ảnh mới (mẫu trước, từng site sao lưu trước) → chuyển ứng dụng; site lỗi bị chặn riêng; lệnh lùi in đúng mã bản sao lưu từng site
 # =============================================================================
 # Cập nhật phần mềm trên máy chủ: sao lưu → kiểm bản sao lưu → xem sắp đổi gì → xác nhận → lấy code mới → dựng lại → kiểm tra.
 #
@@ -11,7 +12,7 @@
 #
 # Cơ sở dữ liệu nâng cấp bằng job db-migrate (chạy các file db/migrations chưa áp + seed) TRƯỚC khi API khởi động.
 # Job lỗi thì API không khởi động: script in đúng lệnh lùi về commit cũ và khôi phục bản sao lưu vừa tạo.
-# Sổ tay: docs/ops/SAO-LUU-KHOI-PHUC.md
+# Sổ tay: docs/ops/SAO-LUU-KHOI-PHUC.md · nhiều site (SITE_MODE=multi): docs/ops/NHIEU-SITE.md §10
 # =============================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -26,6 +27,20 @@ done
 
 [ -f .env ] || { echo "Chưa có tệp .env (sao chép từ .env.example rồi sửa)" >&2; exit 1; }
 
+# [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a: chế độ nhiều site đọc từ .env
+env_val() { grep -E "^$1=.+" .env | tail -1 | cut -d= -f2- || true; }
+SITE_MODE_VAL="$(env_val SITE_MODE)"
+MULTI=0
+CTL_DB=""
+if [ "$SITE_MODE_VAL" = "multi" ]; then
+  MULTI=1
+  CTL_URL="$(env_val CONTROL_DATABASE_URL)"
+  [ -n "$CTL_URL" ] || { echo "LỖI: SITE_MODE=multi nhưng .env chưa có CONTROL_DATABASE_URL — DỪNG, chưa đổi gì." >&2; exit 1; }
+  CTL_DB="$(printf '%s' "$CTL_URL" | sed -E 's#^.*/([^/?]+)(\?.*)?$#\1#')"
+  echo "Chế độ nhiều site (SITE_MODE=multi): database điều khiển $CTL_DB — nâng từng site theo R-SITE-8 (docs/ops/NHIEU-SITE.md §10)"
+fi
+ctl_sql() { docker compose exec -T db psql -U ketoan -d "$CTL_DB" -tAc "$1"; }
+
 echo "== 1. Sao lưu cơ sở dữ liệu"
 BACKUP_FILE=""
 if docker compose ps --status running db 2>/dev/null | grep -q db; then
@@ -39,6 +54,19 @@ if docker compose ps --status running db 2>/dev/null | grep -q db; then
   fi
 else
   echo "   (cơ sở dữ liệu chưa chạy: lần cài đầu, bỏ qua sao lưu)"
+fi
+CTL_BACKUP=""
+if [ "$MULTI" = 1 ] && [ -n "$BACKUP_FILE" ]; then
+  # Database điều khiển (Site Registry): sao lưu riêng, kiểm có bảng sites. Database từng site: site migrate sao lưu trước khi nâng.
+  mkdir -p "${BACKUP_DIR:-./backups}"
+  CTL_BACKUP="${BACKUP_DIR:-./backups}/control-$CTL_DB-$(date +%Y%m%d-%H%M%S).dump"
+  if ! docker compose exec -T db pg_dump -U ketoan -Fc -d "$CTL_DB" > "$CTL_BACKUP"; then
+    echo "LỖI: không sao lưu được database điều khiển $CTL_DB — DỪNG, chưa đổi gì." >&2; exit 1
+  fi
+  if ! docker compose exec -T db pg_restore --list < "$CTL_BACKUP" | grep -q ' TABLE public sites '; then
+    echo "LỖI: bản sao lưu $CTL_BACKUP của database điều khiển không đọc được / thiếu bảng sites — DỪNG, chưa đổi gì." >&2; exit 1
+  fi
+  echo "   Database điều khiển: $CTL_BACKUP (đã kiểm)"
 fi
 
 echo "== 2. Sắp đổi gì"
@@ -95,6 +123,10 @@ else
   fi
 fi
 
+if [ "$MULTI" = 1 ] && [ -n "$BACKUP_FILE" ]; then
+  echo "   Site sẽ nâng lược đồ: $(ctl_sql "SELECT count(*) FROM sites WHERE status NOT IN ('deleted', 'provisioning')" | tr -d '[:space:]') — mỗi site sao lưu pg_dump trước khi nâng; từ lúc nâng tới lúc chuyển ảnh, site đó báo \"đang nâng cấp\" (503)"
+fi
+
 if [ "$YES" != 1 ]; then
   if [ -t 0 ]; then
     read -r -p "Tiếp tục nâng cấp? (c/K) " ANS
@@ -119,8 +151,16 @@ in_lenh_lui() {
     echo "   (không có bản sao lưu: lần cài đầu)" >&2
   fi
   echo "   docker compose up -d --build" >&2
+  if [ "$MULTI" = 1 ]; then
+    # Site đã nâng bằng lần này: khôi phục từ bản sao lưu site migrate vừa tạo (lý do migrate, sau lúc bắt đầu nâng cấp)
+    echo "   Khôi phục từng site đã nâng (ảnh cũ, sau khi compose up ở trên):" >&2
+    ctl_sql "SELECT s.slug || ' ' || b.id FROM sites s JOIN LATERAL (SELECT id FROM site_backups WHERE site_id = s.id AND reason = 'migrate' AND created_at >= to_timestamp($STARTED_AT) ORDER BY created_at DESC LIMIT 1) b ON true ORDER BY s.slug" 2>/dev/null \
+      | while read -r slug bid; do [ -n "$slug" ] && echo "   docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js restore --slug $slug --backup $bid --yes" >&2; done || true
+    [ -n "$CTL_BACKUP" ] && echo "   (database điều khiển trước nâng cấp: $CTL_BACKUP — chỉ khôi phục khi registry hỏng)" >&2
+  fi
   echo "   Sau khi sửa xong: git checkout <nhánh> && ./scripts/cap-nhat.sh. Sổ tay: docs/ops/SAO-LUU-KHOI-PHUC.md" >&2
 }
+STARTED_AT="$(date +%s)"
 
 echo "== 3. Lấy code mới"
 BEFORE="$(git rev-parse --short HEAD)"
@@ -142,6 +182,35 @@ echo "== 4. Dựng lại, nâng cấp cơ sở dữ liệu (db-migrate), khởi 
 # commit đang chạy vào mọi dòng log của api / db-migrate (docker-compose.yml chuyển biến này vào container)
 export BIZCITY_GIT_SHA="$(git rev-parse HEAD)"
 echo "   Commit: ${BIZCITY_GIT_SHA:0:12}"
+SITE_FAILED=""
+if [ "$MULTI" = 1 ] && [ -n "$BACKUP_FILE" ]; then
+  # R-SITE-8: dựng ảnh mới trong khi ảnh cũ vẫn phục vụ; nâng mẫu rồi từng site BẰNG ẢNH MỚI; xong mới chuyển ứng dụng.
+  echo "   4a. Dựng ảnh mới (ứng dụng cũ vẫn chạy)"
+  if ! docker compose build api db-migrate; then
+    echo "LỖI: dựng ảnh mới hỏng — ứng dụng cũ vẫn chạy, chưa site nào bị chạm. Về lại mã cũ: git checkout $OLD_COMMIT" >&2; exit 1
+  fi
+  echo "   4b. Nâng lược đồ: database mẫu, rồi từng site (sao lưu trước mỗi site)"
+  MIG_LOG="$(mktemp)"
+  set +e
+  docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js migrate --all --backup-dir /app/backups/sites 2>&1 | tee "$MIG_LOG"
+  MIG_RC=${PIPESTATUS[0]}
+  set -e
+  if [ "$MIG_RC" != 0 ] && grep -qE 'SITE_TEMPLATE_MIGRATION_FAILED|SITE_BACKUP_UNAVAILABLE|SITE_UNKNOWN' "$MIG_LOG"; then
+    echo "LỖI: chưa nâng được database mẫu / thiếu công cụ sao lưu — KHÔNG site nào bị chạm, ứng dụng cũ vẫn chạy." >&2
+    echo "   Về lại mã cũ: git checkout $OLD_COMMIT   (rồi sửa lỗi ở trên và chạy lại ./scripts/cap-nhat.sh)" >&2
+    rm -f "$MIG_LOG"; exit 1
+  fi
+  if [ "$MIG_RC" != 0 ]; then
+    SITE_FAILED="$(ctl_sql "SELECT string_agg(slug, ' ' ORDER BY slug) FROM sites WHERE status = 'migration_failed'" | tr -d '\r')"
+    if [ -z "$SITE_FAILED" ]; then
+      echo "LỖI: lệnh nâng lược đồ thoát mã $MIG_RC mà không site nào ở migration_failed — DỪNG trước khi chuyển ứng dụng." >&2
+      in_lenh_lui; rm -f "$MIG_LOG"; exit 1
+    fi
+    echo "   CẢNH BÁO: site nâng lỗi (bị chặn riêng, 503 SITE_MIGRATION_FAILED): $SITE_FAILED — các site khác vẫn chuyển sang bản mới (R-SITE-10)."
+  fi
+  rm -f "$MIG_LOG"
+  echo "   4c. Chuyển ứng dụng sang ảnh mới"
+fi
 if ! docker compose up -d --build; then
   echo "LỖI khi khởi động. Nhật ký nâng cấp cơ sở dữ liệu (db-migrate):" >&2
   docker compose logs --tail 60 db-migrate >&2 || true
@@ -156,6 +225,18 @@ for i in $(seq 1 40); do
   if [ "$STATE" = "healthy" ]; then
     echo "   API đã sẵn sàng."
     docker compose ps
+    if [ -n "$SITE_FAILED" ]; then
+      echo "" >&2
+      echo "== CÒN SITE NÂNG LỖI: $SITE_FAILED" >&2
+      echo "   Lỗi từng site: docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js list   (cột trạng thái) · sites.migration_error trong database điều khiển" >&2
+      echo "   Sửa nguyên nhân rồi chạy lại: ./scripts/cap-nhat.sh  (site đã xong được bỏ qua, site lỗi chạy lại)" >&2
+      echo "   Hoặc lùi riêng site đó về bản sao lưu vừa tạo:" >&2
+      for slug in $SITE_FAILED; do
+        bid="$(ctl_sql "SELECT b.id FROM site_backups b JOIN sites s ON s.id = b.site_id WHERE s.slug = '$slug' AND b.reason = 'migrate' ORDER BY b.created_at DESC LIMIT 1" | tr -d '[:space:]')"
+        echo "   docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js restore --slug $slug --backup ${bid:-<mã>} --yes   (lược đồ cũ: còn bị chặn tới khi nâng được)" >&2
+      done
+      exit 1
+    fi
     exit 0
   fi
   sleep 3
