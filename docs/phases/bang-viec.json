@@ -25,7 +25,7 @@
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 77
+      "count": 76
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 352
+      "count": 353
     }
   ],
   "items": [
@@ -10188,8 +10188,8 @@
       "phase": "PHASE-039",
       "title": "B7 — nhật ký và số đo có site (trần số nhãn); màn chẩn đoán báo site đang phục vụ",
       "priority": "P1",
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"

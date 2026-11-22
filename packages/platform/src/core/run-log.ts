@@ -4,6 +4,8 @@
 /**
  * Nhật ký vận hành chung: TỆP JSONL, không bảng.
  *   <DATA_DIR>/nhat-ky/<luồng>/<đơn vị>/<yyyy-mm>.jsonl — mỗi dòng { id, at, tenantId, data }, chỉ ghi thêm.
+ *   Chế độ nhiều site (PHASE-039 B7b-2): site khác site ngầm định ở <DATA_DIR>/nhat-ky/_sites/<site>/<luồng>/<đơn vị>/… — mọi site
+ *   đều có đơn vị mã 1, không tách thì nhật ký của các site ghi chung và đọc lẫn. Site lấy từ ngữ cảnh đang chạy (`opts.site` ghi đè).
  *
  * Dùng cho thứ "đã xảy ra, để xem lại": lượt tự chẩn đoán, lượt Kiểm chuẩn, số đếm lượt dùng thư viện… KHÔNG dùng cho thứ phải
  * nằm cùng giao dịch với dữ liệu (bút toán, chống gửi trùng, hàng đợi sự kiện, bằng chứng có chuỗi băm) — ghi tệp không huỷ
@@ -16,15 +18,29 @@
  */
 import { appendFile, mkdir, readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
+// [2026-11-22 03:11 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7b-2 (S039-19): nhật ký vận hành tách theo site — lỗi cô lập ở chế độ multi (mọi site có đơn vị mã 1)
+import { currentRequest } from './request-context.js';
+import { DEFAULT_SITE_ID } from '../db/site.js';
 
 export interface RunLogEntry<T = Record<string, unknown>> { id: string; at: string; tenantId: string; data: T }
 
 const STREAM_RE = /^[a-z][a-z0-9-]{0,40}$/;
 const root = () => path.resolve(process.env.DATA_DIR ?? './data', 'nhat-ky');
 const safe = (s: string) => String(s).replace(/[^0-9a-zA-Z_-]/g, '');
-function streamDir(stream: string): string {
+
+/**
+ * Site của nhật ký: `explicit` nếu có, không thì site của ngữ cảnh đang chạy. Pool tạm lúc tạo site (`prov:<mã>`) = site đó.
+ * Site ngầm định / ngoài ngữ cảnh → DEFAULT_SITE_ID (đường cũ, bản cài một công ty không đổi).
+ */
+export function runLogSite(explicit?: string): string {
+  const s = explicit ?? currentRequest()?.siteId ?? DEFAULT_SITE_ID;
+  return s.startsWith('prov:') ? s.slice(5) : s;
+}
+
+function streamDir(stream: string, site?: string): string {
   if (!STREAM_RE.test(stream)) throw new Error(`run-log: tên luồng "${stream}" không hợp lệ`);
-  return path.join(root(), stream);
+  const s = runLogSite(site);
+  return s === DEFAULT_SITE_ID ? path.join(root(), stream) : path.join(root(), '_sites', safe(s) || '_', stream);
 }
 
 let seq = 0;
@@ -37,8 +53,8 @@ function nextId(ms: number): string {
 
 let queue: Promise<unknown> = Promise.resolve();
 
-export function appendRunLog<T>(stream: string, tenantId: string, data: T, at?: Date): Promise<RunLogEntry<T>> {
-  const dir = path.join(streamDir(stream), safe(tenantId) || '_');
+export function appendRunLog<T>(stream: string, tenantId: string, data: T, at?: Date, opts: { site?: string } = {}): Promise<RunLogEntry<T>> {
+  const dir = path.join(streamDir(stream, opts.site), safe(tenantId) || '_');
   const run = queue.then(async () => {
     const now = at ?? new Date();
     const entry: RunLogEntry<T> = { id: nextId(now.getTime()), at: now.toISOString(), tenantId: String(tenantId), data };
@@ -52,9 +68,9 @@ export function appendRunLog<T>(stream: string, tenantId: string, data: T, at?: 
 }
 
 /** Đọc cũ → mới. `since` (Date) bỏ tệp tháng trước tháng đó và dòng trước mốc đó. */
-export async function readRunLog<T = Record<string, unknown>>(stream: string, opts: { tenantId?: string; since?: Date } = {}): Promise<RunLogEntry<T>[]> {
+export async function readRunLog<T = Record<string, unknown>>(stream: string, opts: { tenantId?: string; since?: Date; site?: string } = {}): Promise<RunLogEntry<T>[]> {
   await queue; // dòng vừa ghi trong tiến trình này phải đọc được ngay
-  const base = streamDir(stream);
+  const base = streamDir(stream, opts.site);
   let tenants: string[];
   if (opts.tenantId !== undefined) tenants = [safe(opts.tenantId) || '_'];
   else { try { tenants = await readdir(base); } catch { return []; } }
@@ -79,8 +95,8 @@ export async function readRunLog<T = Record<string, unknown>>(stream: string, op
 }
 
 /** Xoá tệp tháng cũ hơn `keepMonths` tháng (tính cả tháng hiện tại) ở mọi đơn vị của luồng. */
-export async function pruneRunLog(stream: string, keepMonths: number): Promise<void> {
-  const base = streamDir(stream);
+export async function pruneRunLog(stream: string, keepMonths: number, opts: { site?: string } = {}): Promise<void> {
+  const base = streamDir(stream, opts.site);
   const d = new Date();
   d.setUTCDate(1);
   d.setUTCMonth(d.getUTCMonth() - (keepMonths - 1));
