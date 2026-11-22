@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 209
+      "count": 207
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 74
+      "count": 75
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 338
+      "count": 339
     }
   ],
   "items": [
@@ -9788,8 +9788,8 @@
       "phase": "PHASE-038",
       "title": "scripts/lay-log.sh theo README §4.4",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F7",
@@ -9801,8 +9801,8 @@
       "phase": "PHASE-038",
       "title": "Sổ tay: mục \"Lấy log gửi về\" trong runbook aaPanel + DEPLOY §4; OBSERVABILITY §2 thêm logs/; log aaPanel /www/wwwlogs/",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9840,8 +9840,8 @@
       "phase": "PHASE-038",
       "title": "Bộ bắt uncaughtException / unhandledRejection ghi fatal đồng bộ (R-LOG-3); version, commit trong mọi dòng (R-LOG-5); Node --enable-source-maps + giữ .map trong…",
       "priority": null,
-      "status": "done",
-      "column": "done",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9853,8 +9853,8 @@
       "phase": "PHASE-038",
       "title": "logError chung: err chuẩn (type, stack, cause lồng, pgCode), errFp, evt; redact một danh sách dùng chung; sửa events.ts bỏ String(err)",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -10070,8 +10070,8 @@
       "phase": "PHASE-039",
       "title": "B4 — CLI bizcity site create / list / suspend / resume / drop / adopt (adopt: đưa bản cài một công ty vào cụm, Q039-4)",
       "priority": "P1",
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [
         "he-thong"

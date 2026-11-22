@@ -27,7 +27,19 @@
 
 Chuẩn bị một lần: tạo database `SITE_TEMPLATE_DB` rồi chạy `npm run db:migrate` với `DATABASE_URL` trỏ tới nó. Sau mỗi lần nâng cấp phải nâng mẫu trước (R-SITE-8).
 
-`createSite({ slug, domain, displayName, ownerEmail })` (`packages/platform/src/db/site-provisioner.ts`) làm: ghi registry → tạo vai trò `kt_<slug>_app` (thành viên `SITE_APP_PARENT_ROLE`, mật khẩu ngẫu nhiên) → `CREATE DATABASE kt_<slug> TEMPLATE …` → thu `CONNECT` khỏi `PUBLIC`, chỉ cấp cho vai trò của site → mã hoá mật khẩu vào registry → `active`. Hỏng ở bước nào thì dọn ngược hết. Lệnh CLI `bizcity site create` và tài khoản chủ site: B4b.
+`createSite({ slug, domain, displayName, ownerEmail })` (`packages/platform/src/db/site-provisioner.ts`) làm: ghi registry → tạo vai trò `kt_<slug>_app` (thành viên `SITE_APP_PARENT_ROLE`, mật khẩu ngẫu nhiên) → `CREATE DATABASE kt_<slug> TEMPLATE …` → thu `CONNECT` khỏi `PUBLIC`, chỉ cấp cho vai trò của site → mã hoá mật khẩu vào registry → `active`. Hỏng ở bước nào thì dọn ngược hết.
+
+<!-- [2026-11-22 10:43 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4b: lệnh bizcity site create / list -->
+**Lệnh (B4b):**
+
+```bash
+bizcity site create --slug congtya --domain congtya.<tên miền gốc> --name "Công ty A" --email chu@congtya.vn
+bizcity site list
+```
+
+`site create` tạo thêm **đơn vị đầu** (mã = slug, tên công ty) và **tài khoản chủ site** (email của khách, vai trò `owner`, mật khẩu tự sinh **in một lần ra màn hình của người chạy lệnh**, không ghi vào nhật ký), hệ thống tài khoản và danh mục gốc — bằng `seed()` của Kernel, chạy bằng kết nối quản trị tới database của site. Không tự tạo khoá API tích hợp. Thiếu `--email` thì chủ site là `admin@<tên miền>`.
+
+Lưu ý: bản cài đặt `DB_SET_ROLE` thì kết nối quản trị cũng bị chuyển vai trò và bước khởi tạo hỏng (dọn sạch, báo `SITE_PROVISION_FAILED`) — chạy `site create` không đặt `DB_SET_ROLE`.
 
 ## 3b. Thêm một site bằng tay (site đã có database)
 

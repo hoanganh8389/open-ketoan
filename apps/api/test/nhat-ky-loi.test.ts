@@ -13,7 +13,8 @@ import path from 'node:path';
 import Fastify from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  classifyStartError, LEVELS, loggerOptions, logStartFailure, RotatingFile, rotatingFile, serializeError, teeStream,
+  classifyStartError, errFp, LEVELS, logError, loggerOptions, logStartFailure, ownFrames, REDACT_PATHS, RotatingFile, rotatingFile,
+  serializeError, teeStream,
 } from '@bizcity/platform/core/logger';
 import { EnvError } from '@bizcity/platform/config/env';
 
@@ -114,6 +115,110 @@ describe('lỗi khởi động', () => {
     const p = path.join(dir, 'db-migrate.log');
     expect(rotatingFile(p)).toBe(rotatingFile(p));
     expect(JSON.parse(lines(p)[0]!)).toMatchObject({ service: 'db-migrate', reason: 'UNKNOWN', err: { code: '42701' } });
+  });
+});
+
+// [2026-11-22 01:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1b (S038-12): errFp, logError, mixin, redact từng trường, lỗi Postgres không ghi detail
+/** Logger Fastify thật, ghi vào tệp tạm ở mức warn trở lên; trả các dòng đã parse. */
+async function withAppLog(run: (log: ReturnType<typeof Fastify>['log']) => void): Promise<Record<string, unknown>[]> {
+  vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+  const app = Fastify({ logger: loggerOptions({ service: 'api', level: 'warn', dir, fileLevel: 'warn' }) });
+  run(app.log);
+  await app.close();
+  return lines(path.join(dir, 'api-loi.log')).map((l) => JSON.parse(l) as Record<string, unknown>);
+}
+
+const throwAt = (msg: string) => { try { throw new TypeError(msg); } catch (e) { return e as Error; } };
+const fromA = (m: string) => throwAt(m);
+const fromB = (m: string) => throwAt(m);
+
+describe('errFp — dấu vân lỗi', () => {
+  it('cùng chỗ ném, thông báo khác → cùng errFp; chỗ khác → khác; 12 ký tự hex', () => {
+    const a1 = fromA('phiếu PN0001 lỗi 1.200.000'); const a2 = fromA('phiếu PN0002 lỗi 5');
+    expect(errFp(a1)).toMatch(/^[0-9a-f]{12}$/);
+    expect(errFp(a1)).toBe(errFp(a2));
+    expect(errFp(fromB('phiếu PN0001 lỗi 1.200.000'))).not.toBe(errFp(a1));
+    // cùng khung, khác loại lỗi → khác dấu
+    const asRange = Object.assign(new RangeError('x'), { stack: a1.stack!.replace(/^TypeError/, 'RangeError') });
+    expect(errFp(asRange)).not.toBe(errFp(a1));
+  });
+
+  it('chuẩn hoá đường dẫn: máy dev và container cho cùng khung (bỏ tiền tố, số cột, node_modules)', () => {
+    const stack = (root: string) => [
+      'Error: x',
+      `    at postPhieu (${root}/packages/kernel/src/posting.ts:120:15)`,
+      `    at ${root}/node_modules/fastify/lib/route.js:9:1`,
+      `    at handler (file://${root}/apps/api/src/routes.ts:33:7)`,
+    ].join('\n');
+    const dev = ownFrames(stack('D:\\projects\\okt'.replace(/\\/g, '/')));
+    const box = ownFrames(stack('/app'));
+    expect(dev).toEqual(['packages/kernel/src/posting.ts:120', 'apps/api/src/routes.ts:33']);
+    expect(box).toEqual(dev);
+    expect(ownFrames('Error: x\n    at C:\\w\\apps\\api\\src\\a.ts:5:2')).toEqual(['apps/api/src/a.ts:5']);
+  });
+
+  it('lỗi không có khung trong repo: theo thông báo đã thay số / mã định danh', () => {
+    const e = (m: string) => Object.assign(new Error(m), { stack: `Error: ${m}\n    at /app/node_modules/pg/lib/x.js:1:1` });
+    expect(errFp(e('timeout after 5000ms'))).toBe(errFp(e('timeout after 3000ms')));
+    expect(errFp('chuỗi 12')).toBe(errFp('chuỗi 99'));
+  });
+});
+
+describe('logError / mixin — một đường ghi lỗi (R-LOG-1)', () => {
+  it('logError: dòng có evt, errFp, err.stack, chuỗi cause, trường ngữ cảnh; câu do người gọi đặt', async () => {
+    const err = new Error('Ghi sổ lỗi', { cause: Object.assign(new Error('deadlock detected'), { code: '40P01' }) });
+    const [row] = await withAppLog((log) => logError(log, err, { evt: 'bizcity.kho.ghi_so_loi', fn: 'postPhieu' }, 'Ghi sổ phiếu kho lỗi'));
+    expect(row).toMatchObject({ level: 50, evt: 'bizcity.kho.ghi_so_loi', fn: 'postPhieu', msg: 'Ghi sổ phiếu kho lỗi', errFp: errFp(err) });
+    expect(row!.err).toMatchObject({ type: 'Error', message: 'Ghi sổ lỗi', cause: { message: 'deadlock detected', code: '40P01' } });
+    expect(String((row!.err as { stack: string }).stack)).toContain('nhat-ky-loi.test.ts');
+  });
+
+  it('logError mức warn (đã lùi) và lỗi không phải Error', async () => {
+    const rows = await withAppLog((log) => { logError(log, new Error('tra MST hết giờ'), { level: 'warn', evt: 'bizcity.mst.timeout' }); logError(log, 'chuỗi lạ'); });
+    expect(rows[0]).toMatchObject({ level: 40, evt: 'bizcity.mst.timeout', msg: 'tra MST hết giờ' });
+    expect(rows[1]).toMatchObject({ level: 50, evt: 'bizcity.error', err: { type: 'string', message: 'chuỗi lạ' } });
+  });
+
+  it('log.error({ err }) viết tay cũng có errFp (mixin); warn không gắn', async () => {
+    const e = fromA('x');
+    const rows = await withAppLog((log) => { log.error({ err: e }, 'lỗi'); log.warn({ err: e }, 'đã lùi'); });
+    expect(rows[0]!.errFp).toBe(errFp(e));
+    expect(rows[1]!.errFp).toBeUndefined();
+  });
+
+  it('lỗi Postgres: giữ mã, bảng, ràng buộc; KHÔNG giữ detail / where (chứa giá trị — R-LOG-4)', () => {
+    const pg = Object.assign(new Error('duplicate key value violates unique constraint "uq_partner_tax"'), {
+      code: '23505', severity: 'ERROR', table: 'partners', constraint: 'uq_partner_tax', routine: '_bt_check_unique',
+      detail: 'Key (tax_code)=(0101234567) already exists.', where: 'SQL statement "INSERT …"',
+    });
+    const s = serializeError(pg);
+    expect(s).toMatchObject({ code: '23505', severity: 'ERROR', table: 'partners', constraint: 'uq_partner_tax', routine: '_bt_check_unique' });
+    expect(JSON.stringify(s)).not.toContain('0101234567');
+    expect(s).not.toHaveProperty('detail');
+    expect(s).not.toHaveProperty('where');
+  });
+});
+
+describe('redact — lưới an toàn che dữ liệu (R-LOG-4)', () => {
+  const SECRET = 'GIA-TRI-BI-MAT-0101234567';
+  const fields = ['password', 'passwd', 'token', 'accessToken', 'refreshToken', 'apiKey', 'secret', 'authorization', 'cookie',
+    'body', 'payload', 'taxCode', 'mst', 'phone', 'email', 'bankAccount', 'accountNumber', 'idNumber', 'cccd'];
+
+  it.each(fields)('%s: ở gốc và lồng một lớp đều thành ***', async (k) => {
+    const [row] = await withAppLog((log) => log.warn({ [k]: SECRET, user: { [k]: SECRET }, keep: 'PN0001' }, 'thử che'));
+    expect(JSON.stringify(row)).not.toContain(SECRET);
+    expect(row).toMatchObject({ [k]: '***', user: { [k]: '***' }, keep: 'PN0001' });
+  });
+
+  it('header nhạy cảm của yêu cầu / trả lời; danh sách có đủ các trường trên', async () => {
+    const [row] = await withAppLog((log) => log.warn({
+      req: { headers: { authorization: `Bearer ${SECRET}`, cookie: SECRET, 'x-api-key': SECRET, host: 'ketoan.local' } },
+      res: { headers: { 'set-cookie': SECRET } },
+    }, 'header'));
+    // serializer req / res mặc định của Fastify đã bỏ header; redact là lớp thứ hai khi ai đó đổi serializer
+    expect(JSON.stringify(row)).not.toContain(SECRET);
+    expect(REDACT_PATHS).toEqual(expect.arrayContaining(['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-api-key"]', 'res.headers["set-cookie"]']));
+    for (const k of fields) expect(REDACT_PATHS).toContain(`*.${k}`);
   });
 });
 
