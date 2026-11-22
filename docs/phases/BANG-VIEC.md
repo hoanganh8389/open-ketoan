@@ -8,8 +8,8 @@
 | Đang làm | 6 |
 | Chờ merge | 0 |
 | Bị chặn | 30 |
-| Chưa ai nhận | 194 |
-| Chờ đủ tín hiệu | 76 |
+| Chưa ai nhận | 193 |
+| Chờ đủ tín hiệu | 77 |
 | Hoãn | 3 |
 | Xong | 352 |
 | **Tổng** | **661** |
@@ -25,7 +25,7 @@
 | chung-tu | 67 | 5 | 0 | 26 | 98 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 163 | 27 | 2 | 61 | 253 |
+| he-thong | 163 | 28 | 2 | 60 | 253 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
 ## Đang làm (6)
@@ -78,7 +78,7 @@
 | [S037-16](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L25) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân bổ nguồn (receiptorigin hoặc gộp valuationlayersources), thứ tự lấy nguồn khi xuất, ánh xạ dòng nguồn bề… | P0 | — |
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 
-## Chưa ai nhận (194)
+## Chưa ai nhận (193)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -274,10 +274,9 @@
 | [S037-35](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L42) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân kho chính phankhoid = 0: mỗi chi nhánh đúng một phân kho chính đang dùng (isdefault), phân giải ở biên A… | P0 | — |
 | [S038-15](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L29) | PHASE-038 | — | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | — | — |
 | [S039-14](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L23) | PHASE-039 | he-thong | B5 — khoá bản quyền biz-… (D039-17): gắn khoá cho site, hỏi trạng thái ở bizcity-llm-router (bộ đệm 1 giờ), d… | P1 | — |
-| [S039-19](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L28) | PHASE-039 | he-thong | B7 — nhật ký và số đo có site (trần số nhãn); màn chẩn đoán báo site đang phục vụ | P1 | — |
 | [S039-20](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L29) | PHASE-039 | he-thong | B7 — nghiệm thu T039-1..14 trên máy sạch; phối hợp Site Manager (repo bizcity-open-setup) tạo site thật | P0 | — |
 
-## Chờ đủ tín hiệu (76)
+## Chờ đủ tín hiệu (77)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -357,6 +356,7 @@
 | [S039-11](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L20) | PHASE-039 | he-thong | B4 — Site Provisioner: kttemplate, vai trò riêng kt<slug>owner / app (D039-19), CREATE DATABASE … TEMPLATE, đ… | P0 | — |
 | [S039-12](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L21) | PHASE-039 | he-thong | B4 — CLI bizcity site create / list / suspend / resume / drop / adopt (adopt: đưa bản cài một công ty vào cụm… | P1 | — |
 | [S039-13](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L22) | PHASE-039 | he-thong | B5 — Provisioning API /sites/v1 theo 30: SITEADMINHOST, khoá prov…, Idempotency-Key, mã lỗi; chuyển hợp đồng … | P0 | — |
+| [S039-19](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L28) | PHASE-039 | he-thong | B7 — nhật ký và số đo có site (trần số nhãn); màn chẩn đoán báo site đang phục vụ | P1 | — |
 
 ## Hoãn (3)
 

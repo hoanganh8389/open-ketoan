@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 194
+      "count": 193
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 76
+      "count": 77
     },
     {
       "key": "paused",
@@ -10188,8 +10188,8 @@
       "phase": "PHASE-039",
       "title": "B7 — nhật ký và số đo có site (trần số nhãn); màn chẩn đoán báo site đang phục vụ",
       "priority": "P1",
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [
         "he-thong"

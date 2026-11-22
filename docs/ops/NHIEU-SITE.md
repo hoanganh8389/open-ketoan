@@ -209,3 +209,11 @@ docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js 
 Từ lúc một site được nâng (4b) tới lúc chuyển ảnh (4c), site đó báo 503 `SITE_UPGRADING` với ứng dụng cũ — thời gian gián đoạn mỗi site = thời gian nâng các site còn lại + dựng lại container. Bản cài một công ty (`SITE_MODE` trống / `single`) chạy như trước, không đổi bước nào.
 
 **Lần đầu nâng lên bản có B7a:** `cap-nhat.sh` đang chạy là bản cũ (chưa biết nhiều site) — sau lần đó chạy thêm `docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js migrate --all --backup-dir /app/backups/sites` (§6) hoặc chạy lại `./scripts/cap-nhat.sh`.
+
+## 11. Nhật ký và số đo theo site
+<!-- [2026-11-22 02:25 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7b-1 (S039-19) -->
+
+- **Nhật ký:** mọi dòng ghi trong ngữ cảnh một site (yêu cầu theo tên miền, việc nền `forEachSite`) có trường `"site": "<mã site>"`. Site ngầm định không ghi trường này — nhật ký bản cài một công ty không đổi. Tìm lỗi của một site: lọc `"site":"01J…"` trong `logs/`; mã site lấy ở `bizcity site list` hoặc `GET /_sites/v1/sites`.
+- **Số đo** (`/metrics`, mỗi 5 phút, chỉ chế độ multi): `bizcity_sites{status}` — số site theo trạng thái; `bizcity_sites_attention{flag}` — số site có dấu `backup_missing` / `backup_stale` / `schema_behind` / `migration_failed` / `upgrading` / `suspended`. **Không** có nhãn theo từng site (R-OBS-4: hàng trăm site = hàng trăm chuỗi số đo); muốn biết site nào thì hỏi `GET /_sites/v1/sites?attention=1`.
+- Gợi ý cảnh báo: `bizcity_sites_attention{flag="migration_failed"} > 0`, `bizcity_sites_attention{flag="backup_stale"} > 0` quá 2 giờ.
+- **Chưa xong (B7b-2):** nhật ký vận hành dạng tệp `<DATA_DIR>/nhat-ky/<luồng>/<đơn vị>/` (kiểm chuẩn, tự chẩn đoán, lượt dùng thư viện, cơ cấu) chưa tách theo site — các site cùng mã đơn vị ghi chung thư mục. Chưa dùng chế độ multi cho khách thật tới khi B7b-2 xong.
