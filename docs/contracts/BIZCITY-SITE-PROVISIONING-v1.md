@@ -41,6 +41,7 @@
 | `GET` | `/sites/{siteId}/backups` | Danh sách bản sao lưu | `200 { items }` |
 | `POST` | `/sites/{siteId}/restore` | Khôi phục từ một bản — thân `{ "backupId": "…" }`; database cũ giữ 7 ngày | `202 { jobId }` |
 | `DELETE` | `/sites/{siteId}` | Xoá mềm (cần đang khoá + bản sao lưu ≤ 24 giờ đã kiểm) | `202 { jobId }` |
+| `POST` | `/sites/{siteId}/owner/reset-password` <!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): thêm, không đổi cái cũ --> | Mật khẩu ban đầu **mới** cho email chủ site, ở mọi đơn vị của site; thu mọi phiên đang mở. Site phải `active`. Mật khẩu trả một lần như lúc tạo (§4.3) | `202 { jobId }` |
 | `GET` | `/jobs/{jobId}` | Trạng thái việc | `200 Job` |
 | `GET` | `/health` | `{ contract, appVersion, requiredSchema, sites: {trạng thái: số}, attention: {dấu: số} }` | `200` |
 
@@ -66,8 +67,8 @@
 | `slug` | `^[a-z][a-z0-9-]{2,29}$`, không kết thúc bằng `-`, không trong danh sách cấm; duy nhất |
 | `domain` | chữ thường; chưa thuộc site nào |
 | `owner.email` | thành tài khoản quản trị đầu tiên của site; mật khẩu đặt qua liên kết một lần gửi tới email này |
-| `sample` | `true` thì nạp gói mẫu (PHASE-036) |
-| `externalRef` | chuỗi tự do của phía gọi (≤ 120 ký tự), trả lại nguyên văn |
+| `sample` | `true` thì trong site mới có thêm **Công ty mẫu** (PHASE-036, đơn vị `mau`, `is_sample`) nạp gói `BIZCITY_SAMPLE` của bản cài, không đặt thì `thuong-mai-ban-le`; cùng email + mật khẩu ban đầu với chủ site. Nạp mẫu hỏng thì site **vẫn tạo xong**, bước `load_sample` = `failed` <!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): thêm, không đổi cái cũ --> |
+| `externalRef` | chuỗi tự do của phía gọi (≤ 120 ký tự), lưu vào site, trả lại nguyên văn ở `Site.externalRef` <!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): thêm, không đổi cái cũ --> |
 
 ### 4.2 `Site`
 
@@ -125,7 +126,10 @@ Bản sao lưu (`GET /sites/{siteId}/backups`): `{ "items": [{ "backupId", "crea
 
 `status` của việc: `queued` · `running` · `done` · `failed`. Khi `failed`: `error = { "code": "…", "message": "…" }`.
 
-**Mật khẩu ban đầu của chủ site (B5a):** việc `provision` xong thì lần đọc `GET /jobs/{jobId}` **đầu tiên** có thêm `"owner": { "email": "…", "initialPassword": "…" }`; mật khẩu lưu mã hoá trong `site_jobs.result_enc` và bị xoá ngay sau lần đọc đó. Phía gọi (Site Manager) gửi cho khách rồi bỏ; khách đổi sau khi đăng nhập. Liên kết đặt mật khẩu một lần thay cho cách này khi Open Kế Toán có gửi email.
+<!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): thêm, không đổi cái cũ -->
+**Bước:** việc `provision` báo bước **thật** khi chạy (`validate` → `create_database` → `seed_owner` → [`load_sample` khi `sample: true`] → `activate`), hỏi `GET /jobs` là thấy bước đang chạy — phía gọi hiện được tiến trình. Việc `reset_owner_password` có một bước `reset_password`. Việc khác: cả danh sách chạy rồi xong cùng lúc. Phía gọi phải chịu được tên bước lạ (hiện nguyên tên).
+
+**Mật khẩu ban đầu của chủ site (B5a):** việc `provision` — và `reset_owner_password` (B8) — xong thì lần đọc `GET /jobs/{jobId}` **đầu tiên** có thêm `"owner": { "email": "…", "initialPassword": "…" }`; mật khẩu lưu mã hoá trong `site_jobs.result_enc` và bị xoá ngay sau lần đọc đó. Phía gọi (Site Manager) gửi cho khách rồi bỏ; khách đổi sau khi đăng nhập. Liên kết đặt mật khẩu một lần thay cho cách này khi Open Kế Toán có gửi email.
 
 ### 4.4 Phân trang và đồng bộ theo thay đổi
 
@@ -165,6 +169,7 @@ Trường tính lúc đọc (`backupAgeHours`, `attention` có `backup_stale`, `
 | 409 | `SITE_DOMAIN_PRIMARY` | bỏ tên miền chính (đặt tên miền chính khác trước) |
 | 409 | `SITE_NOT_SUSPENDED` | xoá khi site chưa khoá |
 | 409 | `SITE_BACKUP_REQUIRED` | xoá / khôi phục khi chưa có bản sao lưu mới đã kiểm |
+| 409 | `SITE_STATE_INVALID` · `SITE_OWNER_NOT_FOUND` <!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-21/22): thêm, không đổi cái cũ --> | đặt lại mật khẩu khi site không `active` · site không ghi email chủ site (việc thất bại cùng mã khi không thấy tài khoản của email đó) |
 | 422 | `IDEMPOTENCY_KEY_REUSED` | cùng khoá nhưng thân lệnh khác |
 | 503 | `SITE_LIMIT_REACHED` | chạm trần số site của cụm |
 
