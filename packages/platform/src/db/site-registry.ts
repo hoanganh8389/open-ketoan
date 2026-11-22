@@ -116,7 +116,7 @@ export async function resolveSiteIdByHost(host: string | undefined): Promise<str
   }
   const site = hit.site;
   if (!site || !SERVABLE.has(site.status)) return null;
-  if (!listSiteIds().includes(site.id)) registerSitePool(site.id, new pg.Pool({ connectionString: siteConnectionString(site), max: SITE_POOL_MAX }));
+  ensurePool(site);
   return site.id;
 }
 
@@ -138,6 +138,37 @@ function siteConnectionString(site: SiteRecord): string {
 
 export function invalidateSiteCache(): void {
   byHost.clear();
+  activeAt = 0;
+}
+
+// [2026-11-22 11:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c (D039-7, D039-8): pool của site — tối đa 4 kết nối, kết nối rảnh 30 giây thì đóng; việc nền nạp pool của mọi site đang chạy
+const POOL_IDLE_MS = 30_000;
+const ACTIVE_REFRESH_MS = 30_000;
+let activeAt = 0;
+
+function ensurePool(site: SiteRecord): void {
+  if (!listSiteIds().includes(site.id)) {
+    registerSitePool(site.id, new pg.Pool({ connectionString: siteConnectionString(site), max: SITE_POOL_MAX, idleTimeoutMillis: POOL_IDLE_MS }));
+  }
+}
+
+/**
+ * Việc nền (dispatcher sự kiện, đồng hồ) phải chạy cả ở site chưa có yêu cầu nào từ lúc khởi động: đọc registry (tối đa mỗi
+ * 30 giây một lần), mở pool cho mọi site `active` / `suspended` chưa có pool. Site bị xoá / chuyển trạng thái: pool cũ ở lại tới khi
+ * khởi động lại (B6 thêm gỡ pool khi khoá / xoá site).
+ */
+export async function registerActiveSitePools(now = Date.now()): Promise<number> {
+  if (now - activeAt < ACTIVE_REFRESH_MS) return 0;
+  await ensureControlSchema();
+  const r = await controlPool().query<SiteRecord>(
+    `SELECT id, slug, status, db_host, db_port, db_name, db_app_role, db_secrets_enc FROM sites WHERE status IN ('active', 'suspended')`,
+  );
+  activeAt = now;
+  let added = 0;
+  for (const site of r.rows) {
+    if (!listSiteIds().includes(site.id)) { ensurePool(site); added++; }
+  }
+  return added;
 }
 
 /** Đóng pool của database điều khiển (tắt ứng dụng / test). Pool của từng site đóng cùng db (endAllSitePools). */
