@@ -214,6 +214,7 @@ Lệnh in đường dẫn một tệp `logs/goi-bao-loi-<giờ>.tar.gz` (vài tr
 | Lấy nhiều dòng log Docker hơn | `./scripts/lay-log.sh --dong 5000` |
 | Xem ngay lỗi API | `tail -50 logs/api-loi.log` |
 | Xem ngay lỗi nâng cấp cơ sở dữ liệu | `tail -80 logs/db-migrate.log` |
+| Xem ngay lỗi cổng vào (màn báo "Không kết nối được máy chủ phần mềm") <!-- [2026-11-22 12:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2: web-loi.log --> | `tail -50 logs/web-loi.log` |
 
 Thư mục `logs/` có sẵn trong thư mục cài, tổng không quá 200 MB, tự xoay vòng. Đặt `LOG_HOST_DIR` trong `.env` để để chỗ khác. Lỗi do proxy aaPanel trả (ví dụ 502 khi phần mềm chưa chạy) nằm ở `/www/wwwlogs/<tên miền>.error.log`.
 
