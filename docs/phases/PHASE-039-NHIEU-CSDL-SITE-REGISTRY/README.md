@@ -64,6 +64,9 @@
 | Mã | Câu hỏi | Chốt |
 |---|---|---|
 | Q039-1 | Lệnh khoá site (do người vận hành ra) thì chỉ đọc hay chặn hẳn? | **Chỉ đọc**: xem, in, xuất sổ; không ghi. Hết hạn bản quyền thì **không** khoá, chỉ cảnh báo (D039-17) — theo đề nghị |
+<!-- [2026-11-22 11:43 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — D039-20 -->
+> **D039-20 (2026-11-22, B3b): hoãn vai trò sở hữu `kt_<slug>_owner`; database và bảng của site thuộc vai trò quản trị, migration chạy bằng vai trò quản trị.** Lý do: migration lõi tạo vai trò dùng chung cụm (`ketoan_app`, `ketoan_ledger_cost`), trình chạy migration module cần `CREATEROLE` và `GRANT … TO CURRENT_USER`, vai trò quản trị của bản cài Docker là siêu người dùng khởi tạo nên `REASSIGN OWNED` không chạy được — vai trò sở hữu không phải siêu người dùng không chạy nổi migration hôm nay. Cách ly giữa các site đã có ở vai trò ứng dụng `kt_<slug>_app` (chỉ `CONNECT` database của mình, R-SITE-2). Mở lại khi có khách cần tài khoản sở hữu riêng (vd tự sao lưu bằng công cụ của họ) — kèm việc kiểm migration chạy được không cần siêu người dùng (R-SITE-11).
+
 | Q039-2 | Mỗi site một vai trò PostgreSQL riêng hay dùng chung? | **Riêng từng site** — chủ dự án chọn (D039-19, R-SITE-2) |
 | Q039-3 | Thêm PgBouncer ngay hay để sau? | **Để sau**; pool có trần (D039-7) đủ cho vài chục site, thêm khi vượt 50 site — theo đề nghị |
 | Q039-4 | Bản cài một công ty đang chạy có chuyển vào cụm được không? | **Có**, lệnh `site adopt` ở B4 (sao lưu → khôi phục vào `kt_<slug>` → tạo vai trò → ghi registry) — theo đề nghị |

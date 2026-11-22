@@ -40,6 +40,8 @@ RUN node tests/conformance/selfcheck.mjs --lane selfcheck --json > /tmp/scoreboa
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+# [2026-11-22 11:43 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3b (R-SITE-8): pg_dump cùng bản máy chủ PostgreSQL 16 — `site migrate` sao lưu từng site trước khi nâng; thiếu thì lệnh dừng
+RUN apk add --no-cache postgresql16-client
 # [2026-11-21 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1 (S038-11, R-LOG-8): stack trong log trỏ tệp .ts (dist có .js.map vì tsconfig sourceMap) — không thì "dòng 4812 của tệp đã dựng"
 ENV NODE_OPTIONS=--enable-source-maps
 # Nhật ký lỗi cố định (PHASE-038): compose gắn <thư mục cài>/logs vào đây; core/logger.ts ghi api-loi.log, db-migrate.log
@@ -64,6 +66,8 @@ COPY --from=build /app/packages/module-sdk/dist packages/module-sdk/dist
 COPY --from=build /app/modules modules
 # Thư mục cơ sở dữ liệu (migrations, seeds) — đường dẫn /app/db (packages/platform/src/db/paths.ts: dist/db cách gốc 4 cấp như cũ).
 COPY db/migrations db/migrations
+# [2026-11-22 11:43 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3b: migration của database điều khiển (Site Registry, SITE_MODE=multi) — thiếu từ B2a, ảnh chạy multi hỏng ở lần đọc registry đầu
+COPY db/control-migrations db/control-migrations
 COPY db/seeds db/seeds
 # [2026-10-30 10:52 PM Johnny Chu - Chu Hoàng Anh] PHASE-012 — gói định khoản nền cài khi khởi tạo đơn vị (seed).
 COPY db/packs db/packs

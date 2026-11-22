@@ -99,3 +99,19 @@ Chạy bằng ảnh **mới** (mã mới, migration mới), trước khi chuyể
 503 có `Retry-After: 60`, không route nào chạy. Việc nền (dispatcher, đồng hồ) bỏ site bị chặn, đọc lại trạng thái mỗi giây.
 
 **Trình tự một lần nâng cấp (trước khi có `cap-nhat.sh` nhiều site, B7):** kéo mã + build ảnh mới + test → sao lưu database điều khiển (`pg_dump` của `CONTROL_DATABASE_URL`) → `bizcity site migrate --all` bằng ảnh mới → chuyển ứng dụng sang ảnh mới. Từ lúc một site được nâng tới lúc chuyển ảnh, site đó báo "đang nâng cấp" — chuyển ảnh ngay sau khi lệnh xong.
+
+## 7. Chạy lệnh `site` trong ảnh Docker
+<!-- [2026-11-22 11:43 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3b: ảnh api có db/control-migrations và pg_dump 16 -->
+
+Ảnh `api` có sẵn `pg_dump` (bản 16, cùng máy chủ) và migration của database điều khiển. Lệnh `site` chạy bằng dịch vụ `db-migrate` (cùng ảnh, kết nối bằng vai trò quản trị — dịch vụ `api` chạy bằng `ketoan_app`, không đủ quyền tạo database / nâng lược đồ):
+
+```bash
+docker compose run --rm --no-deps --entrypoint node \
+  -e CONTROL_DATABASE_URL -e SITE_SECRET_KEY -e SITE_TEMPLATE_DB \
+  -v "$PWD/backups:/app/backups" \
+  db-migrate dist/cli/site.js migrate --all --backup-dir /app/backups/sites
+```
+
+- **Gắn thư mục sao lưu** (`-v …/backups`): container bị xoá sau lệnh (`--rm`), bản `.dump` không gắn ra ngoài sẽ mất.
+- `site create`, `site list`, `site key-create` chạy cùng cách (`dist/cli/site.js create …`).
+- Ba biến `CONTROL_DATABASE_URL`, `SITE_SECRET_KEY`, `SITE_TEMPLATE_DB` lấy từ `.env` của bản cài (`-e TÊN` không giá trị = chuyển biến của shell vào container).
