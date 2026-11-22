@@ -15,12 +15,12 @@
     {
       "key": "blocked",
       "label": "Bị chặn",
-      "count": 30
+      "count": 31
     },
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 193
+      "count": 212
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 354
+      "count": 355
     }
   ],
   "items": [
@@ -10212,6 +10212,329 @@
       "facet": "F1",
       "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
       "line": 29
+    },
+    {
+      "id": "S040-1",
+      "phase": "PHASE-040",
+      "title": "README, 00, 10, 20, checklist; đo trên main 3a551921: số bảng, CI, bảo vệ nhánh, selfcheck, mốc trụ cột",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 10
+    },
+    {
+      "id": "S040-2",
+      "phase": "PHASE-040",
+      "title": "Chủ dự án duyệt D040-1..12, trả Q040-1..6",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 11
+    },
+    {
+      "id": "S040-3",
+      "phase": "PHASE-040",
+      "title": "B1 — bizcitydocument@1 1.5.0-draft: STD-DOC-4 sáu nhóm, §5 ghi \"Trình\" là pending bỏ qua được; CONF-MAN-4; CANON §4",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 12
+    },
+    {
+      "id": "S040-4",
+      "phase": "PHASE-040",
+      "title": "B1 — ADR-0038 Document Continuity; docs/rules/RULE-DOCUMENT-CONTINUITY.md (R-DOC-CONT-0..9); CANON §0.14 + danh mục luật",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 13
+    },
+    {
+      "id": "S040-5",
+      "phase": "PHASE-040",
+      "title": "B1 — trụ cột X vào tru-cot.json (DC-1..11, 00 §2.2); mã IX → LIB-; xác minh T040-24..27",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 14
+    },
+    {
+      "id": "S040-6",
+      "phase": "PHASE-040",
+      "title": "B2 — scripts/cham-pr.mjs chỉ đọc theo 20 §5; ma trận DOC sang dạng máy đọc",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 15
+    },
+    {
+      "id": "S040-7",
+      "phase": "PHASE-040",
+      "title": "B2 — docs/reviews/tien-do/PR-.json + docs/reviews/TIEN-DO-PR.md; chạy lùi 10 PR gần nhất; T040-35",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 16
+    },
+    {
+      "id": "S040-8",
+      "phase": "PHASE-040",
+      "title": "B3 — .github/pullrequesttemplate.md khối Bằng chứng chạy máy; nhan-viec.mjs kiem nhắc khi thiếu",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 17
+    },
+    {
+      "id": "S040-9",
+      "phase": "PHASE-040",
+      "title": "B3 — .mailmap gộp danh tính người đóng góp",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 18
+    },
+    {
+      "id": "S040-10",
+      "phase": "PHASE-040",
+      "title": "B9 — đếm bảng hai chế độ trong kiem-nang-cap.sh; sửa báo cáo 135 → 134; T040-34",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F4",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 19
+    },
+    {
+      "id": "S040-11",
+      "phase": "PHASE-040",
+      "title": "B4 — họ IN-DOC- (00 §6) vào intake-findings.ts, kiểm trùng, có căn cứ; trang tra mã",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 20
+    },
+    {
+      "id": "S040-12",
+      "phase": "PHASE-040",
+      "title": "B4 — thống kê HT19: gom theo mã · loại chứng từ · phân hệ · bước · tuần; thẻ \"Lỗi hay gặp\"; T040-29..31",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 21
+    },
+    {
+      "id": "S040-13",
+      "phase": "PHASE-040",
+      "title": "B5 — số HĐ + applies trên mọi phiếu chuỗi mua (00 §4.1); nhắc thiếu HĐ — @Thuy2k",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "mua-hang"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 22
+    },
+    {
+      "id": "S040-14",
+      "phase": "PHASE-040",
+      "title": "B5 — dải chuỗi trên đầu phiếu mua (HĐ · PO · NCC · bước trước / sau), ghi đè có căn cứ — @Thuy2k",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "mua-hang"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 23
+    },
+    {
+      "id": "S040-15",
+      "phase": "PHASE-040",
+      "title": "B6 — màn hợp đồng từng bước A → K, lập chứng từ kế tiếp từ chứng từ trước; T040-2 — @Thuy2k",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "mua-hang"
+      ],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 24
+    },
+    {
+      "id": "S040-16",
+      "phase": "PHASE-040",
+      "title": "B6 — bảng sẵn sàng thanh lý theo hợp đồng; IN-DOC-CLOSE-OPEN-ITEMS; T040-14 — @Thuy2k",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "mua-hang"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 25
+    },
+    {
+      "id": "S040-17",
+      "phase": "PHASE-040",
+      "title": "B7 — saleprograms → pricing.saleprogram; applies từ đơn / phiếu bán / đơn POS; Doc 26 §3, §6; T040-15; chạy lại NT-BH-033 — @H-Joyy",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "ban-hang"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 26
+    },
+    {
+      "id": "S040-18",
+      "phase": "PHASE-040",
+      "title": "B8 — trạng thái kế toán suy ra trên HT18; chẩn đoán mồ côi nguồn, hoàn tất thiếu sổ, tệp đổi băm, docref ≠ dockey; T040-28",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 27
+    },
+    {
+      "id": "S040-19",
+      "phase": "PHASE-040",
+      "title": "B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản docs/reviews/REVIEW-R2-.md",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 28
+    },
+    {
+      "id": "S040-20",
+      "phase": "PHASE-040",
+      "title": "Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ main — PR + 1 người duyệt, check bắt buộc sau khi CI chạy được (Q040-4)",
+      "priority": "P0",
+      "status": "blocked",
+      "column": "blocked",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F2",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 29
+    },
+    {
+      "id": "S040-21",
+      "phase": "PHASE-040",
+      "title": "Sau phase — đưa vào sổ các dòng ☐ \"sau phase\" ở 10 §2",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "kho",
+        "quy",
+        "ban-hang"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 30
     }
   ]
 }

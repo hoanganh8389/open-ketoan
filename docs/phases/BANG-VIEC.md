@@ -7,25 +7,26 @@
 |---|---|
 | Đang làm | 6 |
 | Chờ merge | 0 |
-| Bị chặn | 30 |
-| Chưa ai nhận | 193 |
+| Bị chặn | 31 |
+| Chưa ai nhận | 212 |
 | Chờ đủ tín hiệu | 75 |
 | Hoãn | 3 |
-| Xong | 354 |
-| **Tổng** | **661** |
+| Xong | 355 |
+| **Tổng** | **682** |
 
 ## Theo phân hệ (R-FLOW-10)
 
 | Phân hệ | Xong | Chờ đủ tín hiệu | Đang làm | Còn lại | Tổng |
 |---|---|---|---|---|---|
 | danh-muc | 20 | 17 | 2 | 49 | 88 |
-| mua-hang | 60 | 6 | 0 | 34 | 100 |
-| kho | 46 | 23 | 3 | 89 | 161 |
-| ban-hang | 60 | 6 | 0 | 38 | 104 |
-| chung-tu | 67 | 5 | 0 | 26 | 98 |
+| mua-hang | 61 | 6 | 0 | 39 | 106 |
+| kho | 46 | 23 | 3 | 90 | 162 |
+| ban-hang | 61 | 6 | 0 | 41 | 108 |
+| quy | 0 | 0 | 0 | 1 | 1 |
+| chung-tu | 68 | 5 | 0 | 32 | 105 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 165 | 26 | 2 | 60 | 253 |
+| he-thong | 166 | 26 | 2 | 69 | 263 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
 ## Đang làm (6)
@@ -43,7 +44,7 @@
 
 —
 
-## Bị chặn (30)
+## Bị chặn (31)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -77,8 +78,9 @@
 | [S031-27](PHASE-031-POLICY-REGISTRY-RULE-CONTRACTS/40-MASTER-CHECKLIST.md#L36) | PHASE-031 | mua-hang · ban-hang | ~~Đổi số migration W2a 0080 → 0082~~ — rút: phiên PHASE-029 (K3) sửa trùng 0080 bằng cách đổi số của K3 (0081… | P0 | — |
 | [S037-16](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L25) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân bổ nguồn (receiptorigin hoặc gộp valuationlayersources), thứ tự lấy nguồn khi xuất, ánh xạ dòng nguồn bề… | P0 | — |
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
+| [S040-20](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L29) | PHASE-040 | he-thong | Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ main — PR + 1 người duyệt, check bắt buộc sau khi C… | P0 | — |
 
-## Chưa ai nhận (193)
+## Chưa ai nhận (212)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -275,6 +277,25 @@
 | [S038-15](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L29) | PHASE-038 | — | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | — | — |
 | [S039-14](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L23) | PHASE-039 | he-thong | B5 — khoá bản quyền biz-… (D039-17): gắn khoá cho site, hỏi trạng thái ở bizcity-llm-router (bộ đệm 1 giờ), d… | P1 | — |
 | [S039-20](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L29) | PHASE-039 | he-thong | B7 — nghiệm thu T039-1..14 trên máy sạch; phối hợp Site Manager (repo bizcity-open-setup) tạo site thật | P0 | — |
+| [S040-2](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L11) | PHASE-040 | chung-tu · mua-hang · ban-hang · he-thong | Chủ dự án duyệt D040-1..12, trả Q040-1..6 | P0 | — |
+| [S040-3](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L12) | PHASE-040 | chung-tu | B1 — bizcitydocument@1 1.5.0-draft: STD-DOC-4 sáu nhóm, §5 ghi "Trình" là pending bỏ qua được; CONF-MAN-4; CA… | P0 | — |
+| [S040-4](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L13) | PHASE-040 | chung-tu | B1 — ADR-0038 Document Continuity; docs/rules/RULE-DOCUMENT-CONTINUITY.md (R-DOC-CONT-0..9); CANON §0.14 + da… | P0 | — |
+| [S040-5](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L14) | PHASE-040 | he-thong | B1 — trụ cột X vào tru-cot.json (DC-1..11, 00 §2.2); mã IX → LIB-; xác minh T040-24..27 | P0 | — |
+| [S040-6](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L15) | PHASE-040 | he-thong | B2 — scripts/cham-pr.mjs chỉ đọc theo 20 §5; ma trận DOC sang dạng máy đọc | P0 | — |
+| [S040-7](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L16) | PHASE-040 | he-thong | B2 — docs/reviews/tien-do/PR-.json + docs/reviews/TIEN-DO-PR.md; chạy lùi 10 PR gần nhất; T040-35 | P0 | — |
+| [S040-8](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L17) | PHASE-040 | he-thong | B3 — .github/pullrequesttemplate.md khối Bằng chứng chạy máy; nhan-viec.mjs kiem nhắc khi thiếu | P0 | — |
+| [S040-9](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L18) | PHASE-040 | he-thong | B3 — .mailmap gộp danh tính người đóng góp | P1 | — |
+| [S040-10](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L19) | PHASE-040 | he-thong | B9 — đếm bảng hai chế độ trong kiem-nang-cap.sh; sửa báo cáo 135 → 134; T040-34 | P0 | — |
+| [S040-11](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L20) | PHASE-040 | chung-tu | B4 — họ IN-DOC- (00 §6) vào intake-findings.ts, kiểm trùng, có căn cứ; trang tra mã | P0 | — |
+| [S040-12](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L21) | PHASE-040 | chung-tu | B4 — thống kê HT19: gom theo mã · loại chứng từ · phân hệ · bước · tuần; thẻ "Lỗi hay gặp"; T040-29..31 | P0 | — |
+| [S040-13](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L22) | PHASE-040 | mua-hang | B5 — số HĐ + applies trên mọi phiếu chuỗi mua (00 §4.1); nhắc thiếu HĐ — @Thuy2k | P0 | — |
+| [S040-14](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L23) | PHASE-040 | mua-hang | B5 — dải chuỗi trên đầu phiếu mua (HĐ · PO · NCC · bước trước / sau), ghi đè có căn cứ — @Thuy2k | P0 | — |
+| [S040-15](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L24) | PHASE-040 | mua-hang | B6 — màn hợp đồng từng bước A → K, lập chứng từ kế tiếp từ chứng từ trước; T040-2 — @Thuy2k | P0 | — |
+| [S040-16](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L25) | PHASE-040 | mua-hang | B6 — bảng sẵn sàng thanh lý theo hợp đồng; IN-DOC-CLOSE-OPEN-ITEMS; T040-14 — @Thuy2k | P0 | — |
+| [S040-17](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L26) | PHASE-040 | ban-hang | B7 — saleprograms → pricing.saleprogram; applies từ đơn / phiếu bán / đơn POS; Doc 26 §3, §6; T040-15; chạy l… | P0 | — |
+| [S040-18](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L27) | PHASE-040 | chung-tu | B8 — trạng thái kế toán suy ra trên HT18; chẩn đoán mồ côi nguồn, hoàn tất thiếu sổ, tệp đổi băm, docref ≠ do… | P1 | — |
+| [S040-19](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L28) | PHASE-040 | he-thong | B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản docs/reviews/REVIEW-R2-.md | P0 | — |
+| [S040-21](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L30) | PHASE-040 | kho · quy · ban-hang | Sau phase — đưa vào sổ các dòng ☐ "sau phase" ở 10 §2 | P1 | — |
 
 ## Chờ đủ tín hiệu (75)
 
@@ -364,6 +385,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (354)
+## Xong (355)
 
 Chỉ đếm; xem từng việc ở checklist của phase.
