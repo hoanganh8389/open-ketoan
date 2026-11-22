@@ -194,7 +194,10 @@ let activeAt = 0;
 
 function ensurePool(site: SiteRecord): void {
   if (!listSiteIds().includes(site.id)) {
-    registerSitePool(site.id, new pg.Pool({ connectionString: siteConnectionString(site), max: SITE_POOL_MAX, idleTimeoutMillis: POOL_IDLE_MS }));
+    const p = new pg.Pool({ connectionString: siteConnectionString(site), max: SITE_POOL_MAX, idleTimeoutMillis: POOL_IDLE_MS });
+    // [2026-11-22 12:06 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: kết nối rảnh bị ngắt (khôi phục site, quản trị pg_terminate_backend) → pool phát 'error'; không bắt thì sập cả tiến trình API. Pool tự bỏ kết nối hỏng, lần mượn sau mở kết nối mới.
+    p.on('error', () => undefined);
+    registerSitePool(site.id, p);
   }
 }
 
