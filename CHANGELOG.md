@@ -12,6 +12,19 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Liên tục chứng từ — trụ cột X (PHASE-040 B1, luật R-DOC-CONT) <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B1: mục CHANGELOG (S040-3..5) -->
+
+- **Thêm:**
+  - Trụ cột X *Liên tục chứng từ* ở màn **HT10 Trụ cột & mức đạt**, gồm 11 tiêu chí DC-1..DC-11. Mức đạt đi theo bằng chứng: 1 đạt, 6 một phần, 2 mới có tài liệu, 2 chưa có — 41 %.
+  - Luật R-DOC-CONT-0..9 ([docs/rules/RULE-DOCUMENT-CONTINUITY.md](docs/rules/RULE-DOCUMENT-CONTINUITY.md)), ADR-0038, CANON §0.14.
+- **Đổi:**
+  - `bizcity_document@1` lên 1.5.0-draft: chuẩn có **sáu** nhóm trạng thái, khớp với mã đang chạy; bước trình duyệt bỏ qua được; thêm phần *ba chiều trạng thái* (hoàn tất không có nghĩa là đã ghi sổ); thêm STD-DOC-9 *hợp đồng xuyên suốt chuỗi mua* (thiếu số hợp đồng thì mặc định nhắc).
+  - Trụ cột IX: mã tiêu chí đổi `L-1..L-8` thành `TV-1..TV-8`, để không trùng mã tiêu chí của trụ cột I.
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có. Bản này không có migration và không đổi mã chạy.
+- **Bảo mật:** —
+
 ### Nhật ký lỗi cố định của bản cài (PHASE-038, luật R-LOG) <!-- [2026-11-22 10:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5: mục CHANGELOG của cả phase (S038-10) -->
 
 - **Thêm:**

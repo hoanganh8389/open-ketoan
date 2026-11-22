@@ -26,14 +26,14 @@
 
 | Tiêu chí | Nội dung | Hôm nay |
 |---|---|---|
-| L-1 | Khuôn chung, phiên bản ba tầng, băm, changelog; SC-LIB-1 chặn | đạt (S030-45) |
-| L-2 | Bộ kiểm chung, 7 mã `LIB-*` trong thư viện mã, gợi ý từ thư viện | đạt (S030-45) |
-| L-3 | API đọc + ô chọn + MCP chỉ đọc | một phần (API có, `LibraryPicker` chưa — A2) |
-| L-4 | Căn cứ pháp lý là thư viện; mục trỏ căn cứ bằng mã; xác nhận theo đơn vị | chưa (§6) |
-| L-5 | Cấu hình theo đơn vị: ghi đè giá trị, hạ mức luật, gắn ô ↔ thư viện | chưa (§7) |
-| L-6 | Theo dõi sử dụng + bảng đánh giá pass / không pass | chưa (§8, §9) |
-| L-7 | Bộ kiểm ở mọi đường vào (form, module, cửa nạp, kết nối) dùng chung thư viện | một phần (§4) |
-| L-8 | Skill + CLI cho dev và AI | chưa (§10) |
+| TV-1 | Khuôn chung, phiên bản ba tầng, băm, changelog; SC-LIB-1 chặn | đạt (S030-45) |
+| TV-2 | Bộ kiểm chung, 7 mã `LIB-*` trong thư viện mã, gợi ý từ thư viện | đạt (S030-45) |
+| TV-3 | API đọc + ô chọn + MCP chỉ đọc | một phần (API có, `LibraryPicker` chưa — A2) |
+| TV-4 | Căn cứ pháp lý là thư viện; mục trỏ căn cứ bằng mã; xác nhận theo đơn vị | chưa (§6) |
+| TV-5 | Cấu hình theo đơn vị: ghi đè giá trị, hạ mức luật, gắn ô ↔ thư viện | chưa (§7) |
+| TV-6 | Theo dõi sử dụng + bảng đánh giá pass / không pass | chưa (§8, §9) |
+| TV-7 | Bộ kiểm ở mọi đường vào (form, module, cửa nạp, kết nối) dùng chung thư viện | một phần (§4) |
+| TV-8 | Skill + CLI cho dev và AI | chưa (§10) |
 
 Thêm dòng trụ cột là sửa tệp dùng chung của PHASE-026: đi cùng PR code đợt B1 (S030-47), có dấu R-SIG.
 
