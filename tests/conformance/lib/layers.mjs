@@ -154,6 +154,8 @@ export const LAYER_MAP = [
   ['modules/assets/', 'D', 'modules/tai-san'],
   ['modules/access/', 'P', 'permissions'],
   ['modules/apps/', 'P', 'apps.external'],
+  // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: Provisioning API (cùng lớp db/site-create.ts)
+  ['modules/sites/', 'P', 'apps/api'],
   ['modules/auth/', 'P', 'permissions'],
   ['modules/auth/wp-sso.ts', 'A', 'adapters/wordpress'],
   ['modules/system/', 'P', 'module-sdk'],

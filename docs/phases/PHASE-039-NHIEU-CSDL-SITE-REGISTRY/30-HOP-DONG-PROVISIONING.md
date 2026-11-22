@@ -6,6 +6,11 @@
 > **Trạng thái:** bản nháp trong phase. Khi làm B5 mới chuyển thành tệp ở `docs/contracts/` và gói `@ketoan/contracts`.
 > **Chủ hợp đồng:** Open Kế Toán. **Phía gọi:** Site Manager (`bizcity_site_manager`), CLI, script vận hành.
 
+<!-- [2026-11-22 10:56 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: đã có mã cho health, POST /sites, GET /sites, GET /sites/{id}, GET /jobs/{id}; khuôn phản hồi; trường owner trả một lần -->
+> **Đã có mã (B5a, 2026-11-22):** `GET /health`, `POST /sites`, `GET /sites`, `GET /sites/{siteId}`, `GET /jobs/{jobId}` — `apps/api/src/modules/sites/`. Các lệnh còn lại của §3 (khoá / mở / tên miền / sao lưu / khôi phục / bản quyền / xoá): B5b, B6.
+>
+> **Khuôn phản hồi:** thân thành công là đối tượng của hợp đồng, **không** bọc `{ ok, data }` như `/api/v1`. Lỗi theo khuôn chung `{ ok: false, error: { code, message, requestId } }`. Tên miền khác `SITE_ADMIN_HOST` hoặc `SITE_MODE=single` → 404 như đường không tồn tại.
+
 ## 1. Nguyên tắc
 
 1. **Open Kế Toán là chủ Site Registry.** Phía gọi giữ bản điều hành; lệch thì tin registry.
@@ -104,6 +109,8 @@
 ```
 
 `status` của việc: `queued` · `running` · `done` · `failed`. Khi `failed`: `error = { "code": "…", "message": "…" }`.
+
+**Mật khẩu ban đầu của chủ site (B5a):** việc `provision` xong thì lần đọc `GET /jobs/{jobId}` **đầu tiên** có thêm `"owner": { "email": "…", "initialPassword": "…" }`; mật khẩu lưu mã hoá trong `site_jobs.result_enc` và bị xoá ngay sau lần đọc đó. Phía gọi (Site Manager) gửi cho khách rồi bỏ; khách đổi sau khi đăng nhập. Liên kết đặt mật khẩu một lần thay cho cách này khi Open Kế Toán có gửi email.
 
 ## 5. Mã lỗi
 

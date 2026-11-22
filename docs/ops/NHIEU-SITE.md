@@ -15,6 +15,7 @@
 | `SITE_SECRET_KEY` | — | Khoá (≥ 32 ký tự) mã hoá mật khẩu vai trò của từng site trong registry. Thiếu thì không tạo site được và không mở được kết nối tới site có vai trò riêng. **Mất khoá = mất mật khẩu của mọi site**: sao lưu khoá riêng, ngoài database |
 | `PROVISION_DATABASE_URL` | `DATABASE_URL` | Kết nối có quyền `CREATEDB` + `CREATEROLE` để tạo database và vai trò của site |
 | `SITE_APP_PARENT_ROLE` | `ketoan_app` | Vai trò cha: vai trò ứng dụng của mỗi site là thành viên của nó, nên thừa hưởng quyền trên bảng mà migration cấp |
+| `SITE_ADMIN_HOST` | — | Tên miền điều hành: Provisioning API `/_sites/v1` chỉ trả lời trên tên miền này (chế độ `multi`). Trống = tắt Provisioning API |
 
 `DATABASE_URL` vẫn cần ở chế độ `multi`: đó là site ngầm định, dùng cho kiểm sống / sẵn sàng / số đo. Site tạo bằng Site Provisioner kết nối bằng vai trò riêng; site ghi tay (§3b) chưa có vai trò riêng thì dùng tên đăng nhập + mật khẩu của `DATABASE_URL`.
 

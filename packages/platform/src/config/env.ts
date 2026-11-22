@@ -129,6 +129,9 @@ const envSchema = z.object({
   PROVISION_DATABASE_URL: z.string().url().optional(),
   /** Vai trò cha của vai trò ứng dụng từng site: site thừa hưởng quyền trên bảng mà migration cấp cho vai trò này. */
   SITE_APP_PARENT_ROLE: z.string().regex(/^[a-z_][a-z0-9_]{0,62}$/, 'Tên vai trò không hợp lệ').default('ketoan_app'),
+  // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): tên miền điều hành của Provisioning API
+  /** Tên miền duy nhất Provisioning API /_sites/v1 trả lời (chế độ multi). Trống = tắt Provisioning API. */
+  SITE_ADMIN_HOST: z.string().regex(/^[a-z0-9.-]{3,253}$/, 'Tên miền điều hành không hợp lệ').optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
