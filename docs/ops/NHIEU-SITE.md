@@ -5,7 +5,7 @@
 <!-- [2026-11-22 10:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a: Site Provisioner, biến SITE_TEMPLATE_DB, SITE_SECRET_KEY, PROVISION_DATABASE_URL, SITE_APP_PARENT_ROLE -->
 > **Trạng thái (2026-11-22):** có mã tới B4a (Site Provisioner). <!-- [2026-11-22 11:11 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c: việc nền theo site; còn thiếu B3 -->
 <!-- [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: nâng cấp theo site; còn thiếu sao lưu theo lịch / khôi phục (B6), cap-nhat.sh nhiều site (B7) -->
-**Chạy được, nâng cấp bằng lệnh:** `bizcity site migrate` nâng database mẫu rồi từng site, có cổng lược đồ (B3, §6). Chưa có: sao lưu theo lịch và lệnh khôi phục (B6), `cap-nhat.sh` chế độ nhiều site (B7) — trước B7, nâng cấp làm tay theo §6. Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), việc nền theo site (B2c), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
+**Chạy được, nâng cấp bằng lệnh:** `bizcity site migrate` nâng database mẫu rồi từng site, có cổng lược đồ (B3, §6). Chưa có: khoá site chỉ đọc và xoá mềm (B6b), <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: có sao lưu / khôi phục theo site (§8) --> `cap-nhat.sh` chế độ nhiều site (B7) — trước B7, nâng cấp làm tay theo §6. Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), việc nền theo site (B2c), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
 
 ## 1. Biến môi trường
 
@@ -115,3 +115,41 @@ docker compose run --rm --no-deps --entrypoint node \
 - **Gắn thư mục sao lưu** (`-v …/backups`): container bị xoá sau lệnh (`--rm`), bản `.dump` không gắn ra ngoài sẽ mất.
 - `site create`, `site list`, `site key-create` chạy cùng cách (`dist/cli/site.js create …`).
 - Ba biến `CONTROL_DATABASE_URL`, `SITE_SECRET_KEY`, `SITE_TEMPLATE_DB` lấy từ `.env` của bản cài (`-e TÊN` không giá trị = chuyển biến của shell vào container).
+
+## 8. Sao lưu và khôi phục từng site
+<!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a (D039-13, S039-15, S039-16) -->
+
+```bash
+bizcity site backup --all [--keep 14] [--dir backups/sites]   # mọi site; hoặc --slug a,b
+bizcity site backups [--slug a]                               # các bản đã ghi (mã, giờ, lý do, cỡ, tệp)
+bizcity site restore --slug a --backup <mã> --yes             # khôi phục một site
+bizcity site backup-import --slug a --file x.dump             # ghi tệp làm ngoài lệnh (vd từ PITR) để khôi phục được
+```
+
+Trong ảnh Docker chạy như §7 (`dist/cli/site.js backup …`, gắn thư mục sao lưu ra ngoài).
+
+**Sao lưu** (`pg_dump -Fc` bằng vai trò quản trị) → `<dir>/<slug>/<slug>-<giờ UTC>.dump` → **tự kiểm** (`pg_restore --list`: đọc được, có dữ liệu `ledger_entries`, đếm bảng) → ghi `site_backups` (đã kiểm, số bảng, lược đồ, lý do `manual` / `schedule` / `migrate` / `import`). Hỏng: tệp đổi đuôi `.hong`, lệnh báo lỗi site đó và chạy tiếp site sau, mã thoát 1. `--keep N`: giữ N bản mới nhất **mỗi site**, xoá tệp và dòng cũ hơn. `site migrate` sao lưu qua cùng đường này (lý do `migrate`).
+
+**Lịch đêm** (crontab của máy chủ, 02:30 hằng đêm, giữ 14 bản):
+
+```cron
+30 2 * * * cd /opt/ketoan && docker compose run --rm --no-deps --entrypoint node -e CONTROL_DATABASE_URL -e SITE_SECRET_KEY -e SITE_TEMPLATE_DB -v /opt/ketoan/backups:/app/backups db-migrate dist/cli/site.js backup --all --schedule --keep 14 --dir /app/backups/sites >> /opt/ketoan/logs/sao-luu-site.log 2>&1
+```
+
+Thư mục sao lưu phải nằm ngoài ổ của database và được chép ra máy khác (như `sao-luu.sh` của bản một công ty).
+
+**Khôi phục** một site — site khác không bị chạm:
+
+1. kiểm lại tệp (khớp số bảng đã ghi), tạo database tạm `kt_<slug>_kp_<giờ>`, `pg_restore` vào đó, đối chiếu số bảng + có sổ cái — hỏng ở đây: xoá database tạm, **site chạy tiếp như cũ**;
+2. chặn site (`upgrading` → 503 `SITE_UPGRADING`, việc nền dừng), đợi 35 giây (`--drain-seconds`);
+3. ngắt kết nối tới database của site, đổi tên: database đang chạy → `kt_<slug>_cu_<giờ>` (**giữ lại để lùi**), database tạm → `kt_<slug>`; vai trò ứng dụng của site chỉ `CONNECT` được database mới;
+4. trả trạng thái cũ; registry ghi `restored_at`, `restored_from`, `previous_db`.
+
+Bản sao lưu có lược đồ cũ hơn ứng dụng → site báo 503 `SITE_UPGRADING` tới khi chạy `bizcity site migrate --slug <slug>` (lệnh khôi phục nhắc). Lùi lần khôi phục: đổi tên ngược bằng tay (`ALTER DATABASE … RENAME`, site đang chặn). Database `_cu_` xoá tay sau 7 ngày (`DROP DATABASE`), dọn tự động làm cùng xoá mềm (B6b).
+
+**Lấy một site ở một thời điểm (PITR, PHASE-008).** PITR là mức cả cụm: không khôi phục thẳng một site được.
+
+1. Dựng cụm PostgreSQL tạm từ bản nền + WAL tới thời điểm cần (sổ tay PITR của PHASE-008, `scripts/dien-tap-pitr.sh`) — **không** đè cụm đang chạy.
+2. `pg_dump -Fc` riêng database `kt_<slug>` từ cụm tạm ra tệp `.dump`; tắt cụm tạm.
+3. `bizcity site backup-import --slug <slug> --file <tệp>` (tự kiểm, ghi `site_backups` lý do `import`).
+4. `bizcity site restore --slug <slug> --backup <mã vừa in> --yes`.

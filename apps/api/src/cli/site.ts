@@ -13,6 +13,12 @@
  *   bizcity site migrate (--all | --slug a,b) [--backup-dir backups/sites] [--skip-backup] [--drain-seconds 35] [--json]
  *       nâng lược đồ: database mẫu trước, rồi từng site (sao lưu pg_dump trước mỗi site); site lỗi → migration_failed, đi tiếp;
  *       in bảng tổng kết; mã thoát 1 khi có site lỗi (chạy lại sau khi sửa) — R-SITE-8, R-SITE-10, docs/ops/NHIEU-SITE.md §6
+ *   bizcity site backup (--all | --slug a,b) [--dir backups/sites] [--keep 14] [--schedule] [--json]
+ *       sao lưu pg_dump từng site, tự kiểm, ghi site_backups; --keep giữ N bản mới nhất mỗi site; --schedule = lượt của lịch đêm
+ *   bizcity site backups [--slug a] [--json]        các bản sao lưu đã ghi
+ *   bizcity site backup-import --slug a --file x.dump [--json]   ghi tệp làm ngoài lệnh (vd từ PITR) làm bản sao lưu của site
+ *   bizcity site restore --slug a --backup <mã> --yes [--drain-seconds 35] [--json]
+ *       khôi phục site từ bản sao lưu của chính nó (database tạm → kiểm → đổi tên; database cũ giữ lại) — NHIEU-SITE.md §8
  *
  * Chạy trực tiếp: npx tsx --conditions=development apps/api/src/cli/site.ts <lệnh> …
  */
@@ -29,6 +35,9 @@ import { runModuleMigrations } from '@bizcity/platform/db/module-db';
 import { registerSitePool, unregisterSitePool, withSite } from '@bizcity/platform/db/site';
 import { migrateSites, SiteMigrateError, type SiteMigrateReport } from '@bizcity/platform/db/site-migrate';
 import { discoverSdkModules } from '../core/sdk-modules.js';
+// [2026-11-22 12:06 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a (D039-13): lệnh site backup / backups / restore
+import { backupSite, importBackup, listBackups, restoreSite, SiteBackupError } from '@bizcity/platform/db/site-backup';
+import { listSites as listAllSites } from '../db/site-create.js';
 import { syncBundled } from '../core/module-lifecycle.js';
 
 type Args = { _: string[]; [flag: string]: string | boolean | string[] };
@@ -107,7 +116,71 @@ async function main(argv: string[]): Promise<number> {
     else printReport(report);
     return report.failed ? 1 : 0;
   }
-  console.error('Lệnh: site create --slug <ten> --domain <ten.mien> [--name …] [--email …] [--json] | site list [--json] | site key-create --label … [--ips …] [--json] | site migrate (--all | --slug a,b) [--skip-backup] [--json]');
+  if (cmd === 'backup') {
+    const slugs = typeof args.slug === 'string' ? args.slug.split(',').map((x) => x.trim()).filter(Boolean) : [];
+    if (!slugs.length && args.all !== true) { console.error('Chọn site: --all (mọi site) hoặc --slug a,b'); return 2; }
+    const keep = typeof args.keep === 'string' ? Number(args.keep) : undefined;
+    if (keep !== undefined && !(Number.isInteger(keep) && keep >= 1)) { console.error('--keep phải là số nguyên ≥ 1'); return 2; }
+    const targets = slugs.length ? slugs : (await listAllSites()).filter((s) => s.status !== 'deleted' && s.status !== 'provisioning').map((s) => s.slug);
+    const out: unknown[] = [];
+    let failed = 0;
+    for (const slug of targets) {
+      try {
+        const r = await backupSite(slug, { ...(typeof args.dir === 'string' ? { dir: args.dir } : {}), reason: args.schedule === true ? 'schedule' : 'manual', ...(keep ? { keep } : {}) });
+        out.push(r);
+        if (!json) console.log(`✓ ${r.slug.padEnd(30)} ${(r.bytes / 1048576).toFixed(1).padStart(7)} MB  ${r.tables} bảng  ${r.file}  [${r.id}]${r.pruned.length ? `  · xoá ${r.pruned.length} bản cũ` : ''}`);
+      } catch (err) {
+        if (!(err instanceof SiteBackupError)) throw err;
+        failed++;
+        out.push({ slug, error: err.code, message: err.message });
+        if (!json) console.error(`✗ ${slug}: ${err.code} — ${err.message}`);
+      }
+    }
+    if (json) console.log(JSON.stringify(out));
+    return failed ? 1 : 0;
+  }
+  if (cmd === 'backups') {
+    const rows = await listBackups(typeof args.slug === 'string' ? args.slug : undefined);
+    if (json) console.log(JSON.stringify(rows));
+    else if (!rows.length) console.log('(chưa có bản sao lưu nào)');
+    else for (const b of rows) console.log(`${b.slug.padEnd(30)} ${b.createdAt.slice(0, 19).replace('T', ' ')}  ${b.reason.padEnd(8)} ${(b.bytes / 1048576).toFixed(1).padStart(7)} MB  ${b.id}  ${b.file}`);
+    return 0;
+  }
+  if (cmd === 'backup-import') {
+    const slug = typeof args.slug === 'string' ? args.slug : '';
+    const file = typeof args.file === 'string' ? args.file : '';
+    if (!slug || !file) { console.error('Thiếu --slug hoặc --file'); return 2; }
+    try {
+      const r = await importBackup(slug, file);
+      if (json) console.log(JSON.stringify(r));
+      else console.log(`✓ Đã ghi ${r.file} làm bản sao lưu của ${r.slug} (${r.tables} bảng) [${r.id}]. Khôi phục: bizcity site restore --slug ${r.slug} --backup ${r.id} --yes`);
+      return 0;
+    } catch (err) {
+      if (err instanceof SiteBackupError) { console.error(`✗ ${err.code}: ${err.message}`); return 1; }
+      throw err;
+    }
+  }
+  if (cmd === 'restore') {
+    const slug = typeof args.slug === 'string' ? args.slug : '';
+    const backup = typeof args.backup === 'string' ? args.backup : '';
+    if (!slug || !backup) { console.error('Thiếu --slug hoặc --backup (mã ở "bizcity site backups --slug …")'); return 2; }
+    if (args.yes !== true) { console.error('Khôi phục thay database đang chạy của site bằng bản sao lưu (database cũ giữ lại để lùi). Chạy lại với --yes để xác nhận.'); return 2; }
+    const drain = typeof args['drain-seconds'] === 'string' ? Number(args['drain-seconds']) : undefined;
+    if (drain !== undefined && !(Number.isFinite(drain) && drain >= 0)) { console.error('--drain-seconds phải là số giây ≥ 0'); return 2; }
+    try {
+      const r = await restoreSite(slug, backup, { ...(drain !== undefined ? { drainMs: drain * 1000 } : {}), log: json ? () => {} : (m) => console.log(m) });
+      if (json) console.log(JSON.stringify(r));
+      else {
+        console.log(`✓ Đã khôi phục ${r.slug} từ bản ${r.backupId}. Database cũ: ${r.previousDb} (giữ để lùi; xoá tay sau 7 ngày).`);
+        if (r.schemaChanged) console.log(`  Lược đồ của bản khôi phục: ${r.schemaVersion}. Ứng dụng mới hơn bản này thì chạy: bizcity site migrate --slug ${r.slug}`);
+      }
+      return 0;
+    } catch (err) {
+      if (err instanceof SiteBackupError) { console.error(`✗ ${err.code}: ${err.message}`); return 1; }
+      throw err;
+    }
+  }
+  console.error('Lệnh: site create --slug <ten> --domain <ten.mien> [--name …] [--email …] [--json] | site list [--json] | site key-create --label … [--ips …] [--json] | site migrate (--all | --slug a,b) [--skip-backup] [--json] | site backup (--all | --slug a,b) [--keep N] [--json] | site backups [--slug a] | site restore --slug a --backup <mã> --yes');
   return 2;
 }
 
