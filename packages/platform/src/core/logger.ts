@@ -5,7 +5,7 @@
  *
  *   - stdout giữ nguyên là đường chính (Docker → Loki khi bật bộ giám sát), mức LOG_LEVEL.
  *   - LOG_DIR đặt (Docker: /app/logs, gắn ra <thư mục cài>/logs) → dòng mức ≥ LOG_FILE_LEVEL (mặc định warn) chép thêm vào
- *     <LOG_DIR>/api-loi.log, xoay vòng theo dung lượng (20 MB × 5 bản = 100 MB, phần của API trong trần 200 MB — D038-2).
+ *     <LOG_DIR>/api/<YYYY-MM-DD>.log — một ngày một tệp, giữ 30 ngày, thư mục ≤ 100 MB (phần của API trong trần 200 MB — D038-2, D038-7).
  *   - Lỗi khởi động và lỗi tiến trình (uncaughtException / unhandledRejection) ghi ĐỒNG BỘ trước khi thoát (R-LOG-3): luồng
  *     bất đồng bộ có thể chưa kịp ghi khi process.exit chạy.
  *
@@ -13,7 +13,7 @@
  * Ghi tệp hỏng (thư mục không ghi được, đĩa đầy) không bao giờ làm hỏng yêu cầu: báo một lần ra stderr rồi bỏ qua tệp.
  */
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, mkdirSync, renameSync, statSync, unlinkSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, renameSync, statSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { BUILD_VERSION } from './version.js';
 
@@ -27,12 +27,12 @@ const MB = 1024 * 1024;
 export type StartFailReason = 'MIGRATION_PENDING' | 'DB_UNREACHABLE' | 'DB_AUTH_FAILED' | 'ENV_INVALID' | 'PORT_IN_USE' | 'UNKNOWN';
 
 const START_HINTS: Record<StartFailReason, string> = {
-  MIGRATION_PENDING: 'Chạy job db-migrate (docker compose up db-migrate) rồi xem logs/db-migrate.log',
+  MIGRATION_PENDING: 'Chạy job db-migrate (docker compose up db-migrate) rồi xem logs/db-migrate/<ngày>.log',
   DB_UNREACHABLE: 'Kiểm container db đang chạy và DATABASE_URL (docker compose ps db)',
   DB_AUTH_FAILED: 'Kiểm DB_APP_PASSWORD trong .env khớp mật khẩu job db-migrate đã đặt cho ketoan_app; chạy lại db-migrate',
   ENV_INVALID: 'Sửa biến trong .env theo dòng báo lỗi phía trên rồi dựng lại (docker compose up -d)',
   PORT_IN_USE: 'Cổng API đang bị tiến trình khác dùng: đổi PORT hoặc dừng tiến trình đó',
-  UNKNOWN: 'Gửi tệp logs/api-loi.log cho người hỗ trợ',
+  UNKNOWN: 'Chạy ./scripts/lay-log.sh và gửi gói log (có logs/api/<ngày>.log) cho người hỗ trợ',
 };
 
 /** Trường chung của mọi dòng (R-LOG-5): biết lỗi thuộc dịch vụ nào, bản nào. */
@@ -79,6 +79,127 @@ export class RotatingFile {
   }
 }
 
+// [2026-11-22 07:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B6 (S038-16, D038-7): nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục logs/<dịch vụ>/<YYYY-MM-DD>.log, giữ 30 ngày, trần từng thư mục
+
+/** Ngày theo giờ Việt Nam (UTC+7, không đổi giờ mùa hè) dạng YYYY-MM-DD — tên tệp nhật ký. */
+export function ngayVN(ms = Date.now()): string {
+  return new Date(ms + 7 * 3_600_000).toISOString().slice(0, 10);
+}
+
+/** Trần từng thư mục (PHASE-038 · 10 §7.3): một tệp (quá thì <ngày>.1.log…), cả thư mục. Cộng ≤ 200 MB cùng gói lay-log. */
+export const TRAN_NHAT_KY = {
+  api: { tep: 20 * MB, thuMuc: 100 * MB },
+  'db-migrate': { tep: 5 * MB, thuMuc: 15 * MB },
+  'web-client': { tep: 5 * MB, thuMuc: 15 * MB },
+} as const;
+export type ThuMucNhatKy = keyof typeof TRAN_NHAT_KY;
+export const GIU_NGAY = 30;
+
+const TEP_NGAY_RE = /^(\d{4}-\d{2}-\d{2})(?:\.(\d+))?\.log$/;
+const GIO = 3_600_000;
+
+/**
+ * Nhật ký một dịch vụ: <thuMuc>/<YYYY-MM-DD>.log, sang ngày mới là tệp mới. Một ngày quá trần một tệp → <ngày>.1.log, <ngày>.2.log.
+ * Dọn (lúc mở tệp đầu tiên, khi sang ngày, và mỗi giờ khi đang ghi): xoá tệp của ngày cũ hơn `giuNgay`; thư mục vượt trần thì xoá
+ * tệp cũ nhất trước (không bao giờ xoá tệp đang ghi). Ghi hỏng → báo một lần ra stderr, bỏ qua tệp (như RotatingFile).
+ */
+export class DailyFile {
+  private ngay = '';
+  private phan = 0;
+  private size = 0;
+  private donLuc = 0;
+  private broken = false;
+
+  constructor(
+    readonly dir: string,
+    readonly tran: { tep: number; thuMuc: number },
+    readonly giuNgay = GIU_NGAY,
+    private readonly now: () => number = Date.now,
+  ) {}
+
+  /** Tệp đang ghi (đường dẫn đầy đủ). */
+  get file(): string {
+    return path.join(this.dir, this.phan ? `${this.ngay}.${this.phan}.log` : `${this.ngay}.log`);
+  }
+
+  write(line: string): void {
+    if (this.broken) return;
+    try {
+      const t = this.now();
+      const hom = ngayVN(t);
+      if (hom !== this.ngay) this.moNgay(hom);
+      const bytes = Buffer.byteLength(line);
+      if (this.size > 0 && this.size + bytes > this.tran.tep) { this.phan += 1; this.size = this.kichThuoc(this.file); }
+      appendFileSync(this.file, line);
+      this.size += bytes;
+      if (t - this.donLuc >= GIO) this.don(t);
+    } catch (err) {
+      // nuot-loi: hỏng ghi tệp không được làm hỏng yêu cầu / khởi động; stdout vẫn đủ. Báo một lần.
+      this.broken = true;
+      process.stderr.write(`[nhat-ky] không ghi được ${this.dir}: ${(err as Error).message} — chỉ còn log stdout\n`);
+    }
+  }
+
+  private kichThuoc(f: string): number {
+    return existsSync(f) ? statSync(f).size : 0;
+  }
+
+  /** Sang ngày (hoặc lần ghi đầu): nối tiếp phần cuối của ngày đó nếu đã có (khởi động lại giữa ngày), rồi dọn. */
+  private moNgay(hom: string): void {
+    mkdirSync(this.dir, { recursive: true });
+    this.ngay = hom;
+    const phan = readdirSync(this.dir).map((n) => TEP_NGAY_RE.exec(n)).filter((m) => m && m[1] === hom).map((m) => Number(m![2] ?? 0));
+    this.phan = phan.length ? Math.max(...phan) : 0;
+    this.size = this.kichThuoc(this.file);
+    this.don(this.now());
+  }
+
+  /** Xoá tệp quá hạn giữ, rồi tệp cũ nhất tới khi thư mục ≤ trần. */
+  don(t = this.now()): void {
+    this.donLuc = t;
+    const han = ngayVN(t - this.giuNgay * 24 * GIO);
+    const hienTai = path.basename(this.file);
+    const ds = readdirSync(this.dir)
+      .map((n) => ({ n, m: TEP_NGAY_RE.exec(n) }))
+      .filter((x): x is { n: string; m: RegExpExecArray } => x.m !== null)
+      .map((x) => ({ n: x.n, ngay: x.m[1]!, phan: Number(x.m[2] ?? 0), size: statSync(path.join(this.dir, x.n)).size }))
+      .sort((a, b) => (a.ngay === b.ngay ? a.phan - b.phan : a.ngay < b.ngay ? -1 : 1));
+    let tong = ds.reduce((s, x) => s + x.size, 0);
+    for (const x of ds) {
+      if (x.n === hienTai) continue;
+      if (x.ngay < han || tong > this.tran.thuMuc) { unlinkSync(path.join(this.dir, x.n)); tong -= x.size; }
+    }
+  }
+}
+
+const daily = new Map<string, DailyFile>();
+/** Một DailyFile cho mỗi thư mục dịch vụ trong tiến trình. LOG_DIR trống (dev, test) → null = không ghi tệp. */
+export function dailyFile(thuMuc: ThuMucNhatKy, dir = process.env.LOG_DIR): DailyFile | null {
+  const goc = (dir ?? '').trim();
+  if (!goc) return null;
+  const p = path.join(goc, thuMuc);
+  let f = daily.get(p);
+  if (!f) { f = new DailyFile(p, TRAN_NHAT_KY[thuMuc]); daily.set(p, f); }
+  return f;
+}
+
+/** Tệp kiểu cũ ở gốc logs/ (bản cài trước D038-7: api-loi.log, web-loi.log, web-client.log, db-migrate.log và bản xoay .1…): xoá khi quá 30 ngày. */
+export function donTepKieuCu(dir = process.env.LOG_DIR, now = Date.now()): string[] {
+  const goc = (dir ?? '').trim();
+  if (!goc || !existsSync(goc)) return [];
+  const xoa: string[] = [];
+  for (const n of readdirSync(goc)) {
+    if (!/^(api-loi|web-loi|web-client|db-migrate)\.log(\.\d+)?$/.test(n)) continue;
+    const p = path.join(goc, n);
+    try {
+      if (now - statSync(p).mtimeMs > GIU_NGAY * 24 * GIO) { unlinkSync(p); xoa.push(n); }
+    } catch {
+      // nuot-loi: tệp vừa bị tiến trình khác xoá / không có quyền — lần dọn sau thử lại; không ảnh hưởng ghi log mới
+    }
+  }
+  return xoa;
+}
+
 const levelOf = (name: string | undefined, fallback: LevelName): number => LEVELS[(name ?? '') as LevelName] ?? LEVELS[fallback];
 
 /** Đường dẫn tệp trong LOG_DIR; LOG_DIR trống (dev, test) = không ghi tệp. */
@@ -101,7 +222,7 @@ const LEVEL_RE = /^\{"level":(\d+)/;
  * Luồng ghi cho pino / Fastify: mọi dòng ra stdout (lọc theo mức của logger), dòng có mức ≥ fileLevel chép thêm vào tệp.
  * pino luôn đặt "level" đầu dòng JSON nên đọc mức bằng một biểu thức, không phải parse cả dòng.
  */
-export function teeStream(opts: { file: RotatingFile | null; fileLevel: number; out?: { write(s: string): unknown } }) {
+export function teeStream(opts: { file: { write(line: string): void } | null; fileLevel: number; out?: { write(s: string): unknown } }) {
   const out = opts.out ?? process.stdout;
   return {
     write(line: string): void {
@@ -121,8 +242,8 @@ export function loggerOptions(opts: { service: string; level: string; silent?: b
   if (opts.silent) return { level: 'silent' as const };
   const stdoutLevel = levelOf(opts.level, 'info');
   const fileLevel = levelOf(opts.fileLevel ?? process.env.LOG_FILE_LEVEL, 'warn');
-  const p = logFilePath('api-loi.log', opts.dir);
-  const file = p ? rotatingFile(p) : null;
+  const file = dailyFile('api', opts.dir);
+  if (file) donTepKieuCu(opts.dir); // một lần lúc dựng logger (khởi động API): dọn tệp kiểu cũ ở gốc logs/
   const min = file ? Math.min(stdoutLevel, fileLevel) : stdoutLevel;
   const name = (Object.keys(LEVELS) as LevelName[]).find((k) => LEVELS[k] === min) ?? 'info';
   const stdout = { write: (s: string) => { const m = LEVEL_RE.exec(s); if (!m || Number(m[1]) >= stdoutLevel) process.stdout.write(s); } };
@@ -257,32 +378,31 @@ export function classifyStartError(err: unknown): StartFailReason {
 
 /**
  * Ghi một dòng JSON khuôn pino ĐỒNG BỘ ra stderr và tệp (R-LOG-3) — dùng khi tiến trình sắp thoát, logger có thể chưa có.
- * `file` = tên tệp trong LOG_DIR (api-loi.log, db-migrate.log).
+ * `thuMuc` = thư mục dịch vụ trong LOG_DIR (api, db-migrate) — tệp của ngày hôm nay.
  */
-export function writeSync(level: LevelName, fields: Record<string, unknown>, opts: { service: string; file?: string; dir?: string }): string {
+export function writeSync(level: LevelName, fields: Record<string, unknown>, opts: { service: string; thuMuc?: ThuMucNhatKy; dir?: string }): string {
   const line = `${JSON.stringify({ level: LEVELS[level], time: Date.now(), pid: process.pid, ...baseFields(opts.service), ...fields })}\n`;
   process.stderr.write(line);
-  const p = logFilePath(opts.file ?? 'api-loi.log', opts.dir);
-  if (p) rotatingFile(p).write(line);
+  dailyFile(opts.thuMuc ?? 'api', opts.dir)?.write(line);
   return line;
 }
 
-// [2026-11-22 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (S038-13, R-LOG-10): logs/web-client.log — lỗi giao diện trình duyệt gửi về, 5 MB × 3 (10 §7.3)
+// [2026-11-22 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (S038-13, R-LOG-10): lỗi giao diện trình duyệt gửi về; B6 (D038-7): logs/web-client/<ngày>.log, 5 MB / tệp, thư mục 15 MB, 30 ngày
 /**
- * Ghi một dòng lỗi giao diện vào <LOG_DIR>/web-client.log (service "web"; version / commit của bản cài — web và api cùng một
+ * Ghi một dòng lỗi giao diện vào <LOG_DIR>/web-client/<YYYY-MM-DD>.log (service "web"; version / commit của bản cài — web và api cùng một
  * bản dựng). Chỉ route POST /api/v1/system/client-errors gọi, SAU khi đã kiểm khuôn và che dữ liệu (loi-trinh-duyet.ts).
  * LOG_DIR trống (dev, test) = không ghi. Trả dòng đã ghi (test đọc), null nếu không ghi.
  */
 export function ghiLoiTrinhDuyet(fields: Record<string, unknown>, dir?: string): string | null {
-  const p = logFilePath('web-client.log', dir);
-  if (!p) return null;
+  const tep = dailyFile('web-client', dir);
+  if (!tep) return null;
   const line = `${JSON.stringify({ level: LEVELS.error, time: Date.now(), ...baseFields('web'), ...fields })}\n`;
-  rotatingFile(p, 5 * MB, 3).write(line);
+  tep.write(line);
   return line;
 }
 
 /** Dòng fatal "khởi động thất bại" (evt bizcity.system.start_failed, 10 §7.2). */
-export function logStartFailure(err: unknown, opts: { service: string; file?: string; dir?: string }): StartFailReason {
+export function logStartFailure(err: unknown, opts: { service: string; thuMuc?: ThuMucNhatKy; dir?: string }): StartFailReason {
   const reason = classifyStartError(err);
   writeSync('fatal', {
     evt: 'bizcity.system.start_failed',
@@ -300,7 +420,7 @@ let installed = false;
  * Bắt lỗi ở mức tiến trình (R-LOG-3): ghi fatal đồng bộ rồi thoát mã 1 để Docker khởi động lại — không "nuốt rồi chạy tiếp"
  * (trạng thái sau lỗi không bắt là không biết được). Gọi một lần, sớm nhất có thể (main.ts, setup.ts).
  */
-export function installProcessHandlers(opts: { service: string; file?: string; dir?: string; exit?: (code: number) => void }): void {
+export function installProcessHandlers(opts: { service: string; thuMuc?: ThuMucNhatKy; dir?: string; exit?: (code: number) => void }): void {
   if (installed) return;
   installed = true;
   const exit = opts.exit ?? ((c: number) => process.exit(c));

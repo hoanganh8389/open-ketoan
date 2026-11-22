@@ -73,7 +73,7 @@ curl -s -H "X-Api-Key: $KEY" http://127.0.0.1:${WEB_PORT:-8088}/api/v1/system/di
 ```
 
 <!-- [2026-11-21 08:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): §4 nhật ký lỗi cố định -->
-Có dòng nào hỏng: **chưa khởi động lại**, chạy `./scripts/lay-log.sh` và gửi gói `logs/goi-bao-loi-*.tar.gz`. Đọc nhanh: `tail logs/db-migrate.log` (job cơ sở dữ liệu), `tail logs/api-loi.log` (dòng `evt: bizcity.system.start_failed` có `reason` và `hint`). Thư mục `logs/` phải có và ghi được ([PHASE-038](../phases/PHASE-038-NHAT-KY-LOI-CO-DINH/README.md), R-LOG-9).
+Có dòng nào hỏng: **chưa khởi động lại**, chạy `./scripts/lay-log.sh` và gửi gói `logs/goi-bao-loi-*.tar.gz`. Đọc nhanh: `tail logs/db-migrate/<ngày>.log` (job cơ sở dữ liệu), `tail logs/api/<ngày>.log` (dòng `evt: bizcity.system.start_failed` có `reason` và `hint`). Thư mục `logs/` phải có và ghi được ([PHASE-038](../phases/PHASE-038-NHAT-KY-LOI-CO-DINH/README.md), R-LOG-9).
 
 Ghi kết quả vào phần "Bằng chứng" của phiếu phát hành theo [DIAGNOSTICS.md](DIAGNOSTICS.md) §4.
 

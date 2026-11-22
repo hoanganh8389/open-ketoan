@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 198
+      "count": 197
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 75
+      "count": 76
     },
     {
       "key": "paused",
@@ -9905,8 +9905,8 @@
       "phase": "PHASE-038",
       "title": "(D038-7) Nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục: logs/{api,db-migrate,web,web-client}/<YYYY-MM-DD>.log; giữ 30 ngày, trần từng thư mục (10 §7.3); …",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F8",

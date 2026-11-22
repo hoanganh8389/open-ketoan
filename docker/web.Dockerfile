@@ -31,6 +31,7 @@ FROM nginx:1.27-alpine
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 # [2026-11-22 11:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6): xoay logs/web-loi.log; thư mục có sẵn để nginx khởi động được cả khi chưa mount logs/
 COPY --chmod=755 docker/web-xoay-log.sh /docker-entrypoint.d/40-xoay-log.sh
-RUN mkdir -p /var/log/ketoan
+# B6 (D038-7): logs/web/<ngày>.log — thư mục cũng được script tạo lại khi logs/ được mount (che thư mục của ảnh)
+RUN mkdir -p /var/log/ketoan/web
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 EXPOSE 80
