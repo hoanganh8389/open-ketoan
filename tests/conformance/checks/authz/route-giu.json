@@ -17,6 +17,7 @@
     { "route": "PUT /api/v1/print-templates/settings", "class": "tu-phuc-vu" },
     { "route": "DELETE /api/v1/print-templates/settings", "class": "tu-phuc-vu" },
     { "route": "POST /api/v1/presence/ping", "class": "tu-phuc-vu" },
+    { "route": "POST /api/v1/system/client-errors", "class": "cong-khai", "$comment": "[2026-11-22 05:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (R-LOG-10): giao diện báo lỗi lập trình về logs/web-client.log; không đọc gì, khuôn chặt, che dữ liệu, 10 / phút / phiên" },
     { "route": "POST /api/v1/connections/:code/pull", "class": "giao-thuc" },
     { "route": "POST /mcp", "class": "giao-thuc" },
     { "route": "POST /_sites/v1/sites", "class": "giao-thuc", "$comment": "[2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; tạo database + vai trò của site, không ghi sổ (chủ dự án duyệt)" },

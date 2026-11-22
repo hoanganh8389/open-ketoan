@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 201
+      "count": 200
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 344
+      "count": 345
     }
   ],
   "items": [
@@ -9814,8 +9814,8 @@
       "phase": "PHASE-038",
       "title": "Giao diện: một khay \"Không kết nối được máy chủ phần mềm\" cho GATEWAYUNAVAILABLE / 5xx không JSON; lùi dần lời gọi lặp",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9866,8 +9866,8 @@
       "phase": "PHASE-038",
       "title": "(D038-5 đã duyệt) ErrorBoundary theo màn, window.onerror, unhandledrejection → POST /api/v1/system/client-errors → logs/web-client.log",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
       "facet": "F8",

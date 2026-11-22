@@ -267,6 +267,20 @@ export function writeSync(level: LevelName, fields: Record<string, unknown>, opt
   return line;
 }
 
+// [2026-11-22 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (S038-13, R-LOG-10): logs/web-client.log — lỗi giao diện trình duyệt gửi về, 5 MB × 3 (10 §7.3)
+/**
+ * Ghi một dòng lỗi giao diện vào <LOG_DIR>/web-client.log (service "web"; version / commit của bản cài — web và api cùng một
+ * bản dựng). Chỉ route POST /api/v1/system/client-errors gọi, SAU khi đã kiểm khuôn và che dữ liệu (loi-trinh-duyet.ts).
+ * LOG_DIR trống (dev, test) = không ghi. Trả dòng đã ghi (test đọc), null nếu không ghi.
+ */
+export function ghiLoiTrinhDuyet(fields: Record<string, unknown>, dir?: string): string | null {
+  const p = logFilePath('web-client.log', dir);
+  if (!p) return null;
+  const line = `${JSON.stringify({ level: LEVELS.error, time: Date.now(), ...baseFields('web'), ...fields })}\n`;
+  rotatingFile(p, 5 * MB, 3).write(line);
+  return line;
+}
+
 /** Dòng fatal "khởi động thất bại" (evt bizcity.system.start_failed, 10 §7.2). */
 export function logStartFailure(err: unknown, opts: { service: string; file?: string; dir?: string }): StartFailReason {
   const reason = classifyStartError(err);
