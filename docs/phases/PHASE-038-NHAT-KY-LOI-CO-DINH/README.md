@@ -5,7 +5,7 @@
 > **Việc lộ trình:** — (mở rộng PHASE-018 giám sát vận hành, PHASE-019 bàn điều tra; [OBSERVABILITY.md](../../ops/OBSERVABILITY.md) §2)
 > **Phân hệ:** he-thong (vận hành)
 > **Checklist công bố:** —
-> **Trạng thái:** 🟡 **W0 chốt 2026-11-21** <!-- [2026-11-21 02:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — chốt W0: chủ dự án đồng ý mọi đề xuất D038-1..6, D038-2b --> — chủ dự án đồng ý mọi đề xuất (D038-1..6, D038-2b). Chưa có mã; tiếp theo B1 (giữ chỗ ở [CLAIMS](../CLAIMS.md)).
+> **Trạng thái:** ✅ **Xong 2026-11-22** <!-- [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — đóng phase: W0, B1, B1b, B2, B3, B4, B4b, B5, B6 đã merge; S038-15 giao PHASE-018 --> (W0 chốt 2026-11-21). Dev và AI đọc log để sửa mã: [docs/ops/DOC-LOG-SUA-LOI.md](../../ops/DOC-LOG-SUA-LOI.md).
 > **Phụ trách cần phối hợp:** nhóm Lõi (Platform: logger, `env`, hợp đồng lỗi) · người vận hành bản cài (aaPanel).
 > **Luật:** [R-LOG](../../rules/RULE-LOG.md) (chấp nhận 2026-11-21) · **CANON:** §0.12 <!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — trỏ luật R-LOG -->
 > **Tệp:** [10 — Nghiên cứu chuẩn ghi log lỗi](10-NGHIEN-CUU-GHI-LOG.md) · [40 — Checklist](40-MASTER-CHECKLIST.md)

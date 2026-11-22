@@ -25,7 +25,7 @@
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 76
+      "count": 74
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 352
+      "count": 354
     }
   ],
   "items": [
@@ -9827,8 +9827,8 @@
       "phase": "PHASE-038",
       "title": "Thi hành R-LOG-9 (bản cài có logs/ cố định, có trần; luật đã khai ở RULE-LOG) + check SC-OBS-3 (compose khai logging: và mount LOGHOSTDIR) + CHANGELOG \"Nâng cấ…",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F5",
@@ -9879,8 +9879,8 @@
       "phase": "PHASE-038",
       "title": "Luật R-LOG-1..11 + SC-LOG-1..3; rà 16 chỗ nuốt lỗi (ghi warn hoặc chú thích nuot-loi:)",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F5",
