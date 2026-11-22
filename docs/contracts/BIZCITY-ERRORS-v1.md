@@ -68,7 +68,7 @@ MCP bọc lỗi thành `{ success: false, code, message, hint, help_code, error:
 | `INTERNAL_ERROR` | 500 | server | có | core | Lỗi hệ thống | Thử lại sau ít phút; lặp lại thì gửi requestId cho bộ phận hỗ trợ. |
 
 <!-- [2026-11-22 11:20 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6): GATEWAY_UNAVAILABLE — cổng vào (nginx, docker/nginx.conf) trả khi api không trả lời; api không bao giờ trả mã này -->
-`GATEWAY_UNAVAILABLE` do **cổng vào** (nginx của container `web`) trả khi api dừng, đang khởi động lại hoặc quá giờ — api không bao giờ trả mã này. `requestId` là mã yêu cầu của nginx; tra trong `logs/web-loi.log` (PHASE-038).
+`GATEWAY_UNAVAILABLE` do **cổng vào** (nginx của container `web`) trả khi api dừng, đang khởi động lại hoặc quá giờ — api không bao giờ trả mã này. `requestId` là mã yêu cầu của nginx; tra trong `logs/web/<ngày>.log` (PHASE-038).
 
 **Mã của giao thức MCP** (chỉ trong kết quả công cụ, không phải HTTP — [BIZCITY-MCP-v1](BIZCITY-MCP-v1.md) STD-MCP-4):
 

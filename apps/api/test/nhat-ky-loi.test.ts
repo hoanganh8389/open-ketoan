@@ -13,7 +13,7 @@ import path from 'node:path';
 import Fastify from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  classifyStartError, errFp, LEVELS, logError, loggerOptions, logStartFailure, ownFrames, REDACT_PATHS, RotatingFile, rotatingFile,
+  classifyStartError, DailyFile, dailyFile, donTepKieuCu, errFp, LEVELS, logError, loggerOptions, logStartFailure, ngayVN, ownFrames, REDACT_PATHS, RotatingFile,
   serializeError, teeStream,
 } from '@bizcity/platform/core/logger';
 import { EnvError } from '@bizcity/platform/config/env';
@@ -22,6 +22,8 @@ let dir: string;
 beforeEach(() => { dir = mkdtempSync(path.join(tmpdir(), 'nhat-ky-loi-')); });
 afterEach(() => { vi.restoreAllMocks(); rmSync(dir, { recursive: true, force: true }); });
 
+/** Tệp hôm nay của một thư mục dịch vụ (B6, D038-7: logs/<dịch vụ>/<YYYY-MM-DD>.log). */
+const homNay = (thuMuc: string) => path.join(dir, thuMuc, `${ngayVN()}.log`);
 const lines = (file: string) => readFileSync(file, 'utf8').trim().split('\n').filter(Boolean);
 
 describe('RotatingFile', () => {
@@ -65,7 +67,7 @@ describe('teeStream / loggerOptions', () => {
       app.log.warn({ evt: 'bizcity.test.warn' }, 'cảnh báo');
       app.log.error({ err: new Error('hỏng') }, 'lỗi hệ thống');
       await app.close();
-      const rows = lines(path.join(dir, 'api-loi.log')).map((l) => JSON.parse(l) as Record<string, unknown>);
+      const rows = lines(homNay('api')).map((l) => JSON.parse(l) as Record<string, unknown>);
       expect(rows.map((r) => r.msg)).toEqual(['cảnh báo', 'lỗi hệ thống']);
       expect(rows[0]).toMatchObject({ service: 'api', commit: '69e0c848aabb', evt: 'bizcity.test.warn' });
       expect(typeof rows[0]!.version).toBe('string');
@@ -103,17 +105,17 @@ describe('lỗi khởi động', () => {
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     const reason = logStartFailure(new Error('Cơ sở dữ liệu chưa nâng cấp (1 migration chưa áp, mới nhất 0164_y.sql)'), { service: 'api', dir });
     expect(reason).toBe('MIGRATION_PENDING');
-    const [row] = lines(path.join(dir, 'api-loi.log')).map((l) => JSON.parse(l) as Record<string, unknown>);
+    const [row] = lines(homNay('api')).map((l) => JSON.parse(l) as Record<string, unknown>);
     expect(row).toMatchObject({ level: 60, service: 'api', evt: 'bizcity.system.start_failed', reason: 'MIGRATION_PENDING' });
     expect(String(row!.hint)).toContain('db-migrate');
     expect(String((row!.err as { stack: string }).stack)).toContain('nhat-ky-loi.test.ts');
   });
 
-  it('job db-migrate ghi tệp riêng; dùng chung bộ đếm dung lượng với rotatingFile()', () => {
+  it('job db-migrate ghi thư mục riêng logs/db-migrate/<ngày>.log; một DailyFile cho mỗi thư mục', () => {
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    logStartFailure(Object.assign(new Error('Migration 0165_z.sql lỗi: cột trùng'), { code: '42701' }), { service: 'db-migrate', file: 'db-migrate.log', dir });
-    const p = path.join(dir, 'db-migrate.log');
-    expect(rotatingFile(p)).toBe(rotatingFile(p));
+    logStartFailure(Object.assign(new Error('Migration 0165_z.sql lỗi: cột trùng'), { code: '42701' }), { service: 'db-migrate', thuMuc: 'db-migrate', dir });
+    const p = homNay('db-migrate');
+    expect(dailyFile('db-migrate', dir)).toBe(dailyFile('db-migrate', dir));
     expect(JSON.parse(lines(p)[0]!)).toMatchObject({ service: 'db-migrate', reason: 'UNKNOWN', err: { code: '42701' } });
   });
 });
@@ -125,7 +127,7 @@ async function withAppLog(run: (log: ReturnType<typeof Fastify>['log']) => void)
   const app = Fastify({ logger: loggerOptions({ service: 'api', level: 'warn', dir, fileLevel: 'warn' }) });
   run(app.log);
   await app.close();
-  return lines(path.join(dir, 'api-loi.log')).map((l) => JSON.parse(l) as Record<string, unknown>);
+  return lines(homNay('api')).map((l) => JSON.parse(l) as Record<string, unknown>);
 }
 
 const throwAt = (msg: string) => { try { throw new TypeError(msg); } catch (e) { return e as Error; } };
@@ -219,6 +221,72 @@ describe('redact — lưới an toàn che dữ liệu (R-LOG-4)', () => {
     expect(JSON.stringify(row)).not.toContain(SECRET);
     expect(REDACT_PATHS).toEqual(expect.arrayContaining(['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-api-key"]', 'res.headers["set-cookie"]']));
     for (const k of fields) expect(REDACT_PATHS).toContain(`*.${k}`);
+  });
+});
+
+// [2026-11-22 07:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B6 (S038-16, D038-7): một ngày một tệp, giữ 30 ngày, trần thư mục
+describe('DailyFile — nhật ký theo ngày (D038-7)', () => {
+  const NGAY = 24 * 3_600_000;
+  const t0 = Date.UTC(2026, 10, 22, 2, 0, 0); // 09:00 giờ VN 22/11/2026
+  const ten = (d: string) => readdirSync(d).sort();
+  const NL = '\n';
+
+  it('ngày theo giờ Việt Nam: 17:00 UTC đã là ngày hôm sau', () => {
+    expect(ngayVN(Date.UTC(2026, 10, 21, 16, 59))).toBe('2026-11-21');
+    expect(ngayVN(Date.UTC(2026, 10, 21, 17, 0))).toBe('2026-11-22');
+  });
+
+  it('sang ngày mới thì tệp mới; một ngày quá trần một tệp thì tách <ngày>.1.log', () => {
+    let t = t0;
+    const f = new DailyFile(path.join(dir, 'api'), { tep: 100, thuMuc: 10_000 }, 30, () => t);
+    f.write('a'.repeat(60) + NL);
+    f.write('b'.repeat(60) + NL); // dòng 2 vượt 100 byte → phần .1
+    t += NGAY;
+    f.write('c' + NL);
+    expect(ten(path.join(dir, 'api'))).toEqual(['2026-11-22.1.log', '2026-11-22.log', '2026-11-23.log']);
+  });
+
+  it('khởi động lại giữa ngày: nối tiếp phần cuối của hôm đó, không ghi đè', () => {
+    const d = path.join(dir, 'api');
+    const a = new DailyFile(d, { tep: 100, thuMuc: 10_000 }, 30, () => t0);
+    a.write('x'.repeat(60) + NL);
+    a.write('y'.repeat(60) + NL);
+    const b = new DailyFile(d, { tep: 100, thuMuc: 10_000 }, 30, () => t0);
+    b.write('z' + NL);
+    expect(readFileSync(path.join(d, '2026-11-22.1.log'), 'utf8')).toBe('y'.repeat(60) + NL + 'z' + NL);
+  });
+
+  it('giữ 30 ngày: tệp của ngày cũ hơn bị xoá khi sang ngày; tệp lạ trong thư mục không bị đụng', () => {
+    const d = path.join(dir, 'web-client');
+    let t = t0;
+    const f = new DailyFile(d, { tep: 1_000, thuMuc: 1_000_000 }, 30, () => t);
+    for (let i = 0; i < 40; i++) { f.write(`ngày ${i}${NL}`); t += NGAY; }
+    writeFileSync(path.join(d, 'ghi-chu.txt'), 'không phải nhật ký');
+    f.write('cuối' + NL);
+    const ds = ten(d).filter((n) => n.endsWith('.log'));
+    expect(ds[0]).toBe(`${ngayVN(t - 30 * NGAY)}.log`);
+    expect(ds).toHaveLength(31);
+    expect(ten(d)).toContain('ghi-chu.txt');
+  });
+
+  it('vượt trần thư mục: xoá tệp cũ nhất trước, không xoá tệp đang ghi', () => {
+    const d = path.join(dir, 'db-migrate');
+    let t = t0;
+    const f = new DailyFile(d, { tep: 1_000, thuMuc: 250 }, 30, () => t);
+    for (let i = 0; i < 5; i++) { f.write('x'.repeat(99) + NL); t += NGAY; }
+    f.write('y' + NL);
+    const tong = ten(d).reduce((n, x) => n + statSync(path.join(d, x)).size, 0);
+    expect(tong).toBeLessThanOrEqual(250);
+    expect(ten(d).at(-1)).toBe(`${ngayVN(t)}.log`);
+    expect(ten(d)).not.toContain('2026-11-22.log');
+  });
+
+  it('tệp kiểu cũ ở gốc logs/ (trước D038-7): quá 30 ngày thì xoá, còn mới thì giữ', () => {
+    for (const n of ['api-loi.log', 'api-loi.log.1', 'web-loi.log', 'db-migrate.log', 'giu-nguyen.log']) writeFileSync(path.join(dir, n), 'cũ');
+    const sau = Date.now() + 31 * NGAY;
+    expect(donTepKieuCu(dir, Date.now())).toEqual([]);
+    expect(donTepKieuCu(dir, sau).sort()).toEqual(['api-loi.log', 'api-loi.log.1', 'db-migrate.log', 'web-loi.log']);
+    expect(ten(dir)).toEqual(['giu-nguyen.log']);
   });
 });
 

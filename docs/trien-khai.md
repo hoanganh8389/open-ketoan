@@ -212,11 +212,11 @@ Lệnh in đường dẫn một tệp `logs/goi-bao-loi-<giờ>.tar.gz` (vài tr
 |---|---|
 | Lấy log từ một ngày | `./scripts/lay-log.sh --tu 2026-11-20` |
 | Lấy nhiều dòng log Docker hơn | `./scripts/lay-log.sh --dong 5000` |
-| Xem ngay lỗi API | `tail -50 logs/api-loi.log` |
-| Xem ngay lỗi nâng cấp cơ sở dữ liệu | `tail -80 logs/db-migrate.log` |
-| Xem ngay lỗi cổng vào (màn báo "Không kết nối được máy chủ phần mềm") <!-- [2026-11-22 12:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2: web-loi.log --> | `tail -50 logs/web-loi.log` |
+| Xem ngay lỗi API <!-- [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B6 (D038-7): logs/<dịch vụ>/<ngày>.log --> | `tail -50 "$(ls -t logs/api/*.log \| head -1)"` |
+| Xem ngay lỗi nâng cấp cơ sở dữ liệu | `tail -80 "$(ls -t logs/db-migrate/*.log \| head -1)"` |
+| Xem ngay lỗi cổng vào (màn báo "Không kết nối được máy chủ phần mềm") <!-- [2026-11-22 12:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2: web-loi.log --> | `tail -50 "$(ls -t logs/web/*.log \| head -1)"` |
 
-Thư mục `logs/` có sẵn trong thư mục cài, tổng không quá 200 MB, tự xoay vòng. Đặt `LOG_HOST_DIR` trong `.env` để để chỗ khác. Lỗi do proxy aaPanel trả (ví dụ 502 khi phần mềm chưa chạy) nằm ở `/www/wwwlogs/<tên miền>.error.log`.
+Thư mục `logs/` có sẵn trong thư mục cài: **mỗi dịch vụ một thư mục, một ngày một tệp** (`logs/api/`, `logs/db-migrate/`, `logs/web/`, `logs/web-client/`, tên tệp là ngày giờ Việt Nam), giữ 30 ngày, tổng không quá 200 MB. Đặt `LOG_HOST_DIR` trong `.env` để để chỗ khác. Lỗi do proxy aaPanel trả (ví dụ 502 khi phần mềm chưa chạy) nằm ở `/www/wwwlogs/<tên miền>.error.log`.
 
 ## 8. Kiểm tra sau khi cài
 
