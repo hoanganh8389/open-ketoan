@@ -1,3 +1,4 @@
+// @bizcity-layer D modules/mua-hang
 // [2026-11-19 Nguyễn Văn Thủy] khoanh vùng mặt hàng theo hợp đồng: giá mua / chính sách thuộc hợp đồng chỉ được mã của hợp đồng (đóng góp)
 /**
  * PHẠM VI MẶT HÀNG CỦA HỢP ĐỒNG MUA (bước 2 "Hàng hoá theo hợp đồng"):

@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 4
+      "count": 3
     },
     {
       "key": "merging",
@@ -25,7 +25,7 @@
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 80
+      "count": 81
     },
     {
       "key": "paused",
@@ -10583,15 +10583,9 @@
       "phase": "PHASE-040",
       "title": "B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2, DG-POLICY-1 tự kiểm — @Thuy2k",
       "priority": "P1",
-      "status": "todo",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột)",
-        "branch": "fix/phase-040-b10c-loi-ranh-gioi",
-        "state": "đang làm",
-        "since": "2026-11-23",
-        "dot": "PHASE-040 · B10c-lõi — main sạch selfcheck, ranh giới phần của Lõi: SC-LAYER-1, -2 (nhãn lớp, bảng …"
-      },
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
       "modules": [
         "he-thong"
       ],
