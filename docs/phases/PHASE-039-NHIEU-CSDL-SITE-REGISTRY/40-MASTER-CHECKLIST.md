@@ -27,6 +27,8 @@ Ký hiệu: ☐ chưa · 🟡 đang · ✅ xong · ⛔ chờ người ngoài nh�
 | S039-18 | B7 — `cap-nhat.sh` nhiều site theo [00 §6](00-MASTER-PLAN.md); `docker-compose.yml` không ghi cứng tên database ở chế độ `multi` <!-- [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — S039-18 xong (B7a) --> | W7 | P0 | có | ✅ 2026-11-22 (B7a) |
 | S039-19 | B7 — nhật ký và số đo có `site` (trần số nhãn); màn chẩn đoán báo site đang phục vụ <!-- [2026-11-22 03:11 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — S039-19 xong (B7b-1 + B7b-2) --> | W7 | P1 | có | ✅ 2026-11-22 (B7b-1 trường `site` + số đo; B7b-2 nhật ký vận hành tách theo site). Màn chẩn đoán: không làm — chủ dự án chưa cần giao diện, thông tin site ở `GET /_sites/v1/sites/{id}` |
 | S039-20 | B7 — nghiệm thu T039-1..14 trên máy sạch; phối hợp Site Manager (repo `bizcity-open-setup`) tạo site thật | W7 | P0 | có | ☐ |
+| S039-21 | B8 — trang dùng thử bizcity-web (PHASE-02 của bizcity-web): `createSiteWithOwner` lưu `externalRef`; `sample: true` → tạo Công ty mẫu (PHASE-036 `createSampleTenant`, cùng email + mật khẩu ban đầu) trong site mới, bước `load_sample`; việc `provision` báo bước thật (validate → create_database → seed_owner → [load_sample] → activate) thay vì cả bốn cùng lúc <!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — giữ chỗ B8 theo R-FLOW-1 --> | W8 | P1 | có | ☐ |
+| S039-22 | B8 — lệnh `POST /_sites/v1/sites/{siteId}/owner/reset-password` (việc `reset_owner_password`): mật khẩu ban đầu mới cho email chủ site ở mọi đơn vị của site, `session_version + 1` (thu mọi phiên), trả một lần ở `GET /jobs` như lúc tạo; hợp đồng §… | W8 | P1 | có | ☐ |
 
 ## Ca kiểm
 
