@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 3
+      "count": 4
     },
     {
       "key": "merging",
@@ -25,7 +25,7 @@
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 81
+      "count": 80
     },
     {
       "key": "paused",
@@ -10599,8 +10599,14 @@
       "title": "B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT",
       "priority": "P1",
       "status": "partial",
-      "column": "partial",
-      "claim": null,
+      "column": "doing",
+      "claim": {
+        "who": "hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột)",
+        "branch": "fix/phase-040-b10e-bo-kiem-dung",
+        "state": "đang làm",
+        "since": "2026-11-23",
+        "dot": "PHASE-040 · B10e — bộ kiểm kiểm đúng thứ người dùng thấy: SC-DOC-6 kiểm mọi helpKey / guideKey viết…"
+      },
       "modules": [
         "he-thong"
       ],
