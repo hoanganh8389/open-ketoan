@@ -1,0 +1,16 @@
+{
+  "$comment": "[2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3 (S040-9): gộp danh tính người đóng góp cho scripts/cham-pr.mjs — tên tác giả commit → tài khoản GitHub. KHÔNG ghi email (repo công khai; thay .mailmap). Đo ngày 2026-11-22 bằng gh api commits/<sha> .author.login trên commit mới nhất của từng tên. Tên đã có tài khoản liên kết trên GitHub thì không cần dòng ở đây; dòng chỉ cho tên không liên kết hoặc để gộp tên phụ.",
+  "contract": "bizcity_identities@1",
+  "aliases": {
+    "Johnny Chu": "hoanganh8389",
+    "Johnny Chu - Chu Hoàng Anh": "hoanganh8389",
+    "Nguyễn Văn Thủy": "Thuy2k",
+    "Võ Hoàng": "H-Joyy",
+    "Võ Việt Hoàng": "H-Joyy",
+    "khanhtd": "WizardTDK",
+    "kiennt": "TrongKien125"
+  },
+  "unverified": {
+    "kiennt": "commit không gắn tài khoản GitHub; gán TrongKien125 theo email commit dạng trongkien125@… — người đó xác nhận thì xoá dòng này"
+  }
+}
