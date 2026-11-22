@@ -51,6 +51,9 @@ export const ERROR_CODES = {
   INTERNAL: 'INTERNAL_ERROR',
   /** Bản cài chưa sẵn sàng phục vụ (L1: còn migration chưa áp, mất trigger bảo vệ sổ, CSDL chỉ đọc) — GET /system/health/ready. */
   NOT_READY: 'NOT_READY',
+  // [2026-11-22 11:20 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6): mã của cổng vào khi api không trả lời
+  /** Cổng vào (nginx, container web) không gọi được api: api dừng / đang khởi động lại / quá giờ. Chính nginx trả, không phải api. */
+  GATEWAY_UNAVAILABLE: 'GATEWAY_UNAVAILABLE',
   /** bizcity_action@1 §7–8: cùng Idempotency-Key, khác nội dung. */
   IDEMPOTENCY_CONFLICT: 'IDEMPOTENCY_CONFLICT',
   /** Module cần năng lực Core chưa có (bizcity-standard.json: planned). */

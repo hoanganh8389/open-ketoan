@@ -1,0 +1,93 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 575,
+  "title": "docs(FLOW): giữ chỗ PHASE-039 B5c — hợp đồng Provisioning + phân trang",
+  "mergedAt": "2026-11-22T08:26:47Z",
+  "base": "c60a7f7f",
+  "merge": "574ce1dd",
+  "authors": [
+    {
+      "id": "hoanganh8389",
+      "commits": 1
+    }
+  ],
+  "people": [
+    "hoanganh8389"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": false
+  },
+  "files": 1,
+  "impact": {
+    "pillars": [],
+    "rules": [],
+    "axes": [],
+    "docsOnly": true
+  },
+  "progress": {
+    "foundation": {
+      "before": 68,
+      "after": 68
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 64,
+      "after": 64
+    },
+    "docMatrix": {
+      "before": null,
+      "after": null
+    },
+    "compliance": {
+      "before": 73,
+      "after": 73
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 61,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": "—",
+    "T3": "—",
+    "T4": "—",
+    "T5": "—",
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": "—",
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {},
+  "score": null,
+  "grade": null,
+  "verdict": "ĐẠT",
+  "release": "UNVERIFIED",
+  "findings": [],
+  "followUps": []
+}

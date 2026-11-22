@@ -19,16 +19,38 @@ const LIBRARY = 'packages/contracts/src/library-findings.ts';
 const LIB_ROW = /^ {2}'(LIB-[A-Z]+-\d{3})': \{ level: '(block|warn|info)', step: '[a-z]+', title: '([^']*)', why: '([^']*)', fix: '([^']*)' \},/;
 const INTAKE_ROW = /^ {2}'(IN-[A-Z]+-\d{3})': \{[^\n]*severity: '(block|warn|hint)'[^\n]*title: '([^']*)', why: '([^']*)', fix: '([^']*)'/;
 
-/** Các mục của CATALOG_HINTS: khối `  'MÃ': {` … `  },`. */
-function hintEntries(src) {
+// [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a (S040-22): CATALOG_HINTS nay là phép gộp `{ ...BASE_HINTS, ...QT_* }` (b290a47b) — đọc cả BASE_HINTS và từng tệp quy-tac/*.ts được gộp (trước đây 93 mã có thật bị báo "thư viện không có")
+/** Các mục `  'MÃ': {` … `  },` của một khai báo `const <tên> … = {` … `};` (chỉ trong thân khai báo đó). */
+function entriesOf(src, decl) {
   const out = [];
-  const start = src.indexOf('export const CATALOG_HINTS');
+  const start = src.search(new RegExp(`^(?:export )?const ${decl}\\b`, 'm'));
   if (start < 0) return out;
-  const body = src.slice(start);
+  const rest = src.slice(start);
+  const close = rest.search(/^\};?\s*$/m);
+  const body = close < 0 ? rest : rest.slice(0, close + 2);
   for (const m of body.matchAll(/^ {2}'([A-Z]+-[A-Z]+-\d{3})': \{([\s\S]*?)^ {2}\},/gm)) {
     const b = m[2];
     const field = (k) => new RegExp(`\\b${k}: '((?:[^'\\\\]|\\\\.)*)'`).exec(b)?.[1];
     out.push({ code: m[1], level: field('level'), title: field('title'), why: field('why'), fix: field('fix') });
+  }
+  return out;
+}
+
+/**
+ * Các mục của CATALOG_HINTS. Hai khuôn: (cũ) các mục viết thẳng trong `export const CATALOG_HINTS = {`;
+ * (mới) `CATALOG_HINTS = { ...BASE_HINTS, ...QT_X }` — đọc BASE_HINTS trong tệp và mỗi QT_X ở tệp nó được import.
+ * `read(rel)` đọc tệp khác trong repo. Trả [[tệp, mục[]], …].
+ */
+function hintSources(src, read) {
+  const decl = /export const CATALOG_HINTS[^=]*=\s*\{([^}]*)\}/.exec(src);
+  const spreads = decl ? [...decl[1].matchAll(/\.\.\.([A-Za-z_][A-Za-z0-9_]*)/g)].map((m) => m[1]) : [];
+  if (!spreads.length) return [[HINTS, entriesOf(src, 'CATALOG_HINTS')]];
+  const out = [];
+  for (const name of spreads) {
+    const imp = new RegExp(`import \\{[^}]*\\b${name}\\b[^}]*\\} from '\\./([^']+)\\.js'`).exec(src);
+    if (!imp) { out.push([HINTS, entriesOf(src, name)]); continue; }
+    const file = `packages/contracts/src/${imp[1]}.ts`;
+    out.push([file, entriesOf(read(file) ?? '', name)]);
   }
   return out;
 }
@@ -40,7 +62,8 @@ export default {
   run(ctx) {
     const findings = [];
     const add = (file, msg, key) => findings.push(ctx.finding(file, null, msg, key));
-    const hints = hintEntries(ctx.repo.read(HINTS) ?? '');
+    const hintSrc = hintSources(ctx.repo.read(HINTS) ?? '', (rel) => ctx.repo.read(rel));
+    const hints = hintSrc.flatMap(([, l]) => l);
     const intake = (ctx.repo.read(INTAKE) ?? '').split(/\r?\n/).map((l) => INTAKE_ROW.exec(l)).filter(Boolean)
       .map((m) => ({ code: m[1], level: m[2] === 'hint' ? 'info' : m[2], title: m[3], why: m[4], fix: m[5] }));
     const lib = (ctx.repo.read(LIBRARY) ?? '').split(/\r?\n/).map((l) => LIB_ROW.exec(l)).filter(Boolean)
@@ -54,7 +77,7 @@ export default {
     }
     const ruleCodes = new Set(ruleSources.flatMap(([, l]) => l.map((x) => x.code)));
     const seen = new Map();
-    for (const [file, list] of [[HINTS, hints], [INTAKE, intake], [LIBRARY, lib], ...ruleSources]) {
+    for (const [file, list] of [...hintSrc, [INTAKE, intake], [LIBRARY, lib], ...ruleSources]) {
       for (const e of list) {
         if (seen.has(e.code)) add(file, `mã ${e.code} trùng với ${seen.get(e.code)}`, `dup:${e.code}`);
         else seen.set(e.code, file);
@@ -74,7 +97,9 @@ export default {
     if (basisSrc == null) add(BASIS, 'chưa có sổ căn cứ legal-basis.ts — mỗi mã phải có căn cứ (R-GATE-11)', 'basis:file-missing');
     else {
       const laws = new Map([...basisSrc.matchAll(/^ {2}'([A-Z0-9-]+)': \{ title: '([^']+)'/gm)].map((m) => [m[1], m[2]]));
-      const rows = new Map([...basisSrc.matchAll(/^ {2}'([A-Z]+-[A-Z]+-\d{3})': \[([^\]]*)\],/gm)].map((m) => [m[1], [...m[2].matchAll(/'([A-Z0-9-]+)'/g)].map((x) => x[1])]));
+      // B10a: nhiều mục trên một dòng (`'A': ['X'], 'B': ['Y'],`) — đọc mọi mục trong thân FINDING_BASIS, không chỉ mục đầu dòng
+      const basisBody = basisSrc.slice(Math.max(0, basisSrc.indexOf('export const FINDING_BASIS')));
+      const rows = new Map([...basisBody.matchAll(/'([A-Z]+-[A-Z]+-\d{3})': \[([^\]]*)\]/g)].map((m) => [m[1], [...m[2].matchAll(/'([A-Z0-9-]+)'/g)].map((x) => x[1])]));
       const lawPage = ctx.repo.read(LAW_PAGE) ?? '';
       for (const [key, title] of laws) if (key !== 'NOI-BO' && !lawPage.includes(`**${title}**`)) add(BASIS, `căn cứ ${key} "${title}" không có trong ${LAW_PAGE} — thêm văn bản vào danh mục (có ngày rà soát) hoặc sửa tên`, `basis-law:${key}`);
       for (const code of seen.keys()) {

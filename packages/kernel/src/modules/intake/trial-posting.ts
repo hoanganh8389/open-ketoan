@@ -1,5 +1,6 @@
 // @bizcity-layer K kernel/intake
 // [2026-11-03 01:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-021 — W5 (2.21, ADR-0014 D3; R-INTAKE-3/4/9, R-EVENT-11): L5 định khoản thử — chạy đường định khoản thật trong savepoint rồi hoàn tác, ánh xạ lỗi sang IN-POST-* / IN-BIZ-001; giới hạn thời gian + lượt
+// [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d (R-SITE-6): giới hạn lượt thử theo (site, đơn vị, người gọi)
 /**
  * L5 ĐỊNH KHOẢN THỬ (20-KIEN-TRUC §4): chỉ khi L1–L4 không còn lỗi chặn, chạy `postDocumentIn` với { post, force } như `preview()`
  * (R-EVENT-11) trong một savepoint rồi `ROLLBACK TO SAVEPOINT` — không còn sự việc, bút toán, dòng nhật ký hay sự kiện outbox nào
@@ -14,6 +15,7 @@ import { sql } from 'kysely';
 import { AppError } from '@bizcity/platform/core/errors';
 import type { AuthContext } from '@bizcity/platform/core/auth';
 import type { Db } from '@bizcity/platform/db/client';
+import { siteScopedKey } from '@bizcity/platform/db/site';
 import { postDocumentIn } from '../documents/document.service.js';
 
 /** Số lần thử L5 tối đa mỗi người mỗi phút. */
@@ -23,7 +25,7 @@ const hits = new Map<string, number[]>();
 
 /** Xin một lượt thử; false = đã hết lượt trong phút này. */
 export function takeTrial(auth: Pick<AuthContext, 'tenantId' | 'actor'>, now = Date.now()): boolean {
-  const key = `${auth.tenantId}:${auth.actor}`;
+  const key = siteScopedKey(`${auth.tenantId}:${auth.actor}`);
   const recent = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
   if (recent.length >= TRIAL_LIMIT) { hits.set(key, recent); return false; }
   recent.push(now);

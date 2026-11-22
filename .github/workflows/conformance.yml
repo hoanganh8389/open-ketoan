@@ -30,7 +30,7 @@ jobs:
       # --strict: nợ đã hết phải dọn khỏi baseline (bánh cóc chỉ chặt thêm).
       - run: node tests/conformance/selfcheck.mjs --lane selfcheck --strict
       # Lệnh kế toán cho skill (G3-01): dữ liệu thật của repo + bản dựng giả + máy chủ giả. Ca cần bản dựng thật chạy ở job Kiểm kiểu.
-      - run: node --test packages/cli/test/accounting-cli.test.mjs packages/cli/test/module-accounting.test.mjs packages/cli/test/saving-model.test.mjs tests/conformance/checks/flow/flow.test.mjs
+      - run: node --test packages/cli/test/accounting-cli.test.mjs packages/cli/test/module-accounting.test.mjs packages/cli/test/saving-model.test.mjs tests/conformance/checks/flow/flow.test.mjs scripts/cham-pr.test.mjs
       - name: Bảng điểm vào trang tóm tắt
         if: always()
         run: cat tests/conformance/output/runs/*/SCOREBOARD.md >> "$GITHUB_STEP_SUMMARY"

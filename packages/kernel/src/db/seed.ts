@@ -115,6 +115,11 @@ export interface SeedOptions {
   adminEmail?: string;
   /** Băm mật khẩu có sẵn (chép từ người bấm); có thì không băm lại, không in mật khẩu. */
   adminPasswordHash?: string;
+  // [2026-11-22 10:36 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4b: tạo site từ Site Provisioner — không in bí mật, không tự tạo khoá API tích hợp
+  /** Không in mật khẩu / khoá API ra console (tạo site từ dịch vụ: bí mật không được vào nhật ký — R-LOG-4). */
+  quiet?: boolean;
+  /** false: không tạo khoá API tích hợp (site mới tự cấp khoá khi cần). Mặc định true như trước. */
+  apiKey?: boolean;
 }
 export interface SeedResult { tenantId: string; tenantCode: string; adminEmail: string; adminPassword: string; generated: boolean }
 
@@ -140,13 +145,15 @@ export async function seed(opts: SeedOptions = {}): Promise<SeedResult> {
     const user = await trx.selectFrom('users').select('id').where('tenant_id', '=', tid).where('email', '=', adminEmail).executeTakeFirst();
     if (!user) {
       await trx.insertInto('users').values({ tenant_id: tid, email: adminEmail, full_name: 'Quản trị', password_hash: opts.adminPasswordHash ?? await hashPassword(admin.password), role: 'owner' }).execute();
-      console.log(admin.generated
+      if (opts.quiet) console.log(`+ Người dùng ${adminEmail}`);
+      else console.log(admin.generated
         ? `+ Người dùng ${adminEmail} — mật khẩu tự sinh (chỉ in lần này, lưu lại rồi đổi sau khi đăng nhập): ${admin.password}`
         : `+ Người dùng ${adminEmail} (mật khẩu lấy từ SEED_ADMIN_PASSWORD — hãy đổi sau khi đăng nhập)`);
     }
 
     // Khoá API tích hợp (đơn vị mẫu: không — không tích hợp, không gửi ra ngoài)
-    const fixedKey = opts.isSample ? undefined : process.env.SEED_API_KEY;
+    const noKey = opts.isSample || opts.apiKey === false;
+    const fixedKey = noKey ? undefined : process.env.SEED_API_KEY;
     const hasKey = await trx.selectFrom('api_keys').select('id').where('tenant_id', '=', tid).where('revoked_at', 'is', null).executeTakeFirst();
     if (fixedKey) {
       await trx
@@ -154,7 +161,7 @@ export async function seed(opts: SeedOptions = {}): Promise<SeedResult> {
         .values({ tenant_id: tid, name: 'Tích hợp hệ thống bán hàng', key_prefix: fixedKey.slice(0, 10), key_hash: hashApiKey(fixedKey), scopes: ['documents:write', 'reports:read', 'catalog:write'] })
         .onConflict((oc) => oc.column('key_hash').doNothing())
         .execute();
-    } else if (!hasKey && !opts.isSample) {
+    } else if (!hasKey && !noKey) {
       const k = generateApiKey();
       await trx.insertInto('api_keys').values({ tenant_id: tid, name: 'Tích hợp hệ thống bán hàng', key_prefix: k.prefix, key_hash: k.hash, scopes: ['documents:write', 'reports:read', 'catalog:write'] }).execute();
       console.log(`+ Khoá API (chỉ hiện một lần): ${k.key}`);

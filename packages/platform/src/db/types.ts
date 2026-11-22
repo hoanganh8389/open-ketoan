@@ -159,6 +159,57 @@ export interface AppInstallationsTable {
   updated_at: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
 }
 
+// [2026-11-23 08:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037: khoá cài đặt open-pos (migration 0180)
+export interface PosInstallationsTable {
+  id: Generated<string>;
+  /** Tenant chủ (người tạo khoá). */
+  tenant_id: string;
+  code: string;
+  name: string;
+  site_url: Generated<string>;
+  key_prefix: string;
+  key_hash: string;
+  scopes: Generated<string[]>;
+  status: Generated<"active" | "revoked">;
+  created_by: string;
+  created_at: TimestampDefault;
+  revoked_by: ColumnType<string | null, string | null | undefined, string | null>;
+  revoked_at: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
+  last_seen_at: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
+}
+
+export interface PosInstallationBlogsTable {
+  installation_id: string;
+  blog_id: number;
+  owner_tenant_id: string;
+  blog_name: Generated<string>;
+  blog_url: Generated<string>;
+  tenant_id: ColumnType<string | null, string | null | undefined, string | null>;
+  status: Generated<"pending" | "active" | "revoked">;
+  link_code_hash: ColumnType<string | null, string | null | undefined, string | null>;
+  link_code_expires_at: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
+  linked_by: ColumnType<string | null, string | null | undefined, string | null>;
+  linked_at: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
+  last_ping_at: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
+  last_ping_ms: ColumnType<number | null, number | null | undefined, number | null>;
+  bridge_version: Generated<string>;
+  queue_groups: ColumnType<number | null, number | null | undefined, number | null>;
+  pending_docs: ColumnType<number | null, number | null | undefined, number | null>;
+  created_at: TimestampDefault;
+}
+
+export interface PosConnectionsTable {
+  tenant_id: string;
+  blog_id: number;
+  blog_name: Generated<string>;
+  blog_url: Generated<string>;
+  bridge_version: Generated<string>;
+  last_ping_at: TimestampDefault;
+  last_ping_ms: ColumnType<number | null, number | null | undefined, number | null>;
+  queue_groups: ColumnType<number | null, number | null | undefined, number | null>;
+  pending_docs: ColumnType<number | null, number | null | undefined, number | null>;
+}
+
 export interface AccountingUnitsTable {
   id: Generated<string>;
   tenant_id: string;
@@ -1951,6 +2002,9 @@ export interface Database {
   users: UsersTable;
   api_keys: ApiKeysTable;
   app_installations: AppInstallationsTable;
+  pos_installations: PosInstallationsTable;
+  pos_installation_blogs: PosInstallationBlogsTable;
+  pos_connections: PosConnectionsTable;
   module_registry: ModuleRegistryTable;
   intake_inbox: IntakeInboxTable;
   tenant_modules: TenantModulesTable;

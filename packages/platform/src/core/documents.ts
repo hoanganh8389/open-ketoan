@@ -2,6 +2,7 @@
 // [2026-11-01 12:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-010 — documents.* (PHASES 2.7): đánh số, phiên bản, liên kết, đính kèm chung cho mọi chứng từ (bizcity_document@1 §3, §7)
 // [2026-11-01 12:47 AM Johnny Chu - Chu Hoàng Anh] PHASE-010 — đính kèm: storage_root (tệp Mua hàng cũ ở dinh-kem, 0046), băm tệp cũ ở lần tải đầu, loại tệp nhận gạch dưới
 // [2026-11-01 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — dời từ apps/api/src/core/documents.ts sang packages/platform (@bizcity/platform, D010-7 chặng 2); import tương đối viết lại theo chỗ mới
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * Chứng từ dùng chung (năng lực documents.numbering / versions / links / attachments; gói đích packages/documents).
  * Chứng từ gọi bằng docRef = <module>.<loại>:<id>; sự việc kế toán = ledger.event:<docKey>.
@@ -171,6 +172,7 @@ export const documents = {
   async readAttachment(tx: Db, tenantId: string, id: string): Promise<AttachmentRef & { data: Buffer }> {
     const r = await tx.selectFrom('document_attachments').select([...ATTACHMENT_COLS, 'storage_path', 'storage_root']).where('tenant_id', '=', tenantId).where('id', '=', id).executeTakeFirst();
     if (!r) throw Errors.notFound('tệp đính kèm');
+    // nuot-loi: không đọc được tệp trên ổ = không có nội dung — báo notFound ở dòng dưới
     const data = await readFile(path.join(attachmentRoot(tenantId, r.storage_root as 'attachments' | 'dinh-kem'), r.storage_path)).catch(() => null);
     if (!data) throw Errors.notFound(`nội dung tệp ${r.file_name} trên ổ dữ liệu`);
     const sha256 = createHash('sha256').update(data).digest('hex');

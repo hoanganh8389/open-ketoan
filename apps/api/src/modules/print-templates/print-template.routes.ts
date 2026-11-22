@@ -1,4 +1,5 @@
 // @bizcity-layer U ui-kit/print
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * Cấu hình mẫu in (màn Hệ thống → Mẫu in, HT05). Bố cục mẫu nằm trong code giao diện; bảng print_template_settings chỉ lưu phần
  * khác mặc định: bật / tắt mẫu, mẫu mặc định, chỉnh nội dung (tiêu đề, số liên, khổ, chữ ký, dòng căn cứ, ghi chú cuối).
@@ -106,6 +107,7 @@ export async function printTemplateRoutes(app: FastifyInstance): Promise<void> {
         if (!br) throw Errors.validation(`Không có chi nhánh ${b.scopeRef}`);
       }
       if (b.scope === 'user') {
+        // nuot-loi: scopeRef sai kiểu mã (CSDL báo lỗi ép kiểu) = không có người dùng — báo validation ở dòng dưới
         const u = await db.selectFrom('users').select('id').where('tenant_id', '=', auth.tenantId).where('id', '=', b.scopeRef).executeTakeFirst().catch(() => undefined);
         if (!u) throw Errors.validation(`Không có người dùng ${b.scopeRef}`);
       }

@@ -13,7 +13,8 @@
 | **R-TEN-1** | Mọi truy vấn đọc / ghi dữ liệu nghiệp vụ lọc `tenant_id = auth.tenantId`. Không có endpoint nào nhận `tenantId` từ đầu vào | `access.test.ts`; duyệt PR |
 | **R-TEN-2** | Mọi request `/api/v1/*` phải xác thực (JWT người dùng hoặc `X-Api-Key`), trừ route khai `config.public` | `authPlugin` |
 | **R-TEN-3** | Mọi route khai quyền bằng `requirePermission(...)`. Quyền mới thêm vào `PERMISSIONS` và gán vai trò trong cùng PR | R-API-6 |
-| **R-TEN-4** | Khoá API gắn **một** đơn vị, có **phạm vi** (`documents:write`, `reports:read`, `catalog:write`); lưu dạng băm; thu hồi bằng `revoked_at`; ghi `last_used_at` | `api_keys` |
+<!-- [2026-11-23 07:40 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — R-TEN-4 thêm ngoại lệ có kiểm soát: khoá cài đặt open-pos (ADR-0037, luật tối thượng P-0 ý 2) -->
+| **R-TEN-4** | Khoá API gắn **một** đơn vị, có **phạm vi** (`documents:write`, `reports:read`, `catalog:write`); lưu dạng băm; thu hồi bằng `revoked_at`; ghi `last_used_at` **Ngoại lệ duy nhất: khoá cài đặt open-pos** ([ADR-0037](../adr/ADR-0037-khoa-cai-dat-open-pos-moi-blog-mot-tenant.md)) — mỗi yêu cầu vẫn chạy trong đúng **một** tenant, chọn bằng (khoá cài đặt, blog) đã được người có quyền ở tenant đó nối bằng mã nối một lần; không nhận `tenantId` từ đầu vào (R-TEN-1 giữ) | `api_keys` |
 | **R-TEN-5** | Mọi thao tác ghi (thêm, sửa, xoá, khoá kỳ, đổi cấu hình) gọi `writeAudit()` với `actor`, trước / sau | Duyệt PR; test nhật ký |
 | **R-TEN-6** | Phiếu nhập tay chỉ người lập sửa / huỷ, trừ quyền `documents:edit-all` (`assertCanModify`) | `edit-permission.test.ts` |
 | **R-TEN-7** | Bí mật chỉ ở biến môi trường; `NODE_ENV=production` mà `JWT_SECRET` mặc định → không khởi động | `config/env.ts` |

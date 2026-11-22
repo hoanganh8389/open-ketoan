@@ -48,6 +48,11 @@ const envSchema = z.object({
   /** Nhãn môi trường hiện thành dải trên đầu giao diện (vd. "BẢN TEST") để không nhầm với bản thật. Trống = không hiện. */
   ENV_LABEL: z.string().default(''),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  // [2026-11-21 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1 (S038-2): thư mục nhật ký lỗi cố định + mức ghi tệp (core/logger.ts đọc thẳng process.env — khai ở đây để kiểm và để tài liệu hoá)
+  /** Thư mục nhật ký lỗi (Docker: /app/logs, gắn ra <thư mục cài>/logs). Trống = không ghi tệp (dev, test) — PHASE-038. */
+  LOG_DIR: z.string().default(''),
+  /** Mức thấp nhất chép vào logs/api-loi.log (D038-3: warn). stdout vẫn theo LOG_LEVEL. */
+  LOG_FILE_LEVEL: z.enum(['fatal', 'error', 'warn', 'info']).default('warn'),
   /** GET /metrics (Prometheus, docs/ops/OBSERVABILITY.md §3): đặt thì phải gửi Authorization: Bearer <token>. Trống = mở trong mạng nội bộ (nginx không chuyển /metrics ra ngoài). */
   METRICS_TOKEN: z.string().default(''),
   // [2026-11-01 04:13 PM Johnny Chu - Chu Hoàng Anh] ADR-0010 — OpenTelemetry từ lõi (PHASE-018 W5): span ở khớp nối Platform + cổng Kernel, lọc thuộc tính, traceparent qua outbox
@@ -106,23 +111,76 @@ const envSchema = z.object({
    */
   DOANHNGHIEP_API_KEY: z.string().default(''),
   TAX_LOOKUP: z.enum(['on', 'off']).default('on'),
+  // [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a (ADR-0036, D039-3): chế độ site và database điều khiển của Site Registry
+  /**
+   * single (mặc định): bản cài một công ty — một site ngầm định là DATABASE_URL, hành vi như trước PHASE-039.
+   * multi: nhiều site, mỗi site một database; site nhận theo tên miền của yêu cầu qua Site Registry (CONTROL_DATABASE_URL);
+   * thiếu site thì không truy vấn nào chạy (R-SITE-3). Chưa dùng cho bản cài thật tới khi xong PHASE-039 B2c (việc nền theo site).
+   */
+  SITE_MODE: z.enum(['single', 'multi']).default('single'),
+  /** Database điều khiển giữ Site Registry (bảng sites, site_domains). Bắt buộc khi SITE_MODE=multi. */
+  CONTROL_DATABASE_URL: z.string().url().optional(),
+  // [2026-11-22 10:26 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a (D039-9, D039-19): biến của Site Provisioner
+  /** Database mẫu (đã chạy đủ migration) để tạo database site bằng CREATE DATABASE … TEMPLATE. Không ai được kết nối vào nó lúc tạo site. */
+  SITE_TEMPLATE_DB: z.string().regex(/^[a-z_][a-z0-9_]{0,62}$/, 'Tên database mẫu không hợp lệ').default('kt_template'),
+  /** Khoá mã hoá mật khẩu vai trò của từng site trong Site Registry (≥ 32 ký tự). Không có thì không tạo site được. */
+  SITE_SECRET_KEY: z.string().min(32, 'SITE_SECRET_KEY phải dài ít nhất 32 ký tự').optional(),
+  /** Kết nối có quyền CREATEDB + CREATEROLE để tạo database / vai trò của site. Trống = DATABASE_URL. */
+  PROVISION_DATABASE_URL: z.string().url().optional(),
+  /** Vai trò cha của vai trò ứng dụng từng site: site thừa hưởng quyền trên bảng mà migration cấp cho vai trò này. */
+  SITE_APP_PARENT_ROLE: z.string().regex(/^[a-z_][a-z0-9_]{0,62}$/, 'Tên vai trò không hợp lệ').default('ketoan_app'),
+  // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): tên miền điều hành của Provisioning API
+  /** Tên miền duy nhất Provisioning API /_sites/v1 trả lời (chế độ multi). Trống = tắt Provisioning API. */
+  SITE_ADMIN_HOST: z.string().regex(/^[a-z0-9.-]{3,253}$/, 'Tên miền điều hành không hợp lệ').optional(),
+  // [2026-11-22 01:29 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: thư mục sao lưu của lệnh sao lưu gọi qua Provisioning API (tiến trình API)
+  /** Thư mục gốc chứa bản sao lưu từng site (`<thư mục>/<slug>/…dump`) khi sao lưu qua Provisioning API. Trống = backups/sites. Phải gắn ra ngoài container. */
+  SITE_BACKUP_DIR: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
 
+// [2026-11-21 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1 (S038-4): cấu hình sai → ném EnvError thay vì process.exit, để điểm vào (main.ts, db/setup.ts) ghi dòng fatal reason ENV_INVALID vào logs/ trước khi thoát
+/** Cấu hình môi trường sai: điểm vào bắt và ghi nhật ký lỗi (PHASE-038); tên biến hỏng ở `fields`, KHÔNG có giá trị biến. */
+export class EnvError extends Error {
+  override name = 'EnvError';
+  constructor(message: string, readonly fields?: Record<string, string[] | undefined>) {
+    super(message);
+  }
+}
+
+// [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a: docker compose chuyển biến nhiều site dạng ${VAR:-} → chuỗi rỗng; rỗng = chưa đặt (không thì .url() / .min(32) / enum làm hỏng bản cài một công ty)
+const SITE_VARS = ['SITE_MODE', 'CONTROL_DATABASE_URL', 'SITE_TEMPLATE_DB', 'SITE_SECRET_KEY', 'PROVISION_DATABASE_URL', 'SITE_APP_PARENT_ROLE', 'SITE_ADMIN_HOST', 'SITE_BACKUP_DIR'] as const;
+
+/** Bản sao của nguồn biến môi trường, bỏ các biến nhiều site có giá trị rỗng (coi như chưa đặt → giá trị mặc định). */
+export function envInput(source: NodeJS.ProcessEnv): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = { ...source };
+  for (const k of SITE_VARS) if (out[k] !== undefined && out[k]!.trim() === '') delete out[k];
+  return out;
+}
+
+/** Kiểm một nguồn biến môi trường bằng lược đồ của bản cài (ca kiểm dùng; ứng dụng đọc `env`). */
+export const checkEnv = (source: NodeJS.ProcessEnv) => envSchema.safeParse(envInput(source));
+
 function loadEnv(): Env {
-  const parsed = envSchema.safeParse(process.env);
+  const parsed = envSchema.safeParse(envInput(process.env));
   if (!parsed.success) {
-    console.error('Cấu hình môi trường không hợp lệ:', parsed.error.flatten().fieldErrors);
-    process.exit(1);
+    const fields = parsed.error.flatten().fieldErrors;
+    console.error('Cấu hình môi trường không hợp lệ:', fields);
+    throw new EnvError(`Cấu hình môi trường không hợp lệ: ${Object.keys(fields).join(', ')}`, fields);
   }
   if (parsed.data.NODE_ENV === 'production' && parsed.data.JWT_SECRET.startsWith('dev-secret')) {
-    console.error('JWT_SECRET đang dùng giá trị mặc định. Hãy đặt khoá riêng ở môi trường thật.');
-    process.exit(1);
+    throw new EnvError('Cấu hình môi trường không hợp lệ: JWT_SECRET đang dùng giá trị mặc định. Hãy đặt khoá riêng ở môi trường thật.');
+  }
+  // [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a: SITE_MODE=multi cần CONTROL_DATABASE_URL
+  // [2026-11-22 11:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c: DATABASE_URL trùng database mẫu thì kiểm sống / việc nền giữ kết nối vào mẫu → CREATE DATABASE … TEMPLATE hỏng
+  if (parsed.data.SITE_MODE === 'multi' && new URL(parsed.data.DATABASE_URL).pathname.slice(1) === parsed.data.SITE_TEMPLATE_DB) {
+    throw new EnvError('Cấu hình môi trường không hợp lệ: SITE_MODE=multi — DATABASE_URL không được trỏ vào database mẫu SITE_TEMPLATE_DB (kết nối giữ ở mẫu làm hỏng việc tạo site).', { DATABASE_URL: ['trùng SITE_TEMPLATE_DB'] });
+  }
+  if (parsed.data.SITE_MODE === 'multi' && !parsed.data.CONTROL_DATABASE_URL) {
+    throw new EnvError('Cấu hình môi trường không hợp lệ: SITE_MODE=multi cần CONTROL_DATABASE_URL (database điều khiển giữ Site Registry).', { CONTROL_DATABASE_URL: ['bắt buộc khi SITE_MODE=multi'] });
   }
   if (parsed.data.NODE_ENV === 'production' && parsed.data.BIZCITY_DEV_MODULES) {
-    console.error('BIZCITY_DEV_MODULES=true bị cấm ở bản thật: API phải chỉ nạp module đúng hash trong registry (ADR-0011 D2).');
-    process.exit(1);
+    throw new EnvError('Cấu hình môi trường không hợp lệ: BIZCITY_DEV_MODULES=true bị cấm ở bản thật: API phải chỉ nạp module đúng hash trong registry (ADR-0011 D2).');
   }
   return parsed.data;
 }

@@ -231,22 +231,28 @@ Các `reason` của L6: `MIGRATION_PENDING`, `DB_UNREACHABLE`, `DB_AUTH_FAILED`,
 
 ### 7.3 Tệp và trần 200 MB (D038-2, chủ dự án duyệt)
 
-Trần **200 MB cho cả thư mục `logs/`**. Mỗi tệp xoay vòng theo dung lượng **hoặc** theo ngày, cái nào đến trước:
+<!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — D038-7: chủ dự án quy định nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục, dọn sau 30 ngày -->
+Trần **200 MB cho cả thư mục `logs/`**. **Một dịch vụ một thư mục, một ngày một tệp** `<YYYY-MM-DD>.log` (giờ Việt Nam), **giữ 30 ngày** (D038-7). Mỗi thư mục có trần riêng; vượt trần thì xoá tệp cũ nhất trước, kể cả khi chưa đủ 30 ngày:
 
-| Tệp | Mỗi tệp | Số bản giữ | Tối đa |
-|---|---|---|---|
-| `api-loi.log` (≥ warn, kể cả `fatal` khởi động) | 20 MB | 5 | 100 MB |
-| `web-loi.log` (nginx error + truy cập ≥ 500) | 10 MB | 3 | 30 MB |
-| `web-client.log` (L8, nếu duyệt D038-5) | 5 MB | 3 | 15 MB |
-| `db-migrate.log` | 5 MB | 3 | 15 MB |
-| `goi-bao-loi-*.tar.gz` | — | 3 gói mới nhất | ~40 MB |
-| **Cộng** | | | **≤ 200 MB** |
+| Thư mục | Nội dung | Trần một tệp (quá thì `<ngày>.1.log`…) | Trần thư mục | Giữ |
+|---|---|---|---|---|
+| `api/` | ≥ warn, kể cả `fatal` khởi động | 20 MB | 100 MB | 30 ngày |
+| `web/` | nginx error + truy cập ≥ 500 | 10 MB | 30 MB | 30 ngày |
+| `web-client/` | lỗi giao diện (L8, D038-5) | 5 MB | 15 MB | 30 ngày |
+| `db-migrate/` | job db-migrate | 5 MB | 15 MB | 30 ngày |
+| `goi-bao-loi-*.tar.gz` | gói của `lay-log.sh` | — | 3 gói mới nhất (~40 MB) | — |
+| **Cộng** | | | **≤ 200 MB** | |
+
+Thường ngày mỗi thư mục chỉ vài KB đến vài MB: hết 30 ngày là xoá, trần chỉ chặn ngày lỗi dồn dập. Tên tệp theo ngày cho người đọc biết ngay tệp nào thuộc lúc sự cố, và gói gửi về theo `--tu <ngày>` chỉ cần chép đúng các ngày đó.
 
 Log stdout của Docker (json-file) nằm ngoài `logs/`. Trần riêng là `max-size: 10m`, `max-file: 3` cho mỗi dịch vụ, tức ≤ 30 MB × 4 dịch vụ. Muốn tính cả phần này vào 200 MB thì hạ `api-loi.log` xuống 15 MB × 4 (D038-2b).
 
 Cách ghi tệp trong API: dùng `pino.multistream` với một đích ghi tệp có xoay vòng, chạy **trong luồng worker** của pino để ghi đĩa không chặn yêu cầu. Riêng `fatal` lúc khởi động / chết thì ghi **đồng bộ** (`fs.appendFileSync`) trước `process.exit`, vì luồng worker có thể chưa kịp ghi.
 
 **Không** dùng `run-log.ts` cho việc này: nó cắt theo tháng và theo đơn vị, không có trần dung lượng, và hàng đợi bất đồng bộ của nó mất dòng khi tiến trình chết.
+
+<!-- [2026-11-21 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1: ngoại lệ hẹp STD-EVD-4 -->
+**Quan hệ với STD-EVD-4** (SC-EVD-1: không ghi nhật ký *nghiệp vụ* ra tệp): `packages/platform/src/core/logger.ts` là **ngoại lệ hẹp duy nhất**, như bản niêm phong của ADR-0030. Tệp `logs/` chỉ chứa nhật ký *lỗi kỹ thuật*, không có dữ liệu nghiệp vụ (R-SEC-10), không thay `audit_logs` / bằng chứng. Ghi tệp ở chỗ khác vẫn bị SC-EVD-1 chặn.
 
 ### 7.4 Gói gửi về (`lay-log.sh`), bổ sung so với README §4.4
 

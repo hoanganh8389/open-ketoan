@@ -1,6 +1,7 @@
 // @bizcity-layer K kernel/intake
 // [2026-11-03 12:20 AM Johnny Chu - Chu Hoàng Anh] PHASE-024 — S024-29: recheckInboxForSkus — mặt hàng kích hoạt thì mục bể có mã đó được tiền kiểm lại (R-GATE-6)
 // [2026-11-02 07:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-021 — W2 (2.18, ADR-0014 D2, D10; R-INTAKE-1/2/7/12): bể chờ — cửa nạp từ chối thì giữ nguyên văn + phát hiện + điểm (gộp gửi trùng), tự đóng khi nguồn gửi lại đúng, đọc danh sách / chi tiết, dọn theo hạn giữ
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * BỂ CHỜ ĐẦU VÀO (ADR-0014 D2, D10). Không phải sổ: không bút toán, không sự kiện sổ, không ghi accounting_events (R-INTAKE-2).
  *
@@ -82,7 +83,7 @@ export async function recordRejection(auth: AuthContext, raw: unknown, channel: 
     });
     err.intake = { id: out.id, attempt: out.attempt, score: out.score, findings: out.findings, url: `/api/v1/intake/${out.id}` };
   } catch {
-    /* bể chờ lỗi: giữ phản hồi cửa nạp như cũ */
+    /* nuot-loi: bể chờ lỗi — giữ phản hồi cửa nạp như cũ (lỗi gốc vẫn ném cho bên gửi) */
   }
 }
 

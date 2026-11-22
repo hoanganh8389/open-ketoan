@@ -1,12 +1,13 @@
 # `bizcity_document@1` — Document Contract
+<!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — bizcity_document 1.5.0-draft: sáu nhóm trạng thái (STD-DOC-4 khớp STATUS_GROUPS), §5.2 ba chiều trạng thái, STD-DOC-9 hợp đồng xuyên suốt — ADR-0038, R-DOC-CONT -->
 <!-- [2026-10-29 10:24 PM Johnny Chu - Chu Hoàng Anh] INIT — khởi tạo Bizcity Core Framework: sổ cái chỉ thêm, cửa nạp sự việc, CANON, hợp đồng, bộ kiểm chuẩn. -->
 <!-- [2026-10-31 03:36 PM Johnny Chu - Chu Hoàng Anh] PHASE-012 — bizcity_document 1.1.0-draft: §5.1 hiện trạng runtime documents.workflow (khoá YAML, levels, sod, owner, ledger), hai luồng đã chuyển. -->
 <!-- [2026-11-01 12:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-010 — bizcity_document 1.2.0-draft: §7.1 hiện trạng ctx.documents (số, phiên bản, liên kết, đính kèm), §8 đánh số một chỗ. -->
 <!-- [2026-11-01 12:47 AM Johnny Chu - Chu Hoàng Anh] PHASE-010 — §8: purchase_attachments đã chuyển sang document_attachments (0046) -->
 <!-- [2026-11-01 03:13 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — §7.1 / §8: documents.signatures (doc_ref, 0048) -->
 
-> **Phiên bản:** 1.4.0-draft · 2026-11-10 · **Trạng thái:** Đề xuất · **Thuộc:** [Standard v1](../standard/README.md) (hợp đồng 3/7)
-> **Luật nền:** [R-WF](../rules/RULE-WORKFLOW.md), [R-EVENT](../rules/RULE-EVENT.md) · **Năng lực:** `documents.numbering`, `documents.versions`, `documents.links`, `documents.attachments`, `documents.signatures`, `documents.workflow`, `ledger.submit`
+> **Phiên bản:** 1.5.0-draft · 2026-11-22 · **Trạng thái:** Đề xuất · **Thuộc:** [Standard v1](../standard/README.md) (hợp đồng 3/7)
+> **Luật nền:** [R-WF](../rules/RULE-WORKFLOW.md), [R-EVENT](../rules/RULE-EVENT.md), [R-DOC-CONT](../rules/RULE-DOCUMENT-CONTINUITY.md) (trụ cột X, [ADR-0038](../adr/ADR-0038-document-continuity-lien-tuc-chung-tu.md)) · **Năng lực:** `documents.numbering`, `documents.versions`, `documents.links`, `documents.attachments`, `documents.signatures`, `documents.workflow`, `ledger.submit`
 
 ## 1. Mục đích
 
@@ -56,6 +57,8 @@ Mỗi loại chứng từ có máy trạng thái khai báo. Trạng thái riêng
 | `done` | đã hoàn tất (đã nhập đủ, đã nhận, đã chi, đã thanh lý, đã ghi sổ…) | không | có thể |
 | `cancelled` | đã huỷ | không | huỷ sự việc đã nộp → bút toán đảo |
 
+Sáu nhóm, đúng `STATUS_GROUPS` ở `packages/platform/src/core/workflow.ts` (từ 0166). `pending` **không bắt buộc**: loại chứng từ không cần duyệt đi thẳng `draft → approved` (hoặc `draft → done`). Nhóm `done` nghĩa là **xong việc nghiệp vụ**, không có nghĩa là đã ghi sổ — xem §5.2. <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — S040-3 -->
+
 ```yaml
 # modules/hop-dong/api/documents/contract.workflow.yaml
 type: hop-dong.contract
@@ -63,7 +66,7 @@ states:
   draft:     { group: draft }
   submitted: { group: pending }
   approved:  { group: approved }
-  active:    { group: approved }
+  active:    { group: in_progress }
   closed:    { group: done }
   cancelled: { group: cancelled }
 transitions:
@@ -98,6 +101,18 @@ Runtime `apps/api/src/core/workflow.ts` (Platform, sẽ về `packages/documents
 
 Đang chạy theo YAML: `phan-he/quy/payment-requests/payment-request.workflow.yaml`, `phan-he/mua-hang/purchase-document.workflow.yaml`. **Chưa có:** chuyển `by: event` (runtime từ chối khoá này); quyền riêng của module (`hop-dong:approve`…) — `permission` hiện chỉ nhận quyền trong `PERMISSIONS` của Core, chờ registry quyền mở (PHASES 3.3); manifest `documents[].workflow` chưa được runtime tự nạp (module tự gọi `loadWorkflow`). Phiếu mua hàng `pending_approval` vẫn sửa được như trước (lệch §5 nhóm `pending`, giữ để không đổi hành vi).
 
+### 5.2 Ba chiều trạng thái (1.5.0-draft) <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — D040-4, R-DOC-CONT-6 -->
+
+Một chứng từ có ba câu hỏi khác nhau; chỉ câu thứ nhất được **lưu** ở `business_documents.status`:
+
+| Chiều | Trả lời | Lưu ở đâu |
+|---|---|---|
+| Nghiệp vụ | việc tới đâu (sáu nhóm §5) | `business_documents.status`; `status_raw` giữ trạng thái riêng của phân hệ |
+| Gửi / nhận | đã gửi NCC / khách chưa, bên kia xác nhận chưa | nhật ký + `document_attachments` (biên nhận) + `meta.exchange` — không đè `status` |
+| Kế toán | không áp dụng · chờ ghi sổ · đã ghi sổ · đã đảo | **suy ra khi đọc**: loại chứng từ có `ledger[].on` không, có liên kết `ledger` không, `accounting_events`, khoá kỳ. Không thêm cột |
+
+Điểm ghi sổ theo `ledger[].on` của workflow từng loại, không mặc định ở `approved` hay `done`. Hợp đồng, đơn đặt, chính sách, đề nghị thanh toán không có bút toán.
+
 ## 6. Luật
 
 | Mã | Cấp | Luật | Kiểm bằng |
@@ -105,10 +120,11 @@ Runtime `apps/api/src/core/workflow.ts` (Platform, sẽ về `packages/documents
 | STD-DOC-1 | 0 | Chứng từ nghiệp vụ chỉ chạm sổ qua `ctx.ledger.submit` / `cancel`, với `docKey` suy ra từ `docRef`, ở đúng chuyển trạng thái khai trong manifest `documents[].ledger` | CONF-STATIC-2, CONF-RUN-5 |
 | STD-DOC-2 | 0 | Mỗi lần nội dung đổi: `version` tăng và ảnh chụp lưu ở `document_versions` (ai, khi nào, băm nội dung). Không ghi đè lịch sử | CONF-RUN-7 |
 | STD-DOC-3 | 0 | Chuyển trạng thái chỉ qua transition đã khai; mỗi transition là một action (có quyền, bằng chứng) | CONF-RUN-1, CONF-RUN-4 |
-| STD-DOC-4 | 1 | Mọi trạng thái thuộc một trong 5 nhóm chuẩn | CONF-MAN-4 |
+| STD-DOC-4 | 1 | Mọi trạng thái thuộc một trong 6 nhóm chuẩn (§5); `pending` không bắt buộc | CONF-MAN-4; `parseWorkflow` (zod enum `STATUS_GROUPS`) |
 | STD-DOC-5 | 1 | Sửa chứng từ đã `approved` có chạm sổ: phiên bản mới nộp lại cùng `docKey`, `version` mới; Kernel tự đảo bút toán cũ. Module không tự huỷ rồi tạo mới | CONF-RUN-5 |
 | STD-DOC-6 | 1 | Số chứng từ chỉ cấp bằng `nextNumber`; luật khoá theo ngày (`dataLock`) và khoá kỳ áp cho `doc_date` khi ghi | CONF-RUN-8 |
 | STD-DOC-7 | 1 | Đính kèm dùng năng lực chung `documents.attachments` (tệp lưu theo đơn vị, có loại, kích thước tối đa, băm); không tạo bảng đính kèm riêng | CONF-STATIC-7 |
+| STD-DOC-9 | 1 | Chứng từ thuộc chuỗi theo hợp đồng mang số hợp đồng (`meta.contract`) và liên kết `applies` tới `hop-dong.contract:<số>`; không có hợp đồng thì ghi `meta.contractException` (lý do, người cho phép). Thiếu cả hai: **nhắc** `IN-DOC-CONTRACT-REQ`, chặn chỉ khi đơn vị bật (R-GATE-9) <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — R-DOC-CONT-5 --> | sẽ có ở B4 / B5 (S040-11, S040-13) |
 | STD-DOC-8 | 2 | Ký theo vai dùng `documents.signatures`; chữ ký gắn với `version` lúc ký, sửa nội dung thì chữ ký cũ hết hiệu lực | review |
 
 ## 7. API SDK
@@ -184,6 +200,7 @@ Cửa nạp so băm nội dung (`content_hash`) của bản gửi với bản đ
 
 ## 9. Nhật ký
 
+- **1.5.0-draft (2026-11-22, PHASE-040 B1):** STD-DOC-4 sửa "5 nhóm" thành **6 nhóm** cho khớp mã (`STATUS_GROUPS` có `in_progress` từ 0166); `pending` không bắt buộc; ví dụ hợp đồng `active` → nhóm `in_progress`; thêm §5.2 ba chiều trạng thái (nghiệp vụ lưu, gửi / nhận ghi vết, kế toán suy ra — "hoàn tất" không phải "đã ghi sổ"); thêm STD-DOC-9 hợp đồng xuyên suốt, mặc định nhắc. Không đổi mã, không migration. Luật: [R-DOC-CONT](../rules/RULE-DOCUMENT-CONTINUITY.md).
 - **1.4.0-draft (2026-11-10):** §5.1 thêm `sod: warn` — người lập tự duyệt được ghi dấu `workflow.sod.self_approve` vào bằng chứng, không bị chặn; bật ở duyệt phiếu mua hàng (`approve`, `override`) và duyệt phiếu kế toán (`accounting.journal.approve`, gọi cùng helper `noteSelfApproval`); mã chẩn đoán `LEDGER_SELF_APPROVED` (RV-R1-11, S029-25 đợt 1).
 
 - **1.3.0-draft (2026-11-05):** thêm §7.2 Lịch sử chứng từ — sáu nguyên tắc DOC-01..06, cổng `GET /api/v1/documents/history` (id · docKey · entryId), ba mã chẩn đoán mới (dùng lại `LEDGER_ORPHAN`), phép kiểm `SC-DOC-7`. Không bảng mới, không migration ở W1.

@@ -44,7 +44,7 @@ Phiếu nghiệm thu: [NT-BH-014](../nghiem-thu/ban-hang/NT-BH-014-cai-dat-ban-h
    - Hiện trạng thái "đã có lý do / chưa có".
    - Nút **Tạo lý do mặc định** tạo hai lý do theo bảng trên.
 4. Tài khoản hạch toán bán hàng:
-   - Danh sách chỉ đọc các loại nhóm *Bán hàng* của ACC41 (`GET /api/v1/account-default-types`), cột TK Nợ / TK Có.
+   - Danh sách chỉ đọc các loại nhóm *Bán hàng* của ACC41 (`GET /api/v1/posting/scheme`; bảng `account_default_types` bỏ ở 04980b5e), cột TK Nợ / TK Có.
    - Nút **Sửa ở ACC41**.
    - Thay mục mờ "Định khoản bán hàng" ở menu và ô cùng tên ở Luồng chi tiết.
    - Không làm màn quy tắc điều kiện riêng: Core đã bỏ dòng thêm có điều kiện ở ACC41 (commit 558e12b1).

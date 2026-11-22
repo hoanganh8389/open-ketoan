@@ -16,10 +16,19 @@
 # =============================================================================
 name: ketoan
 
+# [2026-11-21 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1 (S038-2): trần log Docker (json-file) cho mọi dịch vụ — trước đây không giới hạn, đầy đĩa là sập CSDL.
+# Nhật ký lỗi cố định nằm ở thư mục logs/ của bản cài (LOG_HOST_DIR, tối đa 200 MB — docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/10-NGHIEN-CUU-GHI-LOG.md §7.3).
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_DB: ketoan
       POSTGRES_USER: ketoan
@@ -41,6 +50,7 @@ services:
       context: .
       dockerfile: docker/api.Dockerfile
     restart: "no"
+    logging: *logging
     entrypoint: ["node", "dist/db/setup.js"]
     depends_on:
       db:
@@ -48,6 +58,9 @@ services:
     environment:
       # [2026-11-18 Nguyễn Văn Thủy] 0161: job ghi dòng nhật ký cũ ra JSONL (DATA_DIR/nhat-ky) — cùng ổ appdata với API
       DATA_DIR: /app/apps/api/data
+      # [2026-11-21 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1 (S038-5): job ghi logs/db-migrate.log (đầu / cuối mỗi lần chạy, lỗi đầy đủ)
+      LOG_DIR: /app/logs
+      BIZCITY_GIT_SHA: ${BIZCITY_GIT_SHA:-}
       NODE_ENV: production
       DATABASE_URL: postgres://ketoan:${DB_PASSWORD:-ketoan}@db:5432/ketoan
       JWT_SECRET: ${JWT_SECRET:?Đặt JWT_SECRET trong .env}
@@ -67,16 +80,29 @@ services:
       TZ: Asia/Ho_Chi_Minh
       # [2026-11-14 01:47 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-11: SEEDS_DIR (.env, đường dẫn trên máy chủ) = bộ danh mục của công ty, gắn chỉ đọc; trống = db/seeds trong ảnh (bộ giả lập)
       SEEDS_DIR: ${SEEDS_DIR:+/srv/bizcity-seeds}
+      # [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a (ADR-0036): nhiều site — docs/ops/NHIEU-SITE.md; trống = bản cài một công ty (biến rỗng coi như chưa đặt)
+      # job db-migrate chỉ làm database ngầm định (DATABASE_URL) và lệnh `site …` (đọc thẳng database điều khiển): luôn chạy một site — chế độ multi làm seed() báo SITE_CONTEXT_MISSING (E2E B7a)
+      SITE_MODE: single
+      CONTROL_DATABASE_URL: ${CONTROL_DATABASE_URL:-}
+      SITE_TEMPLATE_DB: ${SITE_TEMPLATE_DB:-}
+      SITE_SECRET_KEY: ${SITE_SECRET_KEY:-}
+      SITE_APP_PARENT_ROLE: ${SITE_APP_PARENT_ROLE:-}
+      SITE_BACKUP_DIR: /app/backups/sites
     # [2026-11-14 01:47 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-11: thư mục danh mục của công ty (chỉ đọc). Chưa đặt SEEDS_DIR thì gắn db/seeds của repo nhưng API không đọc (biến trống)
     volumes:
       - appdata:/app/apps/api/data
       - ${SEEDS_DIR:-./db/seeds}:/srv/bizcity-seeds:ro
+      # [2026-11-21 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1: thư mục nhật ký lỗi cố định trên máy chủ (D038-1)
+      - ${LOG_HOST_DIR:-./logs}:/app/logs
+      # [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a: bản sao lưu từng site (site migrate / site backup) — cùng thư mục với scripts/sao-luu.sh
+      - ${BACKUP_HOST_DIR:-./backups}:/app/backups
 
   api:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
     restart: unless-stopped
+    logging: *logging
     depends_on:
       db:
         condition: service_healthy
@@ -91,6 +117,16 @@ services:
       # bảo vệ sổ. Job db-migrate vẫn dùng vai trò sở hữu. DB_APP_USER chỉ để đổi tên vai trò thường; không dùng để quay về ketoan.
       DATABASE_URL: postgres://${DB_APP_USER:-ketoan_app}:${DB_APP_PASSWORD:?Đặt DB_APP_PASSWORD trong .env (≥ 16 ký tự chữ và số; bash scripts/cai-nhanh.sh tự sinh) — API chạy bằng vai trò ketoan_app (R-SEC-6)}@db:5432/ketoan
       JWT_SECRET: ${JWT_SECRET:?Đặt JWT_SECRET trong .env}
+      # [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a (ADR-0036): nhiều site — docs/ops/NHIEU-SITE.md; trống = bản cài một công ty (biến rỗng coi như chưa đặt)
+      SITE_MODE: ${SITE_MODE:-single}
+      CONTROL_DATABASE_URL: ${CONTROL_DATABASE_URL:-}
+      SITE_TEMPLATE_DB: ${SITE_TEMPLATE_DB:-}
+      SITE_SECRET_KEY: ${SITE_SECRET_KEY:-}
+      SITE_APP_PARENT_ROLE: ${SITE_APP_PARENT_ROLE:-}
+      # api chạy bằng ketoan_app: tạo site / nâng / sao lưu qua Provisioning API cần kết nối quản trị (vd postgres://ketoan:<DB_PASSWORD>@db:5432/postgres)
+      PROVISION_DATABASE_URL: ${PROVISION_DATABASE_URL:-}
+      SITE_ADMIN_HOST: ${SITE_ADMIN_HOST:-}
+      SITE_BACKUP_DIR: /app/backups/sites
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8088}
       ADDINS: ${ADDINS:-*}
       # internal = sổ nội bộ (mặc định); tax = sổ thuế (chỉ kéo phiếu bán / hoàn có số hoá đơn)
@@ -132,8 +168,15 @@ services:
       DATA_DIR: /app/apps/api/data
       # [2026-11-14 01:47 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-11: SEEDS_DIR (.env, đường dẫn trên máy chủ) = bộ danh mục của công ty, gắn chỉ đọc; trống = db/seeds trong ảnh (bộ giả lập)
       SEEDS_DIR: ${SEEDS_DIR:+/srv/bizcity-seeds}
+      # [2026-11-21 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1 (S038-2, S038-3): nhật ký lỗi cố định — dòng ≥ LOG_FILE_LEVEL vào logs/api-loi.log; commit đang chạy vào mọi dòng log
+      LOG_DIR: /app/logs
+      LOG_FILE_LEVEL: ${LOG_FILE_LEVEL:-warn}
+      BIZCITY_GIT_SHA: ${BIZCITY_GIT_SHA:-}
     volumes:
       - appdata:/app/apps/api/data
+      - ${LOG_HOST_DIR:-./logs}:/app/logs
+      # [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a: sao lưu qua Provisioning API (POST /sites/{id}/backups) ghi vào đây
+      - ${BACKUP_HOST_DIR:-./backups}:/app/backups
       # [2026-11-14 01:47 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-11: bộ danh mục của công ty, chỉ đọc (xem db/seeds/README.md)
       - ${SEEDS_DIR:-./db/seeds}:/srv/bizcity-seeds:ro
     healthcheck:
@@ -148,11 +191,15 @@ services:
       context: .
       dockerfile: docker/web.Dockerfile
     restart: unless-stopped
+    logging: *logging
     depends_on:
       - api
     ports:
       # WEB_BIND=127.0.0.1 trên máy chủ thật: chỉ cho cổng vào (reverse proxy) cùng máy gọi tới.
       - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-8088}:80"
+    # [2026-11-22 11:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6): logs/web-loi.log của cổng vào, cùng thư mục với api-loi.log
+    volumes:
+      - ${LOG_HOST_DIR:-./logs}:/var/log/ketoan
 
 volumes:
   # Dữ liệu PostgreSQL (khoá chính id bigint tự tăng, từ 10/2026).

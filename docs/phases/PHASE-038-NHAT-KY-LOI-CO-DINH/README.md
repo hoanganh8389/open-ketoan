@@ -39,15 +39,21 @@ Cần: **một chỗ cố định trên máy chủ** chứa log lỗi, và một
 
 ### 4.1 Thư mục và tệp
 
+<!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — D038-7: chủ dự án quy định nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục, dọn sau 30 ngày -->
+
 ```
-<thư mục cài>/logs/            (bind mount, .gitignore; LOG_DIR trong container = /app/logs)
-  api-loi.log                  API: dòng pino mức ≥ warn (5xx có err.stack, reqId, traceId, route) + lỗi khởi động (fatal)
-  db-migrate.log               job db-migrate: mỗi lần chạy một khối — giờ, commit, migration áp / lỗi đầy đủ
-  web-loi.log                  nginx web: error_log + dòng truy cập có mã ≥ 500 (biết 502/503/504 sinh ở đâu, upstream nào)
+<thư mục cài>/logs/            (bind mount, .gitignore; LOG_DIR trong container = /app/logs, nginx = /var/log/ketoan)
+  api/<YYYY-MM-DD>.log         API: dòng pino mức ≥ warn (5xx có err.stack, reqId, traceId, route) + lỗi khởi động (fatal)
+  db-migrate/<YYYY-MM-DD>.log  job db-migrate: mỗi lần chạy một khối — giờ, commit, migration áp / lỗi đầy đủ
+  web/<YYYY-MM-DD>.log         nginx (cổng vào): error_log + dòng truy cập có mã ≥ 500
+  web-client/<YYYY-MM-DD>.log  lỗi giao diện trình duyệt gửi về (B4b)
   goi-bao-loi-<YYYYMMDD-HHMM>.tar.gz   do lay-log.sh tạo
 ```
 
-- Xoay vòng theo ngày **hoặc** dung lượng; **cả thư mục ≤ 200 MB** (D038-2), chia tệp ở [10 §7.3](10-NGHIEN-CUU-GHI-LOG.md). Không bao giờ lớn vô hạn.
+- **Một dịch vụ một thư mục, một ngày một tệp** (D038-7, chủ dự án quy định 2026-11-22). Ngày theo giờ Việt Nam. Một ngày lỗi dồn dập vượt trần phần thì tách `<ngày>.1.log`, `<ngày>.2.log`.
+- **Giữ 30 ngày:** tệp của ngày cũ hơn 30 ngày bị xoá. Mỗi thư mục còn có trần dung lượng; vượt trần thì xoá tệp cũ nhất trước — **cả `logs/` ≤ 200 MB** (D038-2). Trần từng thư mục ở [10 §7.3](10-NGHIEN-CUU-GHI-LOG.md). Không bao giờ lớn vô hạn.
+- Ai dọn: API lúc khởi động và mỗi giờ (thư mục `api/`, `web-client/`, và tệp kiểu cũ ở gốc `logs/`); job db-migrate mỗi lần chạy (`db-migrate/`); container web mỗi phút (`web/`, `docker/web-xoay-log.sh`).
+- Tệp kiểu cũ (`api-loi.log`, `web-loi.log`, `web-client.log`, `db-migrate.log` ở gốc `logs/`, bản cài trước D038-7) không ghi thêm; bị dọn khi quá 30 ngày.
 - Docker: mọi dịch vụ khai `logging: json-file, max-size 10m, max-file 3` (F5) — stdout vẫn đủ, chỉ có trần.
 - Nội dung tuân R-SEC-10 / R-TEN-8 như log stdout: **không** thân yêu cầu, token, mật khẩu, MST / SĐT cá nhân, số tài khoản. Cùng bộ lọc `redact` của pino, không viết bộ lọc thứ hai.
 
@@ -60,7 +66,7 @@ Cần: **một chỗ cố định trên máy chủ** chứa log lỗi, và một
 ### 4.3 Cổng vào (container `web`)
 
 - `error_log /var/log/ketoan/web-loi.log warn;` và `access_log … if=$loi5xx` (map `$status ~ ^5`).
-- Khi api không trả lời: nginx trả **JSON** `{"error":{"code":"GATEWAY_UNAVAILABLE",…}}` qua `error_page 502 503 504` → giao diện có mã để hiện (F1). Mã mới vào `packages/contracts/src/errors.ts` theo R-ERR (sinh bằng `scripts/sinh-ma-loi.mjs`).
+- Khi api không trả lời: nginx trả **JSON** `{"error":{"code":"GATEWAY_UNAVAILABLE",…}}` qua `error_page 502 503` (không 504: báo cáo chạy quá `proxy_read_timeout` khi api vẫn sống — giao diện giữ câu riêng cho 504) → giao diện có mã để hiện (F1). Mã mới vào `packages/contracts/src/errors.ts` theo R-ERR (sinh bằng `scripts/sinh-ma-loi.mjs`).
 - Proxy aaPanel phía trước vẫn có thể tự trả 503 — sổ tay ghi cách xem log aaPanel (`/www/wwwlogs/<tên miền>.error.log`).
 
 ### 4.4 Lệnh gom `scripts/lay-log.sh`
@@ -90,6 +96,7 @@ Người vận hành tải tệp đó về (aaPanel → Files) và gửi kèm m�
 | D038-2 | Giữ bao lâu, trần dung lượng | ✅ **chủ dự án duyệt 2026-11-21: tối đa 200 MB** cho thư mục `logs/`; chia tệp ở [10 §7.3](10-NGHIEN-CUU-GHI-LOG.md) <!-- [2026-11-21 02:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — D038-2 chốt 200 MB --> |
 | D038-3 | Tệp API ghi từ mức nào | ✅ `warn` (đủ 4xx bất thường + 5xx + fatal); `info` chỉ ở stdout / Loki |
 | D038-4 | Nút "Báo lỗi" trên khay có tự đính gói log không | ✅ **Không** ở phase này (cần quyền quản trị, có rủi ro lộ dữ liệu); chỉ hướng dẫn chạy `lay-log.sh` |
+| D038-7 <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — D038-7: chủ dự án quy định nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục, dọn sau 30 ngày --> | Chia tệp thế nào, dọn khi nào | ✅ **chủ dự án quy định 2026-11-22:** chia theo ngày, mỗi dịch vụ một thư mục cố định (`logs/<dịch vụ>/<YYYY-MM-DD>.log`), dọn tệp quá 30 ngày. Giữ trần 200 MB của D038-2. Làm ở S038-16 |
 | D038-5, D038-6, D038-2b | Lỗi giao diện, tên luật, trần Docker | ✅ theo [10 §9](10-NGHIEN-CUU-GHI-LOG.md) |
 
 ## 6. Ngoài phạm vi
