@@ -13,10 +13,10 @@ Thứ tự theo giá trị: B1 một mình đã giải được sự cố 2026-1
 | S038-3 | B1 | Logger multistream → `logs/api-loi.log` (≥ warn, xoay vòng, cùng `redact`) | `apps/api/src/app.ts`; `packages/platform/src/core/**` (logger) | test: 5xx ghi một dòng có `reqId`, `traceId`, `err.stack`, không có thân yêu cầu | ✅ 2026-11-21 (#522) |
 | S038-4 | B1 | Lỗi khởi động ghi `fatal` đồng bộ vào `api-loi.log` với `evt: bizcity.system.start_failed` + `reason` | `apps/api/src/main.ts` | test: còn migration chưa áp → dòng `MIGRATION_PENDING` có trong tệp trước khi thoát | ✅ 2026-11-21 (#522) |
 | S038-5 | B1 | Job `db-migrate` ghi `logs/db-migrate.log` (commit, migration áp, lỗi đầy đủ) | `apps/api/src/db/setup.ts` | migration hỏng → tệp có tên migration + mã PG | ✅ 2026-11-21 (#522) |
-| S038-6 | B2 | nginx `web`: `web-loi.log` (error_log + truy cập ≥ 500); `error_page 502 503` trả JSON (không 504 — báo cáo chạy lâu) `GATEWAY_UNAVAILABLE` | `docker/nginx.conf`; `docker-compose.yml` (mount); `packages/contracts/src/errors.ts` | dừng `api` → `/api/v1/system/health` trả JSON có mã; tệp có dòng upstream | 🟡 mã ở nhánh `feat/phase-038-b2-cong-vao` |
+| S038-6 | B2 | nginx `web`: `web-loi.log` (error_log + truy cập ≥ 500); `error_page 502 503` trả JSON (không 504 — báo cáo chạy lâu) `GATEWAY_UNAVAILABLE` | `docker/nginx.conf`; `docker-compose.yml` (mount); `packages/contracts/src/errors.ts` | dừng `api` → `/api/v1/system/health` trả JSON có mã; tệp có dòng upstream | ✅ 2026-11-22 (#544) |
 | S038-7 | B3 | `scripts/lay-log.sh` theo README §4.4 | `scripts/lay-log.sh` | chạy được khi `api` chết; gói không chứa giá trị `.env` | ✅ 2026-11-22 (#528) |
 | S038-8 | B3 | Sổ tay: mục "Lấy log gửi về" trong runbook aaPanel + DEPLOY §4; OBSERVABILITY §2 thêm `logs/`; log aaPanel `/www/wwwlogs/` | `docs/trien-khai.md`; `docs/ops/DEPLOY.md`; `docs/ops/OBSERVABILITY.md`; `docs/ops/SO-TAY-DIEU-TRA-LOI.md` | người vận hành làm theo không cần hỏi | ✅ 2026-11-22 (#528) |
-| S038-9 | B4 | Giao diện: một khay "Không kết nối được máy chủ phần mềm" cho `GATEWAY_UNAVAILABLE` / 5xx không JSON; lùi dần lời gọi lặp | `apps/web/src/lib/api.ts`; khay lỗi; `presence` | 29 yêu cầu hỏng → 1 khay; ping không dội | ☐ |
+| S038-9 | B4 | Giao diện: một khay "Không kết nối được máy chủ phần mềm" cho `GATEWAY_UNAVAILABLE` / 5xx không JSON; lùi dần lời gọi lặp | `apps/web/src/lib/api.ts`; khay lỗi; `presence` | 29 yêu cầu hỏng → 1 khay; ping không dội | 🟡 mã ở nhánh `feat/phase-038-b4-mat-ket-noi` |
 | S038-10 | B5 | Thi hành R-LOG-9 (bản cài có `logs/` cố định, có trần; luật đã khai ở RULE-LOG) + check SC-OBS-3 (compose khai `logging:` và mount `LOG_HOST_DIR`) + CHANGELOG "Nâng cấp cần làm" | `docs/rules/**`; `tests/conformance/**`; `CHANGELOG.md` | SC-OBS-3 xanh trên main | ☐ |
 
 <!-- [2026-11-21 02:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — thêm S038-11..15 từ nghiên cứu 10 (lỗ hổng G2–G13) -->
@@ -29,6 +29,9 @@ Thứ tự theo giá trị: B1 một mình đã giải được sự cố 2026-1
 | S038-15 | ngoài | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | `infrastructure/monitoring/**` — giao chủ PHASE-018 | log vẫn vào Loki, dashboard 06 chạy | ☐ |
 
 ## Nhật ký
+
+<!-- [2026-11-22 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4 -->
+- 2026-11-22 — B4 (S038-9): một khay "Không kết nối được máy chủ phần mềm" (`KhayMatKetNoi`) cho `GATEWAY_UNAVAILABLE` / 502 / 503 không JSON; 504 (báo cáo chạy lâu) và 5xx JSON của api **không** gộp. Khay Mã tra cứu ghi một lần cho N lời gọi hỏng. Tự thử `/system/health` giãn dần 5 → 60 giây (một vòng cho cả tab), nút Thử lại ngay, sau 60 giây hiện hướng dẫn `lay-log.sh`; nối lại thì báo vài giây và react-query tải lại các màn. React-query không thử lại lỗi này; ping hiện diện tạm dừng. Logic ở `@ketoan/contracts` (`ket-noi.ts`: `laMatKetNoi`, `choThuLai`, `taoKhoKetNoi`), test 16. Khi viết B4 phát hiện B2 gộp nhầm 504 — đã sửa ở #544.
 
 <!-- [2026-11-22 12:05 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 -->
 - 2026-11-22 — B2 (S038-6): nginx trả JSON `GATEWAY_UNAVAILABLE` (503, `requestId` = `$request_id`, `Retry-After`) khi api không trả lời, cho `/api/` và `/mcp`; 5xx của chính api đi nguyên (không `proxy_intercept_errors`). `logs/web-loi.log`: `error_log` warn + dòng truy cập mã ≥ 500 (ghi `$uri`, không chuỗi truy vấn), xoay 10 MB × 3 bằng `docker/web-xoay-log.sh`. Tên `api` phân giải lúc chạy (resolver Docker): thử thật — dựng lại api đổi IP, web không khởi động lại vẫn gọi đúng.
