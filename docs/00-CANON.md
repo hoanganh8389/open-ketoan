@@ -16,10 +16,11 @@
 <!-- [2026-11-21 01:23 PM Johnny Chu - Chu Hoàng Anh] R-OKT-CONN — §3 dòng R-OKT-CONN, §6 nhật ký v1.8, dòng phiên bản. -->
 <!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — §0.12 lỗi phải để lại dấu; luật R-LOG; §5 dòng ghi log; nhật ký v1.9 -->
 <!-- [2026-11-21 08:12 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — §0.13 mô hình triển khai nhiều site + luật nâng cấp (ADR-0036); §3 dòng R-SITE; §5 dòng lớp CSDL / migration; nhật ký v1.10 -->
+<!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — §0.12 điểm 4: nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục, giữ 30 ngày (D038-7); nhật ký v1.11 -->
 
 > **Tệp này:** một trang liệt kê **mọi** luật và hợp đồng đang chi phối lõi. Không lặp nội dung luật — chỉ mã, cấp, nơi kiểm.
 > **Dùng khi:** sửa lõi → tra bảng §4 để biết phải sửa tài liệu / hợp đồng nào **trong cùng PR**.
-> **Phiên bản:** 1.10 · 2026-11-21 (nhật ký §6) · **Người giữ:** nhóm Lõi (CODEOWNERS `/docs/00-CANON.md`)
+> **Phiên bản:** 1.11 · 2026-11-22 (nhật ký §6) · **Người giữ:** nhóm Lõi (CODEOWNERS `/docs/00-CANON.md`)
 > **Hai lớp chuẩn:** luật `R-*` dưới đây giữ **Kernel** (sổ cái). Luật `STD-*` của [Bizcity Framework Standard v1](standard/README.md) giữ **module** (7 hợp đồng, bộ kiểm cài đặt). Module tuân `STD-*`; nhờ SDK nó tự tuân `R-*`.
 
 <!-- [2026-11-03 01:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-024 — ADR-0020 tôn chỉ Core -->
@@ -197,7 +198,7 @@ Nguồn: chủ dự án 2026-11-09, *"nguyên tắc smallwin, chia nhỏ để c
 1. **Không im lặng.** Không nuốt lỗi, tiến trình không chết câm; lỗi khởi động ghi xong mới thoát (R-LOG-2, -3).
 2. **Không lộ dữ liệu.** Log ghi mã và định danh, không ghi giá trị của người dùng (R-LOG-4).
 3. **Người dùng nhập sai không phải lỗi hệ thống.** Chọn mức theo việc ai phải sửa (R-LOG-7).
-4. **Mọi bản cài có nhật ký lỗi cố định** `logs/` ≤ 200 MB, một lệnh gom gửi về; bộ giám sát (Loki, Tempo, Grafana) là đường điều tra sâu, không thay tầng tối thiểu này (R-LOG-9).
+4. **Mọi bản cài có nhật ký lỗi cố định** `logs/<dịch vụ>/<YYYY-MM-DD>.log` (một ngày một tệp, giữ 30 ngày, cả thư mục ≤ 200 MB — D038-7, chủ dự án 2026-11-22), một lệnh gom gửi về; bộ giám sát (Loki, Tempo, Grafana) là đường điều tra sâu, không thay tầng tối thiểu này (R-LOG-9).
 5. **R-ERR trả ra ngoài, R-LOG ghi vào trong** — hai luật không thay nhau.
 
 ### 0.13 Một bản mã, mỗi site một database (chủ dự án 2026-11-21; [ADR-0036](adr/ADR-0036-mot-ban-ma-moi-site-mot-database.md), luật [R-SITE](rules/RULE-SITE.md), [PHASE-039](phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/README.md))
@@ -380,6 +381,8 @@ Trạng thái: **Ổn định** = đã có code, đổi phá vỡ phải ra `@2`
 
 ## 6. Nhật ký thay đổi CANON
 
+<!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — CANON v1.11 -->
+- **v1.11 (2026-11-22):** §0.12 điểm 4 và R-LOG-9: nhật ký lỗi cố định **chia theo ngày, mỗi dịch vụ một thư mục** `logs/<dịch vụ>/<YYYY-MM-DD>.log`, **giữ 30 ngày**, cả `logs/` vẫn ≤ 200 MB (D038-7). Nguồn: chủ dự án 2026-11-22.
 <!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — CANON v1.9 (§0.12, R-LOG) -->
 <!-- [2026-11-21 08:12 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — nhật ký v1.10 -->
 - **v1.10 (2026-11-21):** Thêm §0.13 mô hình triển khai nhiều site và luật nâng cấp một bản mã cho mọi site ([ADR-0036](adr/ADR-0036-mot-ban-ma-moi-site-mot-database.md)); luật R-SITE; dòng §5 cho lớp CSDL và migration.

@@ -49,7 +49,7 @@ Dự án: **Bizcity Core Framework** (open-ketoan) — hạ tầng ứng dụng 
 - **R-LOG-3 · tiến trình không chết câm:** điểm vào mới gọi `installProcessHandlers()` trước mọi import khác; lỗi khởi động ghi `fatal` đồng bộ rồi mới thoát.
 - **R-LOG-4 · không lộ dữ liệu:** ghi mã, định danh, tên trường — không payload, mật khẩu, token, MST / SĐT / email cá nhân, số tài khoản.
 - **Chọn mức:** người dùng nhập sai = `info` (không phải lỗi hệ thống); đã lùi được = `warn`; cần người sửa = `error`; tiến trình sắp chết = `fatal`.
-- **Nhật ký lỗi cố định** `logs/` của bản cài (≤ 200 MB) chỉ do logger của Platform ghi; không tự `appendFile` tệp log riêng.
+- **Nhật ký lỗi cố định** `logs/<dịch vụ>/<YYYY-MM-DD>.log` của bản cài (một ngày một tệp, giữ 30 ngày, ≤ 200 MB — R-LOG-9) chỉ do logger của Platform ghi; không tự `appendFile` tệp log riêng.
 - R-LOG-1..4 là **chặn** khi rà; R-LOG-5..11 là cảnh báo. Mã cũ chưa theo luật: không bắt sửa trong PR không liên quan, ghi nợ vào PHASE-038 (S038-14). Chi tiết: [RULE-LOG](docs/rules/RULE-LOG.md), [PHASE-038](docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/README.md).
 
 ### Enterprise Continuity (ADR-0028 — chấp nhận về nguyên tắc 2026-11-05) <!-- [2026-11-05 09:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-029 — luật ECP cho agent -->
