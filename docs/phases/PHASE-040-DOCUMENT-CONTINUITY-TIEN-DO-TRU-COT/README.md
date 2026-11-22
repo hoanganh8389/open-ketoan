@@ -4,7 +4,7 @@
 > **Việc lộ trình:** — (mở rộng PHASE-026 bảng trụ cột, PHASE-029 truy vết chứng từ, docs/reviews nhịp review)
 > **Phân hệ:** chung-tu · mua-hang · ban-hang · he-thong
 > **Checklist công bố:** —
-> **Trạng thái:** 🟡 **W0 chốt 2026-11-22; B1, B2 xong (S040-3..7)** — chủ dự án đồng ý D040-1..12 và toàn bộ đề xuất Q040-1..6 ở [30](30-PHAN-TICH-CAU-HOI-MO.md) (S040-2). Tiếp theo: B3 mẫu PR có khối bằng chứng + `.mailmap` (S040-8, 9).
+> **Trạng thái:** 🟡 **W0 chốt 2026-11-22; B1, B2, B3 xong (S040-3..9)** — chủ dự án đồng ý D040-1..12 và toàn bộ đề xuất Q040-1..6 ở [30](30-PHAN-TICH-CAU-HOI-MO.md) (S040-2). Tiếp theo: B4 họ mã lỗi `IN-DOC-*` + thống kê HT19 (S040-11, 12); B5–B6 mua hàng (@Thuy2k), B7 bán hàng (@H-Joyy) song song.
 > **Mức Kernel:** W0 K0 (tài liệu). B1–B3 K0–K1 (tài liệu chuẩn, `tru-cot.json`, công cụ chỉ đọc). B4–B8 K1–K2 (mã lỗi, meta chứng từ, màn, chẩn đoán). **Không migration tạo bảng** (D040-3).
 > **Nền:** [Doc 26 Sổ chứng từ chung](../../nghiep-vu/26-so-chung-tu-quy-chuan.md) · [Doc 25 Mã lỗi khai báo](../../nghiep-vu/25-quy-tac-ma-loi-khai-bao.md) · [bizcity_document@1](../../contracts/BIZCITY-DOCUMENT-v1.md) · [R-WF](../../rules/RULE-WORKFLOW.md) · [R-REV §7](../../rules/RULE-REVIEW.md) · [bảng trụ cột](../../standard/tru-cot.json) · [docs/reviews](../../reviews/README.md) · tài liệu làm việc *BIZCITY-DOCUMENT-CONTINUITY-CONFORMANCE-v1* (bản làm việc ngoài repo, R-FLOW-7: phase này là bản có hiệu lực khi đã vào `main`)
 > **Phụ thuộc:** PHASE-029 (lịch sử chứng từ, `document_links`), PHASE-026 (bảng trụ cột HT10), PHASE-031 (chính sách), PHASE-038 (R-LOG)
@@ -16,6 +16,7 @@
 | [10-MA-TRAN-CHUNG-TU](10-MA-TRAN-CHUNG-TU.md) | ma trận chứng từ toàn luồng DOC-001..061 đối chiếu với sổ thật (đã có / dùng lại loại có sẵn / đề xuất), ca nghiệm thu T040-* |
 | [20-CHAM-DIEM-TIEN-DO](20-CHAM-DIEM-TIEN-DO.md) | mỗi PR merge chấm ba mặt (nền móng · trụ cột · ma trận tuân thủ) + 12 trục R-REV, cổng, `UNVERIFIED`, điểm người đóng góp, ảnh chụp đầu tiên #576–#578 |
 | [30-PHAN-TICH-CAU-HOI-MO](30-PHAN-TICH-CAU-HOI-MO.md) | phương án + đề xuất cho Q040-1..6, số đo thêm trên GitHub |
+| [35-MAIN-SACH-SELFCHECK](35-MAIN-SACH-SELFCHECK.md) <!-- [2026-11-22 10:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10: main sạch selfcheck --> | B10: đưa selfcheck trên `main` về ĐẠT (27 check, 709 phát hiện) — điều kiện để có PR `VERIFIED` |
 | [40-MASTER-CHECKLIST](40-MASTER-CHECKLIST.md) | việc `S040-*`, ca `T040-*`, nhật ký |
 
 ## Đề bài (chủ dự án, 2026-11-22)

@@ -11,7 +11,11 @@
       "commits": 1
     }
   ],
+  "people": [
+    "hoanganh8389"
+  ],
   "reviews": 0,
+  "reviewers": [],
   "ci": {
     "ran": false,
     "reason": "billing-lock",

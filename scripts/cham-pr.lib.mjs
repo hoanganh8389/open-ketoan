@@ -172,21 +172,92 @@ export function verdictOf(axes, findings) {
 }
 
 /**
- * Khối "### Bằng chứng chạy máy" trong mô tả PR (PHASE-040 · 20 §4). Có mặt khi có tiêu đề; đúng khuôn khi có ít nhất
- * dòng kiem-chuan và selfcheck với kết quả ĐẠT / KHÔNG ĐẠT. Trả các kết quả đọc được để so khi chạy lại.
+ * Khối bằng chứng trong mô tả PR (PHASE-040 · 20 §4): tiêu đề "Bằng chứng chạy máy" (mẫu PR từ B3) hoặc khuôn cũ
+ * "== BẰNG CHỨNG ==". Đúng khuôn khi có dòng kiem-chuan **và** selfcheck với kết quả đã điền (ĐẠT / KHÔNG ĐẠT) và không còn
+ * chỗ trống của mẫu (`<sha>`, `ĐẠT | KHÔNG ĐẠT`). Dòng còn để trống của mẫu → kết quả null.
  */
 export function parseEvidence(body) {
   const text = String(body ?? '');
-  const at = text.search(/^#{2,4}\s*Bằng chứng chạy máy\s*$/m);
-  if (at < 0) return { present: false };
+  const head = text.search(/^#{2,4}\s*Bằng chứng chạy máy\s*$/m);
+  const old = text.search(/^==\s*BẰNG CHỨNG\s*==\s*$/m);
+  if (head < 0 && old < 0) return { present: false };
+  const at = head >= 0 ? head : old;
   const rest = text.slice(at).split('\n').slice(1);
   const end = rest.findIndex((l) => /^#{1,4}\s/.test(l));
   const block = (end < 0 ? rest : rest.slice(0, end)).join('\n');
-  const res = (re) => { const m = re.exec(block); return m ? (/KHÔNG ĐẠT/.test(m[0]) ? 'KHÔNG ĐẠT' : 'ĐẠT') : null; };
-  const kiemChuan = res(/kiem-chuan\.sh[^\n]*?(KHÔNG ĐẠT|ĐẠT)/);
-  const selfcheck = res(/selfcheck[^\n]*?(KHÔNG ĐẠT|ĐẠT)/);
-  const tests = /(\d+)\s*(?:test\s*)?qua\b/i.exec(block);
-  return { present: true, wellFormed: Boolean(kiemChuan && selfcheck), kiemChuan, selfcheck, testsPassed: tests ? Number(tests[1]) : null };
+  const lines = block.split('\n');
+  const res = (re) => {
+    const l = lines.find((x) => re.test(x));
+    if (!l || /ĐẠT\s*\|\s*KHÔNG ĐẠT/.test(l)) return null;
+    return /KHÔNG ĐẠT/.test(l) ? 'KHÔNG ĐẠT' : /ĐẠT/.test(l) ? 'ĐẠT' : null;
+  };
+  const kiemChuan = res(/kiem-chuan/);
+  const selfcheck = res(/selfcheck/);
+  const placeholder = /<sha>|ĐẠT\s*\|\s*KHÔNG ĐẠT/.test(block);
+  const tests = /(\d+)\s*(?:\/\s*\d+\s*)?(?:test\s*)?qua\b/i.exec(block);
+  return { present: true, wellFormed: Boolean(kiemChuan && selfcheck) && !placeholder, kiemChuan, selfcheck, testsPassed: tests ? Number(tests[1]) : null };
+}
+
+/** Khối bằng chứng điền sẵn SHA để dán vào mô tả PR (`cham-pr.mjs --mau-bang-chung`). */
+export function evidenceTemplate({ head, main }) {
+  return [
+    '## Bằng chứng chạy máy', '', '```text', '== BẰNG CHỨNG ==',
+    `head: ${head}   gộp main: ${main}`,
+    'bash scripts/kiem-chuan.sh                       → ',
+    'node tests/conformance/selfcheck.mjs --strict    → ',
+    '(cd apps/api && npx vitest run <tệp>)            → <qua>/<tổng> qua   CSDL: <tên CSDL test>',
+    'npm run typecheck                                → ',
+    'ghi chú:', '```', '',
+  ].join('\n');
+}
+
+/**
+ * Danh tính người đóng góp (D040-9): tài khoản GitHub của commit nếu có; không thì tra bảng bí danh
+ * `docs/reviews/tien-do/danh-tinh.json` (tên commit → tài khoản); không có nữa thì giữ tên. Trình tự động (bot, claude)
+ * không phải người đóng góp → null.
+ */
+export function identityOf({ login, name }, aliases = {}) {
+  const raw = login || aliases[name] || name || null;
+  if (!raw) return null;
+  if (/\[bot\]$|^claude$|^github-actions$/i.test(raw) || /claude/i.test(name ?? '') && !login) return null;
+  return aliases[raw] ?? raw;
+}
+
+/**
+ * Điểm theo người (PHASE-040 · 20 §6) — chỉ từ PR `VERIFIED`; cần ≥ 3 PR `VERIFIED` hoặc ≥ 4 tuần có PR `VERIFIED`,
+ * chưa đủ → "chưa đủ mẫu". Đo được hôm nay: 70 % trung bình điểm PR (trọng số độ khó bằng nhau cho tới khi người duyệt
+ * ghi `difficulty`) · 5 % review cho PR người khác. Lỗi lọt (15 %) và đóng việc khắc phục (10 %) chưa đo → ghi "chưa đo",
+ * điểm tổng chia lại trên phần đã đo. Không đếm commit, dòng mã, giờ.
+ */
+export function personScores(records) {
+  const people = new Map();
+  const get = (id) => people.get(id) ?? people.set(id, { id, prs: 0, verified: 0, scores: [], weeks: new Set(), reviewsGiven: 0, blocked: 0 }).get(id);
+  for (const r of records) {
+    for (const a of r.people ?? []) {
+      const p = get(a);
+      p.prs++;
+      if (r.release === 'BLOCKED') p.blocked++;
+      if (r.release === 'VERIFIED' && r.score != null) { p.verified++; p.scores.push(r.score * (r.difficulty ?? 1)); p.weeks.add(isoWeek(r.mergedAt)); }
+    }
+    for (const rv of r.reviewers ?? []) if (!(r.people ?? []).includes(rv)) get(rv).reviewsGiven++;
+  }
+  return [...people.values()].map((p) => {
+    const enough = p.verified >= 3 || p.weeks.size >= 4;
+    const avg = p.scores.length ? Math.round(p.scores.reduce((a, b) => a + b, 0) / p.scores.length) : null;
+    const reviewPart = Math.min(100, p.reviewsGiven * 20);
+    const total = enough && avg != null ? Math.round((0.7 * avg + 0.05 * reviewPart) / 0.75) : null;
+    return { id: p.id, prs: p.prs, verified: p.verified, weeks: p.weeks.size, avgScore: avg, reviewsGiven: p.reviewsGiven, blocked: p.blocked, total, state: enough ? 'đủ mẫu' : 'chưa đủ mẫu' };
+  }).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export function renderPeople(rows) {
+  const md = ['# Điểm theo người — CHỈ Ở MÁY, KHÔNG COMMIT (Q040-5)', '',
+    '> Sinh bởi `node scripts/cham-pr.mjs --nguoi` từ `docs/reviews/tien-do/PR-*.json`. Thư mục `.local/` bị `.gitignore` bỏ qua: repo công khai. Gửi riêng từng người; không dùng làm đánh giá nhân sự duy nhất (PHASE-040 · 20 §6).', '',
+    '| Người | PR | PR `VERIFIED` | Tuần có PR `VERIFIED` | TB điểm PR | Review cho người khác | PR `BLOCKED` | Điểm | Trạng thái |',
+    '|---|---|---|---|---|---|---|---|---|'];
+  for (const r of rows) md.push(`| ${r.id} | ${r.prs} | ${r.verified} | ${r.weeks} | ${r.avgScore ?? '—'} | ${r.reviewsGiven} | ${r.blocked} | ${r.total ?? '—'} | ${r.state} |`);
+  md.push('', 'Lỗi lọt (15 %) và đóng việc khắc phục (10 %) **chưa đo** — điểm chia lại trên phần đã đo (70 % điểm PR + 5 % review).', '');
+  return md.join('\n');
 }
 
 /** CI từ check-run: chạy thật khi có ít nhất một job xong với kết luận khác skipped / cancelled mà không phải bị khoá. */
