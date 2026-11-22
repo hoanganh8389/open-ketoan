@@ -12,6 +12,15 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### nginx chuyển Provisioning API `/_sites/` tới api (PHASE-039 B8b) <!-- [2026-11-23 01:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8b: mục CHANGELOG -->
+
+- **Thêm:** —
+- **Đổi:** —
+- **Sửa:** `docker/nginx.conf` thiếu `location /_sites/` → ở bản cài Docker, mọi lệnh Provisioning API (`/_sites/v1/…`) nhận về `index.html` của giao diện thay vì JSON; Site Manager không tạo được site. Gặp khi dựng `openketoan.com` (SITE_MODE=multi) trên VPS.
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** dựng lại ảnh `web` (`./scripts/cap-nhat.sh` tự làm).
+- **Bảo mật:** không đổi — Provisioning API vẫn chỉ trả lời trên `SITE_ADMIN_HOST` và cần khoá `prov_…`.
+
 ### Mật khẩu tính năng nguy hiểm không còn viết sẵn trong mã (PHASE-040 B10b) <!-- [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b: mục CHANGELOG (S040-23) -->
 
 - **Bảo mật:**
