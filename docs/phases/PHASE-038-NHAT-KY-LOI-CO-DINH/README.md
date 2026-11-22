@@ -60,7 +60,7 @@ Cần: **một chỗ cố định trên máy chủ** chứa log lỗi, và một
 ### 4.3 Cổng vào (container `web`)
 
 - `error_log /var/log/ketoan/web-loi.log warn;` và `access_log … if=$loi5xx` (map `$status ~ ^5`).
-- Khi api không trả lời: nginx trả **JSON** `{"error":{"code":"GATEWAY_UNAVAILABLE",…}}` qua `error_page 502 503 504` → giao diện có mã để hiện (F1). Mã mới vào `packages/contracts/src/errors.ts` theo R-ERR (sinh bằng `scripts/sinh-ma-loi.mjs`).
+- Khi api không trả lời: nginx trả **JSON** `{"error":{"code":"GATEWAY_UNAVAILABLE",…}}` qua `error_page 502 503` (không 504: báo cáo chạy quá `proxy_read_timeout` khi api vẫn sống — giao diện giữ câu riêng cho 504) → giao diện có mã để hiện (F1). Mã mới vào `packages/contracts/src/errors.ts` theo R-ERR (sinh bằng `scripts/sinh-ma-loi.mjs`).
 - Proxy aaPanel phía trước vẫn có thể tự trả 503 — sổ tay ghi cách xem log aaPanel (`/www/wwwlogs/<tên miền>.error.log`).
 
 ### 4.4 Lệnh gom `scripts/lay-log.sh`

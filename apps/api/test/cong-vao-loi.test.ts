@@ -49,7 +49,9 @@ describe('cổng vào: JSON GATEWAY_UNAVAILABLE', () => {
     for (const h of [/location \/api\/ /, /location = \/mcp /]) {
       const b = block(h);
       expect(b).toMatch(/proxy_pass \$ketoan_api;/);
-      expect(b).toMatch(/error_page 502 503 504 = @gateway_unavailable;/);
+      expect(b).toMatch(/error_page 502 503 = @gateway_unavailable;/);
+      // 504 (báo cáo chạy quá proxy_read_timeout, api vẫn sống) KHÔNG gộp vào "không kết nối được"
+      expect(b).not.toMatch(/error_page[^;]*504/);
     }
     expect(noComments).not.toMatch(/proxy_intercept_errors\s+on/);
     expect(noComments).toMatch(/resolver 127\.0\.0\.11/);

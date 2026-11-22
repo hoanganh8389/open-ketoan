@@ -35,7 +35,7 @@ export const ERROR_CATALOG: Record<ErrorCode, ErrorSpec> = {
   MODULE_DISABLED: { http: 403, category: 'platform', retryable: false, owner: 'platform', message: 'Phân hệ chưa bật cho đơn vị', hint: 'Chủ đơn vị bật phân hệ trong cấu hình.' },
   RATE_LIMITED: { http: 429, category: 'platform', retryable: true, owner: 'platform', message: 'Gọi quá nhiều lần', hint: 'Chờ theo header Retry-After rồi gửi lại, giãn nhịp gọi.' },
   NOT_READY: { http: 503, category: 'platform', retryable: true, owner: 'platform', message: 'Hệ thống chưa sẵn sàng', hint: 'Chờ vận hành áp migration hoặc khôi phục CSDL rồi thử lại.' },
-  // [2026-11-22 11:20 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6): nginx trả mã này (docker/nginx.conf, error_page 502 503 504) — thân JSON thay trang HTML
+  // [2026-11-22 11:20 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6): nginx trả mã này (docker/nginx.conf, error_page 502 503; không 504 — báo cáo chạy lâu) — thân JSON thay trang HTML
   GATEWAY_UNAVAILABLE: { http: 503, category: 'platform', retryable: true, owner: 'platform', message: 'Không kết nối được máy chủ phần mềm', hint: 'Thử lại sau ít phút. Lặp lại thì báo quản trị chạy ./scripts/lay-log.sh và gửi gói log (logs/goi-bao-loi-*.tar.gz).' },
   INTERNAL_ERROR: { http: 500, category: 'server', retryable: true, owner: 'core', message: 'Lỗi hệ thống', hint: 'Thử lại sau ít phút; lặp lại thì gửi requestId cho bộ phận hỗ trợ.' },
 };

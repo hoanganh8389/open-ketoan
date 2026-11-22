@@ -363,7 +363,7 @@
 | [S032-36](PHASE-032-INVENTORY-ENGINE-GIA-VON-KHO/40-MASTER-CHECKLIST.md#L45) | PHASE-032 | kho | Khoá thử hôm nay đủ năm bước (R-DIAG-14): periods/check + giá vốn tính tạm + closing/preview + kiểm sau kết c… | P0 | — |
 | [S032-39](PHASE-032-INVENTORY-ENGINE-GIA-VON-KHO/40-MASTER-CHECKLIST.md#L48) | PHASE-032 | kho | Bàn làm việc kế toán năm thẻ từ HT08 (Việc hôm nay · Khoá thử hôm nay · Kết quả từng tuần, tháng · Sổ theo dõ… | P1 | — |
 | [S035-3](PHASE-035-HT11-MODULES-MUC-DAT/40-MASTER-CHECKLIST.md#L12) | PHASE-035 | he-thong | B1 — docs/standard/modules.json (bizcitymodules@1, 12 × 8, ô liệt kê việc hiện có); R-FLOW-10 vào RULE-FLOW; … | P0 | — |
-| [S038-6](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L16) | PHASE-038 | — | nginx web: web-loi.log (errorlog + truy cập ≥ 500); errorpage 502 503 504 trả JSON GATEWAYUNAVAILABLE | — | — |
+| [S038-6](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L16) | PHASE-038 | — | nginx web: web-loi.log (errorlog + truy cập ≥ 500); errorpage 502 503 trả JSON (không 504 — báo cáo chạy lâu)… | — | — |
 | [S038-11](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L25) | PHASE-038 | — | Bộ bắt uncaughtException / unhandledRejection ghi fatal đồng bộ (R-LOG-3); version, commit trong mọi dòng (R-… | — | — |
 | [S039-8](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L17) | PHASE-039 | he-thong | B2 — bộ đệm trong bộ nhớ thêm khoá site (theo kết quả S039-3) + phép kiểm tĩnh chặn bộ đệm theo đơn vị thiếu … | P0 | — |
 | [S039-11](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L20) | PHASE-039 | he-thong | B4 — Site Provisioner: kttemplate, vai trò riêng kt<slug>owner / app (D039-19), CREATE DATABASE … TEMPLATE, đ… | P0 | — |
