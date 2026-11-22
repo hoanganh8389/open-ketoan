@@ -27,6 +27,20 @@
           "fp": "SC-DATA-1|db/migrations|gap:0015",
           "file": "db/migrations",
           "message": "hở số 0015"
+        },
+        {
+          "fp": "SC-DATA-1|db/migrations|gap:0171",
+          "file": "db/migrations",
+          "message": "hở số 0171",
+          "why": "0171_co_cau_linh_hoat.sql do PHASE-026 thêm (ae12937f) rồi revert cùng ngày 2026-11-20 (659cec2a); bản cài migrate trong khoảng đó đã ghi 0171 vào schema_migrations — không dùng lại số. 0172 chưa từng có (số giữ cùng đợt). Không đổi số migration đã chạy (R-DB-2).",
+          "ref": "PHASE-040 · B10d-a (S040-25), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-DATA-1|db/migrations|gap:0172",
+          "file": "db/migrations",
+          "message": "hở số 0172",
+          "why": "0171_co_cau_linh_hoat.sql do PHASE-026 thêm (ae12937f) rồi revert cùng ngày 2026-11-20 (659cec2a); bản cài migrate trong khoảng đó đã ghi 0171 vào schema_migrations — không dùng lại số. 0172 chưa từng có (số giữ cùng đợt). Không đổi số migration đã chạy (R-DB-2).",
+          "ref": "PHASE-040 · B10d-a (S040-25), 35-MAIN-SACH-SELFCHECK.md"
         }
       ]
     },
@@ -83,11 +97,6 @@
           "fp": "SC-DATA-3|db/migrations/0002_goc_danh_muc.sql|columns:cash_plans",
           "file": "db/migrations/0002_goc_danh_muc.sql",
           "message": "bảng nền cash_plans: 10 cột thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0002_goc_danh_muc.sql|columns:catalog_tombstones",
-          "file": "db/migrations/0002_goc_danh_muc.sql",
-          "message": "bảng nền catalog_tombstones: 3 cột thiếu COMMENT ON COLUMN"
         },
         {
           "fp": "SC-DATA-3|db/migrations/0002_goc_danh_muc.sql|columns:contract_schedules",
@@ -155,19 +164,9 @@
           "message": "bảng nền tax_codes: 6 cột thiếu COMMENT ON COLUMN"
         },
         {
-          "fp": "SC-DATA-3|db/migrations/0003_goc_cau_hinh_dinh_khoan.sql|columns:closing_rule_versions",
-          "file": "db/migrations/0003_goc_cau_hinh_dinh_khoan.sql",
-          "message": "bảng nền closing_rule_versions: 5 cột thiếu COMMENT ON COLUMN"
-        },
-        {
           "fp": "SC-DATA-3|db/migrations/0003_goc_cau_hinh_dinh_khoan.sql|columns:closing_rules",
           "file": "db/migrations/0003_goc_cau_hinh_dinh_khoan.sql",
           "message": "bảng nền closing_rules: 6 cột thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0003_goc_cau_hinh_dinh_khoan.sql|columns:payment_request_settings",
-          "file": "db/migrations/0003_goc_cau_hinh_dinh_khoan.sql",
-          "message": "bảng nền payment_request_settings: 2 cột thiếu COMMENT ON COLUMN"
         },
         {
           "fp": "SC-DATA-3|db/migrations/0003_goc_cau_hinh_dinh_khoan.sql|columns:posting_defaults",
@@ -273,11 +272,6 @@
           "fp": "SC-DATA-3|db/migrations/0006_goc_so_cai.sql|columns:ledger_entries",
           "file": "db/migrations/0006_goc_so_cai.sql",
           "message": "bảng nền ledger_entries: 13 cột thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0006_goc_so_cai.sql|columns:ledger_entry_sequences",
-          "file": "db/migrations/0006_goc_so_cai.sql",
-          "message": "bảng nền ledger_entry_sequences: 2 cột thiếu COMMENT ON COLUMN"
         },
         {
           "fp": "SC-DATA-3|db/migrations/0006_goc_so_cai.sql|columns:ledger_lines",
@@ -413,41 +407,6 @@
           "fp": "SC-DATA-3|db/migrations/0010_mua_hang.sql|column:purchase_policies.created_by",
           "file": "db/migrations/0010_mua_hang.sql",
           "message": "cột purchase_policies.created_by thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.owner_id",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.owner_id thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.kind",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.kind thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.file_name",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.file_name thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.mime",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.mime thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.size",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.size thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.note",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.note thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.uploaded_by",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.uploaded_by thiếu COMMENT ON COLUMN"
         },
         {
           "fp": "SC-DATA-3|db/migrations/0013_mat_hang_ncc_gia_mua.sql|column:supplier_products.sku",

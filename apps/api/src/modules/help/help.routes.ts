@@ -204,6 +204,7 @@ export async function helpRoutes(app: FastifyInstance): Promise<void> {
   r.get('/api/v1/help/place', { preHandler: read, schema: { tags, summary: 'Thẻ hướng dẫn đang gắn ở một màn / hộp thoại', querystring: z.object({ key: keySchema }) }, handler: async (req) => ok(await helpService.place(authOf(req), req.query.key)) });
   r.get('/api/v1/help/cards', { preHandler: read, schema: { tags, summary: 'Danh sách thẻ hướng dẫn' }, handler: async (req) => ok(await helpService.cards(authOf(req))) });
   r.get('/api/v1/help/export', { preHandler: read, schema: { tags, summary: 'Xuất gói JSON thẻ hướng dẫn + nơi gắn (mang sang máy chủ khác)' }, handler: async (req) => ok(await helpService.exportPackage(authOf(req))) });
+  // @bizcity-route: chỉ đọc — xem trước gói thẻ hướng dẫn (thêm / ghi đè / không đổi), không ghi; quyền đọc hướng dẫn
   r.post('/api/v1/help/package/preview', { preHandler: read, bodyLimit: 100 * 1024 * 1024, schema: { tags, summary: 'Xem trước nhập gói thẻ hướng dẫn: thêm / ghi đè / không đổi, nơi gắn đổi', body: z.object({ package: pkgSchema }) },
     handler: async (req) => ok(await helpService.previewPackage(authOf(req), req.body.package)) });
   r.get('/api/v1/help/cards/:id', { preHandler: read, schema: { tags, summary: 'Một thẻ hướng dẫn', params: idParam }, handler: async (req) => ok(await helpService.card(authOf(req), req.params.id)) });

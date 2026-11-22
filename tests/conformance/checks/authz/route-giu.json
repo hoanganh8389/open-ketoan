@@ -38,6 +38,10 @@
     { "route": "POST /api/v1/setup/sample-tenant", "class": "quyen", "$comment": "[2026-11-17 09:15 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-7 B5b (PHASE-036 · 00 §15): tạo Công ty Mẫu (seed của Kernel) rồi nạp gói chạy nền bằng AuthContext chủ đơn vị mẫu — mỗi bản ghi có bằng chứng của action con" },
     { "route": "POST /api/v1/purchase/demo/seed", "class": "quyen" },
     { "route": "POST /api/v1/purchase/demo/warehouses", "class": "quyen" },
-    { "route": "POST /api/v1/purchase/demo/clear", "class": "quyen" }
+    { "route": "POST /api/v1/purchase/demo/clear", "class": "quyen" },
+    { "route": "POST /api/v1/help/package/preview", "class": "quyen", "$comment": "[2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-ACT-1)" },
+    { "route": "POST /api/v1/inventory/costing/import-check", "class": "quyen", "$comment": "[2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-ACT-1)" },
+    { "route": "POST /api/v1/posting/scheme/preview", "class": "quyen", "$comment": "[2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-ACT-1)" },
+    { "route": "POST /api/v1/validation-log/form", "class": "tu-phuc-vu", "$comment": "[2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-ACT-1)" }
   ]
 }
