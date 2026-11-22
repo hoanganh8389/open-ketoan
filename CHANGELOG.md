@@ -33,6 +33,18 @@ Mỗi bản ghi đủ sáu mục:
 - **Đổi:** —
 - **Thay đổi định khoản:** —
 
+### Hồ sơ in qua action; ngoại lệ nhật ký JSONL; công cụ đối chiếu định khoản là của Kernel (PHASE-040 B10c-2) <!-- [2026-11-23 02:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-2: mục CHANGELOG (S040-24) -->
+
+- **Đổi:**
+  - Ghi / bỏ hồ sơ in (`PUT` / `DELETE /api/v1/print-profile`) chạy qua action `core.print-profile.save` / `core.print-profile.delete`. Đường, đầu vào và kết quả giữ nguyên; mỗi lần ghi có thêm biên nhận bằng chứng.
+  - `cli/doi-chieu-dinh-khoan.ts` được xếp là công cụ của Kernel (lớp K), theo quyết định của chủ dự án.
+  - Nhật ký kiểm HT19 và nhật ký vận hành tiếp tục ghi ra tệp JSONL (`core/run-log.ts`), theo quyết định của chủ dự án. Đây là ngoại lệ hẹp của STD-EVD-4, ghi ở `BIZCITY-EVIDENCE-v1`. Bằng chứng nghiệp vụ vẫn nằm ở bảng.
+- **Thêm:** —
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
 ### Ranh giới phần của Lõi (PHASE-040 B10c-lõi) <!-- [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi: mục CHANGELOG (S040-24) -->
 
 - **Sửa:**
