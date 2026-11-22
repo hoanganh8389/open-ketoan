@@ -1,4 +1,5 @@
 -- [2026-11-22 12:37 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2a (ADR-0036, D039-2): Site Registry trong database điều khiển — sites, site_domains
+-- [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d: chú thích cột slug bỏ mã R-SLUG-1 (luật của repo bizcity-open-setup, không định nghĩa ở đây — SC-CON-5); migration chưa phát hành
 -- Database ĐIỀU KHIỂN (CONTROL_DATABASE_URL), KHÔNG phải database của một site: thư mục migration riêng, không lẫn db/migrations.
 -- Mật khẩu vai trò của site KHÔNG nằm ở bảng này ở B2a (thêm mã hoá ở B4, D039-19).
 
@@ -23,7 +24,7 @@ CREATE TABLE IF NOT EXISTS sites (
 
 COMMENT ON TABLE sites IS 'Site Registry (ADR-0036): một dòng một site = một database PostgreSQL. Open Kế Toán là chủ bảng này (R-SITE-7).';
 COMMENT ON COLUMN sites.id IS 'Mã site (ULID), dùng trong vé đăng nhập (claim sid) và Provisioning API';
-COMMENT ON COLUMN sites.slug IS 'Tên ngắn của site, theo R-SLUG-1; tên database dựng từ đây ở B4';
+COMMENT ON COLUMN sites.slug IS 'Tên ngắn của site (chữ thường, số, gạch nối; 3–30 ký tự); tên database dựng từ đây ở B4';
 COMMENT ON COLUMN sites.status IS 'Trạng thái: provisioning, active, suspended, upgrading, migration_failed, deleted. Chỉ active được phục vụ đầy đủ';
 COMMENT ON COLUMN sites.db_host IS 'Máy chủ PostgreSQL của site';
 COMMENT ON COLUMN sites.db_name IS 'Tên database của site; chỉ chữ thường, số, gạch dưới';

@@ -72,6 +72,9 @@ export const LAYER_MAP = [
   // [2026-11-03 12:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W5 (SC-LAYER-2): cổng của Platform
   ['core/ports.ts', 'P', 'module-sdk'],
   ['db/module-db.ts', 'P', 'data'],
+  // [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d: bộ định tuyến CSDL theo site và Site Registry (ADR-0036)
+  ['db/site.ts', 'P', 'data'],
+  ['db/site-registry.ts', 'P', 'data'],
   ['cli/', 'P', 'cli'],
   // Khoá có tiền tố gốc (packages/…) so với đường dẫn đầy đủ — gói có tên tệp trùng gói khác (index.ts của Kernel là K).
   ['packages/module-sdk/src/', 'P', 'module-sdk'],
