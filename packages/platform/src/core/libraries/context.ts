@@ -1,5 +1,6 @@
 // @bizcity-layer P bizcity.config
 // [2026-11-09 11:00 AM Johnny Chu - Chu Hoàng Anh] PHASE-030 — S030-51a (B5a, PHASE-030 · 26 §4.1 ①): ctx.libraries trong action — validate / require theo thư viện dùng chung, đã áp cấu hình đơn vị; ghi bằng chứng, đếm sử dụng, cảnh báo qua ctx.meta
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * `ctx.libraries` của action (bizcity_action@1 1.4.0-draft). Cùng bộ kiểm với POST /api/v1/libraries/:id/validate:
  *
@@ -50,7 +51,7 @@ export function moduleLibraryDecls(moduleKey: string): LibraryDecl[] {
     try {
       const m = JSON.parse(readFileSync(file, 'utf8')) as { libraries?: LibraryDecl[] };
       if (Array.isArray(m.libraries)) out = m.libraries.filter((d) => d && typeof d.id === 'string');
-    } catch { /* manifest hỏng đã bị bộ kiểm khởi động / SC-MOD chặn; ở đây coi như không khai */ }
+    } catch { /* nuot-loi: manifest hỏng đã bị bộ kiểm khởi động / SC-MOD chặn; ở đây coi như không khai */ }
   }
   declCache.set(k, out);
   return out;
@@ -133,5 +134,6 @@ export function makeLibraryContext(deps: LibraryContextDeps): ActionLibraries {
 /** Ghi bộ đếm sử dụng khi đủ 30 giây / 200 dòng (SC-EVT-1: không hẹn giờ — gom theo lượt). Lỗi ghi: bỏ lô, không làm hỏng action. */
 export async function flushLibraryUsageIfDue(db: Db): Promise<void> {
   if (!shouldFlush()) return;
+  // nuot-loi: bộ đếm dùng thư viện là số quan sát; lượt ghi sau ghi tiếp, không làm hỏng yêu cầu
   await flushLibraryUsage(db).catch(() => undefined);
 }

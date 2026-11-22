@@ -1,5 +1,6 @@
 // @bizcity-layer P core
 // [2026-11-18 Nguyễn Văn Thủy] Nhật ký vận hành dạng JSONL — không tạo bảng cho lịch sử / lượt chạy (đóng góp)
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * Nhật ký vận hành chung: TỆP JSONL, không bảng.
  *   <DATA_DIR>/nhat-ky/<luồng>/<đơn vị>/<yyyy-mm>.jsonl — mỗi dòng { id, at, tenantId, data }, chỉ ghi thêm.
@@ -45,6 +46,7 @@ export function appendRunLog<T>(stream: string, tenantId: string, data: T, at?: 
     await appendFile(path.join(dir, `${entry.at.slice(0, 7)}.jsonl`), `${JSON.stringify(entry)}\n`, 'utf8');
     return entry;
   });
+  // nuot-loi: hàng đợi chỉ giữ thứ tự ghi; lỗi của lượt đã trả cho người gọi qua `run`
   queue = run.catch(() => undefined);
   return run;
 }
@@ -69,7 +71,7 @@ export async function readRunLog<T = Record<string, unknown>>(stream: string, op
         try {
           const e = JSON.parse(line) as RunLogEntry<T>;
           if (!sinceIso || e.at >= sinceIso) out.push(e);
-        } catch { /* dòng hỏng */ }
+        } catch { /* nuot-loi: dòng hỏng — bỏ qua, đọc tiếp các dòng khác */ }
       }
     }
   }

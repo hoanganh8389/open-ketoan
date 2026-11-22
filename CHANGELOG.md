@@ -12,6 +12,24 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Nhật ký lỗi cố định của bản cài (PHASE-038, luật R-LOG) <!-- [2026-11-22 10:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5: mục CHANGELOG của cả phase (S038-10) -->
+
+- **Thêm:**
+  - Thư mục `logs/` trong thư mục cài: `logs/api/`, `logs/db-migrate/`, `logs/web/`, `logs/web-client/`, mỗi ngày một tệp `<YYYY-MM-DD>.log` (giờ Việt Nam), giữ 30 ngày, cả thư mục ≤ 200 MB.
+  - Lỗi khởi động ghi một dòng có `reason` (`MIGRATION_PENDING`, `DB_UNREACHABLE`, …) và cách sửa.
+  - `./scripts/lay-log.sh` gom một gói gửi người sửa (che giá trị bí mật của `.env`).
+  - Cổng vào trả JSON `GATEWAY_UNAVAILABLE` khi api không trả lời; giao diện hiện một khay "Không kết nối được máy chủ phần mềm" và tự thử lại.
+  - Màn gặp lỗi lập trình hiện khung báo lỗi có mã tra cứu thay màn trắng; lỗi giao diện gửi về `logs/web-client/`.
+  - Bộ kiểm SC-LOG-1..3, SC-OBS-3.
+- **Đổi:**
+  - Log có `version` / `commit`, dấu vân lỗi `errFp`, che 19 loại trường nhạy cảm.
+  - Lỗi subscriber vào log có stack và `traceId`.
+  - nginx phân giải tên api lúc chạy.
+- **Sửa:** api chết sau cổng vào không còn để lại "INTERNAL_ERROR không mã" và không còn trống log (sự cố go-live 2026-11-21).
+- **Thay đổi định khoản:** không.
+- **Nâng cấp cần làm:** không bắt buộc — `./scripts/cap-nhat.sh` dựng lại là có (tự đặt `BIZCITY_GIT_SHA`). Muốn để log chỗ khác: đặt `LOG_HOST_DIR` trong `.env`. Tệp kiểu cũ ở gốc `logs/` (nếu có) tự xoá sau 30 ngày.
+- **Bảo mật:** log không chứa mật khẩu, token, thân yêu cầu, MST / SĐT / email cá nhân, số tài khoản (R-LOG-4); gói `lay-log.sh` không chứa giá trị `.env`; route lỗi giao diện công khai nhưng khuôn chặt, che dữ liệu, giới hạn nhịp.
+
 ### Vận hành: cập nhật trên máy hay lỗi Docker overlay2 busy (DEPLOY) <!-- [2026-11-21 01:55 PM Johnny Chu - Chu Hoàng Anh] DEPLOY — scripts/cap-nhat-cpanel.sh + docs/ops/DEPLOY.md mục 5 -->
 
 - **Thêm:** `scripts/cap-nhat-cpanel.sh`: cập nhật không để Compose xoá/tạo lại `web` (container web chạy ngoài Compose, tên theo thời điểm; gỡ bản cũ theo kiểu cố gắng). `docs/ops/DEPLOY.md` mục 5: triệu chứng, nguyên nhân, cách dùng.

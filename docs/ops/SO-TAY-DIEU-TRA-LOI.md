@@ -10,6 +10,8 @@ Sổ tay này trả lời một câu: **có lỗi thì bắt đầu nhìn ở đ
 ## 0. Trước khi bắt đầu
 
 ### 0.0 Nhận gói log từ bản cài của khách
+
+> Khuôn từng trường, lệnh gom theo `errFp`, đổi khung giao diện qua source map, quy trình giao cho trợ lý AI: [DOC-LOG-SUA-LOI](DOC-LOG-SUA-LOI.md) <!-- [2026-11-22 10:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 -->.
 <!-- [2026-11-21 08:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): §0.0 đọc gói lay-log -->
 
 Bản cài thật thường **không** bật bộ giám sát. Người vận hành chạy `./scripts/lay-log.sh` và gửi `goi-bao-loi-<giờ>.tar.gz`. Giải nén, đọc theo thứ tự:

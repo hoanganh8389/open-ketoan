@@ -3,6 +3,7 @@
 // [2026-10-30 09:23 PM Johnny Chu - Chu Hoàng Anh] PHASE-007 — cô lập đơn vị bằng RLS.
 // [2026-11-01 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — dời từ apps/api/src/core/request-context.ts sang packages/platform (@bizcity/platform, D010-7 chặng 2); import tương đối viết lại theo chỗ mới
 // [2026-11-21 09:23 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B1 (ADR-0036): trường siteId — site của yêu cầu; pool CSDL chọn database theo trường này (db/site.ts)
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * Ngữ cảnh của yêu cầu đang chạy (AsyncLocalStorage): mã yêu cầu + mã tương quan, để bằng chứng (audit_logs.correlation_id)
  * và sự kiện miền (event_outbox.correlation_id) tự gắn mà không phải truyền qua từng hàm (C-8, bizcity_event@1 §3).
@@ -66,7 +67,7 @@ export function registerRequestContext(app: FastifyInstance): void {
     reply.header('x-correlation-id', correlationId);
     const wb = req.headers['x-chi-nhanh'];
     let workBranch: string | undefined;
-    try { const x = decodeURIComponent(String(Array.isArray(wb) ? wb[0] : wb ?? '')).trim(); if (/^[A-Za-z0-9._-]{1,64}$/.test(x)) workBranch = x; } catch { /* header sai dạng: bỏ qua */ }
+    try { const x = decodeURIComponent(String(Array.isArray(wb) ? wb[0] : wb ?? '')).trim(); if (/^[A-Za-z0-9._-]{1,64}$/.test(x)) workBranch = x; } catch { /* nuot-loi: header chi nhánh sai dạng — bỏ qua, như không gửi */ }
     const base: RequestContext = { requestId: String(req.id), correlationId, ...(workBranch ? { workBranch } : {}) };
     if (siteMode() === 'single') {
       store.run(base, done);

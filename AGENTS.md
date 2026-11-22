@@ -51,6 +51,8 @@ Dự án: **Bizcity Core Framework** (open-ketoan) — hạ tầng ứng dụng 
 - **Chọn mức:** người dùng nhập sai = `info` (không phải lỗi hệ thống); đã lùi được = `warn`; cần người sửa = `error`; tiến trình sắp chết = `fatal`.
 - **Nhật ký lỗi cố định** `logs/<dịch vụ>/<YYYY-MM-DD>.log` của bản cài (một ngày một tệp, giữ 30 ngày, ≤ 200 MB — R-LOG-9) chỉ do logger của Platform ghi; không tự `appendFile` tệp log riêng.
 - R-LOG-1..4 là **chặn** khi rà; R-LOG-5..11 là cảnh báo. Mã cũ chưa theo luật: không bắt sửa trong PR không liên quan, ghi nợ vào PHASE-038 (S038-14). Chi tiết: [RULE-LOG](docs/rules/RULE-LOG.md), [PHASE-038](docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/README.md).
+- **Nhận log để sửa mã** (người dùng dán dòng log, gửi gói `goi-bao-loi-*.tar.gz`, hay hỏi "lỗi này là gì") <!-- [2026-11-22 10:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5: dev và AI của dev phải hiểu cơ chế log và phân tích được log (chủ dự án 2026-11-22) -->: đọc theo [docs/ops/DOC-LOG-SUA-LOI.md](docs/ops/DOC-LOG-SUA-LOI.md) — lấy `commit` rồi đọc mã ở đúng commit đó; gom theo `errFp`; đi từ khung stack đầu tiên trong `apps/` · `packages/` (giao diện: đổi `frames` qua source map); đọc `err.cause`, `err.code` / `err.constraint`; sửa **nguyên nhân** kèm test tái hiện, ghi `errFp` vào PR. Không xin `.env` / dữ liệu khách; không "hết lỗi" bằng catch rỗng hay hạ mức log.
+- **Bộ kiểm:** SC-LOG-1 (log giữ đối tượng lỗi, không `console.*`), SC-LOG-2 (không nuốt lỗi thiếu `nuot-loi:`), SC-LOG-3 (source map), SC-OBS-3 (compose có `logging:` + `logs/`). Mã cũ là nợ trong baseline — không được thêm.
 
 ### Enterprise Continuity (ADR-0028 — chấp nhận về nguyên tắc 2026-11-05) <!-- [2026-11-05 09:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-029 — luật ECP cho agent -->
 

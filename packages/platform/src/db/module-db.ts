@@ -1,5 +1,6 @@
 // @bizcity-layer P data
 // [2026-11-02 04:55 PM Johnny Chu - Chu Hoàng Anh] PHASE-011 — 3.10 (ADR-0011 D4): CSDL theo module — schema mod_<key>, vai trò mod_<key>_owner (chạy migration) / mod_<key>_rw (đọc ghi lúc chạy), trình chạy migration module bằng SET LOCAL ROLE, kiểm RLS sau migration
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * CSDL THEO MODULE (ADR-0011 D4; PHASES 3.10). Chặn bằng QUYỀN PostgreSQL, không bằng phân tích SQL.
  *
@@ -37,6 +38,7 @@ export async function asModuleRole<T>(trx: Db, key: string, fn: (tx: Db) => Prom
   try {
     return await fn(trx);
   } finally {
+    // nuot-loi: trả vai trò trong finally — giao dịch đã hỏng thì SET LOCAL cũng hỏng, lỗi gốc vẫn được ném
     await sql`SET LOCAL ROLE ${sql.id(prev)}`.execute(trx).catch(() => {});
   }
 }
@@ -157,6 +159,7 @@ export async function runModuleMigrations(key: string, dir: string, opts: { read
     }
     return applied;
   } finally {
+    // nuot-loi: nhả khoá trong finally — kết nối đóng ngay sau cũng nhả khoá; lỗi gốc vẫn được ném
     await client.query('SELECT pg_advisory_unlock(727002)').catch(() => {});
     await client.end();
   }

@@ -1,5 +1,6 @@
 // @bizcity-layer K kernel/intake
 // [2026-11-02 07:05 PM Johnny Chu - Chu Hoàng Anh] PHASE-021 — W1 (2.17, ADR-0014 D3, R-INTAKE-3/4/5): bộ tiền kiểm L1–L4 — gom MỌI phát hiện IN-* của một chứng từ bằng chính luật cửa nạp (zod khuôn nạp, totalsProblems, findBranch, ownDocument, phiên bản); chỉ đọc
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * TIỀN KIỂM CHỨNG TỪ (ADR-0014 D3; RULE-INTAKE). Trả MỌI phát hiện của chứng từ — không dừng ở lỗi đầu — kèm điểm 0–100.
  * CHỈ ĐỌC: không ghi sự việc, không ghi bể chờ (W2), không ghi sổ.
@@ -119,7 +120,7 @@ export async function preflight(trx: Db, auth: AuthContext, raw: unknown, opts: 
   if (doc) {
     try {
       for (const p of totalsProblems(doc)) findings.push(intakeFinding(p.code, p.path, { got: p.message }));
-    } catch { /* phần đọc được không đủ để cộng — L1 đã báo */ }
+    } catch { /* nuot-loi: phần đọc được không đủ để cộng — L1 đã báo */ }
     const docLines = (doc as { lines?: unknown }).lines;
     if (Array.isArray(docLines) && docLines.length && typeof docLines[0] === 'object' && 'taxCode' in (docLines[0] as object)) {
       const lines = docLines as unknown as { taxCode?: string; amountBeforeTax?: number; taxAmount?: number; unitPrice?: number; qty?: number; discount?: number }[];

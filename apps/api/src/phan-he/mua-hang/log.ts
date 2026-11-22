@@ -1,4 +1,5 @@
 // @bizcity-layer D modules/mua-hang
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * Nhật ký mua hàng — TỆP JSONL, không dùng bảng: <DATA_DIR>/mua-hang/<tenantId>/<yyyy-mm>.jsonl, mỗi dòng một sự kiện
  * { ts, event, docNo, user, data }. Chỉ ghi thêm (append); đọc lại theo tháng. Duyệt ngoại lệ ghi thêm audit_logs.
@@ -22,6 +23,7 @@ export function logEvents(tenantId: string, rows: Omit<LogRow, 'ts'>[]): Promise
     await mkdir(dir, { recursive: true });
     await appendFile(path.join(dir, `${ts.slice(0, 7)}.jsonl`), rows.map((r) => JSON.stringify({ ts, ...r })).join('\n') + '\n', 'utf8');
   });
+  // nuot-loi: hàng đợi chỉ giữ thứ tự ghi; lỗi của lượt đã trả cho người gọi qua `run`
   queue = run.catch(() => undefined);
   return run as Promise<void>;
 }
@@ -48,7 +50,7 @@ export async function readLog(tenantId: string, f: { from?: string; to?: string;
         const r = JSON.parse(line) as LogRow;
         const day = vnDay(r.ts);
         if ((!f.event || r.event === f.event) && (!from || day >= from) && (!to || day <= to)) rows.push(r);
-      } catch { /* dòng hỏng */ }
+      } catch { /* nuot-loi: dòng hỏng — bỏ qua, đọc tiếp các dòng khác */ }
     }
   }
   return rows.sort((a, b) => b.ts.localeCompare(a.ts));

@@ -932,6 +932,35 @@
           ]
         }
       }
+    },
+    {
+      "root": "nhat-ky-loi-bad",
+      "mode": "repo",
+      "$comment": "[2026-11-22 09:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5: bộ kiểm R-LOG tự kiểm",
+      "checks": {
+        "SC-LOG-1": {
+          "findings": 2
+        },
+        "SC-LOG-2": {
+          "findings": 2
+        },
+        "SC-LOG-3": {
+          "findings": 2,
+          "keys": [
+            "thieu-source-maps",
+            "tsconfig-sourcemap"
+          ]
+        },
+        "SC-OBS-3": {
+          "findings": 4,
+          "keys": [
+            "logging:api",
+            "mount:api",
+            "mount:web",
+            "thieu:db-migrate"
+          ]
+        }
+      }
     }
   ]
 }
