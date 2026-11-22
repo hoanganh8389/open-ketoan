@@ -12,6 +12,17 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Provisioning API cho trang dùng thử bizcity-web (PHASE-039 B8) <!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8: mục CHANGELOG (S039-21, S039-22) -->
+
+- **Thêm:**
+  - Lệnh `POST /_sites/v1/sites/{siteId}/owner/reset-password` (việc `reset_owner_password`): mật khẩu ban đầu mới cho email chủ site ở mọi đơn vị của site, thu mọi phiên đang mở (`session_version + 1`). Mật khẩu trả một lần ở `GET /jobs/{jobId}` như lúc tạo site. Site phải đang chạy.
+  - Tạo site với `sample: true` có thêm Công ty mẫu (PHASE-036) trong site mới, cùng email và mật khẩu ban đầu với chủ site; bước `load_sample`.
+- **Đổi:** việc `provision` báo bước thật khi chạy (trước đây cả bốn bước cùng "đang chạy" rồi cùng "xong"), phía gọi hiện được tiến trình.
+- **Sửa:** `externalRef` của lệnh tạo site giờ được lưu vào site (trước đây nhận rồi bỏ, `GET /sites` trả `null`); `sample` trước đây nhận rồi bỏ.
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** migration điều khiển `0007_owner_reset.sql` tự chạy ở lần gọi Provisioning API đầu tiên (chỉ nới danh sách loại việc). Hợp đồng `bizcity_site_provisioning@1` chỉ thêm, không đổi cái cũ.
+- **Bảo mật:** mật khẩu mới chỉ ở `site_jobs.result_enc` (mã hoá) tới lần đọc đầu; không ghi nhật ký.
+
 ### Bộ chấm tiến độ theo PR (PHASE-040 B2) <!-- [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B2: mục CHANGELOG (S040-6, 7) -->
 
 - **Thêm:**

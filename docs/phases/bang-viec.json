@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 208
+      "count": 206
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 361
+      "count": 363
     }
   ],
   "items": [
@@ -10218,8 +10218,8 @@
       "phase": "PHASE-039",
       "title": "B8 — trang dùng thử bizcity-web (PHASE-02 của bizcity-web): createSiteWithOwner lưu externalRef; sample: true → tạo Công ty mẫu (PHASE-036 createSampleTenant, …",
       "priority": "P1",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -10233,8 +10233,8 @@
       "phase": "PHASE-039",
       "title": "B8 — lệnh POST /sites/v1/sites/{siteId}/owner/reset-password (việc resetownerpassword): mật khẩu ban đầu mới cho email chủ site ở mọi đơn vị của site, sessionv…",
       "priority": "P1",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"

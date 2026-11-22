@@ -15,7 +15,8 @@
  *   GET    /_sites/v1/sites/:siteId/backups          các bản sao lưu đã kiểm
  *   POST   /_sites/v1/sites/:siteId/restore          khôi phục → 202 { jobId }              thân: { backupId }
  *   DELETE /_sites/v1/sites/:siteId                  xoá mềm (cần đang khoá + sao lưu ≤ 24 giờ) → 202 { jobId }
- *   GET    /_sites/v1/jobs/:jobId                    trạng thái việc; việc tạo site xong: lần đọc đầu kèm mật khẩu ban đầu của chủ site
+ *   POST   /_sites/v1/sites/:siteId/owner/reset-password  mật khẩu ban đầu mới cho chủ site, thu mọi phiên → 202 { jobId }   // [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-22)
+ *   GET    /_sites/v1/jobs/:jobId                    trạng thái việc; việc tạo site / đặt lại mật khẩu xong: lần đọc đầu kèm mật khẩu ban đầu
  *
  * Chỉ trả lời khi SITE_MODE=multi VÀ tên miền của yêu cầu = SITE_ADMIN_HOST; khác đi là 404 như đường không tồn tại.
  * Mọi lệnh ghi cần header Idempotency-Key. Thân phản hồi theo hợp đồng (không bọc { ok, data }); lỗi theo khuôn chung.
@@ -30,7 +31,7 @@ import { normalizeHost } from '@bizcity/platform/db/site-registry';
 // [2026-11-22 02:25 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7b-1: bộ thu số đo bizcity_sites / bizcity_sites_attention (mỗi 5 phút, chỉ chế độ multi)
 import { metrics, registerCollector } from '@bizcity/platform/core/metrics';
 import {
-  addDomain, authenticateKey, getJob, getSite, health, listSiteBackups, listSitesDto, PAGE_MAX, ProvisionHttpError, removeDomain, startProvision, startSiteJob,
+  addDomain, authenticateKey, getJob, getSite, health, listSiteBackups, listSitesDto, PAGE_MAX, ProvisionHttpError, removeDomain, startOwnerReset, startProvision, startSiteJob,
 } from './provisioning.service.js';
 
 const tags = ['Provisioning API (nhiều site)'];
@@ -140,6 +141,13 @@ export async function provisioningRoutes(app: FastifyInstance): Promise<void> {
   r.post('/_sites/v1/sites/:siteId/resume', {
     config: { public: true }, schema: { tags, summary: 'Mở lại site → 202 { jobId }', params: siteParams },
     handler: handle(async (req, keyId, reply) => reply.code(202).send({ jobId: (await startSiteJob(keyId, idemOf(req), 'resume', siteIdOf(req))).jobId })),
+  });
+
+  // [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-22): trang dùng thử của bizcity-web — khách quên mật khẩu
+  // @bizcity-route: giao thức Provisioning API — đặt lại mật khẩu chủ site (bảng users của site, không ghi sổ)
+  r.post('/_sites/v1/sites/:siteId/owner/reset-password', {
+    config: { public: true }, schema: { tags, summary: 'Mật khẩu ban đầu mới cho chủ site → 202 { jobId }', params: siteParams },
+    handler: handle(async (req, keyId, reply) => reply.code(202).send({ jobId: (await startOwnerReset(keyId, idemOf(req), siteIdOf(req))).jobId })),
   });
 
   // @bizcity-route: giao thức Provisioning API — thêm tên miền của site (registry), không ghi sổ

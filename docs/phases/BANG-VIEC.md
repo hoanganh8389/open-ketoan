@@ -8,10 +8,10 @@
 | Đang làm | 6 |
 | Chờ merge | 0 |
 | Bị chặn | 31 |
-| Chưa ai nhận | 208 |
+| Chưa ai nhận | 206 |
 | Chờ đủ tín hiệu | 75 |
 | Hoãn | 3 |
-| Xong | 361 |
+| Xong | 363 |
 | **Tổng** | **684** |
 
 ## Theo phân hệ (R-FLOW-10)
@@ -26,7 +26,7 @@
 | chung-tu | 71 | 5 | 0 | 29 | 105 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 170 | 26 | 2 | 67 | 265 |
+| he-thong | 172 | 26 | 2 | 65 | 265 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
 ## Đang làm (6)
@@ -80,7 +80,7 @@
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 | [S040-20](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L29) | PHASE-040 | he-thong | Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ main — PR + 1 người duyệt, check bắt buộc sau khi C… | P0 | — |
 
-## Chưa ai nhận (208)
+## Chưa ai nhận (206)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -277,8 +277,6 @@
 | [S038-15](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L29) | PHASE-038 | — | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | — | — |
 | [S039-14](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L23) | PHASE-039 | he-thong | B5 — khoá bản quyền biz-… (D039-17): gắn khoá cho site, hỏi trạng thái ở bizcity-llm-router (bộ đệm 1 giờ), d… | P1 | — |
 | [S039-20](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L29) | PHASE-039 | he-thong | B7 — nghiệm thu T039-1..14 trên máy sạch; phối hợp Site Manager (repo bizcity-open-setup) tạo site thật | P0 | — |
-| [S039-21](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L30) | PHASE-039 | he-thong | B8 — trang dùng thử bizcity-web (PHASE-02 của bizcity-web): createSiteWithOwner lưu externalRef; sample: true… | P1 | — |
-| [S039-22](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L31) | PHASE-039 | he-thong | B8 — lệnh POST /sites/v1/sites/{siteId}/owner/reset-password (việc resetownerpassword): mật khẩu ban đầu mới … | P1 | — |
 | [S040-8](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L17) | PHASE-040 | he-thong | B3 — .github/pullrequesttemplate.md khối Bằng chứng chạy máy; nhan-viec.mjs kiem nhắc khi thiếu | P0 | — |
 | [S040-9](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L18) | PHASE-040 | he-thong | B3 — .mailmap gộp danh tính người đóng góp | P1 | — |
 | [S040-10](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L19) | PHASE-040 | he-thong | B9 — đếm bảng hai chế độ trong kiem-nang-cap.sh; sửa báo cáo 135 → 134; T040-34 | P0 | — |
@@ -381,6 +379,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (361)
+## Xong (363)
 
 Chỉ đếm; xem từng việc ở checklist của phase.
