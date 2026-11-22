@@ -16,6 +16,8 @@
  *   site list [--json]    các site trong Site Registry (docs/ops/NHIEU-SITE.md)
  *   site key-create --label "Site Manager" [--ips 1.2.3.4] [--json]
  *                         khoá prov_… gọi Provisioning API /_sites/v1 (in một lần)
+ *   site migrate (--all | --slug a,b) [--skip-backup] [--backup-dir …] [--json]
+ *                         nâng lược đồ database mẫu rồi từng site; site lỗi bị chặn riêng (PHASE-039 B3)
  *   ledger verify         lane diagnostics (SQL đọc sổ) ở mức strict — sổ có toàn vẹn không
  *   evidence verify --dir <DATA_DIR/bang-chung/<đơn vị>> [--json]
  *                         kiểm bản niêm phong bằng chứng không cần CSDL: băm tệp, băm từng dòng, manifest nối ngày (ADR-0030)
@@ -306,7 +308,8 @@ else if (cmd === 'module' && sub === 'check') moduleCheck(rest);
 else if (cmd === 'module' && sub === 'accounting-check') await moduleAccounting(rest);
 else if (cmd === 'module' && sub === 'list') out(sdkModules().join('\n') || '(chưa có module SDK nào trong modules/)');
 else if (cmd === 'migrate') migrate();
-else if (cmd === 'site' && (sub === 'create' || sub === 'list' || sub === 'key-create')) siteCmd(sub, rest);
+// [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: lệnh site migrate
+else if (cmd === 'site' && (sub === 'create' || sub === 'list' || sub === 'key-create' || sub === 'migrate')) siteCmd(sub, rest);
 else if (cmd === 'ledger' && sub === 'verify') ledgerVerify();
 else if (cmd === 'evidence' && sub === 'verify') await evidenceVerify(rest);
 else if (cmd === 'doctor') await doctor();

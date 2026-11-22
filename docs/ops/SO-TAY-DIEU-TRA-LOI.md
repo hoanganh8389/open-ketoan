@@ -17,7 +17,8 @@ Bản cài thật thường **không** bật bộ giám sát. Người vận hà
 | Tệp | Nhìn gì |
 |---|---|
 | `00-tom-tat.txt` | commit đang chạy; `docker compose ps -a`: `db-migrate Exited (1)` → lỗi nâng cấp CSDL, `api Restarting` → API chết khi khởi động; đĩa đầy |
-| `01-suc-khoe.txt` | `/health` và `/health/ready` qua cổng web: không trả lời / 502 = API không chạy; 503 `NOT_READY` = API chạy nhưng chưa sẵn sàng |
+| `01-suc-khoe.txt` | `/health` và `/health/ready` qua cổng web: 503 `GATEWAY_UNAVAILABLE` (JSON, từ bản có PHASE-038 B2) hoặc trang HTML 502 = API không chạy; 503 `NOT_READY` = API chạy nhưng chưa sẵn sàng <!-- [2026-11-22 12:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2: GATEWAY_UNAVAILABLE, web-loi.log --> |
+| `logs/web-loi.log` | cổng vào (nginx): mỗi lần trả mã ≥ 500 một dòng `<giờ> <mã> <phương thức> <đường dẫn> rid=… upstream=… ustatus=…` + `error_log` mức warn. `upstream=-` và "api could not be resolved" / "connect() failed" = API không chạy; `rid` = `requestId` người dùng thấy trên màn |
 | `logs/api-loi.log` | dòng `level ≥ 50`. Lỗi khởi động: `evt: bizcity.system.start_failed`, `reason` (`MIGRATION_PENDING`, `DB_UNREACHABLE`, `DB_AUTH_FAILED`, `ENV_INVALID`, `PORT_IN_USE`), `hint`. Lỗi 5xx: `reqId`, `err.stack` (trỏ tệp `.ts`) |
 | `logs/db-migrate.log` | khối mỗi lần chạy: `migrate_started` → dòng migration → `migrate_done` hoặc dòng `fatal` có tên tệp migration, mã PG |
 | `docker-*.log` | 2000 dòng cuối của từng dịch vụ (cả mức `info`), khi `logs/` chưa có (bản cài trước PHASE-038) |

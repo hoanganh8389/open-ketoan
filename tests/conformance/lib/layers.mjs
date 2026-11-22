@@ -77,6 +77,7 @@ export const LAYER_MAP = [
   ['db/site-registry.ts', 'P', 'data'],
   // [2026-11-22 10:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a: Site Provisioner
   ['db/site-provisioner.ts', 'P', 'data'],
+  ['db/site-migrate.ts', 'P', 'data'], // [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: Migration Runner theo site
   ['cli/', 'P', 'cli'],
   // Khoá có tiền tố gốc (packages/…) so với đường dẫn đầy đủ — gói có tên tệp trùng gói khác (index.ts của Kernel là K).
   ['packages/module-sdk/src/', 'P', 'module-sdk'],

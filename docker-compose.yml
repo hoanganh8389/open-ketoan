@@ -175,6 +175,9 @@ services:
     ports:
       # WEB_BIND=127.0.0.1 trên máy chủ thật: chỉ cho cổng vào (reverse proxy) cùng máy gọi tới.
       - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-8088}:80"
+    # [2026-11-22 11:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6): logs/web-loi.log của cổng vào, cùng thư mục với api-loi.log
+    volumes:
+      - ${LOG_HOST_DIR:-./logs}:/var/log/ketoan
 
 volumes:
   # Dữ liệu PostgreSQL (khoá chính id bigint tự tăng, từ 10/2026).
