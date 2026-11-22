@@ -31,11 +31,12 @@ export const REMEDY_ROLE_LABELS: Record<RemedyRole, string> = {
 const s = (code: string, path: string, label: string): ScreenRef => ({ code, path, label });
 
 /** Màn thao tác được phương án khắc phục dẫn tới. Đường dẫn phải có trong menu giao diện (SC-FIX-1). */
+// [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a (SC-FIX-1): ACC17 / ACC18 / ACC41 gộp vào Quy tắc hạch toán (04980b5e); DM02 chi nhánh ở Cơ cấu tổ chức; DM03 đối tượng chuyển sang Khách hàng — giữ mã, đổi đường
 export const SCREENS = {
   ACC14: s('ACC14', '/chung-tu', 'Định khoản tự động'),
-  ACC18: s('ACC18', '/cau-hinh/ly-do', 'Lý do – Tài khoản'),
-  ACC17: s('ACC17', '/cau-hinh/nhom-hach-toan', 'Mặt hàng – Tài khoản'),
-  ACC41: s('ACC41', '/cau-hinh/tai-khoan-ngam-dinh', 'Tài khoản ngầm định'),
+  ACC18: s('ACC18', '/cau-hinh/quy-tac-hach-toan', 'Quy tắc hạch toán'),
+  ACC17: s('ACC17', '/cau-hinh/quy-tac-hach-toan', 'Quy tắc hạch toán'),
+  ACC41: s('ACC41', '/cau-hinh/quy-tac-hach-toan', 'Quy tắc hạch toán'),
   ACC49: s('ACC49', '/nghiep-vu/tinh-gia-von', 'Tính giá vốn'),
   ACC6: s('ACC6', '/nghiep-vu/ket-chuyen', 'Kết chuyển lãi / lỗ'),
   ACC2: s('ACC2', '/cau-hinh/ky-ke-toan', 'Đóng / mở kỳ kế toán'),
@@ -53,8 +54,8 @@ export const SCREENS = {
   HT07: s('HT07', '/he-thong/ho-so-ke-toan', 'Hồ sơ kế toán'),
   HT08: s('HT08', '/he-thong/ban-danh-gia', 'Bàn đánh giá'),
   // [2026-11-02 11:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-021 — S021-26: thêm màn danh mục chi nhánh / đối tượng / mặt hàng cho phương án khắc phục mã tiền kiểm IN-*
-  DM02: s('DM02', '/danh-muc/chi-nhanh', 'Chi nhánh'),
-  DM03: s('DM03', '/danh-muc/doi-tuong', 'Đối tượng'),
+  DM02: s('DM02', '/danh-muc/so-do-to-chuc', 'Cơ cấu tổ chức (chi nhánh)'),
+  DM03: s('DM03', '/danh-muc/khach-hang', 'Khách hàng / Nhà cung cấp'),
   DM10: s('DM10', '/danh-muc/mat-hang', 'Danh mục mặt hàng'),
 } as const satisfies Record<string, ScreenRef>;
 

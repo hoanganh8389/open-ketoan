@@ -50,7 +50,7 @@ Thêm loại mới: viết một `NhapLoai` (trường + `run`) rồi thêm vào
 ## 6. Bổ sung: nhóm hàng
 
 - **Nhóm hàng** (nhóm Danh mục; nút *Nhập Excel* ở DM11): Mã nhóm, Tên nhóm, Nhóm cha (mã hoặc đúng tên), Mã ngắn, Theo dõi. Kiểm trên **cây sau nhập** (nhóm đang có + dòng trong tệp): tự làm cha chính mình, vòng lặp cha – con, độ dài mã ngắn theo cấp (2 / 3 / 1), trùng mã ngắn cùng cha; dòng cha lỗi lan lỗi xuống con.
-- Ghi theo cấp (cha trước con) qua `PUT /api/v1/item-classes/group/:code` (mới thêm `?new=1`); dòng cập nhật để trống Nhóm cha / Mã ngắn thì giữ nguyên.
+- Ghi theo cấp (cha trước con) qua `PUT /api/v1/item-classes/:kind/:code` (`kind` = `group`) (mới thêm `?new=1`); dòng cập nhật để trống Nhóm cha / Mã ngắn thì giữ nguyên.
 
 ## 7. Việc tiếp theo của mục này
 

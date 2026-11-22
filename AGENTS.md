@@ -70,7 +70,7 @@ Dự án: **Bizcity Core Framework** (open-ketoan) — hạ tầng ứng dụng 
 > 2. **Selfhost (ngoài bizcity):** "ưu tiên khóa chung cho cả mạng để người dùng có thể setup chuỗi nhiều cửa hàng dùng POS nhưng vẫn về 1 open-ketoan tương ứng mỗi tenant id = blog_id" — chủ chốt nghĩa (a): **một bản open-ketoan, một khoá chung (khoá cài đặt), mỗi blog là một tenant riêng**, mỗi cửa hàng sổ riêng trên cùng một máy kế toán. Một site = một cửa hàng = một tenant.
 > 3. **"Chỉ có luật mỗi book là 1 pháp nhân, không có pháp nhân theo tenant id."** Pháp nhân (tên, mã số thuế, loại pháp nhân, hồ sơ kế toán) là thuộc tính của **sổ (book)**. `tenant_id` chỉ là khoá kỹ thuật (cô lập dữ liệu, khoá API, RLS) — không dùng để xác định, đặt tên hay suy ra pháp nhân.
 >
-> Mô hình triển khai phải **khai rõ** (`TGS_ACC_DEPLOYMENT` → lựa chọn ở màn Cài đặt của bridge → một site), không đoán từ khoá đang có. Đặc tả: open-setup `docs/chuong-trinh/OKT/00-ADR-OKT-1.md` §0, `81`, `82`.
+> Mô hình triển khai phải **khai rõ** (`TGS_ACC_DEPLOYMENT` → lựa chọn ở màn Cài đặt của bridge → một site), không đoán từ khoá đang có. Đặc tả: open-setup [00-ADR-OKT-1.md](https://github.com/hoanganh8389/bizcity-open-setup/blob/main/docs/chuong-trinh/OKT/00-ADR-OKT-1.md) §0, `81`, `82`. <!-- [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a: SC-DOC-4, link tuyệt đối sang repo open-setup -->
 >
 > Làm việc chạm khoá API, tenant, hồ sơ kế toán / pháp nhân, kết nối open-pos → đọc [docs/rules/RULE-OPEN-POS-CONNECTION.md](docs/rules/RULE-OPEN-POS-CONNECTION.md) mục P-0 trước.
 
