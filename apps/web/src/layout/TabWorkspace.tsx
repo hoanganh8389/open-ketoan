@@ -15,6 +15,7 @@ import { Routes, useLocation, useNavigate, useNavigationType } from 'react-route
 import { X } from 'lucide-react';
 import type { MenuItem } from '@ketoan/contracts';
 import { pageRoutes } from '../pages';
+import { LoiManHinh } from '../components/LoiManHinh'; // [2026-11-22 05:05 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b: khung lỗi theo màn
 import { inFrame } from '@/lib/auth';
 import { MODULES } from './menu';
 import { GON_DEFS, groupHome, OLD_HOME_ALIASES } from './menu-gon';
@@ -176,7 +177,10 @@ export function TabWorkspace({ menu, strip }: { menu: MenuItem[]; strip?: ReactN
       {strip}
       {tabs.map((t) => (
         <div key={t.key} className="ws-panel" hidden={t.pathname !== location.pathname}>
-          <Routes location={{ pathname: t.pathname, search: t.search, hash: '', state: null, key: String(t.key) }}>{pageRoutes}</Routes>
+          {/* PHASE-038 B4b: một màn lỗi lập trình chỉ làm hỏng thẻ đó (khung báo lỗi có mã tra cứu), không trắng cả ứng dụng */}
+          <LoiManHinh man={t.pathname}>
+            <Routes location={{ pathname: t.pathname, search: t.search, hash: '', state: null, key: String(t.key) }}>{pageRoutes}</Routes>
+          </LoiManHinh>
         </div>
       ))}
       {menuAt && (
