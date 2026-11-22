@@ -148,8 +148,21 @@ export class EnvError extends Error {
   }
 }
 
+// [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a: docker compose chuyển biến nhiều site dạng ${VAR:-} → chuỗi rỗng; rỗng = chưa đặt (không thì .url() / .min(32) / enum làm hỏng bản cài một công ty)
+const SITE_VARS = ['SITE_MODE', 'CONTROL_DATABASE_URL', 'SITE_TEMPLATE_DB', 'SITE_SECRET_KEY', 'PROVISION_DATABASE_URL', 'SITE_APP_PARENT_ROLE', 'SITE_ADMIN_HOST', 'SITE_BACKUP_DIR'] as const;
+
+/** Bản sao của nguồn biến môi trường, bỏ các biến nhiều site có giá trị rỗng (coi như chưa đặt → giá trị mặc định). */
+export function envInput(source: NodeJS.ProcessEnv): Record<string, string | undefined> {
+  const out: Record<string, string | undefined> = { ...source };
+  for (const k of SITE_VARS) if (out[k] !== undefined && out[k]!.trim() === '') delete out[k];
+  return out;
+}
+
+/** Kiểm một nguồn biến môi trường bằng lược đồ của bản cài (ca kiểm dùng; ứng dụng đọc `env`). */
+export const checkEnv = (source: NodeJS.ProcessEnv) => envSchema.safeParse(envInput(source));
+
 function loadEnv(): Env {
-  const parsed = envSchema.safeParse(process.env);
+  const parsed = envSchema.safeParse(envInput(process.env));
   if (!parsed.success) {
     const fields = parsed.error.flatten().fieldErrors;
     console.error('Cấu hình môi trường không hợp lệ:', fields);
