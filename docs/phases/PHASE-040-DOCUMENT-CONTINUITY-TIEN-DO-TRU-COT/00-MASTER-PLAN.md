@@ -59,7 +59,7 @@ Chạy thử `node tests/conformance/selfcheck.mjs` trên `main` `3a551921` (má
 | Số nhóm trạng thái | Doc 26 §4: 6 nhóm (`draft`, `pending`, `approved`, `in_progress`, `done`, `cancelled`) | `bizcity_document@1` STD-DOC-4: "5 nhóm" | B1 (D040-2) |
 | Trạng thái hợp đồng | Doc 26 coi là chuẩn đang áp | `bizcity_document@1` ghi `1.4.0-draft · Đề xuất` | B1 |
 | Vòng đời | Doc 26 §1: Nháp → Trình → Duyệt → Thực hiện → Hoàn tất | sơ đồ chủ dự án: Nháp → Duyệt → Đang thực hiện → Hoàn tất | B1: ghi rõ "Trình" là bước `pending`, có thể bỏ qua khi không cấu hình duyệt |
-| Mã tiêu chí trụ cột | trụ cột I dùng `L-1..L-5` | trụ cột IX dùng `L-1..L-8` (trùng mã) | B1: đổi IX sang `LIB-1..LIB-8` để chấm chênh lệch theo mã không nhầm |
+| Mã tiêu chí trụ cột | trụ cột I dùng `L-1..L-5` | trụ cột IX dùng `L-1..L-8` (trùng mã) | B1: đổi IX sang `TV-1..TV-8` để chấm chênh lệch theo mã không nhầm (`LIB-*` đã là mã phát hiện của thư viện — chốt S040-2) |
 | Số bảng | báo cáo 135 | đo 134 | S040-10 |
 
 ### 1.5 Công cụ đo đã có — dùng, không viết lại
@@ -198,7 +198,7 @@ Xem [20-CHAM-DIEM-TIEN-DO](20-CHAM-DIEM-TIEN-DO.md).
 | Bước | Việc | Người dùng dùng được gì sau bước | Việc `S040` | Mức | Câu hỏi / mặc định tạm |
 |---|---|---|---|---|---|
 | **B0** | Tài liệu phase (PR này) | chủ dự án đọc một chỗ: đo thật, quyết định, thứ tự | S040-1 | K0 | — |
-| **B1** | Chuẩn hoá: `bizcity_document@1` 1.5.0 (6 nhóm), ADR-0038, `RULE-DOCUMENT-CONTINUITY.md`, CANON §0.14, trụ cột X trong `tru-cot.json`, đổi mã IX → `LIB-*` | HT10 hiện trụ cột X với % thật; một câu trả lời cho "mấy nhóm trạng thái" | S040-3, 4, 5 | K0–K1 | Q040-2 → `R-DOC-CONT` |
+| **B1** | Chuẩn hoá: `bizcity_document@1` 1.5.0 (6 nhóm), ADR-0038, `RULE-DOCUMENT-CONTINUITY.md`, CANON §0.14, trụ cột X trong `tru-cot.json`, đổi mã IX → `TV-*` | HT10 hiện trụ cột X với % thật; một câu trả lời cho "mấy nhóm trạng thái" | S040-3, 4, 5 | K0–K1 | Q040-2 → `R-DOC-CONT` |
 | **B2** | `scripts/cham-pr.mjs` + `docs/reviews/tien-do/` + `TIEN-DO-PR.md`; chạy lùi 10 PR gần nhất | chủ dự án mở một bảng: PR nào đẩy trụ cột nào lên / xuống bao nhiêu, bằng chứng đủ chưa | S040-6, 7 | K0 | Q040-5, 6 → mặc định |
 | **B3** | Mẫu PR có khối *Bằng chứng chạy máy*; `nhan-viec.mjs kiem` nhắc khi thiếu; `.mailmap` | dev biết phải dán gì; điểm gắn đúng người | S040-8, 9 | K0 | Q040-3, 4 (chủ tài khoản) |
 | **B4** | Họ `IN-DOC-*`; thống kê HT19 | kế toán xem "lỗi hay gặp tuần này", bấm mã ra cách sửa | S040-11, 12 | K1 | — |

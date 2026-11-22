@@ -4,7 +4,7 @@
 > **Việc lộ trình:** — (mở rộng PHASE-026 bảng trụ cột, PHASE-029 truy vết chứng từ, docs/reviews nhịp review)
 > **Phân hệ:** chung-tu · mua-hang · ban-hang · he-thong
 > **Checklist công bố:** —
-> **Trạng thái:** 🟡 **W0 đề xuất 2026-11-22** — chờ chủ dự án duyệt D040-1..12, trả Q040-1..6 (S040-2). Chưa có mã.
+> **Trạng thái:** 🟡 **W0 chốt 2026-11-22, B1 đang làm** — chủ dự án đồng ý D040-1..12 và toàn bộ đề xuất Q040-1..6 ở [30](30-PHAN-TICH-CAU-HOI-MO.md) (S040-2). Tiếp theo: B1 (S040-3..5).
 > **Mức Kernel:** W0 K0 (tài liệu). B1–B3 K0–K1 (tài liệu chuẩn, `tru-cot.json`, công cụ chỉ đọc). B4–B8 K1–K2 (mã lỗi, meta chứng từ, màn, chẩn đoán). **Không migration tạo bảng** (D040-3).
 > **Nền:** [Doc 26 Sổ chứng từ chung](../../nghiep-vu/26-so-chung-tu-quy-chuan.md) · [Doc 25 Mã lỗi khai báo](../../nghiep-vu/25-quy-tac-ma-loi-khai-bao.md) · [bizcity_document@1](../../contracts/BIZCITY-DOCUMENT-v1.md) · [R-WF](../../rules/RULE-WORKFLOW.md) · [R-REV §7](../../rules/RULE-REVIEW.md) · [bảng trụ cột](../../standard/tru-cot.json) · [docs/reviews](../../reviews/README.md) · tài liệu làm việc *BIZCITY-DOCUMENT-CONTINUITY-CONFORMANCE-v1* (bản làm việc ngoài repo, R-FLOW-7: phase này là bản có hiệu lực khi đã vào `main`)
 > **Phụ thuộc:** PHASE-029 (lịch sử chứng từ, `document_links`), PHASE-026 (bảng trụ cột HT10), PHASE-031 (chính sách), PHASE-038 (R-LOG)
@@ -60,14 +60,17 @@
 
 ## Câu hỏi cho chủ dự án
 
+<!-- [2026-11-22 06:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — S040-2 chốt: chủ dự án đồng ý D040-1..12 và đề xuất Q040-1..6 ở 30; mã IX đổi sang TV-* (LIB-* đã là mã phát hiện của thư viện) -->
+**Chốt 2026-11-22:** chủ dự án đồng ý mọi đề xuất bên dưới. Một sửa nhỏ khi thi hành D040-1: mã tiêu chí trụ cột IX đổi sang `TV-1..TV-8` (không phải `LIB-*` như bản W0 — `LIB-*` đã là mã phát hiện của thư viện, vd `LIB-VALUE-001`, và dễ lẫn với `SC-LIB-*`).
+
 <!-- [2026-11-22 05:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — mặc định Q040-3..6 cập nhật theo phân tích ở 30 -->
 Phương án + đề xuất từng câu: [30-PHAN-TICH-CAU-HOI-MO](30-PHAN-TICH-CAU-HOI-MO.md). Q040-4 và Q040-5 đã đổi mặc định sau khi đo thêm: 30 / 30 PR merge gần nhất do tài khoản chủ dự án mở (không tự duyệt được), và repo công khai (tệp trong repo ai cũng đọc được).
 
-| Mã | Câu hỏi | Mặc định tạm (nếu chưa trả lời) |
+| Mã | Câu hỏi | Chốt 2026-11-22 |
 |---|---|---|
 | Q040-1 | Thiếu số hợp đồng trên phiếu mua: mặc định nhắc hay chặn? | **Nhắc** (R-GATE-9); kế toán trưởng bật chặt |
 | Q040-2 | Tên luật: `R-DOC-CONT` (tệp `RULE-DOCUMENT-CONTINUITY.md`)? | Dùng tên này |
-| Q040-3 | CI: mở khoá thanh toán GitHub, hay dựng runner tự quản (self-hosted)? | Đề xuất: **gỡ khoá thanh toán**, đặt giới hạn chi Actions 0 USD (repo công khai + `ubuntu-latest` = miễn phí); không dùng self-hosted khi repo công khai. Trong lúc chờ: D040-8 |
+| Q040-3 | CI: mở khoá thanh toán GitHub, hay dựng runner tự quản (self-hosted)? | **Gỡ khoá thanh toán**, đặt giới hạn chi Actions 0 USD (repo công khai + `ubuntu-latest` = miễn phí); không dùng self-hosted khi repo công khai. Trong lúc chờ: D040-8 |
 | Q040-4 | Bật bảo vệ `main` thế nào, khi nào? | **Bậc 1 ngay**: cấm push thẳng / force-push / xoá, bắt buộc PR, CODEOWNERS theo vùng (chưa bắt buộc duyệt). Bậc 2 sau Q040-3: check bắt buộc. Bậc 3 khi có ≥ 2 người rà: 1 duyệt từ CODEOWNERS |
 | Q040-5 | Điểm người đóng góp hiện cho ai xem? | Trong repo chỉ có điểm theo PR / trụ cột; điểm theo người sinh **cục bộ** (`cham-pr.mjs --nguoi`), không commit |
 | Q040-6 | Bảng tiến độ PR để ở `docs/reviews/tien-do/` (cạnh `review-board.json`)? | Để ở đó; mỗi `PR-<n>.json` ≤ 4 KB, `TIEN-DO-PR.md` giữ 50 PR gần nhất |

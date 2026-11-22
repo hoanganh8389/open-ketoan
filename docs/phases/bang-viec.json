@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 212
+      "count": 211
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 355
+      "count": 356
     }
   ],
   "items": [
@@ -10236,8 +10236,8 @@
       "phase": "PHASE-040",
       "title": "Chủ dự án duyệt D040-1..12, trả Q040-1..6",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "chung-tu",
@@ -10282,7 +10282,7 @@
     {
       "id": "S040-5",
       "phase": "PHASE-040",
-      "title": "B1 — trụ cột X vào tru-cot.json (DC-1..11, 00 §2.2); mã IX → LIB-; xác minh T040-24..27",
+      "title": "B1 — trụ cột X vào tru-cot.json (DC-1..11, 00 §2.2); mã IX → TV-; xác minh T040-24..27",
       "priority": "P0",
       "status": "todo",
       "column": "todo",
