@@ -9,7 +9,7 @@
 > **Phân hệ:** he-thong
 > **Checklist công bố:** —
 > **Trạng thái:** 🟡 **W0 chốt 2026-11-21** — chủ dự án duyệt D039-1..18 ("các phần khác bám theo rule này là ok"), Q039-2 = vai trò PostgreSQL riêng từng site (D039-19). [ADR-0036](../../adr/ADR-0036-mot-ban-ma-moi-site-mot-database.md) chấp nhận, luật [R-SITE](../../rules/RULE-SITE.md). Chưa có mã; bước kế B1.
-> **Tệp:** [00 — Kế hoạch & thiết kế](00-MASTER-PLAN.md) · [30 — Hợp đồng Provisioning](30-HOP-DONG-PROVISIONING.md) · [40 — Checklist](40-MASTER-CHECKLIST.md)
+> **Tệp:** [00 — Kế hoạch & thiết kế](00-MASTER-PLAN.md) · [Hợp đồng Provisioning](../../contracts/BIZCITY-SITE-PROVISIONING-v1.md) <!-- [2026-11-22 03:26 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5c: hợp đồng ở docs/contracts --> · [40 — Checklist](40-MASTER-CHECKLIST.md)
 
 ## Đề bài (chủ dự án, 2026-11-21)
 
@@ -32,7 +32,7 @@
 | Tạo site mất bao lâu? | Vài giây: `CREATE DATABASE … TEMPLATE` từ một database mẫu đã chạy đủ migration | D039-9 |
 | Nâng cấp thế nào khi có hàng trăm site? | Một luật: ứng dụng chỉ phục vụ site có **lược đồ đúng bản nó cần**. Migration chạy từng site; site lỗi bị chặn riêng, site khác chạy tiếp | D039-11, [00 §6](00-MASTER-PLAN.md) |
 | Sao lưu riêng một site? | `pg_dump` riêng database của site; khôi phục vào database tạm, kiểm, rồi mới đổi chỗ | D039-13 |
-| Frappe gọi vào bằng gì? | Provisioning API `/_sites/v1` (hợp đồng `bizcity_site_provisioning@1`), khoá `prov_…`, mọi lệnh ghi có `Idempotency-Key` | [30](30-HOP-DONG-PROVISIONING.md) |
+| Frappe gọi vào bằng gì? | Provisioning API `/_sites/v1` (hợp đồng `bizcity_site_provisioning@1`), khoá `prov_…`, mọi lệnh ghi có `Idempotency-Key` | [hợp đồng](../../contracts/BIZCITY-SITE-PROVISIONING-v1.md) |
 | Làm theo thứ tự nào? | **Bước thắng nhỏ**, mỗi bước một PR: B1 ngữ cảnh site ở chế độ một site (hành vi không đổi) → B2 registry + router → B3 migration theo site → B4 provisioner + CLI → B5 Provisioning API → B6 sao lưu theo site → B7 cập nhật nhiều site + nghiệm thu | [00 §8](00-MASTER-PLAN.md) |
 
 ## Quyết định đề xuất
@@ -74,6 +74,6 @@
 
 ## Phía gọi
 
-Repo `bizcity-open-setup` (app Frappe `bizcity_site_manager`): giữ khách hàng và danh sách site; gọi Provisioning API ở [30](30-HOP-DONG-PROVISIONING.md). Phase này là **chủ hợp đồng**; phía gọi đổi theo.
+Repo `bizcity-open-setup` (app Frappe `bizcity_site_manager`): giữ khách hàng và danh sách site; gọi Provisioning API ở [hợp đồng](../../contracts/BIZCITY-SITE-PROVISIONING-v1.md). Phase này là **chủ hợp đồng**; phía gọi đổi theo.
 
 Plugin WordPress `bizcity-llm-router`: chủ khoá `biz-…`. Việc cần ở phía plugin: một cửa trả trạng thái khoá (còn hạn / sắp hết / hết hạn) cho máy chủ gọi máy chủ.

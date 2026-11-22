@@ -155,6 +155,8 @@ export async function backupSite(ref: string, opts: BackupSiteOptions = {}): Pro
      VALUES ($1, $2, $3, $4, $5, $6, $7, true) RETURNING created_at`,
     [id, site.id, file, bytes, info.tables, site.schema_version, reason],
   );
+  // [2026-11-22 03:26 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5c: bản sao lưu mới là một thay đổi của site — phía gọi đồng bộ theo updatedAfter thấy được
+  await controlPool().query('UPDATE sites SET updated_at = now() WHERE id = $1', [site.id]);
   const pruned: string[] = [];
   if (opts.keep !== undefined && opts.keep >= 1) {
     const old = await controlPool().query<{ id: string; file: string }>(
@@ -190,6 +192,7 @@ export async function importBackup(ref: string, file: string): Promise<BackupRec
      VALUES ($1, $2, $3, $4, $5, NULL, 'import', true) RETURNING created_at`,
     [id, site.id, abs, bytes, info.tables],
   );
+  await controlPool().query('UPDATE sites SET updated_at = now() WHERE id = $1', [site.id]);
   return { id, siteId: site.id, slug: site.slug, file: abs, bytes, tables: info.tables, schemaVersion: null, reason: 'import', createdAt: ins.rows[0]!.created_at.toISOString() };
 }
 

@@ -1,7 +1,7 @@
 // @bizcity-layer P apps/api
 // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-10, D039-14, R-IDEM-1): dịch vụ Provisioning API — khoá prov_… (băm), việc có trạng thái + Idempotency-Key, tạo site chạy nền, mật khẩu chủ site trả một lần
 /**
- * Dịch vụ của Provisioning API `bizcity_site_provisioning@1` (bản nháp: docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/30-HOP-DONG-PROVISIONING.md).
+ * Dịch vụ của Provisioning API `bizcity_site_provisioning@1` (hợp đồng: docs/contracts/BIZCITY-SITE-PROVISIONING-v1.md).
  * Mọi dữ liệu ở database điều khiển (CONTROL_DATABASE_URL); không đụng database của site nào ngoài lúc tạo site.
  *
  * Việc chạy nền trong tiến trình API. Tiến trình chết giữa chừng: việc kẹt quá 2 giờ được đánh dấu failed JOB_INTERRUPTED (B5b).
@@ -248,7 +248,7 @@ export async function listSiteBackups(siteId: string): Promise<{ items: Array<Re
 // ── Đọc site + sức khoẻ ──────────────────────────────────────────────────────────────────────────────────────────────────
 
 const SITE_SQL = `
-  SELECT s.id, s.slug, s.display_name, s.status, s.db_name, s.schema_version, s.app_version, s.external_ref, s.created_at,
+  SELECT s.id, s.slug, s.display_name, s.status, s.db_name, s.schema_version, s.app_version, s.external_ref, s.created_at, s.updated_at,
          s.suspended_at, s.suspend_reason, s.deleted_at, s.purged_at, s.migrated_at, s.migration_error, s.restored_at,
          (SELECT max(b.created_at) FROM site_backups b WHERE b.site_id = s.id AND b.verified) AS last_backup_at,
          coalesce(json_agg(json_build_object('domain', d.domain, 'primary', d.is_primary) ORDER BY d.is_primary DESC, d.domain)
@@ -257,7 +257,7 @@ const SITE_SQL = `
 
 type SiteRow = {
   id: string; slug: string; display_name: string; status: string; db_name: string; schema_version: string | null; app_version: string | null;
-  external_ref: string | null; created_at: Date; suspended_at: Date | null; suspend_reason: string | null; deleted_at: Date | null;
+  external_ref: string | null; created_at: Date; updated_at: Date; suspended_at: Date | null; suspend_reason: string | null; deleted_at: Date | null;
   purged_at: Date | null; migrated_at: Date | null; migration_error: string | null; restored_at: Date | null; last_backup_at: Date | null; domains: unknown;
 };
 
@@ -287,7 +287,7 @@ function siteDto(s: SiteRow, size: Map<string, number>, now: number, ping?: { re
   return {
     siteId: s.id, slug: s.slug, displayName: s.display_name, status: s.status, domains: s.domains,
     schemaVersion: s.schema_version, schemaCurrent: s.schema_version ? s.schema_version === appSchemaVersion() : null,
-    appVersion: s.app_version, externalRef: s.external_ref, createdAt: new Date(s.created_at).toISOString(),
+    appVersion: s.app_version, externalRef: s.external_ref, createdAt: new Date(s.created_at).toISOString(), updatedAt: new Date(s.updated_at).toISOString(),
     dbSizeBytes: s.status === 'deleted' ? null : size.get(s.db_name) ?? null,
     lastBackupAt: iso(s.last_backup_at), backupAgeHours: lb === null ? null : Math.round((now - lb) / 360_000) / 10,
     suspendedAt: iso(s.suspended_at), suspendReason: s.suspend_reason,
@@ -340,19 +340,52 @@ export async function getSite(siteId: string, opts: { ping?: boolean } = {}): Pr
   return siteDto(s, size, Date.now(), ping);
 }
 
-/** Danh sách site (lọc trạng thái / chỉ site cần chú ý). Không thử kết nối từng site (đắt khi có hàng trăm site). */
-export async function listSitesDto(filter: { status?: string; attention?: boolean } = {}): Promise<{ items: SiteDto[]; next: null }> {
-  await ensureControlSchema();
-  const r = await controlPool().query<SiteRow>(`${SITE_SQL} WHERE ($1::text IS NULL OR s.status = $1) GROUP BY s.id ORDER BY s.created_at`, [filter.status ?? null]);
-  const size = await dbSizes(r.rows.filter((s) => s.status !== 'deleted').map((s) => s.db_name));
-  const now = Date.now();
-  const items = r.rows.map((s) => siteDto(s, size, now));
-  return { items: filter.attention ? items.filter((x) => x.attention.length > 0) : items, next: null };
+// [2026-11-22 03:26 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5c (D039-14): phân trang con trỏ theo (updated_at, id) + updatedAfter — phía gọi (WordPress) đồng bộ theo thay đổi
+export const PAGE_DEFAULT = 100;
+export const PAGE_MAX = 500;
+
+/** Con trỏ trang = base64url của [updated_at đủ độ chính xác (chuỗi của PostgreSQL), mã site]. Sai khuôn → 400 CURSOR_INVALID. */
+const encodeCursor = (ts: string, id: string) => Buffer.from(JSON.stringify([ts, id]), 'utf8').toString('base64url');
+function decodeCursor(c: string): [string, string] {
+  try {
+    const v = JSON.parse(Buffer.from(c, 'base64url').toString('utf8')) as unknown;
+    if (Array.isArray(v) && v.length === 2 && typeof v[0] === 'string' && typeof v[1] === 'string' && !Number.isNaN(Date.parse(v[0])) && /^[0-9A-HJKMNP-TV-Z]{26}$/.test(v[1])) return [v[0], v[1]];
+  } catch { /* nuot-loi: con trỏ hỏng báo 400 ở dưới */ }
+  throw new ProvisionHttpError(400, 'CURSOR_INVALID', 'Con trỏ trang không hợp lệ: dùng nguyên giá trị "next" của trang trước');
 }
 
-/** Sức khoẻ cụm: hợp đồng, bản ứng dụng, lược đồ cần, số site theo trạng thái và theo dấu cần chú ý. */
+export interface SiteListFilter { status?: string; attention?: boolean; updatedAfter?: string; limit?: number; cursor?: string; /** nội bộ: mọi site, không phân trang (health, số đo) */ all?: boolean }
+
+/**
+ * Danh sách site, sắp theo (updated_at, mã site). Trang `limit` (mặc định 100, tối đa 500); `next` = con trỏ trang sau, `null` khi hết.
+ * `updatedAfter`: chỉ site đổi sau mốc đó (trạng thái, tên miền, lược đồ, khoá / xoá, sao lưu mới). `attention`: chỉ site cần chú ý —
+ * lọc sau khi tính dấu nên trả cả danh sách, không phân trang. Không thử kết nối từng site (đắt khi có hàng trăm site).
+ */
+export async function listSitesDto(filter: SiteListFilter = {}): Promise<{ items: SiteDto[]; next: string | null }> {
+  await ensureControlSchema();
+  const paged = !filter.attention && !filter.all;
+  const limit = Math.min(Math.max(filter.limit ?? PAGE_DEFAULT, 1), PAGE_MAX);
+  const [cTs, cId] = filter.cursor ? decodeCursor(filter.cursor) : [null, null];
+  const r = await controlPool().query<SiteRow & { updated_txt: string }>(
+    `${SITE_SQL.replace('SELECT s.id,', 'SELECT s.updated_at::text AS updated_txt, s.id,')}
+      WHERE ($1::text IS NULL OR s.status = $1)
+        AND ($2::timestamptz IS NULL OR s.updated_at > $2::timestamptz)
+        AND ($3::timestamptz IS NULL OR (s.updated_at, s.id) > ($3::timestamptz, $4::text))
+      GROUP BY s.id ORDER BY s.updated_at, s.id ${paged ? 'LIMIT $5' : ''}`,
+    paged ? [filter.status ?? null, filter.updatedAfter ?? null, cTs, cId, limit + 1] : [filter.status ?? null, filter.updatedAfter ?? null, cTs, cId],
+  );
+  const rows = paged ? r.rows.slice(0, limit) : r.rows;
+  const last = rows[rows.length - 1];
+  const next = paged && r.rows.length > limit && last ? encodeCursor(last.updated_txt, last.id) : null;
+  const size = await dbSizes(rows.filter((s) => s.status !== 'deleted').map((s) => s.db_name));
+  const now = Date.now();
+  const items = rows.map((s) => siteDto(s, size, now));
+  return { items: filter.attention ? items.filter((x) => x.attention.length > 0) : items, next };
+}
+
+/** Sức khoẻ cụm: hợp đồng, bản ứng dụng, lược đồ cần, số site theo trạng thái và theo dấu cần chú ý (mọi site, không phân trang). */
 export async function health(): Promise<{ contract: string; appVersion: string; requiredSchema: string; sites: Record<string, number>; attention: Record<string, number> }> {
-  const { items } = await listSitesDto();
+  const { items } = await listSitesDto({ all: true });
   const sites: Record<string, number> = {};
   const attention: Record<string, number> = {};
   for (const s of items) {
