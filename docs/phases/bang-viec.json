@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 4
+      "count": 5
     },
     {
       "key": "merging",
@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 206
+      "count": 204
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 78
+      "count": 79
     },
     {
       "key": "paused",
@@ -10569,14 +10569,8 @@
       "title": "B10b — tầng 0: SC-SEC-5 + SC-CON-7, SC-API-3, SC-KERNEL-7, SC-SEC-2, SC-AUTH-03",
       "priority": "P0",
       "status": "partial",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột)",
-        "branch": "fix/phase-040-b10b-tang-0",
-        "state": "đang làm",
-        "since": "2026-11-22",
-        "dot": "PHASE-040 · B10b — main sạch selfcheck, đợt rủi ro tầng 0: SC-SEC-5 + SC-CON-7 (mật khẩu tính năng …"
-      },
+      "column": "partial",
+      "claim": null,
       "modules": [
         "he-thong"
       ],
@@ -10590,8 +10584,14 @@
       "title": "B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2, DG-POLICY-1 tự kiểm — @Thuy2k",
       "priority": "P1",
       "status": "todo",
-      "column": "todo",
-      "claim": null,
+      "column": "doing",
+      "claim": {
+        "who": "hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột)",
+        "branch": "fix/phase-040-b10c-loi-ranh-gioi",
+        "state": "đang làm",
+        "since": "2026-11-23",
+        "dot": "PHASE-040 · B10c-lõi — main sạch selfcheck, ranh giới phần của Lõi: SC-LAYER-1, -2 (nhãn lớp, bảng …"
+      },
       "modules": [
         "he-thong"
       ],
@@ -10605,8 +10605,14 @@
       "title": "B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT",
       "priority": "P1",
       "status": "todo",
-      "column": "todo",
-      "claim": null,
+      "column": "doing",
+      "claim": {
+        "who": "hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột)",
+        "branch": "fix/phase-040-b10d-chu-thich-cot",
+        "state": "đang làm",
+        "since": "2026-11-23",
+        "dot": "PHASE-040 · B10d-a — main sạch selfcheck: SC-DATA-3 (99 cột / bảng còn tồn tại thiếu COMMENT ON) bằ…"
+      },
       "modules": [
         "he-thong"
       ],

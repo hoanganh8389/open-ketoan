@@ -5,11 +5,11 @@
 
 | Cột | Số việc |
 |---|---|
-| Đang làm | 4 |
+| Đang làm | 5 |
 | Chờ merge | 0 |
 | Bị chặn | 31 |
-| Chưa ai nhận | 206 |
-| Chờ đủ tín hiệu | 78 |
+| Chưa ai nhận | 204 |
+| Chờ đủ tín hiệu | 79 |
 | Hoãn | 3 |
 | Xong | 366 |
 | **Tổng** | **688** |
@@ -26,17 +26,18 @@
 | chung-tu | 71 | 5 | 0 | 29 | 105 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 175 | 27 | 2 | 65 | 269 |
+| he-thong | 175 | 28 | 3 | 63 | 269 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
-## Đang làm (4)
+## Đang làm (5)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
 | [S020-25](PHASE-020-KIEM-CHUAN-PHAP-LY-VN/40-MASTER-CHECKLIST.md#L34) | PHASE-020 | thue · tong-hop | D020-11 (a)(b)(c): HT06 "Kiểm sổ" gọn — lượt kiểm lưu kết quả tự chẩn đoán cả sổ vào báo cáo (report.health, … | — | hoanganh8389 (phiên Claude, danh-gia-phase) · `feat/phase-020-s020-25-kiem-so-gon` |
 | [S024-33](PHASE-024-ITEM-MASTER-PHAN-LOAI-HACH-TOAN/40-MASTER-CHECKLIST.md#L44) | PHASE-024 | danh-muc · kho | Bỏ suy tài khoản kho từ tiền tố ở packages/kernel/src/modules/posting/rules/stock.rule.ts:55 (startsWith('15'… | P0 | hoanganh8389 (phiên Claude, danh-gia-phase) · `feat/phase-024-s024-33-tk-kho` |
 | [S036-8b](PHASE-036-THIET-LAP-NHANH-DU-LIEU-MAU/40-MASTER-CHECKLIST.md#L18) | PHASE-036 | he-thong | B6 — Lấy lại bản trước từ defaultdatabackups; org-units/restore-defaults theo cùng khuôn; đơn vị trắng đổi nú… | P1 | hoanganh8389 (phiên Claude, PHASE-036 thiết lập nhanh) · `feat/s036-8b-lay-lai-ban-truoc` |
-| [S040-23](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L32) | PHASE-040 | he-thong | B10b — tầng 0: SC-SEC-5 + SC-CON-7, SC-API-3, SC-KERNEL-7, SC-SEC-2, SC-AUTH-03 | P0 | hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột) · `fix/phase-040-b10b-tang-0` |
+| [S040-24](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L33) | PHASE-040 | he-thong | B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2, DG-POLICY-1 tự kiểm —… | P1 | hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột) · `fix/phase-040-b10c-loi-ranh-gioi` |
+| [S040-25](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L34) | PHASE-040 | he-thong | B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT | P1 | hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột) · `fix/phase-040-b10d-chu-thich-cot` |
 
 ## Chờ merge (0)
 
@@ -78,7 +79,7 @@
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 | [S040-20](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L29) | PHASE-040 | he-thong | Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ main — PR + 1 người duyệt, check bắt buộc sau khi C… | P0 | — |
 
-## Chưa ai nhận (206)
+## Chưa ai nhận (204)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -286,10 +287,8 @@
 | [S040-18](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L27) | PHASE-040 | chung-tu | B8 — trạng thái kế toán suy ra trên HT18; chẩn đoán mồ côi nguồn, hoàn tất thiếu sổ, tệp đổi băm, docref ≠ do… | P1 | — |
 | [S040-19](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L28) | PHASE-040 | he-thong | B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản docs/reviews/REVIEW-R2-.md | P0 | — |
 | [S040-21](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L30) | PHASE-040 | kho · quy · ban-hang | Sau phase — đưa vào sổ các dòng ☐ "sau phase" ở 10 §2 | P1 | — |
-| [S040-24](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L33) | PHASE-040 | he-thong | B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2, DG-POLICY-1 tự kiểm —… | P1 | — |
-| [S040-25](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L34) | PHASE-040 | he-thong | B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT | P1 | — |
 
-## Chờ đủ tín hiệu (78)
+## Chờ đủ tín hiệu (79)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -371,6 +370,7 @@
 | [S039-8](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L17) | PHASE-039 | he-thong | B2 — bộ đệm trong bộ nhớ thêm khoá site (theo kết quả S039-3) + phép kiểm tĩnh chặn bộ đệm theo đơn vị thiếu … | P0 | — |
 | [S039-11](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L20) | PHASE-039 | he-thong | B4 — Site Provisioner: kttemplate, vai trò riêng kt<slug>owner / app (D039-19), CREATE DATABASE … TEMPLATE, đ… | P0 | — |
 | [S039-12](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L21) | PHASE-039 | he-thong | B4 — CLI bizcity site create / list / suspend / resume / drop / adopt (adopt: đưa bản cài một công ty vào cụm… | P1 | — |
+| [S040-23](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L32) | PHASE-040 | he-thong | B10b — tầng 0: SC-SEC-5 + SC-CON-7, SC-API-3, SC-KERNEL-7, SC-SEC-2, SC-AUTH-03 | P0 | — |
 
 ## Hoãn (3)
 
