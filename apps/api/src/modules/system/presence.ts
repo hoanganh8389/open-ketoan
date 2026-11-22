@@ -2,6 +2,7 @@
 // [2026-10-29 10:24 PM Johnny Chu - Chu Hoàng Anh] INIT — khởi tạo Bizcity Core Framework: sổ cái chỉ thêm, cửa nạp sự việc, CANON, hợp đồng, bộ kiểm chuẩn.
 // [2026-10-29 11:31 PM Johnny Chu - Chu Hoàng Anh] PHASE-001 — bộ kiểm chuẩn xanh, gia cố R-API-6, R-BOUND-2, R-SEC-11, R-REL-1.
 // [2026-10-30 09:58 AM Johnny Chu - Chu Hoàng Anh] PHASE-002 — nhãn lớp @bizcity-layer, đồ thị phụ thuộc mốc, bản nháp API module-sdk.
+// [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d (R-SITE-6): người đang mở phần mềm theo (site, đơn vị)
 /**
  * NGƯỜI DÙNG ĐANG ONLINE — mỗi tab đang mở (và đang hiện) báo về ~1 phút / lần:
  *   POST /api/v1/presence/ping { deviceId, tabId, path, screen, leave? }
@@ -22,6 +23,7 @@ import { z } from 'zod';
 import { authOf, requireAuthenticated } from '../../core/auth.js';
 import { ok } from '../../core/http.js';
 import { todayVN } from '../../core/date-rules.js';
+import { siteScopedKey } from '@bizcity/platform/db/site';
 
 const ONLINE_MS = 150_000; // 2,5 phút: tab báo mỗi 60 giây, lỡ một nhịp vẫn còn online
 interface Tab { path: string; screen: string; seen: number }
@@ -52,8 +54,9 @@ function sweep(users: Map<string, UserPresence>, now: number) {
 export function touchPresence(tenantId: string, actor: string, name: string, role: string | null, agent: string,
   tab: { deviceId: string; tabId: string; path: string; screen: string; leave?: boolean }) {
   const now = Date.now();
-  let users = tenants.get(tenantId);
-  if (!users) { users = new Map(); tenants.set(tenantId, users); }
+  const key = siteScopedKey(tenantId);
+  let users = tenants.get(key);
+  if (!users) { users = new Map(); tenants.set(key, users); }
   sweep(users, now);
   // Trình duyệt cũ chưa gửi deviceId: coi mỗi tab là một thiết bị (không gộp nhầm nhiều máy).
   const deviceId = tab.deviceId || `tab:${tab.tabId}`;
@@ -72,18 +75,19 @@ export function touchPresence(tenantId: string, actor: string, name: string, rol
   d.agent = agent;
   d.tabs.set(tab.tabId, { path: tab.path, screen: tab.screen, seen: now });
   const day = todayVN();
-  let t = today.get(tenantId);
-  if (!t || t.day !== day) { t = { day, users: new Set(), devices: new Set() }; today.set(tenantId, t); }
+  let t = today.get(key);
+  if (!t || t.day !== day) { t = { day, users: new Set(), devices: new Set() }; today.set(key, t); }
   t.users.add(actor);
   t.devices.add(`${actor}|${deviceId}`);
 }
 
 export function readPresence(tenantId: string, withList: boolean) {
-  const users = tenants.get(tenantId) ?? new Map<string, UserPresence>();
+  const key = siteScopedKey(tenantId);
+  const users = tenants.get(key) ?? new Map<string, UserPresence>();
   sweep(users, Date.now());
   const all = [...users.values()];
   const devices = all.reduce((s, u) => s + u.devices.size, 0);
-  const t = today.get(tenantId);
+  const t = today.get(key);
   const fresh = t && t.day === todayVN();
   const list = withList ? all.map((u) => ({
     name: u.name, role: u.role,

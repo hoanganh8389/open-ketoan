@@ -126,3 +126,12 @@ export function ticketSiteAccepted(sid: unknown): boolean {
     return false;
   }
 }
+
+// [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d (R-SITE-6): khoá bộ đệm có mã site
+/**
+ * Khoá bộ đệm trong bộ nhớ có mã site (R-SITE-6): `tenant_id`, `user_id` là số tự tăng của từng database nên trùng nhau giữa
+ * các site. Chế độ multi ngoài ngữ cảnh site → SITE_CONTEXT_MISSING (không đọc nhầm bộ đệm của site khác).
+ */
+export function siteScopedKey(key: string): string {
+  return `${currentSiteId()}\u0001${key}`;
+}
