@@ -12,6 +12,19 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Khối bằng chứng trong mẫu PR, danh tính người đóng góp (PHASE-040 B3) <!-- [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3: mục CHANGELOG (S040-8, 9) -->
+
+- **Thêm:**
+  - Mẫu PR có mục **Bằng chứng chạy máy**, cùng khuôn mà bộ chấm đọc. Lệnh `node scripts/cham-pr.mjs --mau-bang-chung` in sẵn khối này, đã điền SHA.
+  - `node scripts/nhan-viec.mjs kiem` nhắc (▲) khi PR của nhánh chưa có khối, hoặc khối còn để trống. Lệnh chỉ nhắc, không chặn.
+  - `docs/reviews/tien-do/danh-tinh.json` gộp các tên commit khác nhau của cùng một người về một tài khoản GitHub, không ghi email.
+  - `node scripts/cham-pr.mjs --nguoi` tính điểm theo người. Kết quả chỉ nằm trên máy, trong `.local/`, không commit.
+- **Đổi:** mục *Bằng chứng* cũ của mẫu PR được thay bằng mục *Bằng chứng chạy máy*. Bộ chấm vẫn đọc được khuôn cũ `== BẰNG CHỨNG ==`.
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** gộp danh tính bằng tài khoản GitHub thay cho `.mailmap`, để không công khai thêm email của người đóng góp.
+
 ### Bộ chấm tiến độ theo PR (PHASE-040 B2) <!-- [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B2: mục CHANGELOG (S040-6, 7) -->
 
 - **Thêm:**

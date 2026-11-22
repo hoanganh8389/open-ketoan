@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 210
+      "count": 208
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 361
+      "count": 363
     }
   ],
   "items": [
@@ -10329,8 +10329,8 @@
       "phase": "PHASE-040",
       "title": "B3 — .github/pullrequesttemplate.md khối Bằng chứng chạy máy; nhan-viec.mjs kiem nhắc khi thiếu",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -10342,10 +10342,10 @@
     {
       "id": "S040-9",
       "phase": "PHASE-040",
-      "title": "B3 — .mailmap gộp danh tính người đóng góp",
+      "title": "B3 — gộp danh tính người đóng góp",
       "priority": "P1",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
