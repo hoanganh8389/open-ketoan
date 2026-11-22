@@ -152,6 +152,7 @@ export async function schemeRoutes(app: FastifyInstance): Promise<void> {
     },
   });
 
+  // @bizcity-route: chỉ đọc — dựng thử bút toán theo quy tắc hiện tại, không lưu; quyền documents:write vì xem thử bút toán của chứng từ sắp lập
   r.post('/api/v1/posting/scheme/preview', {
     preHandler: requirePermission('documents:write'),
     schema: { tags, summary: 'Xem thử bút toán của một chứng từ theo quy tắc hiện tại (không lưu gì)', body: z.object({ document: ingestDocumentSchema }) },

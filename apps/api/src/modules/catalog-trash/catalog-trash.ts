@@ -1,3 +1,4 @@
+// @bizcity-layer M data/masterdata
 // [2026-11-17 Nguyễn Văn Thủy] Thùng rác chung của danh mục (0146): Xoá → thùng rác; Khôi phục; Xoá vĩnh viễn; Xoá hết (mật khẩu) (đóng góp)
 /**
  * THÙNG RÁC DANH MỤC — một cách làm cho mọi danh mục (biểu thuế, ĐVT, HTTT, tài khoản ngân hàng, hệ thống tài khoản,

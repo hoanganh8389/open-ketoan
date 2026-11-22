@@ -44,11 +44,14 @@ export const LAYER_MAP = [
   ['core/http.ts', 'P', 'actions'],
   ['core/json-schema.ts', 'P', 'actions'],
   ['core/actions.ts', 'P', 'actions'],
+  ['core/quy-tac.ts', 'P', 'actions'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
   ['core/metrics.ts', 'P', 'observability'],
   ['core/observability.ts', 'P', 'observability'],
   ['core/request-context.ts', 'P', 'observability'],
   ['core/tracing.ts', 'P', 'observability'],
   ['core/logger.ts', 'P', 'observability'], // [2026-11-21 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1: nhật ký lỗi cố định logs/ (cùng lớp quan sát với tracing)
+  ['core/run-log.ts', 'P', 'core'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
+  ['core/nhat-ky-kiem.ts', 'P', 'observability'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
   ['core/events.ts', 'P', 'events'],
   ['core/auth.ts', 'P', 'permissions'],
   ['core/security/', 'P', 'permissions'],
@@ -145,6 +148,8 @@ export const LAYER_MAP = [
   ['modules/unit-names/', 'M', 'data/masterdata'],
   ['modules/bank-accounts/', 'M', 'data/masterdata'],
   ['modules/catalog/', 'M', 'data/masterdata'],
+  ['modules/catalog-trash/', 'M', 'data/masterdata'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
+  ['modules/help/', 'M', 'platform/help'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
   ['modules/catalog/catalog-notify.ts', 'P', 'events'],
   ['modules/dimensions/', 'P', 'data'],
   // ADR-0003: lịch hợp đồng là nghiệp vụ của module hop-dong.

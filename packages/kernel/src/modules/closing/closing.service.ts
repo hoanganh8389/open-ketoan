@@ -38,6 +38,8 @@ import { sql } from 'kysely';
 import { db, toNumber, type Db } from '@bizcity/platform/db/client';
 import { Errors } from '@bizcity/platform/core/errors';
 import { writeAudit } from '@bizcity/platform/core/audit';
+// [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-DOC-7, R-DOC-CONT-3): phiên bản bộ kết chuyển mẫu ghi qua documents.saveVersion (băm nội dung, một chỗ ghi document_versions)
+import { documents } from '@bizcity/platform/core/documents';
 import type { AuthContext } from '@bizcity/platform/core/auth';
 import type { Account } from '@bizcity/platform/db/types';
 import { accountRepository } from '../accounts/account.repository.js';
@@ -629,9 +631,8 @@ export const closingService = {
     if (!before.isDefault && before.hash === hash) return null;
     await trx.deleteFrom('closing_rules').where('tenant_id', '=', auth.tenantId).execute();
     await trx.insertInto('closing_rules').values(ordered.map((r) => ({ tenant_id: auth.tenantId, seq: r.seq, from_account: r.fromAccount, to_account: r.toAccount, mode: r.mode, description: r.description, is_active: r.isActive, include_opening: r.includeOpening }))).execute();
-    const version = (before.version ?? 0) + 1;
     // [2026-11-18 Nguyễn Văn Thủy] phiên bản ở document_versions chung (0157, bỏ closing_rule_versions) (đóng góp)
-    await trx.insertInto('document_versions').values({ tenant_id: auth.tenantId, doc_ref: RULES_REF, version, snapshot: JSON.stringify({ rules: ordered, note, createdByName: auth.actorName }), content_hash: hash, created_by: auth.actor }).execute();
+    const { version } = await documents.saveVersion(trx, auth.tenantId, RULES_REF, { rules: ordered, note, createdByName: auth.actorName }, auth.actor);
     return { before: { version: before.version, isDefault: before.isDefault, rules: before.rules }, after: { version, rules: ordered, note } };
   },
 
