@@ -43,6 +43,7 @@
 | `MODULE_DISABLED` | 403 | Module chưa bật cho đơn vị | Bật module |
 | `RATE_LIMITED` | 429 | Quá hạn mức gọi (khoá API, AI) | Chờ rồi gửi lại, giãn nhịp |
 | `NOT_READY` | 503 | Bản cài chưa sẵn sàng: còn migration chưa áp, mất trigger bảo vệ sổ, CSDL chỉ đọc (`GET /system/health/ready`, L1) | Bộ cân bằng tải ngừng gửi việc; vận hành chạy `db-migrate` |
+| `GATEWAY_UNAVAILABLE` | 503 | Cổng vào (nginx, container `web`) không gọi được api: api dừng, đang khởi động lại hoặc quá giờ — **cổng vào trả, không phải api** <!-- [2026-11-22 12:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6) --> | Thử lại có giãn nhịp (`Retry-After`); vận hành chạy `./scripts/lay-log.sh`, xem `logs/web-loi.log` |
 
 Thêm mã = thay đổi tương thích; đổi nghĩa mã = phá vỡ.
 

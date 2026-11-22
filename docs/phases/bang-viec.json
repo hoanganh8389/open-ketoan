@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 203
+      "count": 202
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 342
+      "count": 343
     }
   ],
   "items": [
@@ -9773,13 +9773,13 @@
     {
       "id": "S038-6",
       "phase": "PHASE-038",
-      "title": "nginx web: web-loi.log (errorlog + truy cập ≥ 500); errorpage 502 503 504 trả JSON GATEWAYUNAVAILABLE",
+      "title": "nginx web: web-loi.log (errorlog + truy cập ≥ 500); errorpage 502 503 trả JSON (không 504 — báo cáo chạy lâu) GATEWAYUNAVAILABLE",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [],
-      "facet": "F1",
+      "facet": "F4",
       "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
       "line": 16
     },
@@ -9853,8 +9853,8 @@
       "phase": "PHASE-038",
       "title": "logError chung: err chuẩn (type, stack, cause lồng, pgCode), errFp, evt; redact một danh sách dùng chung; sửa events.ts bỏ String(err)",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F1",
