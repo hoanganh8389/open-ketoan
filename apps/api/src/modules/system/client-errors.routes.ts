@@ -1,12 +1,13 @@
 // @bizcity-layer P module-sdk
-// [2026-11-22 04:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (S038-13, D038-5, R-LOG-10): POST /api/v1/system/client-errors — lỗi giao diện về logs/web-client.log
+// [2026-11-22 04:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (S038-13, D038-5, R-LOG-10): POST /api/v1/system/client-errors — lỗi giao diện về logs/web-client/<ngày>.log
 /**
+ * (B6, D038-7: tệp là logs/web-client/<YYYY-MM-DD>.log, giữ 30 ngày.)
  * Trình duyệt gửi lỗi lập trình của giao diện (ErrorBoundary theo màn, window.onerror, unhandledrejection — apps/web/src/lib/baoLoiTrinhDuyet.ts).
  *
  * Công khai (lỗi ở trang đăng nhập cũng cần về): không có quyền đọc gì, chỉ ghi một dòng đã che. Chống lạm dụng:
  *   - khuôn chặt (zod, độ dài từng trường), thân ≤ 8 KB;
  *   - che lại ở máy chủ (không tin bên gửi): cheThongBao, khungCuaWeb, lamSachDuongDan (@ketoan/contracts loi-trinh-duyet.ts);
- *   - giới hạn 10 lỗi / phút theo địa chỉ + phiên, trần chung 120 dòng / phút (bảo vệ đĩa; web-client.log 5 MB × 3).
+ *   - giới hạn 10 lỗi / phút theo địa chỉ + phiên, trần chung 120 dòng / phút (bảo vệ đĩa; thư mục web-client/ ≤ 15 MB, 30 ngày).
  * Lưu ý: phía sau nginx req.ip là địa chỉ của cổng vào (app chưa bật trustProxy — như giới hạn đăng nhập), nên phiên (`sid`, ngẫu
  * nhiên mỗi tab) là phần phân biệt chính; trần chung chặn trường hợp xấu nhất.
  */
@@ -61,7 +62,7 @@ export async function clientErrorsRoutes(app: FastifyInstance): Promise<void> {
     bodyLimit: 8 * 1024,
     schema: {
       tags: ['Hệ thống'], security: [],
-      summary: 'Giao diện báo lỗi lập trình (render, lỗi không bắt) — một dòng vào logs/web-client.log; không dữ liệu nhập; 10 lỗi / phút / phiên',
+      summary: 'Giao diện báo lỗi lập trình (render, lỗi không bắt) — một dòng vào logs/web-client/<ngày>.log; không dữ liệu nhập; 10 lỗi / phút / phiên',
       body,
     },
     handler: async (req) => {
@@ -73,7 +74,7 @@ export async function clientErrorsRoutes(app: FastifyInstance): Promise<void> {
       const errFp = errFpWeb(b.type, frames, message);
       const fields = { evt: 'bizcity.web.client_error', errFp, kind: b.kind, type: b.type, message, frames, screen: lamSachDuongDan(b.screen).slice(0, G.man), cid: b.cid };
       ghiLoiTrinhDuyet(fields);
-      // stdout / api-loi.log (≥ warn) một dòng ngắn — Loki thấy khi bật bộ giám sát; chi tiết ở web-client.log
+      // stdout / logs/api/<ngày>.log (≥ warn) một dòng ngắn — Loki thấy khi bật bộ giám sát; chi tiết ở logs/web-client/<ngày>.log
       req.log.warn({ evt: fields.evt, errFp, kind: b.kind, type: b.type, screen: fields.screen, cid: b.cid }, 'Lỗi giao diện');
       return ok({ errFp });
     },

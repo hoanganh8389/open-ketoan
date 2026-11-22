@@ -1,10 +1,10 @@
-// [2026-11-22 05:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (S038-13, D038-5, R-LOG-10): lỗi giao diện về logs/web-client.log — che dữ liệu ở cả hai đầu, giới hạn nhịp, khuôn chặt
+// [2026-11-22 05:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (S038-13, D038-5, R-LOG-10): lỗi giao diện về logs/web-client/<ngày>.log — che dữ liệu ở cả hai đầu, giới hạn nhịp, khuôn chặt
 /**
  * Kiểm:
  *   - cheThongBao che email, số ≥ 6 chữ số (SĐT, MST, số tài khoản), mã định danh, chuỗi dài; giữ thông báo lập trình bình thường;
  *   - khungCuaWeb chỉ giữ khung của mã web (/assets/, /src/), bỏ tên miền, tham số truy vấn, tiện ích trình duyệt, node_modules;
  *   - goiLoiTrinhDuyet làm sạch màn (không chuỗi truy vấn, đoạn có số → :x);
- *   - route: một dòng vào web-client.log có service web / commit / errFp / cid; máy chủ che lại dù bên gửi không che; trường lạ
+ *   - route: một dòng vào logs/web-client/<ngày>.log có service web / commit / errFp / cid; máy chủ che lại dù bên gửi không che; trường lạ
  *     bị từ chối; quá 10 lỗi / phút / phiên → 429; cùng lỗi → cùng errFp.
  */
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -13,6 +13,7 @@ import path from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { boQuaLoiTrinhDuyet, cheThongBao, goiLoiTrinhDuyet, khungCuaWeb } from '@ketoan/contracts';
 import { _datLaiNhipLoiTrinhDuyet } from '../src/modules/system/client-errors.routes.js';
+import { ngayVN } from '@bizcity/platform/core/logger';
 import { setupTenant, type TestCtx } from './helpers.js';
 
 describe('che dữ liệu trong thông báo lỗi', () => {
@@ -68,7 +69,8 @@ describe('POST /api/v1/system/client-errors', () => {
   let dir: string;
   const prevDir = process.env.LOG_DIR;
   const prevSha = process.env.BIZCITY_GIT_SHA;
-  const dong = () => readFileSync(path.join(dir, 'web-client.log'), 'utf8').trim().split('\n').map((l) => JSON.parse(l) as Record<string, unknown>);
+  // B6 (D038-7): logs/web-client/<ngày VN>.log
+  const dong = () => readFileSync(path.join(dir, 'web-client', `${ngayVN()}.log`), 'utf8').trim().split('\n').map((l) => JSON.parse(l) as Record<string, unknown>);
   const gui = (b: Record<string, unknown>) => ctx.app.inject({ method: 'POST', url: '/api/v1/system/client-errors', payload: b });
   const mau = (o: Record<string, unknown> = {}) => ({
     kind: 'render', type: 'TypeError', message: "Cannot read properties of undefined (reading 'map')",
@@ -89,7 +91,7 @@ describe('POST /api/v1/system/client-errors', () => {
   });
   beforeEach(() => { _datLaiNhipLoiTrinhDuyet(); });
 
-  it('công khai (không cần đăng nhập): một dòng web-client.log có service web, commit, errFp, cid; trả errFp', async () => {
+  it('công khai (không cần đăng nhập): một dòng web-client/<ngày>.log có service web, commit, errFp, cid; trả errFp', async () => {
     const r = await gui(mau());
     expect(r.statusCode).toBe(200);
     const errFp = (r.json() as { data: { errFp: string } }).data.errFp;

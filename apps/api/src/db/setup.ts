@@ -8,20 +8,20 @@
 // [2026-11-21 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1 (S038-5): nhật ký job ra logs/db-migrate.log (đầu khối: giờ, bản, commit; cuối khối: xong / lỗi đầy đủ); module khác nạp ĐỘNG để lỗi cấu hình lúc nạp cũng vào tệp
 import type * as Client from './client.js';
 import type * as KernelPublic from '../kernel/public.js';
-import { baseFields, installProcessHandlers, logFilePath, logStartFailure, rotatingFile, writeSync } from '@bizcity/platform/core/logger';
+// [2026-11-22 07:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B6 (D038-7): logs/db-migrate/<YYYY-MM-DD>.log — một ngày một tệp, giữ 30 ngày, thư mục 15 MB
+import { baseFields, dailyFile, installProcessHandlers, logStartFailure, writeSync, type ThuMucNhatKy } from '@bizcity/platform/core/logger';
 
 const SERVICE = 'db-migrate';
-const LOG_FILE = 'db-migrate.log';
-installProcessHandlers({ service: SERVICE, file: LOG_FILE });
+const THU_MUC: ThuMucNhatKy = 'db-migrate';
+installProcessHandlers({ service: SERVICE, thuMuc: THU_MUC });
 
 /**
- * Chép mọi dòng job in ra (console của migration, seed, module) vào logs/db-migrate.log, mỗi dòng có giờ. 5 MB × 3 bản (10 §7.3).
+ * Chép mọi dòng job in ra (console của migration, seed, module) vào logs/db-migrate/<ngày>.log, mỗi dòng có giờ (10 §7.3).
  * Dòng JSON khuôn pino (writeSync) đã tự ghi tệp — bỏ qua ở đây cho khỏi trùng.
  */
 function teeConsoleToFile(): void {
-  const p = logFilePath(LOG_FILE);
-  if (!p) return;
-  const file = rotatingFile(p, 5 * 1024 * 1024, 3);
+  const file = dailyFile(THU_MUC);
+  if (!file) return;
   for (const stream of [process.stdout, process.stderr]) {
     const orig = stream.write.bind(stream) as (chunk: unknown, ...rest: unknown[]) => boolean;
     stream.write = ((chunk: unknown, ...rest: unknown[]) => {
@@ -119,7 +119,7 @@ async function sampleTenant(tenantsBefore: number, adminPassword: string): Promi
 
 async function main(): Promise<void> {
   const b = baseFields(SERVICE);
-  writeSync('info', { evt: 'bizcity.system.migrate_started', msg: `Job cơ sở dữ liệu bắt đầu — bản ${b.version}, commit ${b.commit ?? '(chưa đặt BIZCITY_GIT_SHA)'}` }, { service: SERVICE, file: LOG_FILE });
+  writeSync('info', { evt: 'bizcity.system.migrate_started', msg: `Job cơ sở dữ liệu bắt đầu — bản ${b.version}, commit ${b.commit ?? '(chưa đặt BIZCITY_GIT_SHA)'}` }, { service: SERVICE, thuMuc: THU_MUC });
   ({ pool } = await import('./client.js'));
   const { db } = await import('./client.js');
   ({ seed } = await import('../kernel/public.js'));
@@ -148,11 +148,11 @@ async function main(): Promise<void> {
   console.log(changes.length ? `Registry module: ${changes.map((c) => `${c.action} ${c.key}`).join(', ')}` : 'Registry module: đã khớp bản dựng');
   await sampleTenant(tenantsBefore, main.adminPassword);
   await pool.end();
-  writeSync('info', { evt: 'bizcity.system.migrate_done', msg: `Job cơ sở dữ liệu xong: áp ${applied.length} migration`, applied }, { service: SERVICE, file: LOG_FILE });
+  writeSync('info', { evt: 'bizcity.system.migrate_done', msg: `Job cơ sở dữ liệu xong: áp ${applied.length} migration`, applied }, { service: SERVICE, thuMuc: THU_MUC });
 }
 
 main().catch((err) => {
   console.error('Job cơ sở dữ liệu lỗi:', err instanceof Error ? err.message : err);
-  logStartFailure(err, { service: SERVICE, file: LOG_FILE });
+  logStartFailure(err, { service: SERVICE, thuMuc: THU_MUC });
   process.exit(1);
 });
