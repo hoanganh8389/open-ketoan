@@ -42,6 +42,8 @@ import { metricsRoutes } from '../modules/system/metrics.routes.js';
 import { presenceRoutes } from '../modules/system/presence.js';
 import { accessRoutes } from '../modules/access/access.routes.js';
 import { appsRoutes } from '../modules/apps/apps.routes.js';
+// [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: CORE_ROUTES thêm provisioningRoutes (Provisioning API /_sites/v1, chỉ chế độ multi + tên miền điều hành)
+import { provisioningRoutes } from '../modules/sites/provisioning.routes.js';
 // [2026-11-02 03:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-020 — gắn route Kiểm chuẩn (conformanceRoutes) vào nhóm Core
 import { accountRoutes, taxCodeRoutes, postingConfigRoutes, periodRoutes, documentRoutes, defaultDataRoutes, taxInfoRoutes, ledgerRoutes, debtRoutes, inventoryRoutes, conformanceRoutes, intakeRoutes, lineageRoutes, reviewRoutes } from '../kernel/public.js';
 import { branchRoutes } from '../modules/branches/branch.routes.js';
@@ -85,7 +87,7 @@ import { stockCountRoutes } from './kho/kiem-ke.js';
 import { inventoryReportRoutes } from '../modules/inventory/inventory-report.routes.js';
 
 export const CORE_ROUTES: Routes[] = [
-  authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, mcpRoutes, metricsRoutes, presenceRoutes, accessRoutes, appsRoutes,
+  authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, mcpRoutes, metricsRoutes, presenceRoutes, accessRoutes, appsRoutes, provisioningRoutes,
   accountRoutes, branchRoutes, coCauRoutes, warehouseRoutes, warehouseTypeRoutes, catalogTrashRoutes, coCauHistoryRoutes, unitNameRoutes, helpRoutes, partnerRoutes, taxCodeRoutes, postingConfigRoutes, periodRoutes,
   documentRoutes, connectionRoutes, dimensionRoutes, contractScheduleRoutes, defaultDataRoutes, bankAccountRoutes,
   productRoutes, catalogRoutes, itemRoutes, saleProgramRoutes, lotRoutes, voucherTemplateRoutes, signatureRoutes, printTemplateRoutes, printProfileRoutes, taxInfoRoutes, referenceDocumentRoutes, docRefRoutes,

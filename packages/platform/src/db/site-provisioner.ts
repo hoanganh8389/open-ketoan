@@ -39,6 +39,8 @@ export class SiteProvisionError extends Error {
 }
 
 export interface CreateSiteInput {
+  /** Mã site cấp trước (Provisioning API trả ngay cho phía gọi, B5a); trống = tự sinh. */
+  siteId?: string;
   slug: string;
   /** Tên miền chính, đầy đủ (vd congtya.btnet.vn). */
   domain: string;
@@ -111,7 +113,9 @@ export async function createSite<T = undefined>(input: CreateSiteInput, initiali
   }
   if (!DOMAIN_RE.test(domain)) throw new SiteProvisionError('SITE_DOMAIN_INVALID', 'Tên miền không hợp lệ');
   const { dbName, appRole } = siteDbNames(slug);
-  const siteId = newSiteId();
+  // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: nhận mã site cấp trước (ULID 26 ký tự)
+  if (input.siteId !== undefined && !/^[0-9A-HJKMNP-TV-Z]{26}$/.test(input.siteId)) throw new SiteProvisionError('SITE_PROVISION_FAILED', 'Mã site không đúng khuôn');
+  const siteId = input.siteId ?? newSiteId();
   const base = new URL(env.DATABASE_URL);
 
   await ensureControlSchema();

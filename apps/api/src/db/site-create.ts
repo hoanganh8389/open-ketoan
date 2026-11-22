@@ -15,12 +15,13 @@ export const ownerPassword = (): string => `Bc${randomBytes(12).toString('base64
 export interface SiteCreateResult { siteId: string; slug: string; domain: string; dbName: string; ownerEmail: string; ownerPassword: string; tenantId: string }
 
 /** Tạo site và khởi tạo đơn vị đầu + chủ site bằng seed() của Kernel (không in bí mật, không tự tạo khoá API). */
-export async function createSiteWithOwner(opts: { slug: string; domain: string; name?: string; email?: string }): Promise<SiteCreateResult> {
+// [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: nhận mã site cấp trước (Provisioning API trả mã site ngay khi nhận lệnh)
+export async function createSiteWithOwner(opts: { siteId?: string; slug: string; domain: string; name?: string; email?: string }): Promise<SiteCreateResult> {
   const domain = opts.domain.trim().toLowerCase();
   const ownerEmail = (opts.email ?? `admin@${domain}`).trim().toLowerCase();
   const password = ownerPassword();
   const created = await createSite(
-    { slug: opts.slug, domain, displayName: opts.name ?? '', ownerEmail },
+    { ...(opts.siteId ? { siteId: opts.siteId } : {}), slug: opts.slug, domain, displayName: opts.name ?? '', ownerEmail },
     async ({ slug }) => seed({ tenantCode: slug, tenantName: opts.name || slug, adminEmail: ownerEmail, adminPassword: password, quiet: true, apiKey: false }),
   );
   return {

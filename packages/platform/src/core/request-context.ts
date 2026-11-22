@@ -19,6 +19,8 @@ import { DEFAULT_SITE_ID, siteMode } from '../db/site.js';
 
 /** Đường kiểm sống / sẵn sàng / số đo: bộ cân bằng tải gọi bằng địa chỉ máy, không có tên miền của site. */
 const SITELESS_PATHS = new Set(['/api/v1/system/health', '/api/v1/system/health/ready', '/metrics']);
+// [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): Provisioning API không thuộc site nào; route tự kiểm tên miền điều hành + khoá prov_…
+const PROVISIONING_PREFIX = '/_sites/';
 
 export interface RequestContext {
   requestId: string;
@@ -62,6 +64,11 @@ export function registerRequestContext(app: FastifyInstance): void {
       return;
     }
     // Chế độ nhiều site (ADR-0036): site theo tên miền của yêu cầu, trước xác thực. Không có → 404, không truy vấn nào chạy.
+    // Provisioning API: không gắn site (dùng database điều khiển; `db` gọi tới sẽ ném SITE_CONTEXT_MISSING).
+    if (req.url.startsWith(PROVISIONING_PREFIX)) {
+      store.run(base, done);
+      return;
+    }
     if (SITELESS_PATHS.has(req.url.split('?')[0] ?? '')) {
       store.run({ ...base, siteId: DEFAULT_SITE_ID }, done);
       return;

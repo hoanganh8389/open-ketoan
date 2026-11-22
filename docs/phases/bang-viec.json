@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 207
+      "count": 206
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 75
+      "count": 76
     },
     {
       "key": "paused",
@@ -10085,8 +10085,8 @@
       "phase": "PHASE-039",
       "title": "B5 — Provisioning API /sites/v1 theo 30: SITEADMINHOST, khoá prov…, Idempotency-Key, mã lỗi; chuyển hợp đồng sang docs/contracts/",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [
         "he-thong"
