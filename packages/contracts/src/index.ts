@@ -31,6 +31,7 @@ export * from './print-profile.js'; // [2026-11-11 Nguyễn Văn Thủy] hồ s�
 // [2026-11-01 09:28 PM Johnny Chu - Chu Hoàng Anh] PHASE-019 — W1: mã tra cứu: đọc requestId / traceId, nội dung Chép / Báo lỗi chỉ gồm mã.
 export * from './ma-tra-cuu.js';
 export * from './ket-noi.js'; // [2026-11-22 02:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4: nhận ra mất kết nối máy chủ, lịch thử lại
+export * from './loi-trinh-duyet.js'; // [2026-11-22 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b: khuôn lỗi giao diện gửi về máy chủ
 export * from './costing-formula.js';
 // [2026-11-02 10:42 AM Johnny Chu - Chu Hoàng Anh] PHASE-019 — W4: màn Bàn điều tra, bộ lọc trên địa chỉ, Kịch bản → màn.
 export * from './ban-dieu-tra.js';

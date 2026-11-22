@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 202
+      "count": 199
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 76
+      "count": 75
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 344
+      "count": 348
     }
   ],
   "items": [
@@ -9814,8 +9814,8 @@
       "phase": "PHASE-038",
       "title": "Giao diện: một khay \"Không kết nối được máy chủ phần mềm\" cho GATEWAYUNAVAILABLE / 5xx không JSON; lùi dần lời gọi lặp",
       "priority": null,
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F1",
@@ -9866,8 +9866,8 @@
       "phase": "PHASE-038",
       "title": "(D038-5 đã duyệt) ErrorBoundary theo màn, window.onerror, unhandledrejection → POST /api/v1/system/client-errors → logs/web-client.log",
       "priority": null,
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [],
       "facet": "F8",
@@ -10128,8 +10128,8 @@
       "phase": "PHASE-039",
       "title": "B6 — Backup Manager: site backup, tự kiểm, sitebackups, lịch đêm, chính sách giữ",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
@@ -10143,8 +10143,8 @@
       "phase": "PHASE-039",
       "title": "B6 — site restore vào database tạm → kiểm → đổi tên; sổ tay docs/ops/ (kể cả lấy một site từ PITR)",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"

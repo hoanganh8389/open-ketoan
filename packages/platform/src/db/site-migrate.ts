@@ -7,19 +7,18 @@
  *   2. chọn site cần nâng: `schema_version` khác bản cần, hoặc đang `upgrading` / `migration_failed` (chạy lại được)
  *   3. chuyển các site đó sang `upgrading` (nhớ trạng thái cũ ở `resume_status`), đợi bộ đệm tên miền của ứng dụng hết hạn
  *      (`drainMs`, mặc định 35 giây > 30 giây bộ đệm) — từ lúc này ứng dụng trả 503 SITE_UPGRADING cho site đó, việc nền bỏ qua
- *   4. từng site, tuần tự: sao lưu → migration lõi → migration module (`extra`, lớp gọi truyền vào) → kiểm `schema_version`
+ *   4. từng site, tuần tự: sao lưu (B6a: backupSite — tự kiểm, ghi site_backups) → migration lõi → migration module (`extra`, lớp gọi truyền vào) → kiểm `schema_version`
  *      xong: trạng thái cũ + `schema_version` mới · lỗi: `migration_failed` + câu lỗi, đi tiếp site sau (R-SITE-10)
  *
  * Kết nối: vai trò quản trị (PROVISION_DATABASE_URL, trống = DATABASE_URL) đổi tên database — chủ sở hữu bảng của site tạo từ mẫu.
  * Không có migration lùi (R-REL-5): lùi một site = khôi phục bản sao lưu vừa tạo (đường dẫn có trong kết quả).
  */
-import { spawn } from 'node:child_process';
-import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import pg from 'pg';
 import { appliedSchemaVersion, requiredSchemaVersion, runMigrations } from './migrate.js';
 import { adminUrlFor, provisionerConfig } from './site-provisioner.js';
 import { controlPool, ensureControlSchema, invalidateSiteCache } from './site-registry.js';
+import { backupSite, pgToolsAvailable } from './site-backup.js';
 
 export type SiteMigrateOutcome = 'migrated' | 'up-to-date' | 'failed';
 
@@ -78,35 +77,9 @@ interface Row { id: string; slug: string; status: string; db_name: string; schem
 /** Câu lỗi ngắn để lưu registry: bỏ chuỗi kết nối nếu lỡ có. */
 const shortError = (err: unknown): string => String((err as Error)?.message ?? err).replace(/postgres(ql)?:\/\/\S+/g, '<kết nối>').slice(0, 500);
 
-/** Chạy một lệnh, gom stderr; trả mã thoát. Không ném khi không tìm thấy lệnh (mã -1). */
-function exec(cmd: string, args: string[], env?: NodeJS.ProcessEnv): Promise<{ code: number; err: string }> {
-  return new Promise((resolve) => {
-    let err = '';
-    const p = spawn(cmd, args, { env: env ?? process.env, stdio: ['ignore', 'ignore', 'pipe'] });
-    p.stderr.on('data', (d: Buffer) => { err += d.toString(); });
-    p.on('error', (e) => resolve({ code: -1, err: e.message }));
-    p.on('close', (code) => resolve({ code: code ?? -1, err }));
-  });
-}
-
-/** Sao lưu bằng pg_dump (định dạng custom) vào thư mục; mật khẩu qua PGPASSWORD, không nằm trên dòng lệnh. */
-export function pgDumpBackup(dir: string): SiteBackup {
-  return async ({ slug, connectionString }) => {
-    await mkdir(dir, { recursive: true });
-    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '');
-    const file = path.resolve(dir, `${slug}-${stamp}.dump`);
-    const u = new URL(connectionString);
-    const args = ['--format=custom', `--file=${file}`, `--host=${u.hostname}`, `--port=${u.port || '5432'}`, `--username=${decodeURIComponent(u.username)}`, decodeURIComponent(u.pathname.slice(1))];
-    const r = await exec('pg_dump', args, { ...process.env, PGPASSWORD: decodeURIComponent(u.password) });
-    if (r.code !== 0) throw new Error(`pg_dump lỗi (mã ${r.code}): ${r.err.trim().slice(0, 300)}`);
-    return file;
-  };
-}
-
-/** Có pg_dump trên máy chạy lệnh không. */
-export async function pgDumpAvailable(): Promise<boolean> {
-  return (await exec('pg_dump', ['--version'])).code === 0;
-}
+// [2026-11-22 12:06 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: sao lưu mặc định = backupSite (tự kiểm, ghi site_backups, lý do migrate); công cụ pg_dump ở site-backup.ts
+/** Có pg_dump / pg_restore trên máy chạy lệnh không. */
+export const pgDumpAvailable = pgToolsAvailable;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -121,7 +94,10 @@ export async function migrateSites(opts: MigrateSitesOptions = {}): Promise<Site
   let backup: SiteBackup | undefined;
   if (!opts.skipBackup) {
     if (opts.backup) backup = opts.backup;
-    else if (await pgDumpAvailable()) backup = pgDumpBackup(opts.backupDir ?? path.join('backups', 'sites'));
+    else if (await pgDumpAvailable()) {
+      const dir = opts.backupDir ?? path.join('backups', 'sites');
+      backup = async ({ siteId }) => (await backupSite(siteId, { dir, reason: 'migrate' })).file;
+    }
     else throw new SiteMigrateError('SITE_BACKUP_UNAVAILABLE', 'Không có pg_dump trên máy chạy lệnh: cài pg_dump (cùng bản PostgreSQL) hoặc chạy lại với --skip-backup nếu đã có bản sao lưu khác');
   }
 

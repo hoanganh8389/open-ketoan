@@ -67,6 +67,7 @@ Thêm mã = thay đổi tương thích; đổi nghĩa mã = phá vỡ.
 | Danh mục ghi | `POST /branches`, `PUT /partners/:code`, `PUT /products/:sku` | `catalog:write` |
 | Đối chiếu | `GET /reports/sales-invoices`, `GET /reports/trial-balance` | `reports:read` |
 | Hệ thống | `GET /system/health`, `GET /system/health/ready` (L1; 503 `NOT_READY` khi chưa sẵn sàng) | công khai |
+| Hệ thống | `POST /system/client-errors` <!-- [2026-11-22 05:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b --> — giao diện báo lỗi lập trình (loại, khung stack của mã web, màn; **không** dữ liệu nhập) → `logs/web-client.log`; 10 lỗi / phút / phiên, 429 `RATE_LIMITED` khi quá | công khai |
 | Tự chẩn đoán | `GET /system/diagnostics` (L3 toàn vẹn sổ, [DIAGNOSTICS.md §2](../ops/DIAGNOSTICS.md)) | `reports:read` |
 | Năng lực | `GET /system/capabilities` (bảng năng lực Standard của bản đang chạy) | mọi khoá / phiên đăng nhập |
 | MCP | `POST /mcp` (JSON-RPC 2.0 — [bizcity_mcp@1](BIZCITY-MCP-v1.md)); đi qua nginx của container `web` | phiên / khoá API; công cụ lọc theo quyền |

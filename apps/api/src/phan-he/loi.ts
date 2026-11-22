@@ -40,6 +40,7 @@ import { devtoolsRoutes } from '../modules/system/devtools.routes.js';
 import { mcpRoutes } from '../modules/system/mcp.routes.js';
 import { metricsRoutes } from '../modules/system/metrics.routes.js';
 import { presenceRoutes } from '../modules/system/presence.js';
+import { clientErrorsRoutes } from '../modules/system/client-errors.routes.js'; // [2026-11-22 04:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b: lỗi giao diện về logs/web-client.log
 import { accessRoutes } from '../modules/access/access.routes.js';
 import { appsRoutes } from '../modules/apps/apps.routes.js';
 // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: CORE_ROUTES thêm provisioningRoutes (Provisioning API /_sites/v1, chỉ chế độ multi + tên miền điều hành)
@@ -87,7 +88,7 @@ import { stockCountRoutes } from './kho/kiem-ke.js';
 import { inventoryReportRoutes } from '../modules/inventory/inventory-report.routes.js';
 
 export const CORE_ROUTES: Routes[] = [
-  authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, mcpRoutes, metricsRoutes, presenceRoutes, accessRoutes, appsRoutes, provisioningRoutes,
+  authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, mcpRoutes, metricsRoutes, presenceRoutes, clientErrorsRoutes, accessRoutes, appsRoutes, provisioningRoutes,
   accountRoutes, branchRoutes, coCauRoutes, warehouseRoutes, warehouseTypeRoutes, catalogTrashRoutes, coCauHistoryRoutes, unitNameRoutes, helpRoutes, partnerRoutes, taxCodeRoutes, postingConfigRoutes, periodRoutes,
   documentRoutes, connectionRoutes, dimensionRoutes, contractScheduleRoutes, defaultDataRoutes, bankAccountRoutes,
   productRoutes, catalogRoutes, itemRoutes, saleProgramRoutes, lotRoutes, voucherTemplateRoutes, signatureRoutes, printTemplateRoutes, printProfileRoutes, taxInfoRoutes, referenceDocumentRoutes, docRefRoutes,
