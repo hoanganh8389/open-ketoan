@@ -90,6 +90,8 @@ export const LAYER_MAP = [
   ['db/paths.ts', 'P', 'data'],
   // [2026-11-03 12:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W5 (SC-LAYER-2): setup.ts là điểm vào job (như main.ts)
   ['db/setup.ts', 'P', 'apps/api'],
+  // [2026-11-22 10:43 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4b: nối Site Provisioner với seed() (cùng lớp db/setup.ts)
+  ['db/site-create.ts', 'P', 'apps/api'],
   ['db/seed.ts', 'K', 'kernel/seeds'],
   ['db/types.ts', 'P', 'data'],
 
