@@ -22,6 +22,8 @@ async function start(): Promise<void> {
   const { closeDb } = await import('./db/client.js');
   const { pendingMigrations, runMigrations } = await import('./db/migrate.js');
   const { startEventRuntime } = await import('./core/events.js');
+  // [2026-11-22 11:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c: khởi động (nạp module, registry, thiết lập) chạy trong ngữ cảnh site ngầm định — chế độ multi không truy vấn ngoài ngữ cảnh site
+  const { DEFAULT_SITE_ID, withSite } = await import('@bizcity/platform/db/site');
   const { initTracing, shutdownTracing } = await import('./core/tracing.js');
   // Truy vết (ADR-0010) bật trước mọi việc: span lấy tracer qua proxy nên module đã nạp trước vẫn ghi đúng. Không đặt
   // OTEL_EXPORTER_OTLP_ENDPOINT thì không gửi đi đâu; OTEL_SDK_DISABLED=true thì tắt hẳn.
@@ -32,7 +34,7 @@ async function start(): Promise<void> {
     const pending = await pendingMigrations();
     if (pending.length) throw new Error(`Cơ sở dữ liệu chưa nâng cấp (${pending.length} migration chưa áp, mới nhất ${pending[pending.length - 1]}): chạy job db-migrate trước (docker compose up db-migrate).`);
   }
-  const app = await buildApp();
+  const app = await withSite(DEFAULT_SITE_ID, () => buildApp());
   // Dispatcher sự kiện + đồng hồ (bizcity_event@1): chạy nhiều bản API cùng lúc vẫn đúng nhờ SKIP LOCKED + khoá chống trùng.
   const stopEvents = startEventRuntime(app.log);
 

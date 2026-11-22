@@ -90,11 +90,12 @@ export function withSite<T>(siteId: string, fn: () => T): T {
  * Việc nền chạy lần lượt trên từng site, mỗi lượt trong ngữ cảnh của site đó (D039-8).
  * Có onError: lỗi của một site được báo và bỏ qua, các site sau vẫn chạy. Không có onError: lỗi đầu tiên dừng vòng lặp.
  */
+// [2026-11-22 11:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c (D039-8): việc nền bỏ pool tạm của Site Provisioner (prov:…) và, ở chế độ multi, site ngầm định
 export async function forEachSite(
   fn: (siteId: string) => Promise<void>,
   onError?: (siteId: string, err: unknown) => void,
 ): Promise<void> {
-  for (const siteId of listSiteIds()) {
+  for (const siteId of backgroundSiteIds()) {
     try {
       await withSite(siteId, () => fn(siteId));
     } catch (err) {
@@ -143,4 +144,13 @@ export async function unregisterSitePool(siteId: string): Promise<void> {
   if (!pool) return;
   pools.delete(siteId);
   await pool.end();
+}
+
+// [2026-11-22 11:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c (D039-8): các site việc nền chạy qua
+/**
+ * Site mà việc nền (dispatcher sự kiện, đồng hồ) chạy qua: mọi site đã đăng ký, trừ pool tạm của Site Provisioner (`prov:…` —
+ * database đang tạo dở) và, ở chế độ multi, site ngầm định (DATABASE_URL chỉ dùng cho kiểm sống / số đo, không phải site của khách).
+ */
+export function backgroundSiteIds(): string[] {
+  return listSiteIds().filter((id) => !id.startsWith('prov:') && !(mode === 'multi' && id === DEFAULT_SITE_ID));
 }
