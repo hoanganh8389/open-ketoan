@@ -8,11 +8,11 @@
 | Đang làm | 6 |
 | Chờ merge | 0 |
 | Bị chặn | 30 |
-| Chưa ai nhận | 201 |
+| Chưa ai nhận | 202 |
 | Chờ đủ tín hiệu | 76 |
 | Hoãn | 3 |
 | Xong | 344 |
-| **Tổng** | **660** |
+| **Tổng** | **661** |
 
 ## Theo phân hệ (R-FLOW-10)
 
@@ -26,7 +26,7 @@
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
 | he-thong | 159 | 27 | 2 | 65 | 253 |
-| *(chưa gắn phân hệ)* | 9 | 2 | 0 | 4 | 15 |
+| *(chưa gắn phân hệ)* | 9 | 2 | 0 | 5 | 16 |
 
 ## Đang làm (6)
 
@@ -78,7 +78,7 @@
 | [S037-16](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L25) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân bổ nguồn (receiptorigin hoặc gộp valuationlayersources), thứ tự lấy nguồn khi xuất, ánh xạ dòng nguồn bề… | P0 | — |
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 
-## Chưa ai nhận (201)
+## Chưa ai nhận (202)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -276,6 +276,7 @@
 | [S038-13](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L27) | PHASE-038 | — | (D038-5 đã duyệt) ErrorBoundary theo màn, window.onerror, unhandledrejection → POST /api/v1/system/client-err… | — | — |
 | [S038-14](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L28) | PHASE-038 | — | Luật R-LOG-1..11 + SC-LOG-1..3; rà 16 chỗ nuốt lỗi (ghi warn hoặc chú thích nuot-loi:) | — | — |
 | [S038-15](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L29) | PHASE-038 | — | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | — | — |
+| [S038-16](PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md#L30) | PHASE-038 | — | (D038-7) Nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục: logs/{api,db-migrate,web,web-client}/<YYYY-MM-D… | — | — |
 | [S039-14](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L23) | PHASE-039 | he-thong | B5 — khoá bản quyền biz-… (D039-17): gắn khoá cho site, hỏi trạng thái ở bizcity-llm-router (bộ đệm 1 giờ), d… | P1 | — |
 | [S039-15](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L24) | PHASE-039 | he-thong | B6 — Backup Manager: site backup, tự kiểm, sitebackups, lịch đêm, chính sách giữ | P0 | — |
 | [S039-16](PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md#L25) | PHASE-039 | he-thong | B6 — site restore vào database tạm → kiểm → đổi tên; sổ tay docs/ops/ (kể cả lấy một site từ PITR) | P0 | — |

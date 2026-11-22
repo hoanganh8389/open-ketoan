@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 201
+      "count": 202
     },
     {
       "key": "partial",
@@ -9899,6 +9899,19 @@
       "facet": "F6",
       "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
       "line": 29
+    },
+    {
+      "id": "S038-16",
+      "phase": "PHASE-038",
+      "title": "(D038-7) Nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục: logs/{api,db-migrate,web,web-client}/<YYYY-MM-DD>.log; giữ 30 ngày, trần từng thư mục (10 §7.3); …",
+      "priority": null,
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 30
     },
     {
       "id": "S039-1",

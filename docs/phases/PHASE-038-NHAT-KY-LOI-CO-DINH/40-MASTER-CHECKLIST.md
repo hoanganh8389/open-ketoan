@@ -27,8 +27,12 @@ Thứ tự theo giá trị: B1 một mình đã giải được sự cố 2026-1
 | S038-13 | B4b | (D038-5 đã duyệt) ErrorBoundary theo màn, `window.onerror`, `unhandledrejection` → `POST /api/v1/system/client-errors` → `logs/web-client.log` | `apps/web/src/**` (khung app); `apps/api/src/modules/system/**` | lỗi render → màn có mã tra cứu, không trắng; một dòng trong tệp | ☐ |
 | S038-14 | B5 | Luật R-LOG-1..11 + SC-LOG-1..3; rà 16 chỗ nuốt lỗi (ghi `warn` hoặc chú thích `nuot-loi:`) | `docs/rules/RULE-LOG.md`; `tests/conformance/**`; các tệp ở 10 §4 G6 | SC-LOG xanh trên main | ☐ |
 | S038-15 | ngoài | Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail | `infrastructure/monitoring/**` — giao chủ PHASE-018 | log vẫn vào Loki, dashboard 06 chạy | ☐ |
+| S038-16 | B6 | (D038-7) Nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục: `logs/{api,db-migrate,web,web-client}/<YYYY-MM-DD>.log`; giữ 30 ngày, trần từng thư mục (10 §7.3); dọn tệp kiểu cũ ở gốc `logs/`; `lay-log.sh` gom theo thư mục | `packages/platform/src/core/logger.ts`; `apps/api/src/db/setup.ts`; `apps/api/src/modules/system/client-errors.routes.ts`; `docker/nginx.conf`; `docker/web-xoay-log.sh`; `scripts/lay-log.sh`; sổ tay | ghi sang ngày mới thì tệp mới; tệp quá 30 ngày / vượt trần bị xoá; gói gửi về có đủ các thư mục | ☐ |
 
 ## Nhật ký
+
+<!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — D038-7 -->
+- 2026-11-22 — Chủ dự án quy định (D038-7): nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục cố định (`logs/web-client/<ngày>.log`…), dọn sau 30 ngày — "giới hạn tệp log sẽ ổn hơn". Thêm S038-16 (B6). Sửa luật R-LOG-9, CANON §0.12 (v1.11), README §4.1 / §5, 10 §7.3, `AGENTS.md`.
 
 <!-- [2026-11-22 03:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4 -->
 - 2026-11-22 — B4 (S038-9): một khay "Không kết nối được máy chủ phần mềm" (`KhayMatKetNoi`) cho `GATEWAY_UNAVAILABLE` / 502 / 503 không JSON; 504 (báo cáo chạy lâu) và 5xx JSON của api **không** gộp. Khay Mã tra cứu ghi một lần cho N lời gọi hỏng. Tự thử `/system/health` giãn dần 5 → 60 giây (một vòng cho cả tab), nút Thử lại ngay, sau 60 giây hiện hướng dẫn `lay-log.sh`; nối lại thì báo vài giây và react-query tải lại các màn. React-query không thử lại lỗi này; ping hiện diện tạm dừng. Logic ở `@ketoan/contracts` (`ket-noi.ts`: `laMatKetNoi`, `choThuLai`, `taoKhoKetNoi`), test 16. Khi viết B4 phát hiện B2 gộp nhầm 504 — đã sửa ở #544.
