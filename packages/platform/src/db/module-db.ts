@@ -120,10 +120,11 @@ export async function moduleTableProblems(c: Q, key: string): Promise<TableProbl
  * Chạy migration chưa áp của một module (thư mục `dir`, tệp NNNN_*.sql). Kết nối RIÊNG bằng DATABASE_URL (vai trò sở hữu),
  * như runMigrations của Core. Trả tên tệp đã áp.
  */
-export async function runModuleMigrations(key: string, dir: string, opts: { reads?: string[]; log?: (m: string) => void } = {}): Promise<string[]> {
+// [2026-11-22 11:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: nhận chuỗi kết nối (migration module trên database site); trống = DATABASE_URL
+export async function runModuleMigrations(key: string, dir: string, opts: { reads?: string[]; log?: (m: string) => void; connectionString?: string } = {}): Promise<string[]> {
   const r = moduleRoles(key);
   const log = opts.log ?? (() => {});
-  const client = new pg.Client({ connectionString: env.DATABASE_URL });
+  const client = new pg.Client({ connectionString: opts.connectionString ?? env.DATABASE_URL });
   await client.connect();
   const applied: string[] = [];
   try {

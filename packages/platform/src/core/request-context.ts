@@ -73,14 +73,23 @@ export function registerRequestContext(app: FastifyInstance): void {
       store.run({ ...base, siteId: DEFAULT_SITE_ID }, done);
       return;
     }
+    // [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3 (R-SITE-9): cổng lược đồ — site đang nâng / nâng lỗi / lệch bản → 503, không truy vấn nào chạy
     import('../db/site-registry.js')
-      .then((m) => m.resolveSiteIdByHost(req.host))
+      .then((m) => m.resolveSiteByHost(req.host))
       .then(
-        (siteId) => {
-          if (!siteId) {
+        (r) => {
+          if (!r) {
             reply.code(404).send({ ok: false, error: { code: 'SITE_NOT_FOUND', message: 'Không tìm thấy phần mềm kế toán của tên miền này', requestId: String(req.id) } });
             return;
           }
+          if ('gate' in r) {
+            const message = r.gate === 'SITE_UPGRADING'
+              ? 'Phần mềm kế toán đang nâng cấp, vui lòng thử lại sau ít phút'
+              : 'Nâng cấp phần mềm kế toán gặp lỗi, quản trị đang xử lý; dữ liệu không bị thay đổi';
+            reply.code(503).header('retry-after', '60').send({ ok: false, error: { code: r.gate, message, requestId: String(req.id) } });
+            return;
+          }
+          const siteId = r.siteId;
           store.run({ ...base, siteId }, done);
         },
         (err: unknown) => done(err as Error),
