@@ -32,6 +32,7 @@ import { NutChiNhanh } from '@/components/ChiNhanhLamViec';
 import { DangOnline } from './DangOnline';
 import { workBranch } from '@/lib/workBranch';
 import { MaTraCuu } from '@/components/MaTraCuu';
+import { KhayMatKetNoi } from '@/components/KhayMatKetNoi'; // [2026-11-22 02:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4: một khay khi mất kết nối máy chủ
 // [2026-11-03 11:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-024 — HT09: dòng nhắc sau khi lưu danh mục
 import { SavedFlash } from '@/components/WhyPanel';
 
@@ -120,6 +121,7 @@ export function AppLayout() {
           </div>
         </main>
         <MaTraCuu />
+        <KhayMatKetNoi />
       </div>
     );
   }
@@ -173,6 +175,7 @@ export function AppLayout() {
       {changingPassword && <ChangePasswordModal onClose={() => setChangingPassword(false)} />}
       {/* Mã tra cứu của lỗi API gần nhất (PHASE-019 W1): người dùng chép gửi dev. */}
       <MaTraCuu />
+      <KhayMatKetNoi />
     </>
   );
 }

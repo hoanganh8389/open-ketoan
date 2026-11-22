@@ -14,6 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MenuItem } from '@ketoan/contracts';
 import { ROLE_LABELS, type Role } from '@ketoan/contracts';
 import { api, tokenStore } from '@/lib/api';
+import { ketNoi } from '@/lib/ketNoi';
 import { MODULES, flattenMenu } from './menu';
 import { moduleOfAppPath } from './ModuleBar';
 
@@ -54,6 +55,8 @@ export function DangOnline({ menu }: { menu: MenuItem[] }) {
   useEffect(() => {
     const ping = (leave = false) => {
       if (!leave && document.visibilityState !== 'visible') return;
+      // [2026-11-22 02:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4 (S038-9): đang mất kết nối máy chủ thì không báo online — lib/ketNoi.ts tự thử lại giãn dần, không dội cổng vào
+      if (!leave && ketNoi.dangMat()) return;
       const token = tokenStore.get() || lastToken.current;
       if (!token) return;
       lastToken.current = token;
@@ -76,7 +79,7 @@ export function DangOnline({ menu }: { menu: MenuItem[] }) {
   }, [qc]);
   // Đổi màn: báo ngay để danh sách quản trị thấy đúng màn đang làm.
   useEffect(() => {
-    if (document.visibilityState !== 'visible') return;
+    if (document.visibilityState !== 'visible' || ketNoi.dangMat()) return; // PHASE-038 B4
     void api.post('/api/v1/presence/ping', { deviceId: DEVICE_ID, tabId: TAB_ID, path: loc.pathname, screen }).catch(() => undefined);
   }, [loc.pathname, screen]);
 

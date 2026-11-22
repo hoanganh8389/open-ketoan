@@ -4,8 +4,9 @@
  * hết phiên thì đưa về trang đăng nhập.
  */
 import { SU_KIEN_LOI, type LoiMayChu } from '@/components/kiemLoi';
-import type { ApiFailure, ApiSuccess } from '@ketoan/contracts';
+import { CHU_MAT_KET_NOI, MA_MAT_KET_NOI, type ApiFailure, type ApiSuccess } from '@ketoan/contracts';
 import { docMaTuPhanHoi, khoMaTraCuu } from './maTraCuu';
+import { ketNoi } from './ketNoi';
 import { workBranch } from './workBranch';
 
 const TOKEN_KEY = 'ketoan.token';
@@ -23,6 +24,12 @@ export class ApiError extends Error {
 
 /** Dựng ApiError + ghi khay Mã tra cứu. 401 không ghi (đã đưa về trang đăng nhập). */
 function failure(res: Response, method: string, path: string, code: string, message: string, error?: ApiFailure['error'] | null, details?: unknown, quiet = false): ApiError {
+  // [2026-11-22 02:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4 (S038-9): mất kết nối máy chủ (GATEWAY_UNAVAILABLE, 502 / 503 không JSON) → một khay KhayMatKetNoi; khay Mã tra cứu chỉ ghi lần đầu, không mỗi lời gọi
+  if (ketNoi.la({ status: res.status, json: error != null, code: error?.code ?? null })) {
+    const maMat = docMaTuPhanHoi({ status: res.status, method, path, screen: window.location.pathname, error: error ?? { code: MA_MAT_KET_NOI }, headerRequestId: res.headers.get('x-request-id') });
+    if (ketNoi.mat(maMat.requestId)) khoMaTraCuu.ghi(maMat);
+    return new ApiError(MA_MAT_KET_NOI, CHU_MAT_KET_NOI.tieuDe, res.status, details, { requestId: maMat.requestId, traceId: maMat.traceId });
+  }
   const ma = docMaTuPhanHoi({ status: res.status, method, path, screen: window.location.pathname, error: error ?? { code }, headerRequestId: res.headers.get('x-request-id') });
   // [2026-11-16 Nguyễn Văn Thủy] lời gọi phụ (quiet: số liệu tham khảo, không có quyền thì thôi) không bật hộp Mã tra cứu (đóng góp)
   if (res.status !== 401 && !(quiet && res.status === 403)) khoMaTraCuu.ghi(ma);
@@ -97,6 +104,7 @@ async function request<T>(method: string, path: string, opts: { query?: Query; b
     }
     throw failure(res, method, path, json.error.code, json.error.message, json.error, json.error.details, opts.quiet);
   }
+  ketNoi.daNoi(); // PHASE-038 B4: một lời gọi thành công = đã nối lại (không làm gì khi đang nối)
   return { data: json.data, meta: json.meta as Record<string, unknown> | undefined };
 }
 
