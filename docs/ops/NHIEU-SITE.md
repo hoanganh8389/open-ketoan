@@ -5,7 +5,7 @@
 <!-- [2026-11-22 10:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a: Site Provisioner, biến SITE_TEMPLATE_DB, SITE_SECRET_KEY, PROVISION_DATABASE_URL, SITE_APP_PARENT_ROLE -->
 > **Trạng thái (2026-11-22):** có mã tới B4a (Site Provisioner). <!-- [2026-11-22 11:11 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c: việc nền theo site; còn thiếu B3 -->
 <!-- [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: nâng cấp theo site; còn thiếu sao lưu theo lịch / khôi phục (B6), cap-nhat.sh nhiều site (B7) -->
-**Chạy được, nâng cấp bằng lệnh:** `bizcity site migrate` nâng database mẫu rồi từng site, có cổng lược đồ (B3, §6). Đủ lệnh vòng đời qua Provisioning API (B5b, hợp đồng PHASE-039 §30). Chưa có: khoá bản quyền `biz-…` (S039-14) <!-- [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b: khoá / xoá mềm có ở CLI (§9) -->, <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: có sao lưu / khôi phục theo site (§8) --> `cap-nhat.sh` chế độ nhiều site (B7) — trước B7, nâng cấp làm tay theo §6. Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), việc nền theo site (B2c), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
+**Chạy được, nâng cấp bằng lệnh:** `bizcity site migrate` nâng database mẫu rồi từng site, có cổng lược đồ (B3, §6). Đủ lệnh vòng đời qua Provisioning API (B5b, hợp đồng PHASE-039 §30). Chưa có: khoá bản quyền `biz-…` (S039-14) <!-- [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b: khoá / xoá mềm có ở CLI (§9) -->, <!-- [2026-11-22 12:35 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: có sao lưu / khôi phục theo site (§8) --> <!-- [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a: cap-nhat.sh nâng nhiều site (§10) --> nhật ký / số đo có `site` (B7b). Nâng cấp: `./scripts/cap-nhat.sh` (§10). Đã có: nhận site theo tên miền (B2a), vé gắn site (B2b), việc nền theo site (B2c), bộ đệm có mã site (B2d), vai trò ứng dụng riêng từng site (B4a), tạo site có chủ site (B4b), Provisioning API (B5a).
 
 ## 1. Biến môi trường
 
@@ -107,11 +107,11 @@ Chạy bằng ảnh **mới** (mã mới, migration mới), trước khi chuyể
 Ảnh `api` có sẵn `pg_dump` (bản 16, cùng máy chủ) và migration của database điều khiển. Lệnh `site` chạy bằng dịch vụ `db-migrate` (cùng ảnh, kết nối bằng vai trò quản trị — dịch vụ `api` chạy bằng `ketoan_app`, không đủ quyền tạo database / nâng lược đồ):
 
 ```bash
-docker compose run --rm --no-deps --entrypoint node \
-  -e CONTROL_DATABASE_URL -e SITE_SECRET_KEY -e SITE_TEMPLATE_DB \
-  -v "$PWD/backups:/app/backups" \
-  db-migrate dist/cli/site.js migrate --all --backup-dir /app/backups/sites
+docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js migrate --all --backup-dir /app/backups/sites
 ```
+
+<!-- [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a: compose chuyển sẵn biến SITE_* và gắn backups/ (BACKUP_HOST_DIR) vào api, db-migrate -->
+Từ B7a `docker-compose.yml` chuyển sẵn các biến `SITE_*` của `.env` và gắn `${BACKUP_HOST_DIR:-./backups}` vào `/app/backups` của `api` và `db-migrate` — không cần `-e` / `-v` như trước. Biến `SITE_*` để trống = chưa đặt (bản cài một công ty không đổi).
 
 - **Gắn thư mục sao lưu** (`-v …/backups`): container bị xoá sau lệnh (`--rm`), bản `.dump` không gắn ra ngoài sẽ mất.
 - `site create`, `site list`, `site key-create` chạy cùng cách (`dist/cli/site.js create …`).
@@ -183,3 +183,29 @@ Tệp sao lưu của site đã dọn **không** bị xoá (dữ liệu của kh�
 ```cron
 50 2 * * * cd /opt/ketoan && docker compose run --rm --no-deps --entrypoint node -e CONTROL_DATABASE_URL -e SITE_SECRET_KEY -e SITE_TEMPLATE_DB db-migrate dist/cli/site.js sweep >> /opt/ketoan/logs/sao-luu-site.log 2>&1
 ```
+
+## 10. Nâng cấp bản cài nhiều site: `./scripts/cap-nhat.sh`
+<!-- [2026-11-22 01:57 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7a (S039-18, R-SITE-8, R-SITE-10) -->
+
+`.env` có `SITE_MODE=multi` thì `cap-nhat.sh` tự đi theo luật nâng cấp R-SITE-8:
+
+| Bước | Việc | Hỏng thì |
+|---|---|---|
+| 1 | sao lưu database ngầm định (`sao-luu.sh`) + **database điều khiển** (`backups/control-<db>-<giờ>.dump`, kiểm có bảng `sites`) | dừng, chưa đổi gì |
+| 2 | in sắp đổi gì + số site sẽ nâng; hỏi xác nhận (`--yes` khi chạy không bàn phím) | — |
+| 3 | `git pull --ff-only` | dừng, chưa đổi gì |
+| 4a | `docker compose build api db-migrate` — **ứng dụng cũ vẫn phục vụ** | dừng; chưa site nào bị chạm; `git checkout <commit cũ>` |
+| 4b | `site migrate --all` **bằng ảnh mới**: database mẫu trước, rồi từng site (sao lưu `pg_dump` trước mỗi site, `backups/sites/<slug>/`) | mẫu lỗi / thiếu `pg_dump`: dừng, không site nào bị chạm. Site lỗi: site đó `migration_failed` (503), các site khác đi tiếp |
+| 4c | `docker compose up -d` — chuyển ứng dụng sang ảnh mới | in lệnh lùi |
+| 5 | chờ API khoẻ; còn site lỗi thì in tên site, lệnh chạy lại, lệnh lùi riêng site đó, **mã thoát 1** | in lệnh lùi |
+
+**Lệnh lùi** do script in ra dùng đúng mã bản sao lưu `site migrate` vừa tạo cho từng site (bảng `site_backups`, lý do `migrate`, sau lúc bắt đầu lần nâng cấp này):
+
+```bash
+git checkout <commit cũ> && docker compose up -d --build
+docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js restore --slug <slug> --backup <mã> --yes   # từng site đã nâng
+```
+
+Từ lúc một site được nâng (4b) tới lúc chuyển ảnh (4c), site đó báo 503 `SITE_UPGRADING` với ứng dụng cũ — thời gian gián đoạn mỗi site = thời gian nâng các site còn lại + dựng lại container. Bản cài một công ty (`SITE_MODE` trống / `single`) chạy như trước, không đổi bước nào.
+
+**Lần đầu nâng lên bản có B7a:** `cap-nhat.sh` đang chạy là bản cũ (chưa biết nhiều site) — sau lần đó chạy thêm `docker compose run --rm --no-deps --entrypoint node db-migrate dist/cli/site.js migrate --all --backup-dir /app/backups/sites` (§6) hoặc chạy lại `./scripts/cap-nhat.sh`.

@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 198
+      "count": 197
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 349
+      "count": 350
     }
   ],
   "items": [
@@ -10173,8 +10173,8 @@
       "phase": "PHASE-039",
       "title": "B7 — cap-nhat.sh nhiều site theo 00 §6; docker-compose.yml không ghi cứng tên database ở chế độ multi",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"
