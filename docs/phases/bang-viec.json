@@ -20,12 +20,12 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 211
+      "count": 210
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 72
+      "count": 73
     },
     {
       "key": "paused",
@@ -10010,8 +10010,8 @@
       "phase": "PHASE-039",
       "title": "B2 — bộ đệm trong bộ nhớ thêm khoá site (theo kết quả S039-3) + phép kiểm tĩnh chặn bộ đệm theo đơn vị thiếu site",
       "priority": "P0",
-      "status": "todo",
-      "column": "todo",
+      "status": "partial",
+      "column": "partial",
       "claim": null,
       "modules": [
         "he-thong"

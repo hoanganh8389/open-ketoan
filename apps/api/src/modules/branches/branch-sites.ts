@@ -1,4 +1,5 @@
 // @bizcity-layer M data/masterdata
+// [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d (R-SITE-6): bộ đệm danh sách website theo (site, đơn vị)
 /**
  * Cầu nối chi nhánh ↔ website của hệ thống bán hàng (danh mục Chi nhánh DM02).
  * Gọi đầu "sites" của KẾT NỐI CHÍNH (kết nối đầu chuẩn đánh dấu Chính; chỉ có một kết nối đầu chuẩn thì dùng luôn):
@@ -7,6 +8,7 @@
  */
 import { connectionSchema, type Connection } from '@ketoan/contracts';
 import { db } from '../../db/client.js';
+import { siteScopedKey } from '@bizcity/platform/db/site';
 
 export interface SourceSite { blogId: number; name: string; url: string; siteCode: string; branchCode: string | null; isMain: boolean; active: boolean }
 export interface BranchSites { connection: { code: string; name: string } | null; sites: SourceSite[]; error?: string; fetchedAt?: string }
@@ -35,7 +37,8 @@ function sitesUrl(c: Connection): URL {
 }
 
 export async function branchSites(tenantId: string, refresh = false): Promise<BranchSites> {
-  const hit = cache.get(tenantId);
+  const ck = siteScopedKey(tenantId);
+  const hit = cache.get(ck);
   if (!refresh && hit && Date.now() - hit.at < TTL) return hit.value;
   const c = await primaryConnection(tenantId);
   let value: BranchSites;
@@ -51,6 +54,6 @@ export async function branchSites(tenantId: string, refresh = false): Promise<Br
       value = { connection: { code: c.code, name: c.name }, sites: [], error: `Không lấy được danh sách website: ${(e as Error).message}` };
     }
   }
-  cache.set(tenantId, { at: Date.now(), value });
+  cache.set(ck, { at: Date.now(), value });
   return value;
 }

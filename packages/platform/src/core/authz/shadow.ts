@@ -1,5 +1,6 @@
 // @bizcity-layer P permissions
 // [2026-11-06 10:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-028 — W3 đợt 2 (ADR-0027 Phụ lục A, W3 đợt 2 mục 2): shadow — so quyết định của bộ tính `authorize` với đường cũ (auth.ts) ở requirePermission, chỉ đếm và ghi, không đổi quyết định
+// [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d (R-SITE-6): đệm bật / tắt, số đếm, lệch gần nhất theo (site, đơn vị)
 /**
  * SHADOW: sau khi `requirePermission` quyết theo `auth.permissions` (đường cũ), tính lại bằng bộ tính mới và so:
  *   match          cùng quyết định
@@ -14,6 +15,7 @@
  */
 import type { Role } from '@ketoan/contracts';
 import { db, type Db } from '../../db/client.js';
+import { currentSiteId, siteScopedKey } from '../../db/site.js';
 import { getSetting } from '../settings.js';
 import { listModulePermissions } from '../auth.js';
 import { authorize } from './engine.js';
@@ -39,7 +41,7 @@ export interface ShadowInput {
   isAdmin: boolean;
 }
 
-export interface ShadowDiff { at: string; tenantId: string; userId: string; permission: string; result: ShadowResult; engineReason: string; legacyAllowed: boolean }
+export interface ShadowDiff { at: string; siteId?: string; tenantId: string; userId: string; permission: string; result: ShadowResult; engineReason: string; legacyAllowed: boolean }
 
 const counters: Record<ShadowResult, number> = { match: 0, only_legacy: 0, only_engine: 0, skipped_admin: 0, error: 0 };
 const recent: ShadowDiff[] = [];
@@ -52,14 +54,16 @@ const byTenant = new Map<string, Record<ShadowResult, number>>();
 /** Số đếm theo kết quả và các lệch gần nhất (tối đa 50) trong tiến trình này; `tenantId` thì chỉ số đếm và lệch của đơn vị đó. */
 export function shadowStats(tenantId?: string): { counters: Record<ShadowResult, number>; recent: readonly ShadowDiff[] } {
   if (!tenantId) return { counters: { ...counters }, recent: [...recent] };
-  return { counters: { ...(byTenant.get(tenantId) ?? zero()) }, recent: recent.filter((d) => d.tenantId === tenantId) };
+  const site = currentSiteId();
+  return { counters: { ...(byTenant.get(siteScopedKey(tenantId)) ?? zero()) }, recent: recent.filter((d) => d.tenantId === tenantId && d.siteId === site) };
 }
 
 const count = (tenantId: string, r: ShadowResult) => {
   counters[r]++;
-  const t = byTenant.get(tenantId) ?? zero();
+  const key = siteScopedKey(tenantId);
+  const t = byTenant.get(key) ?? zero();
   t[r]++;
-  byTenant.set(tenantId, t);
+  byTenant.set(key, t);
   metrics.authzShadow.inc({ result: r });
 };
 
@@ -72,16 +76,17 @@ export function resetShadowStats(): void {
 
 /** Bỏ đệm bật / tắt (vừa đổi khoá cấu hình ở tiến trình này). */
 export function forgetShadowEnabled(tenantId?: string): void {
-  if (tenantId) enabledCache.delete(tenantId); else enabledCache.clear();
+  if (tenantId) enabledCache.delete(siteScopedKey(tenantId)); else enabledCache.clear();
 }
 
 /** Khoá `bizcity.authz.shadow` = on cho đơn vị? Lỗi đọc → tắt (shadow không được làm hỏng yêu cầu). */
 export async function shadowEnabled(tenantId: string, conn: Db = db): Promise<boolean> {
-  const hit = enabledCache.get(tenantId);
+  const key = siteScopedKey(tenantId);
+  const hit = enabledCache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.on;
   let on = false;
   try { on = (await getSetting(conn, tenantId, SHADOW_KEY)).value === 'on'; } catch { on = false; }
-  enabledCache.set(tenantId, { on, at: Date.now() });
+  enabledCache.set(key, { on, at: Date.now() });
   return on;
 }
 
@@ -105,7 +110,7 @@ export async function shadowCompare(input: ShadowInput, conn: Db = db, log?: { w
     const result: ShadowResult = d.allowed === input.legacyAllowed ? 'match' : input.legacyAllowed ? 'only_legacy' : 'only_engine';
     count(input.tenantId, result);
     if (result !== 'match') {
-      const diff: ShadowDiff = { at: new Date().toISOString(), tenantId: input.tenantId, userId: input.userId, permission: input.permission, result, engineReason: d.reasonCode, legacyAllowed: input.legacyAllowed };
+      const diff: ShadowDiff = { at: new Date().toISOString(), siteId: currentSiteId(), tenantId: input.tenantId, userId: input.userId, permission: input.permission, result, engineReason: d.reasonCode, legacyAllowed: input.legacyAllowed };
       recent.push(diff);
       if (recent.length > RECENT_MAX) recent.shift();
       log?.warn({ authzShadow: result, permission: input.permission, reasonCode: d.reasonCode, tenantId: input.tenantId, userId: input.userId }, 'authz shadow: bộ tính và đường cũ quyết khác nhau');
