@@ -152,6 +152,7 @@ describe('PHASE-039 B5a — Provisioning API /_sites/v1', () => {
   });
 
   it('health: hợp đồng + số site theo trạng thái', async () => {
-    expect((await call('/_sites/v1/health')).body).toEqual({ contract: 'bizcity_site_provisioning@1', sites: { active: 1 } });
+    // [2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: health thêm appVersion, requiredSchema, attention — so khớp phần của B5a
+    expect((await call('/_sites/v1/health')).body).toMatchObject({ contract: 'bizcity_site_provisioning@1', sites: { active: 1 } });
   });
 });
