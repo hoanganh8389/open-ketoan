@@ -43,6 +43,7 @@
 | `MODULE_DISABLED` | 403 | Module chưa bật cho đơn vị | Bật module |
 | `RATE_LIMITED` | 429 | Quá hạn mức gọi (khoá API, AI) | Chờ rồi gửi lại, giãn nhịp |
 | `NOT_READY` | 503 | Bản cài chưa sẵn sàng: còn migration chưa áp, mất trigger bảo vệ sổ, CSDL chỉ đọc (`GET /system/health/ready`, L1) | Bộ cân bằng tải ngừng gửi việc; vận hành chạy `db-migrate` |
+| `GATEWAY_UNAVAILABLE` | 503 | Cổng vào (nginx, container `web`) không gọi được api: api dừng, đang khởi động lại hoặc quá giờ — **cổng vào trả, không phải api** <!-- [2026-11-22 12:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6) --> | Thử lại có giãn nhịp (`Retry-After`); vận hành chạy `./scripts/lay-log.sh`, xem `logs/web/<ngày>.log` |
 
 Thêm mã = thay đổi tương thích; đổi nghĩa mã = phá vỡ.
 
@@ -66,6 +67,7 @@ Thêm mã = thay đổi tương thích; đổi nghĩa mã = phá vỡ.
 | Danh mục ghi | `POST /branches`, `PUT /partners/:code`, `PUT /products/:sku` | `catalog:write` |
 | Đối chiếu | `GET /reports/sales-invoices`, `GET /reports/trial-balance` | `reports:read` |
 | Hệ thống | `GET /system/health`, `GET /system/health/ready` (L1; 503 `NOT_READY` khi chưa sẵn sàng) | công khai |
+| Hệ thống | `POST /system/client-errors` <!-- [2026-11-22 05:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b --> — giao diện báo lỗi lập trình (loại, khung stack của mã web, màn; **không** dữ liệu nhập) → `logs/web-client/<ngày>.log`; 10 lỗi / phút / phiên, 429 `RATE_LIMITED` khi quá | công khai |
 | Tự chẩn đoán | `GET /system/diagnostics` (L3 toàn vẹn sổ, [DIAGNOSTICS.md §2](../ops/DIAGNOSTICS.md)) | `reports:read` |
 | Năng lực | `GET /system/capabilities` (bảng năng lực Standard của bản đang chạy) | mọi khoá / phiên đăng nhập |
 | MCP | `POST /mcp` (JSON-RPC 2.0 — [bizcity_mcp@1](BIZCITY-MCP-v1.md)); đi qua nginx của container `web` | phiên / khoá API; công cụ lọc theo quyền |

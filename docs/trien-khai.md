@@ -166,6 +166,25 @@ cd /www/wwwroot/tgs-ketoan && ./scripts/cap-nhat.sh
 
 Kịch bản làm lần lượt: sao lưu → `git pull` → dựng lại → chờ API lên khoẻ → in các migration vừa áp. Phần mềm gián đoạn chừng vài chục giây, nên cập nhật ngoài giờ làm việc.
 
+<!-- [2026-11-21 08:12 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — cập nhật cụm nhiều site theo R-SITE-8 -->
+**Cụm nhiều site** ([ADR-0036](adr/ADR-0036-mot-ban-ma-moi-site-mot-database.md), chưa có mã — PHASE-039): một bản mã cho mọi site, theo đúng thứ tự [R-SITE-8](rules/RULE-SITE.md):
+
+```text
+GitHub: open-ketoan
+        ↓
+Kéo mã · build · test                 (bản đang chạy vẫn phục vụ)
+        ↓
+Một phiên bản Open Kế Toán mới
+        ↓
+Migration từng site DB                (kt_template trước; sao lưu trước mỗi site)
+        ↓
+Chuyển ứng dụng sang phiên bản mới
+        ↓
+Tất cả site dùng chung mã mới
+```
+
+Site nâng lỗi báo "đang nâng cấp / nâng cấp lỗi" và dừng riêng; các site khác chạy tiếp. Lùi một site = khôi phục bản sao lưu vừa tạo cho site đó.
+
 ## 7. Vận hành
 
 | Việc | Lệnh |
@@ -177,6 +196,27 @@ Kịch bản làm lần lượt: sao lưu → `git pull` → dựng lại → ch
 | Vào cơ sở dữ liệu | `docker compose exec db psql -U ketoan -d ketoan` |
 
 **Không bao giờ chạy `docker compose down -v`**: tham số `-v` xoá luôn toàn bộ dữ liệu kế toán.
+
+## 7b. Có lỗi: lấy log gửi về
+<!-- [2026-11-21 08:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): mục lấy log gửi về -->
+
+Màn báo lỗi, trang trắng, hay mọi chức năng báo "không kết nối được": **đừng khởi động lại trước**. Gom log rồi gửi:
+
+```bash
+cd /www/wwwroot/tgs-ketoan && ./scripts/lay-log.sh
+```
+
+Lệnh in đường dẫn một tệp `logs/goi-bao-loi-<giờ>.tar.gz` (vài trăm KB). Tải về bằng aaPanel → Files rồi gửi kèm ba ý: **lỗi lúc mấy giờ**, **ở màn nào**, **vừa làm gì**. Lệnh chạy được cả khi phần mềm đã dừng. Gói không chứa mật khẩu, khoá trong `.env`: mọi giá trị dài từ 8 ký tự bị thay bằng `***`; còn sót thì lệnh không tạo gói.
+
+| Muốn | Lệnh |
+|---|---|
+| Lấy log từ một ngày | `./scripts/lay-log.sh --tu 2026-11-20` |
+| Lấy nhiều dòng log Docker hơn | `./scripts/lay-log.sh --dong 5000` |
+| Xem ngay lỗi API <!-- [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B6 (D038-7): logs/<dịch vụ>/<ngày>.log --> | `tail -50 "$(ls -t logs/api/*.log \| head -1)"` |
+| Xem ngay lỗi nâng cấp cơ sở dữ liệu | `tail -80 "$(ls -t logs/db-migrate/*.log \| head -1)"` |
+| Xem ngay lỗi cổng vào (màn báo "Không kết nối được máy chủ phần mềm") <!-- [2026-11-22 12:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2: web-loi.log --> | `tail -50 "$(ls -t logs/web/*.log \| head -1)"` |
+
+Thư mục `logs/` có sẵn trong thư mục cài: **mỗi dịch vụ một thư mục, một ngày một tệp** (`logs/api/`, `logs/db-migrate/`, `logs/web/`, `logs/web-client/`, tên tệp là ngày giờ Việt Nam), giữ 30 ngày, tổng không quá 200 MB. Đặt `LOG_HOST_DIR` trong `.env` để để chỗ khác. Lỗi do proxy aaPanel trả (ví dụ 502 khi phần mềm chưa chạy) nằm ở `/www/wwwlogs/<tên miền>.error.log`.
 
 ## 8. Kiểm tra sau khi cài
 

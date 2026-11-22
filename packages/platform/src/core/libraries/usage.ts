@@ -13,7 +13,8 @@
 import { sql } from 'kysely';
 import type { Db } from '../../db/client.js';
 import type { ValidateResult } from './types.js';
-import { appendRunLog, readRunLog } from '../run-log.js';
+import { appendRunLog, readRunLog, runLogSite } from '../run-log.js';
+// [2026-11-22 03:11 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B7b-2: bộ đệm lượt dùng thư viện mang site (ghi dồn sau, có thể ngoài ngữ cảnh của yêu cầu) — ghi vào nhật ký đúng site
 
 export const FLUSH_AFTER_MS = 30_000;
 export const FLUSH_AT_ROWS = 200;
@@ -22,6 +23,8 @@ const SOURCE_RE = /^[a-z0-9][a-z0-9._/:-]{0,79}$/;
 export type UsageOutcome = 'pass' | 'warn' | 'block';
 
 interface Row {
+  /** Site của lượt dùng (PHASE-039 B7b-2), lấy lúc ghi vào bộ đệm. */
+  site: string;
   tenantId: string;
   day: string;
   libraryId: string;
@@ -60,10 +63,10 @@ function itemCodeOf(r: ValidateResult, input: unknown): string {
 export function recordLibraryUsage(tenantId: string | number, result: ValidateResult, input: unknown, source?: unknown, now = new Date()): void {
   const { outcome, findingCode } = outcomeOf(result);
   const row: Row = {
-    tenantId: String(tenantId), day: now.toISOString().slice(0, 10), libraryId: result.library.id, version: result.library.version,
+    site: runLogSite(), tenantId: String(tenantId), day: now.toISOString().slice(0, 10), libraryId: result.library.id, version: result.library.version,
     source: normalizeSource(source), itemCode: itemCodeOf(result, input), outcome, findingCode, count: 1,
   };
-  const key = [row.tenantId, row.day, row.libraryId, row.version, row.source, row.itemCode, row.outcome, row.findingCode].join('\u0001');
+  const key = [row.site, row.tenantId, row.day, row.libraryId, row.version, row.source, row.itemCode, row.outcome, row.findingCode].join('\u0001');
   const cur = buffer.get(key);
   if (cur) cur.count += 1;
   else buffer.set(key, row);
@@ -81,7 +84,7 @@ export async function flushLibraryUsage(db: Db): Promise<{ rows: number; error?:
   // [2026-11-18 Nguyễn Văn Thủy] số đếm ghi nhật ký JSONL luồng "thu-vien" (0161, bỏ bảng library_usage_daily); đọc thì cộng dồn (đóng góp)
   void db;
   try {
-    for (const { tenantId, ...r } of rows) await appendRunLog<UsageData>(USAGE_STREAM, tenantId, r);
+    for (const { site, tenantId, ...r } of rows) await appendRunLog<UsageData>(USAGE_STREAM, tenantId, r, undefined, { site });
     return { rows: rows.length };
   } catch (e) {
     return { rows: 0, error: (e as Error).message };
@@ -144,7 +147,7 @@ export async function libraryUsage(db: Db, tenantId: string | number, q: UsageQu
 }
 
 const USAGE_STREAM = 'thu-vien';
-type UsageData = Omit<Row, 'tenantId'>;
+type UsageData = Omit<Row, 'tenantId' | 'site'>;
 /** Số đếm (đã cộng theo khoá ngày × thư viện × bản × nguồn × mã × kết quả × mã phát hiện) của đơn vị trong khoảng ngày. */
 export async function libraryUsageRows(tenantId: string | number, q: UsageQuery): Promise<UsageData[]> {
   const sum = new Map<string, UsageData>();

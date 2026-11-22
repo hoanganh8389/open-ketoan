@@ -44,10 +44,14 @@ export const LAYER_MAP = [
   ['core/http.ts', 'P', 'actions'],
   ['core/json-schema.ts', 'P', 'actions'],
   ['core/actions.ts', 'P', 'actions'],
+  ['core/quy-tac.ts', 'P', 'actions'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
   ['core/metrics.ts', 'P', 'observability'],
   ['core/observability.ts', 'P', 'observability'],
   ['core/request-context.ts', 'P', 'observability'],
   ['core/tracing.ts', 'P', 'observability'],
+  ['core/logger.ts', 'P', 'observability'], // [2026-11-21 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1: nhật ký lỗi cố định logs/ (cùng lớp quan sát với tracing)
+  ['core/run-log.ts', 'P', 'core'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
+  ['core/nhat-ky-kiem.ts', 'P', 'observability'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
   ['core/events.ts', 'P', 'events'],
   ['core/auth.ts', 'P', 'permissions'],
   ['core/security/', 'P', 'permissions'],
@@ -71,6 +75,14 @@ export const LAYER_MAP = [
   // [2026-11-03 12:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W5 (SC-LAYER-2): cổng của Platform
   ['core/ports.ts', 'P', 'module-sdk'],
   ['db/module-db.ts', 'P', 'data'],
+  // [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d: bộ định tuyến CSDL theo site và Site Registry (ADR-0036)
+  ['db/site.ts', 'P', 'data'],
+  ['db/site-registry.ts', 'P', 'data'],
+  // [2026-11-22 10:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4a: Site Provisioner
+  ['db/site-provisioner.ts', 'P', 'data'],
+  ['db/site-migrate.ts', 'P', 'data'], // [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3: Migration Runner theo site
+  ['db/site-backup.ts', 'P', 'data'], // [2026-11-22 12:06 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6a: Backup Manager theo site
+  ['db/site-lifecycle.ts', 'P', 'data'], // [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b: vòng đời site
   ['cli/', 'P', 'cli'],
   // Khoá có tiền tố gốc (packages/…) so với đường dẫn đầy đủ — gói có tên tệp trùng gói khác (index.ts của Kernel là K).
   ['packages/module-sdk/src/', 'P', 'module-sdk'],
@@ -84,6 +96,8 @@ export const LAYER_MAP = [
   ['db/paths.ts', 'P', 'data'],
   // [2026-11-03 12:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W5 (SC-LAYER-2): setup.ts là điểm vào job (như main.ts)
   ['db/setup.ts', 'P', 'apps/api'],
+  // [2026-11-22 10:43 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B4b: nối Site Provisioner với seed() (cùng lớp db/setup.ts)
+  ['db/site-create.ts', 'P', 'apps/api'],
   ['db/seed.ts', 'K', 'kernel/seeds'],
   ['db/types.ts', 'P', 'data'],
 
@@ -134,6 +148,8 @@ export const LAYER_MAP = [
   ['modules/unit-names/', 'M', 'data/masterdata'],
   ['modules/bank-accounts/', 'M', 'data/masterdata'],
   ['modules/catalog/', 'M', 'data/masterdata'],
+  ['modules/catalog-trash/', 'M', 'data/masterdata'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
+  ['modules/help/', 'M', 'platform/help'], // [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-LAYER-1): phủ tệp mới theo nhãn đang có
   ['modules/catalog/catalog-notify.ts', 'P', 'events'],
   ['modules/dimensions/', 'P', 'data'],
   // ADR-0003: lịch hợp đồng là nghiệp vụ của module hop-dong.
@@ -146,6 +162,8 @@ export const LAYER_MAP = [
   ['modules/assets/', 'D', 'modules/tai-san'],
   ['modules/access/', 'P', 'permissions'],
   ['modules/apps/', 'P', 'apps.external'],
+  // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: Provisioning API (cùng lớp db/site-create.ts)
+  ['modules/sites/', 'P', 'apps/api'],
   ['modules/auth/', 'P', 'permissions'],
   ['modules/auth/wp-sso.ts', 'A', 'adapters/wordpress'],
   ['modules/system/', 'P', 'module-sdk'],

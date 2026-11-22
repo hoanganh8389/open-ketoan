@@ -10,8 +10,12 @@ import { installTableNav } from './lib/tableNav';
 import { installPrintCatalog } from './printCatalog';
 // [2026-11-02 09:33 PM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W2: bản thật cho @bizcity/ui-kit (màn của module SDK)
 import { installUiKit } from './lib/uiKitHost';
+// [2026-11-22 05:05 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (S038-13): lỗi không bắt của trang về máy chủ; khung lỗi gốc cho phần ngoài màn (đăng nhập, khung)
+import { caiBatLoiTrinhDuyet } from './lib/baoLoiTrinhDuyet';
+import { LoiManHinh } from './components/LoiManHinh';
 
 function render() {
+  caiBatLoiTrinhDuyet();
   giaoDien.apply();
   installUiKit();
   installColumnResize();
@@ -19,7 +23,9 @@ function render() {
   installPrintCatalog();
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <App />
+      <LoiManHinh man="(khung ứng dụng)">
+        <App />
+      </LoiManHinh>
     </StrictMode>,
   );
 }

@@ -1,6 +1,7 @@
 // @bizcity-layer A+P adapters/cell
 // [2026-10-29 10:24 PM Johnny Chu - Chu Hoàng Anh] INIT — khởi tạo Bizcity Core Framework: sổ cái chỉ thêm, cửa nạp sự việc, CANON, hợp đồng, bộ kiểm chuẩn.
 // [2026-10-30 09:58 AM Johnny Chu - Chu Hoàng Anh] PHASE-002 — nhãn lớp @bizcity-layer, đồ thị phụ thuộc mốc, bản nháp API module-sdk.
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * Dữ liệu huấn luyện của Trợ lý — lưu bằng TỆP JSONL, không dùng bảng cơ sở dữ liệu:
  *   <DATA_DIR>/tro-ly/<tenantId>.jsonl   mỗi dòng một mục (câu hỏi / hướng dẫn) dạng JSON
@@ -38,6 +39,7 @@ let queue: Promise<unknown> = Promise.resolve();
 /** Các thao tác ghi chạy lần lượt (một tiến trình API). */
 function serial<T>(fn: () => Promise<T>): Promise<T> {
   const run = queue.then(fn, fn);
+  // nuot-loi: hàng đợi chỉ giữ thứ tự ghi; lỗi của lượt đã trả cho người gọi qua `run`
   queue = run.catch(() => undefined);
   return run;
 }
@@ -49,7 +51,7 @@ export async function readEntries(tenantId: string): Promise<TrainingEntry[]> {
   for (const line of text.split('\n')) {
     const t = line.trim();
     if (!t) continue;
-    try { out.push(JSON.parse(t) as TrainingEntry); } catch { /* dòng hỏng: bỏ qua, không làm hỏng cả tệp */ }
+    try { out.push(JSON.parse(t) as TrainingEntry); } catch { /* nuot-loi: dòng hỏng — bỏ qua, không làm hỏng cả tệp */ }
   }
   return out;
 }

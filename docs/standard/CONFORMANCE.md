@@ -23,7 +23,7 @@
 | CONF-MAN-1 | Hợp lệ theo `BIZCITY-MODULE-v1.schema.json`; `key` = tên thư mục; `id` chưa có | STD-MOD-1 |
 | CONF-MAN-2 | `standard` khớp Standard của Core; mọi `requires.capabilities` có trạng thái `available` | VERSIONING §3 |
 | CONF-MAN-3 | Mọi action ghi có `permission`; quyền mới có tiền tố `<key>:` | STD-MOD-4, STD-ACT-2 |
-| CONF-MAN-4 | Mọi trạng thái trong workflow thuộc 5 nhóm chuẩn; transition có quyền | STD-DOC-4 |
+| CONF-MAN-4 | Mọi trạng thái trong workflow thuộc 6 nhóm chuẩn (`draft` · `pending` · `approved` · `in_progress` · `done` · `cancelled`); transition có quyền | STD-DOC-4 <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — sáu nhóm (bizcity_document 1.5.0-draft) --> |
 | CONF-MAN-5 | `actions[]` trong manifest = tập action `defineAction` trong code; `id` đúng dạng | STD-ACT-6 |
 | CONF-MAN-6 | Action có `ctx.ledger.submit` khai lỗi `PERIOD_LOCKED`, `POSTING_FAILED`; `docType` có trong `ledger.submits` | STD-ACT-8 |
 | CONF-MAN-7 | Slot, hook khai đều có trong danh sách của Extension | STD-EXT-1 |

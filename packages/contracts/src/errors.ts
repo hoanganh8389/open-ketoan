@@ -35,6 +35,8 @@ export const ERROR_CATALOG: Record<ErrorCode, ErrorSpec> = {
   MODULE_DISABLED: { http: 403, category: 'platform', retryable: false, owner: 'platform', message: 'Phân hệ chưa bật cho đơn vị', hint: 'Chủ đơn vị bật phân hệ trong cấu hình.' },
   RATE_LIMITED: { http: 429, category: 'platform', retryable: true, owner: 'platform', message: 'Gọi quá nhiều lần', hint: 'Chờ theo header Retry-After rồi gửi lại, giãn nhịp gọi.' },
   NOT_READY: { http: 503, category: 'platform', retryable: true, owner: 'platform', message: 'Hệ thống chưa sẵn sàng', hint: 'Chờ vận hành áp migration hoặc khôi phục CSDL rồi thử lại.' },
+  // [2026-11-22 11:20 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6): nginx trả mã này (docker/nginx.conf, error_page 502 503; không 504 — báo cáo chạy lâu) — thân JSON thay trang HTML
+  GATEWAY_UNAVAILABLE: { http: 503, category: 'platform', retryable: true, owner: 'platform', message: 'Không kết nối được máy chủ phần mềm', hint: 'Thử lại sau ít phút. Lặp lại thì báo quản trị chạy ./scripts/lay-log.sh và gửi gói log (logs/goi-bao-loi-*.tar.gz).' },
   INTERNAL_ERROR: { http: 500, category: 'server', retryable: true, owner: 'core', message: 'Lỗi hệ thống', hint: 'Thử lại sau ít phút; lặp lại thì gửi requestId cho bộ phận hỗ trợ.' },
 };
 
@@ -197,6 +199,12 @@ export const ERROR_REASONS = {
   PHIEU_BAN_COPY_SOURCE: 'Copy đơn: không có đơn / phiếu / đơn máy bán gốc, phiếu BH10 chưa duyệt, đơn máy bán chưa hoàn tất, không có dòng hàng; kèm status khi có',
   // [2026-11-19 03:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-034 người mua hoá đơn tại quầy (BIZCITY-ERRORS 1.22.0-draft §4c, đóng góp)
   POS_INVOICE_BUYER: 'Người mua hoá đơn điện tử của đơn máy bán thiếu / sai (luật như POS cũ): có MST thì tên người mua không phải "Khách lẻ" và phải có địa chỉ; CCCD 12 số phải có email; email phải đúng định dạng; kèm field (name / address / email / taxCode)',
+  // [2026-11-23 10:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037 khoá cài đặt open-pos (BIZCITY-ERRORS 1.23.0-draft §4c)
+  BLOG_UNKNOWN: 'Khoá cài đặt open-pos mang X-OKT-Blog của blog chưa đăng ký với khoá (ADR-0037); kèm blogId',
+  BLOG_NOT_LINKED: 'Blog đã đăng ký nhưng chưa được nối vào sổ nào (chờ mã nối) hoặc đã thu hồi (ADR-0037) — bridge xếp hàng, không mất đơn; kèm blogId, status',
+  BLOG_REQUIRED: 'Khoá cài đặt open-pos không mang X-OKT-Blog chỉ gọi được route của bản cài (ADR-0037 §4)',
+  POS_LINK_CODE_INVALID: 'Mã nối cửa hàng open-pos sai khuôn, không có, đã dùng, đã hết hạn hoặc khoá cài đặt đã thu hồi (ADR-0037)',
+  TENANT_ALREADY_LINKED: 'Sổ đang đứng đã nối một cửa hàng open-pos khác — mỗi cửa hàng một sổ (ADR-0037, luật tối thượng P-0)',
 } as const;
 export type ErrorReason = keyof typeof ERROR_REASONS;
 

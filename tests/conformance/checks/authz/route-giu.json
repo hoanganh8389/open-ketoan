@@ -8,7 +8,6 @@
   },
   "routes": [
     { "route": "POST /api/v1/auth/login", "class": "cong-khai" },
-    { "route": "POST /api/v1/posting-rules/simulate", "class": "quyen", "$comment": "[2026-11-10 05:00 PM Nguyễn Văn Thủy] PHASE-026 — chỉ đọc: định khoản thử phiếu mẫu, không ghi gì; POST vì thân có quy tắc đề xuất (đóng góp)" },
     { "route": "POST /api/v1/auth/wp-sso", "class": "cong-khai" },
     { "route": "POST /api/v1/apps/ticket/exchange", "class": "giao-thuc" },
     { "route": "POST /api/v1/apps/:key/ticket", "class": "tu-phuc-vu" },
@@ -17,8 +16,21 @@
     { "route": "PUT /api/v1/print-templates/settings", "class": "tu-phuc-vu" },
     { "route": "DELETE /api/v1/print-templates/settings", "class": "tu-phuc-vu" },
     { "route": "POST /api/v1/presence/ping", "class": "tu-phuc-vu" },
+    { "route": "POST /api/v1/system/client-errors", "class": "cong-khai", "$comment": "[2026-11-22 05:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b (R-LOG-10): giao diện báo lỗi lập trình về logs/web-client.log; không đọc gì, khuôn chặt, che dữ liệu, 10 / phút / phiên" },
     { "route": "POST /api/v1/connections/:code/pull", "class": "giao-thuc" },
+    { "route": "POST /api/v1/pos-installation/blogs", "class": "quyen", "$comment": "[2026-11-23 09:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037 §4: bridge (khoá cài đặt okti_, không X-OKT-Blog, preHandler requireInstallation) đăng ký blog + mã nối một lần; không ghi sổ" },
+    { "route": "POST /api/v1/pos-installation/ping", "class": "quyen", "$comment": "[2026-11-23 09:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037 §4: bridge (khoá cài đặt) ping cả bản cài — chỉ ghi lần ping / số đo của blog đã đăng ký; không ghi sổ, không sinh biên nhận mỗi lượt" },
+    { "route": "POST /api/v1/connection/ping", "class": "quyen", "$comment": "[2026-11-23 09:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037 §4: bridge (khoá API thường, documents:write) ping blog vào pos_connections của tenant khoá; không ghi sổ, không sinh biên nhận mỗi lượt" },
     { "route": "POST /mcp", "class": "giao-thuc" },
+    { "route": "POST /_sites/v1/sites", "class": "giao-thuc", "$comment": "[2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; tạo database + vai trò của site, không ghi sổ (chủ dự án duyệt)" },
+    { "route": "POST /_sites/v1/sites/:siteId/suspend", "class": "giao-thuc", "$comment": "[2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; khoá site chỉ đọc (registry), không ghi sổ" },
+    { "route": "POST /_sites/v1/sites/:siteId/resume", "class": "giao-thuc", "$comment": "[2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; mở lại site (registry), không ghi sổ" },
+    { "route": "POST /_sites/v1/sites/:siteId/owner/reset-password", "class": "giao-thuc", "$comment": "[2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8 (S039-22): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; mật khẩu ban đầu mới cho chủ site (bảng users của site), không ghi sổ" },
+    { "route": "POST /_sites/v1/sites/:siteId/domains", "class": "giao-thuc", "$comment": "[2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; thêm tên miền của site (registry), không ghi sổ" },
+    { "route": "DELETE /_sites/v1/sites/:siteId/domains/:domain", "class": "giao-thuc", "$comment": "[2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; bỏ tên miền phụ (registry), không ghi sổ" },
+    { "route": "POST /_sites/v1/sites/:siteId/backups", "class": "giao-thuc", "$comment": "[2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; sao lưu database của site (pg_dump), không ghi sổ" },
+    { "route": "POST /_sites/v1/sites/:siteId/restore", "class": "giao-thuc", "$comment": "[2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; khôi phục database của site từ bản sao lưu của chính nó, database cũ giữ lại, không ghi sổ" },
+    { "route": "DELETE /_sites/v1/sites/:siteId", "class": "giao-thuc", "$comment": "[2026-11-22 01:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b (D039-14): Provisioning API — máy chủ gọi máy chủ bằng khoá prov_… + Idempotency-Key, chỉ tên miền điều hành; xoá mềm site (đổi tên database, giữ 30 ngày), không ghi sổ" },
     { "route": "POST /api/v1/documents", "class": "giao-thuc" },
     { "route": "POST /api/v1/documents/batch", "class": "giao-thuc" },
     { "route": "POST /api/v1/system/modules/:key/seed", "class": "quyen" },
@@ -26,6 +38,10 @@
     { "route": "POST /api/v1/setup/sample-tenant", "class": "quyen", "$comment": "[2026-11-17 09:15 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-7 B5b (PHASE-036 · 00 §15): tạo Công ty Mẫu (seed của Kernel) rồi nạp gói chạy nền bằng AuthContext chủ đơn vị mẫu — mỗi bản ghi có bằng chứng của action con" },
     { "route": "POST /api/v1/purchase/demo/seed", "class": "quyen" },
     { "route": "POST /api/v1/purchase/demo/warehouses", "class": "quyen" },
-    { "route": "POST /api/v1/purchase/demo/clear", "class": "quyen" }
+    { "route": "POST /api/v1/purchase/demo/clear", "class": "quyen" },
+    { "route": "POST /api/v1/help/package/preview", "class": "quyen", "$comment": "[2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-ACT-1)" },
+    { "route": "POST /api/v1/inventory/costing/import-check", "class": "quyen", "$comment": "[2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-ACT-1)" },
+    { "route": "POST /api/v1/posting/scheme/preview", "class": "quyen", "$comment": "[2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-ACT-1)" },
+    { "route": "POST /api/v1/validation-log/form", "class": "tu-phuc-vu", "$comment": "[2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi (SC-ACT-1)" }
   ]
 }

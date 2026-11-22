@@ -49,8 +49,10 @@ Dự án: **Bizcity Core Framework** (open-ketoan) — hạ tầng ứng dụng 
 - **R-LOG-3 · tiến trình không chết câm:** điểm vào mới gọi `installProcessHandlers()` trước mọi import khác; lỗi khởi động ghi `fatal` đồng bộ rồi mới thoát.
 - **R-LOG-4 · không lộ dữ liệu:** ghi mã, định danh, tên trường — không payload, mật khẩu, token, MST / SĐT / email cá nhân, số tài khoản.
 - **Chọn mức:** người dùng nhập sai = `info` (không phải lỗi hệ thống); đã lùi được = `warn`; cần người sửa = `error`; tiến trình sắp chết = `fatal`.
-- **Nhật ký lỗi cố định** `logs/` của bản cài (≤ 200 MB) chỉ do logger của Platform ghi; không tự `appendFile` tệp log riêng.
+- **Nhật ký lỗi cố định** `logs/<dịch vụ>/<YYYY-MM-DD>.log` của bản cài (một ngày một tệp, giữ 30 ngày, ≤ 200 MB — R-LOG-9) chỉ do logger của Platform ghi; không tự `appendFile` tệp log riêng.
 - R-LOG-1..4 là **chặn** khi rà; R-LOG-5..11 là cảnh báo. Mã cũ chưa theo luật: không bắt sửa trong PR không liên quan, ghi nợ vào PHASE-038 (S038-14). Chi tiết: [RULE-LOG](docs/rules/RULE-LOG.md), [PHASE-038](docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/README.md).
+- **Nhận log để sửa mã** (người dùng dán dòng log, gửi gói `goi-bao-loi-*.tar.gz`, hay hỏi "lỗi này là gì") <!-- [2026-11-22 10:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5: dev và AI của dev phải hiểu cơ chế log và phân tích được log (chủ dự án 2026-11-22) -->: đọc theo [docs/ops/DOC-LOG-SUA-LOI.md](docs/ops/DOC-LOG-SUA-LOI.md) — lấy `commit` rồi đọc mã ở đúng commit đó; gom theo `errFp`; đi từ khung stack đầu tiên trong `apps/` · `packages/` (giao diện: đổi `frames` qua source map); đọc `err.cause`, `err.code` / `err.constraint`; sửa **nguyên nhân** kèm test tái hiện, ghi `errFp` vào PR. Không xin `.env` / dữ liệu khách; không "hết lỗi" bằng catch rỗng hay hạ mức log.
+- **Bộ kiểm:** SC-LOG-1 (log giữ đối tượng lỗi, không `console.*`), SC-LOG-2 (không nuốt lỗi thiếu `nuot-loi:`), SC-LOG-3 (source map), SC-OBS-3 (compose có `logging:` + `logs/`). Mã cũ là nợ trong baseline — không được thêm.
 
 ### Enterprise Continuity (ADR-0028 — chấp nhận về nguyên tắc 2026-11-05) <!-- [2026-11-05 09:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-029 — luật ECP cho agent -->
 
@@ -58,6 +60,19 @@ Dự án: **Bizcity Core Framework** (open-ketoan) — hạ tầng ứng dụng 
 - Sáu thao tác vòng đời CREATE · UPDATE · ARCHIVE · MERGE · REVERSE · DELETE (chỉ khi an toàn): bảng từng danh mục ở [standard/DU-LIEU-GOC.md](docs/standard/DU-LIEU-GOC.md). Thêm loại dữ liệu gốc → thêm dòng ở đó.
 - **Strong trong giao dịch, Eventual sau commit, có Reconciliation**: không dời kiểm Nợ = Có / quyền / kỳ khoá ra chạy nền; đồng bộ ngoài đi outbox + idempotency + một phép đối chiếu có mã.
 - Không ghi "đạt" cho trụ cột nếu không có check / chẩn đoán / test chạy được (R-ECP-SCORE). Mười ba nguyên tắc: [CANON §0.3](docs/00-CANON.md); luật: [R-ECP](docs/rules/RULE-ENTERPRISE-CONTINUITY.md); bản đồ 17 trụ cột: [standard/NEN-MONG-DOANH-NGHIEP.md](docs/standard/NEN-MONG-DOANH-NGHIEP.md).
+
+<!-- [2026-11-23 05:40 AM Johnny Chu - Chu Hoàng Anh] OKT-P-0 — luật tối thượng của chủ (23/11): hai mô hình triển khai + mỗi book là một pháp nhân. -->
+## Luật tối thượng P-0 (open-pos ⇄ open-ketoan)
+
+> **Luật tối thượng P-0 (Johnny Chu – Chu Hoàng Anh, 23/11/2026)** — đứng trên mọi luật khác của chương trình open-pos ⇄ open-ketoan (open-ketoan, open-ketoan-bridge, open-pos-backend, open-pos, open-setup). Mâu thuẫn thì P-0 thắng; luật nào trái P-0 phải sửa.
+>
+> 1. **bizcity.vn (multisite):** "mỗi một blog trên hệ thống multisite của bizcity sẽ yêu cầu một phần mềm kế toán tương ứng. Việc này để demo cho khách mô hình hệ thống chạy như nào." → mỗi blog một tenant, **khoá API riêng từng blog**.
+> 2. **Selfhost (ngoài bizcity):** "ưu tiên khóa chung cho cả mạng để người dùng có thể setup chuỗi nhiều cửa hàng dùng POS nhưng vẫn về 1 open-ketoan tương ứng mỗi tenant id = blog_id" — chủ chốt nghĩa (a): **một bản open-ketoan, một khoá chung (khoá cài đặt), mỗi blog là một tenant riêng**, mỗi cửa hàng sổ riêng trên cùng một máy kế toán. Một site = một cửa hàng = một tenant.
+> 3. **"Chỉ có luật mỗi book là 1 pháp nhân, không có pháp nhân theo tenant id."** Pháp nhân (tên, mã số thuế, loại pháp nhân, hồ sơ kế toán) là thuộc tính của **sổ (book)**. `tenant_id` chỉ là khoá kỹ thuật (cô lập dữ liệu, khoá API, RLS) — không dùng để xác định, đặt tên hay suy ra pháp nhân.
+>
+> Mô hình triển khai phải **khai rõ** (`TGS_ACC_DEPLOYMENT` → lựa chọn ở màn Cài đặt của bridge → một site), không đoán từ khoá đang có. Đặc tả: open-setup [00-ADR-OKT-1.md](https://github.com/hoanganh8389/bizcity-open-setup/blob/main/docs/chuong-trinh/OKT/00-ADR-OKT-1.md) §0, `81`, `82`. <!-- [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a: SC-DOC-4, link tuyệt đối sang repo open-setup -->
+>
+> Làm việc chạm khoá API, tenant, hồ sơ kế toán / pháp nhân, kết nối open-pos → đọc [docs/rules/RULE-OPEN-POS-CONNECTION.md](docs/rules/RULE-OPEN-POS-CONNECTION.md) mục P-0 trước.
 
 ## Yêu cầu kiến trúc: phân hệ nghiệp vụ nằm ở `modules/<key>/` (ADR-0024)
 

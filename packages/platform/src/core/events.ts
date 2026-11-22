@@ -28,12 +28,15 @@ import { randomBytes } from 'node:crypto';
 import { sql } from 'kysely';
 import { db, readWithTimeout, type Db } from '../db/client.js';
 import { currentRequest, withRequestContext } from './request-context.js';
+// [2026-11-22 11:04 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2c (D039-8): việc nền chạy từng site (forEachSite); ngữ cảnh giao sự kiện giữ mã site
+import { forEachSite, siteMode } from '../db/site.js';
 import { disabledModules } from './module-registry.js';
 import { asModuleRole } from '../db/module-db.js';
 import { readSetting } from './settings.js';
 import { sendNotification, type NotifyInput } from './notify.js';
 import { COLLECTOR_TIMEOUT_MS, metrics } from './metrics.js';
 import { currentTraceparent, linksFrom, markError, SpanKind, withSpan, type Span } from './tracing.js';
+import { logError } from './logger.js';
 
 export type EventActorKind = 'user' | 'apikey' | 'ai' | 'system';
 
@@ -222,11 +225,16 @@ export async function dispatchOnce(opts: { limit?: number; consumers?: string[];
  * subscriber thấy dữ liệu của đơn vị đó. Không có bước này GUC rỗng = RLS mở (0041) — subscriber (sẽ là mã module) đọc
  * được đơn vị khác nếu quên lọc.
  */
-function deliverOne(d: { consumer: string; event_id: string; tenant_id: string }, def: SubscriberDef, out: DispatchResult, span: Span): Promise<void> {
-  return withRequestContext({ requestId: `evt-${d.event_id}`, correlationId: d.event_id, tenantId: d.tenant_id }, () => deliverInTenant(d, def, out, span));
+type DueDelivery = { consumer: string; event_id: string; tenant_id: string; type?: string; trace_parent?: string | null };
+
+/** `evt` của dòng log lỗi giao sự kiện (R-LOG-11) — tên sự kiện log, không phải thuộc tính span. */
+const DELIVERY_EVT = { retry: 'bizcity.event.delivery_retry', dead: 'bizcity.event.delivery_dead' } as const;
+
+function deliverOne(d: DueDelivery, def: SubscriberDef, out: DispatchResult, span: Span): Promise<void> {
+  return withRequestContext({ requestId: `evt-${d.event_id}`, correlationId: d.event_id, tenantId: d.tenant_id, ...siteOfContext() }, () => deliverInTenant(d, def, out, span));
 }
 
-async function deliverInTenant(d: { consumer: string; event_id: string; tenant_id: string }, def: SubscriberDef, out: DispatchResult, span: Span): Promise<void> {
+async function deliverInTenant(d: DueDelivery, def: SubscriberDef, out: DispatchResult, span: Span): Promise<void> {
   {
     let attempts = 0;
     try {
@@ -259,7 +267,7 @@ async function deliverInTenant(d: { consumer: string; event_id: string; tenant_i
             settings: { get: (key) => readSetting(trx, evt.tenantId, def.module, key) },
             notify: { send: (n) => sendNotification(trx, evt.tenantId, def.module, n) },
           };
-          await withRequestContext({ requestId: `evt-${evt.id}`, tenantId: evt.tenantId, correlationId: evt.correlationId ?? evt.id }, () => def.handle(ctx, evt));
+          await withRequestContext({ requestId: `evt-${evt.id}`, tenantId: evt.tenantId, correlationId: evt.correlationId ?? evt.id, ...siteOfContext() }, () => def.handle(ctx, evt));
         }
         await trx.updateTable('event_deliveries').set({ status: 'done', attempts: attempts + 1, done_at: new Date(), last_error: null, ...(fresh ? { consumed_at: new Date() } : {}) })
           .where('consumer', '=', d.consumer).where('event_id', '=', d.event_id).execute();
@@ -277,6 +285,19 @@ async function deliverInTenant(d: { consumer: string; event_id: string; tenant_i
       // Lỗi của subscriber lên span TRƯỚC khi ghi lần thử: ghi lần thử có hỏng thì trace vẫn chỉ đúng module / mã lỗi.
       markError(span, err);
       span.setAttributes({ 'bizcity.delivery.result': dead ? 'dead' : 'retry', 'bizcity.delivery.attempt': n });
+      // [2026-11-22 12:55 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1b (S038-12, R-LOG-6): lỗi subscriber vào log có stack, job, attempt, eventId, traceId của sự kiện gốc — trước đây chỉ có cột last_error (mất stack) và span
+      // Cũng TRƯỚC khi ghi lần thử, như span. Còn lượt thử = warn (tự thử lại, R-LOG-7); hết lượt (dead) = error, cần người xem.
+      if (deliveryLog) {
+        const deliveryTrace = span.spanContext().traceId;
+        logError(deliveryLog, err, {
+          level: dead ? 'error' : 'warn',
+          evt: DELIVERY_EVT[dead ? 'dead' : 'retry'],
+          job: 'outbox', fn: d.consumer, module: def.module, attempt: n, maxAttempts: max,
+          eventId: d.event_id, eventType: d.type, tenant: d.tenant_id,
+          traceId: traceIdOf(d.trace_parent),
+          ...(/^0+$/.test(deliveryTrace) ? {} : { deliveryTraceId: deliveryTrace }),
+        }, dead ? `Subscriber ${d.consumer} lỗi, hết ${n}/${max} lượt thử (dead): xem /api/v1/system/events` : `Subscriber ${d.consumer} lỗi, lần ${n}/${max} — sẽ thử lại`);
+      }
       await db.updateTable('event_deliveries')
         .set({ attempts: n, status: dead ? 'dead' : 'pending', last_error: String((err as Error)?.message ?? err).slice(0, 500), next_at: new Date(Date.now() + retryDelayMs(def, n)) })
         .where('consumer', '=', d.consumer).where('event_id', '=', d.event_id).where('status', '=', 'pending').execute();
@@ -375,8 +396,47 @@ export const retentionSubscriber = defineSubscriber({
   },
 });
 
-/** Vòng dispatcher (1 giây) + đồng hồ (1 phút) trong tiến trình API. Trả hàm dừng. */
-export function startEventRuntime(log: { warn: (o: object, m: string) => void; error: (o: object, m: string) => void }): () => Promise<void> {
+type RuntimeLog = { warn: (o: object, m?: string) => void; error: (o: object, m?: string) => void };
+
+// [2026-11-22 12:55 AM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B1b: logger cho lỗi giao sự kiện (R-LOG-6). startEventRuntime đặt; job / test gọi setEventLogger.
+let deliveryLog: RuntimeLog | null = null;
+/** Logger nhận dòng lỗi giao sự kiện (subscriber lỗi). null = chỉ ghi last_error + span như trước. */
+export function setEventLogger(log: RuntimeLog | null): void { deliveryLog = log; }
+
+/** traceId (32 hex) từ traceparent W3C "00-<traceId>-<spanId>-<flags>" lưu ở outbox; không hợp lệ → undefined. */
+function traceIdOf(tp: string | null | undefined): string | undefined {
+  const m = /^[0-9a-f]{2}-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/.exec(tp ?? '');
+  return m && !/^0+$/.test(m[1]!) ? m[1] : undefined;
+}
+
+/** Mã site của ngữ cảnh đang chạy (nếu có) — ngữ cảnh mới của lần giao sự kiện phải giữ site, không thì `db` mất site. */
+const siteOfContext = (): { siteId?: string } => { const s = currentRequest()?.siteId; return s ? { siteId: s } : {}; };
+
+/**
+ * Chạy `fn` một lượt trên từng site (PHASE-039 B2c). Chế độ multi: trước đó mở pool cho mọi site đang chạy (registry), để site
+ * chưa có yêu cầu nào vẫn được giao sự kiện. Lỗi của một site được báo qua `onError`, các site sau vẫn chạy.
+ */
+export async function eachSite(fn: () => Promise<void>, onError: (siteId: string, err: unknown) => void): Promise<void> {
+  let gated: Set<string> | undefined;
+  if (siteMode() === 'multi') {
+    const { registerActiveSitePools, gatedSiteIds } = await import('../db/site-registry.js');
+    await registerActiveSitePools();
+    // [2026-11-22 11:19 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B3 (R-SITE-9): site đang nâng / nâng lỗi / lệch lược đồ: việc nền không chạy
+    gated = await gatedSiteIds();
+  }
+  await forEachSite(async (siteId) => { if (gated?.has(siteId)) return; await fn(); }, onError);
+}
+
+/** Dispatcher trên mọi site; cộng số sự kiện hết lượt thử (dead). */
+export async function dispatchAllSites(onError: (siteId: string, err: unknown) => void): Promise<{ dead: number }> {
+  let dead = 0;
+  await eachSite(async () => { dead += (await dispatchOnce()).dead ?? 0; }, onError);
+  return { dead };
+}
+
+/** Vòng dispatcher (1 giây) + đồng hồ (1 phút) trong tiến trình API, chạy từng site (PHASE-039 B2c). Trả hàm dừng. */
+export function startEventRuntime(log: RuntimeLog): () => Promise<void> {
+  setEventLogger(log);
   let busy = false;
   let stopped = false;
   let running: Promise<unknown> = Promise.resolve();
@@ -385,11 +445,14 @@ export function startEventRuntime(log: { warn: (o: object, m: string) => void; e
     busy = true;
     running = fn()
       .then((r) => { const x = r as Partial<DispatchResult> | undefined; if (x?.dead) log.warn({ dead: x.dead }, 'Sự kiện hết lượt thử (dead): xem /api/v1/system/events'); })
-      .catch((err: unknown) => log.error({ err: String(err) }, `${name}: lỗi`))
+      // B1b (G4): đối tượng lỗi, không String(err) — giữ stack, cause, mã PG (R-LOG-1)
+      .catch((err: unknown) => logError(log, err, { evt: 'bizcity.event.runtime_failed', job: name }, `${name}: lỗi`))
       .finally(() => { busy = false; });
   };
-  const dispatch = setInterval(guard('dispatcher sự kiện', () => dispatchOnce()), 1_000);
-  const clock = setInterval(guard('đồng hồ sự kiện', () => tickClock()), 60_000);
+  // Lỗi của một site: ghi log kèm site, các site khác vẫn chạy (R-SITE-10).
+  const siteFail = (job: string) => (site: string, err: unknown) => logError(log, err, { evt: 'bizcity.event.runtime_failed', job, site }, `${job}: lỗi ở site ${site}`);
+  const dispatch = setInterval(guard('dispatcher sự kiện', () => dispatchAllSites(siteFail('dispatcher sự kiện'))), 1_000);
+  const clock = setInterval(guard('đồng hồ sự kiện', () => eachSite(async () => { await tickClock(); }, siteFail('đồng hồ sự kiện'))), 60_000);
   dispatch.unref();
   clock.unref();
   return async () => {
@@ -397,5 +460,6 @@ export function startEventRuntime(log: { warn: (o: object, m: string) => void; e
     clearInterval(dispatch);
     clearInterval(clock);
     await running;
+    if (deliveryLog === log) setEventLogger(null);
   };
 }

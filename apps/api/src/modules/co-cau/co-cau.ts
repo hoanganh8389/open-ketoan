@@ -271,8 +271,9 @@ async function xoaIn(trx: ActionTx, auth: AuthContext, key: string, dryRun: bool
       if (used.length) chan.push(`${used.length} phân kho đã có nhập xuất: ${used.slice(0, 8).join(', ')}${used.length > 8 ? '…' : ''}`);
     }
     if (units.length) {
+      // [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b (S040-23): SC-KERNEL-7 — đọc sổ qua khung nhìn bizcity_read.ledger_entries, không đọc thẳng bảng sổ
       const used = (await sql<{ c: string }>`SELECT b.code AS c FROM branches b WHERE b.id = ANY(${units.map((u) => u.id)}::bigint[])
-        AND (EXISTS (SELECT 1 FROM ledger_entries e WHERE e.tenant_id = b.tenant_id AND e.branch_id = b.id)
+        AND (EXISTS (SELECT 1 FROM bizcity_read.ledger_entries e WHERE e.tenant_id = b.tenant_id AND e.branch_id = b.id)
           OR EXISTS (SELECT 1 FROM business_documents d WHERE d.tenant_id = b.tenant_id AND d.branch_code = b.code))`.execute(trx)).rows.map((r) => r.c);
       if (used.length) chan.push(`${used.length} đơn vị đã có chứng từ / sổ sách: ${used.slice(0, 8).join(', ')}${used.length > 8 ? '…' : ''}`);
     }

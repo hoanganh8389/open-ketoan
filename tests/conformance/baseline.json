@@ -27,6 +27,20 @@
           "fp": "SC-DATA-1|db/migrations|gap:0015",
           "file": "db/migrations",
           "message": "hở số 0015"
+        },
+        {
+          "fp": "SC-DATA-1|db/migrations|gap:0171",
+          "file": "db/migrations",
+          "message": "hở số 0171",
+          "why": "0171_co_cau_linh_hoat.sql do PHASE-026 thêm (ae12937f) rồi revert cùng ngày 2026-11-20 (659cec2a); bản cài migrate trong khoảng đó đã ghi 0171 vào schema_migrations — không dùng lại số. 0172 chưa từng có (số giữ cùng đợt). Không đổi số migration đã chạy (R-DB-2).",
+          "ref": "PHASE-040 · B10d-a (S040-25), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-DATA-1|db/migrations|gap:0172",
+          "file": "db/migrations",
+          "message": "hở số 0172",
+          "why": "0171_co_cau_linh_hoat.sql do PHASE-026 thêm (ae12937f) rồi revert cùng ngày 2026-11-20 (659cec2a); bản cài migrate trong khoảng đó đã ghi 0171 vào schema_migrations — không dùng lại số. 0172 chưa từng có (số giữ cùng đợt). Không đổi số migration đã chạy (R-DB-2).",
+          "ref": "PHASE-040 · B10d-a (S040-25), 35-MAIN-SACH-SELFCHECK.md"
         }
       ]
     },
@@ -83,11 +97,6 @@
           "fp": "SC-DATA-3|db/migrations/0002_goc_danh_muc.sql|columns:cash_plans",
           "file": "db/migrations/0002_goc_danh_muc.sql",
           "message": "bảng nền cash_plans: 10 cột thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0002_goc_danh_muc.sql|columns:catalog_tombstones",
-          "file": "db/migrations/0002_goc_danh_muc.sql",
-          "message": "bảng nền catalog_tombstones: 3 cột thiếu COMMENT ON COLUMN"
         },
         {
           "fp": "SC-DATA-3|db/migrations/0002_goc_danh_muc.sql|columns:contract_schedules",
@@ -155,19 +164,9 @@
           "message": "bảng nền tax_codes: 6 cột thiếu COMMENT ON COLUMN"
         },
         {
-          "fp": "SC-DATA-3|db/migrations/0003_goc_cau_hinh_dinh_khoan.sql|columns:closing_rule_versions",
-          "file": "db/migrations/0003_goc_cau_hinh_dinh_khoan.sql",
-          "message": "bảng nền closing_rule_versions: 5 cột thiếu COMMENT ON COLUMN"
-        },
-        {
           "fp": "SC-DATA-3|db/migrations/0003_goc_cau_hinh_dinh_khoan.sql|columns:closing_rules",
           "file": "db/migrations/0003_goc_cau_hinh_dinh_khoan.sql",
           "message": "bảng nền closing_rules: 6 cột thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0003_goc_cau_hinh_dinh_khoan.sql|columns:payment_request_settings",
-          "file": "db/migrations/0003_goc_cau_hinh_dinh_khoan.sql",
-          "message": "bảng nền payment_request_settings: 2 cột thiếu COMMENT ON COLUMN"
         },
         {
           "fp": "SC-DATA-3|db/migrations/0003_goc_cau_hinh_dinh_khoan.sql|columns:posting_defaults",
@@ -273,11 +272,6 @@
           "fp": "SC-DATA-3|db/migrations/0006_goc_so_cai.sql|columns:ledger_entries",
           "file": "db/migrations/0006_goc_so_cai.sql",
           "message": "bảng nền ledger_entries: 13 cột thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0006_goc_so_cai.sql|columns:ledger_entry_sequences",
-          "file": "db/migrations/0006_goc_so_cai.sql",
-          "message": "bảng nền ledger_entry_sequences: 2 cột thiếu COMMENT ON COLUMN"
         },
         {
           "fp": "SC-DATA-3|db/migrations/0006_goc_so_cai.sql|columns:ledger_lines",
@@ -413,41 +407,6 @@
           "fp": "SC-DATA-3|db/migrations/0010_mua_hang.sql|column:purchase_policies.created_by",
           "file": "db/migrations/0010_mua_hang.sql",
           "message": "cột purchase_policies.created_by thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.owner_id",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.owner_id thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.kind",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.kind thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.file_name",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.file_name thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.mime",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.mime thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.size",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.size thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.note",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.note thiếu COMMENT ON COLUMN"
-        },
-        {
-          "fp": "SC-DATA-3|db/migrations/0011_mua_hang_ncc.sql|column:purchase_attachments.uploaded_by",
-          "file": "db/migrations/0011_mua_hang_ncc.sql",
-          "message": "cột purchase_attachments.uploaded_by thiếu COMMENT ON COLUMN"
         },
         {
           "fp": "SC-DATA-3|db/migrations/0013_mat_hang_ncc_gia_mua.sql|column:supplier_products.sku",
@@ -4305,6 +4264,732 @@
           "fp": "SC-UI-1|apps/web/src/phan-he/thue/tax/TaxpayerPage.tsx|readOnly#1",
           "file": "apps/web/src/phan-he/thue/tax/TaxpayerPage.tsx",
           "message": "<input disabled={readOnly}> bị chặn mà không nói vì sao / cách gỡ — bọc <BlockedHint blocked={{ why, fix }}> hoặc ghi title (R-BLOCK-1)"
+        }
+      ]
+    },
+    "SC-LOG-1": {
+      "title": "R-LOG-1 một đường ghi lỗi: log giữ đối tượng lỗi (không String(e) / e.message), không console.* trong mã chạy",
+      "ref": "PHASE-038 S038-14 · RULE-LOG · Nhóm Lõi duyệt khi merge B5",
+      "debts": [
+        {
+          "fp": "SC-LOG-1|apps/api/src/app.ts|mat-stack:await emitCatalogChanged(req.auth).catch((err: unknown) => req.log.warn({ err: String(err) }, 'Phát sự kiện danh mục đổi: lỗi (hệ thống bán hàng vẫn tự kéo theo lịch)'));",
+          "file": "apps/api/src/app.ts",
+          "message": "log mất stack: ghi chuỗi thay đối tượng lỗi — viết { err } hoặc logError(log, err, ctx) (R-LOG-1): await emitCatalogChanged(req.auth).catch((err: unknown) => req.log.warn({ err: String(err) }, 'Phát ",
+          "why": "Có trước luật R-LOG (2026-11-21). Tệp đang thuộc phạm vi giữ chỗ khác (NT-HT-003) — sửa khi người giữ chạm tệp, không sửa trong PR không liên quan (RULE-LOG \"Nhắc người đóng góp\" mục 4)."
+        }
+      ]
+    },
+    "SC-LOG-2": {
+      "title": "R-LOG-2 không nuốt lỗi im lặng: catch rỗng / .catch(() => undefined) phải có chú thích \"nuot-loi: <lý do>\"",
+      "ref": "PHASE-038 S038-14 · RULE-LOG · Nhóm Lõi duyệt khi merge B5",
+      "debts": [
+        {
+          "fp": "SC-LOG-2|apps/api/src/modules/sites/provisioning.service.ts|nuot:await ctl.query(SET, [jobId, 'failed', JSON.stringify(stepsOf(kind, 'failed')), null, e.code, e.message]).catch(() => undefined);",
+          "file": "apps/api/src/modules/sites/provisioning.service.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await ctl.query(SET, [jobId, 'failed', JSON.stringify(stepsOf(kind, 'failed')), null, e.code, e.mess",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/api/src/modules/sites/provisioning.service.ts|nuot:await c.end().catch(() => undefined);",
+          "file": "apps/api/src/modules/sites/provisioning.service.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await c.end().catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/api/src/modules/sites/provisioning.service.ts|nuot:await c.end().catch(() => undefined);",
+          "file": "apps/api/src/modules/sites/provisioning.service.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await c.end().catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/api/src/phan-he/kho/phieu-chuyen-kho.ts|nuot:} catch { /* chứng từ đầu xuất chưa có (dữ liệu cũ) */ }",
+          "file": "apps/api/src/phan-he/kho/phieu-chuyen-kho.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch { /* chứng từ đầu xuất chưa có (dữ liệu cũ) */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/api/src/phan-he/kho/phieu-chuyen-kho.ts|nuot:const out = await documentLots(trx, auth.tenantId, r.out_doc_key).catch(() => null);",
+          "file": "apps/api/src/phan-he/kho/phieu-chuyen-kho.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const out = await documentLots(trx, auth.tenantId, r.out_doc_key).catch(() => null);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/api/src/phan-he/mua-hang/demo.ts|nuot:for (const o of openings) await documentService.cancel(auth, o.doc_key, 'Xoá dữ liệu mẫu mua hàng').catch(() => undefined);",
+          "file": "apps/api/src/phan-he/mua-hang/demo.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): for (const o of openings) await documentService.cancel(auth, o.doc_key, 'Xoá dữ liệu mẫu mua hàng').",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/BoThamSo.tsx|nuot:const ghiCN = (list: BoCN[]) => { try { localStorage.setItem(CN_KEY, JSON.stringify(list)); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/components/BoThamSo.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const ghiCN = (list: BoCN[]) => { try { localStorage.setItem(CN_KEY, JSON.stringify(list)); } catch ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/BoThamSo.tsx|nuot:const ghi = (key: string, list: Bo[]) => { try { localStorage.setItem(key, JSON.stringify(list)); } catch { /* chế độ riêng tư */ } };",
+          "file": "apps/web/src/components/BoThamSo.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const ghi = (key: string, list: Bo[]) => { try { localStorage.setItem(key, JSON.stringify(list)); } ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/DataGrid.tsx|nuot:try { localStorage.setItem(`ketoan.grid.${p.storageKey}`, JSON.stringify(saved)); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/components/DataGrid.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem(`ketoan.grid.${p.storageKey}`, JSON.stringify(saved)); } catch { /* bỏ qu",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/KpiCards.tsx|nuot:const flip = () => setGon((v) => { try { localStorage.setItem(KEY, v ? '0' : '1'); } catch { /* bỏ qua */ } return !v; });",
+          "file": "apps/web/src/components/KpiCards.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const flip = () => setGon((v) => { try { localStorage.setItem(KEY, v ? '0' : '1'); } catch { /* bỏ q",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/MaTraCuu.tsx|nuot:} catch { /* rơi xuống cách cũ */ }",
+          "file": "apps/web/src/components/MaTraCuu.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch { /* rơi xuống cách cũ */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/NhapExcelWizard.tsx|nuot:const nhoCach = () => { try { localStorage.setItem(memKey(loai.id), JSON.stringify({ map, headers, defaults, mode } satisfies Saved)); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/components/NhapExcelWizard.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const nhoCach = () => { try { localStorage.setItem(memKey(loai.id), JSON.stringify({ map, headers, d",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/PostingGate.tsx|nuot:void api.post('/api/v1/conformance/advisories/ack', { context: { kind: 'document', ...ref }, codes: advisories.map((a) => a.code) }).catch(() => undefined);",
+          "file": "apps/web/src/components/PostingGate.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): void api.post('/api/v1/conformance/advisories/ack', { context: { kind: 'document', ...ref }, codes: ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/PostingGate.tsx|nuot:}).catch(() => undefined);",
+          "file": "apps/web/src/components/PostingGate.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): }).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/ReportPanel.tsx|nuot:const saveWidth = (w: number) => { try { localStorage.setItem(WIDTH_KEY, String(w)); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/components/ReportPanel.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const saveWidth = (w: number) => { try { localStorage.setItem(WIDTH_KEY, String(w)); } catch { /* bỏ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/ReportPanel.tsx|nuot:const doiGhim = () => { const g = !ghim; setGhim(g); setMo(false); try { localStorage.setItem(GHIM_KEY, g ? '1' : '0'); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/components/ReportPanel.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const doiGhim = () => { const g = !ghim; setGhim(g); setMo(false); try { localStorage.setItem(GHIM_K",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/ReportPanel.tsx|nuot:} catch { /* bỏ qua */ }",
+          "file": "apps/web/src/components/ReportPanel.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch { /* bỏ qua */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/ReportPanel.tsx|nuot:try { if (value) localStorage.setItem(keyRef.current, value); else localStorage.removeItem(keyRef.current); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/components/ReportPanel.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { if (value) localStorage.setItem(keyRef.current, value); else localStorage.removeItem(keyRef.cu",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/ReportPanel.tsx|nuot:try { const v = localStorage.getItem(whKey(pathname)); if (v) { setWhDraft(v); whChange(v); } } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/components/ReportPanel.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { const v = localStorage.getItem(whKey(pathname)); if (v) { setWhDraft(v); whChange(v); } } catc",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/ReportPanel.tsx|nuot:try { if (whDraft) localStorage.setItem(whKey(pathname), whDraft); else localStorage.removeItem(whKey(pathname)); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/components/ReportPanel.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { if (whDraft) localStorage.setItem(whKey(pathname), whDraft); else localStorage.removeItem(whKe",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/ReportPanel.tsx|nuot:try { if (draft) localStorage.setItem(pickedKey(pathname), draft); else localStorage.removeItem(pickedKey(pathname)); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/components/ReportPanel.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { if (draft) localStorage.setItem(pickedKey(pathname), draft); else localStorage.removeItem(pick",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/phieu-hang/KhungPhieu.tsx|nuot:const doiTroLy = (an: boolean) => { setAnTroLy(an); try { localStorage.setItem(TRO_LY_AN, an ? '1' : '0'); } catch { /* chế độ riêng tư */ } };",
+          "file": "apps/web/src/components/phieu-hang/KhungPhieu.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const doiTroLy = (an: boolean) => { setAnTroLy(an); try { localStorage.setItem(TRO_LY_AN, an ? '1' :",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/phieu-hang/PhieuHangForm.tsx|nuot:return api.get<Quote[]>('/api/v1/m/phieu-ban/quote', { branch: v.branchCode, warehouse: v.warehouseCode ?? '', skus: skus.join(',') }).catch(() => []);",
+          "file": "apps/web/src/components/phieu-hang/PhieuHangForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): return api.get<Quote[]>('/api/v1/m/phieu-ban/quote', { branch: v.branchCode, warehouse: v.warehouseC",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/phieu-hang/PhieuHangForm.tsx|nuot:const p = await api.get<CatalogProduct>(`/api/v1/catalog/products/${encodeURIComponent(sku)}`).catch(() => null);",
+          "file": "apps/web/src/components/phieu-hang/PhieuHangForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const p = await api.get<CatalogProduct>(`/api/v1/catalog/products/${encodeURIComponent(sku)}`).catch",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/phieu-hang/PhieuHangForm.tsx|nuot:} catch { /* mã chỉ có ở kho, chưa có trong danh mục hàng: giữ mã, nhập tay tên */ }",
+          "file": "apps/web/src/components/phieu-hang/PhieuHangForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch { /* mã chỉ có ở kho, chưa có trong danh mục hàng: giữ mã, nhập tay tên */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/phieu-hang/PhieuHangForm.tsx|nuot:const row = (await api.get<{ code: string; name: string; taxCode?: string | null }[]>('/api/v1/partners', { search: c, pageSize: 5 }).catch(() => [])).find((x) => x.code === c);",
+          "file": "apps/web/src/components/phieu-hang/PhieuHangForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const row = (await api.get<{ code: string; name: string; taxCode?: string | null }[]>('/api/v1/partn",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/phieu-hang/PhieuHangPage.tsx|nuot:void api.get<{ code: string; name: string; taxCode?: string | null }[]>('/api/v1/partners', { search: kh, pageSize: 5 }).catch(() => [])",
+          "file": "apps/web/src/components/phieu-hang/PhieuHangPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): void api.get<{ code: string; name: string; taxCode?: string | null }[]>('/api/v1/partners', { search",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/print/PrintButton.tsx|nuot:try { window.localStorage.setItem(KEY(screen), id); } catch { /* trình duyệt chặn lưu: chỉ không nhớ mặc định */ }",
+          "file": "apps/web/src/components/print/PrintButton.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { window.localStorage.setItem(KEY(screen), id); } catch { /* trình duyệt chặn lưu: chỉ không nhớ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/components/voucher/ChiTietChungTu.tsx|nuot:const flip = () => setGon((v) => { try { localStorage.setItem(KEY, v ? '0' : '1'); } catch { /* bỏ qua */ } return !v; });",
+          "file": "apps/web/src/components/voucher/ChiTietChungTu.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const flip = () => setGon((v) => { try { localStorage.setItem(KEY, v ? '0' : '1'); } catch { /* bỏ q",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/DvtGiaBan.tsx|nuot:const all = await api.get<{ code: string; name: string; note?: string }[]>('/api/v1/catalog/price-lists').catch(() => []);",
+          "file": "apps/web/src/features/catalog/DvtGiaBan.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const all = await api.get<{ code: string; name: string; note?: string }[]>('/api/v1/catalog/price-li",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/PartnersPage.tsx|nuot:} catch { /* không lấy được thì để người dùng tự gõ */ }",
+          "file": "apps/web/src/features/catalog/PartnersPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch { /* không lấy được thì để người dùng tự gõ */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/PartnersPage.tsx|nuot:const par = (await api.get<Partner[]>('/api/v1/partners', { search: parentCode, status: 'all', pageSize: 20 }).catch(() => [])).find((p) => p.code === parentCode);",
+          "file": "apps/web/src/features/catalog/PartnersPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const par = (await api.get<Partner[]>('/api/v1/partners', { search: parentCode, status: 'all', pageS",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/PartnersPage.tsx|nuot:const found = (await api.get<Partner[]>('/api/v1/partners/lookup', { taxCode: m[1]!, exclude: v.code }).catch(() => []))[0];",
+          "file": "apps/web/src/features/catalog/PartnersPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const found = (await api.get<Partner[]>('/api/v1/partners/lookup', { taxCode: m[1]!, exclude: v.code",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/PartnersPage.tsx|nuot:const other = (await api.get<Partner[]>('/api/v1/partners/lookup', { taxCode: val, exclude: v.code }).catch(() => []))[0];",
+          "file": "apps/web/src/features/catalog/PartnersPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const other = (await api.get<Partner[]>('/api/v1/partners/lookup', { taxCode: val, exclude: v.code }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/PartnersPage.tsx|nuot:const found = await api.get<Partner[]>('/api/v1/partners/lookup', { [field]: val }).catch(() => []);",
+          "file": "apps/web/src/features/catalog/PartnersPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const found = await api.get<Partner[]>('/api/v1/partners/lookup', { [field]: val }).catch(() => []);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/PartnersPage.tsx|nuot:const p = (await api.get<Partner[]>('/api/v1/partners', { search: c, status: 'all', pageSize: 20 }).catch(() => [])).find((x) => x.code === c);",
+          "file": "apps/web/src/features/catalog/PartnersPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const p = (await api.get<Partner[]>('/api/v1/partners', { search: c, status: 'all', pageSize: 20 }).",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/ProductFullForm.tsx|nuot:const t = setTimeout(() => { try { localStorage.setItem(NHAP_KEY, JSON.stringify({ v, at: new Date().toISOString(), kind })); } catch { /* trình duyệt chặn lưu */ } }, 600);",
+          "file": "apps/web/src/features/catalog/ProductFullForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const t = setTimeout(() => { try { localStorage.setItem(NHAP_KEY, JSON.stringify({ v, at: new Date()",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/ProductFullForm.tsx|nuot:const boNhap = () => { try { localStorage.removeItem(NHAP_KEY); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/features/catalog/ProductFullForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const boNhap = () => { try { localStorage.removeItem(NHAP_KEY); } catch { /* bỏ qua */ } };",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/catalog/ProductsPage.tsx|nuot:const saveTree = (open: boolean, w: number) => { setTreeOpen(open); setTreeW(w); try { localStorage.setItem('dm10-cay-mo', open ? '1' : '0'); localStorage.setItem('dm10-cay-rong', String(w)); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/features/catalog/ProductsPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const saveTree = (open: boolean, w: number) => { setTreeOpen(open); setTreeW(w); try { localStorage.",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/documents/SaleDocumentForm.tsx|nuot:const setView = (v: ViewMode) => { setViewState(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/features/documents/SaleDocumentForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const setView = (v: ViewMode) => { setViewState(v); try { localStorage.setItem(VIEW_KEY, v); } catch",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/launcher/CongTyMau.tsx|nuot:try { localStorage.setItem('ketoan.tenant', code); } catch { /* trình duyệt chặn lưu: người dùng gõ mã đơn vị */ }",
+          "file": "apps/web/src/features/launcher/CongTyMau.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem('ketoan.tenant', code); } catch { /* trình duyệt chặn lưu: người dùng gõ ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/launcher/CongTyMau.tsx|nuot:try { localStorage.setItem('ketoan.tenant', ''); } catch { /* trình duyệt chặn lưu: trang đăng nhập giữ mã cũ, người dùng tự sửa */ }",
+          "file": "apps/web/src/features/launcher/CongTyMau.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem('ketoan.tenant', ''); } catch { /* trình duyệt chặn lưu: trang đăng nhập ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/launcher/DonViTrang.tsx|nuot:const ghiDeSau = (): void => { try { sessionStorage.setItem(DE_SAU, '1'); } catch { /* trình duyệt chặn lưu: hộp nhắc hiện lại lần sau, không sao */ } };",
+          "file": "apps/web/src/features/launcher/DonViTrang.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const ghiDeSau = (): void => { try { sessionStorage.setItem(DE_SAU, '1'); } catch { /* trình duyệt c",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/posting/QuyTacHachToanPage.tsx|nuot:const doiXem = (v: boolean) => { setChiTiet(v); try { localStorage.setItem('acc41-xem', v ? 'chi-tiet' : 'gon'); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/features/posting/QuyTacHachToanPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const doiXem = (v: boolean) => { setChiTiet(v); try { localStorage.setItem('acc41-xem', v ? 'chi-tie",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/vouchers/CashVoucherForm.tsx|nuot:const toggleAcc = () => setShowAcc((v) => { try { localStorage.setItem('ketoan.phieu.an-tk', v ? '1' : '0'); } catch { /* bỏ qua */ } return !v; });",
+          "file": "apps/web/src/features/vouchers/CashVoucherForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const toggleAcc = () => setShowAcc((v) => { try { localStorage.setItem('ketoan.phieu.an-tk', v ? '1'",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/features/vouchers/CashVoucherForm.tsx|nuot:const toggleCol = (k: ColKey) => { const next = cols.includes(k) ? cols.filter((x) => x !== k) : [...cols, k]; setCols(next); try { localStorage.setItem(colsKey(type), JSON.stringify(next)); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/features/vouchers/CashVoucherForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const toggleCol = (k: ColKey) => { const next = cols.includes(k) ? cols.filter((x) => x !== k) : [..",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/DangOnline.tsx|nuot:void api.post('/api/v1/presence/ping', { deviceId: DEVICE_ID, tabId: TAB_ID, path: loc.pathname, screen }).catch(() => undefined);",
+          "file": "apps/web/src/layout/DangOnline.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): void api.post('/api/v1/presence/ping', { deviceId: DEVICE_ID, tabId: TAB_ID, path: loc.pathname, scr",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/ModuleBar.tsx|nuot:const choose = (key: string) => { setActive(key); try { localStorage.setItem(KEY, key); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/layout/ModuleBar.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const choose = (key: string) => { setActive(key); try { localStorage.setItem(KEY, key); } catch { /*",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/SideNav.tsx|nuot:const write = (key: string, v: unknown) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* chế độ riêng tư */ } };",
+          "file": "apps/web/src/layout/SideNav.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const write = (key: string, v: unknown) => { try { localStorage.setItem(key, JSON.stringify(v)); } c",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/TabWorkspace.tsx|nuot:try { sessionStorage.setItem(STORE_KEY, JSON.stringify(tabs.map(({ pathname, search }) => ({ pathname, search })))); } catch { /* chế độ riêng tư */ }",
+          "file": "apps/web/src/layout/TabWorkspace.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { sessionStorage.setItem(STORE_KEY, JSON.stringify(tabs.map(({ pathname, search }) => ({ pathnam",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/ThemNhanh.tsx|nuot:const flip = () => setOpen((v) => { try { localStorage.setItem(OPEN_KEY, v ? '0' : '1'); } catch { /* bỏ qua */ } return !v; });",
+          "file": "apps/web/src/layout/ThemNhanh.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const flip = () => setOpen((v) => { try { localStorage.setItem(OPEN_KEY, v ? '0' : '1'); } catch { /",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/ThongBao.tsx|nuot:await api.post('/api/v1/notifications/read', { ids }).catch(() => undefined);",
+          "file": "apps/web/src/layout/ThongBao.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await api.post('/api/v1/notifications/read', { ids }).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/hay-dung.ts|nuot:try { localStorage.setItem(key, JSON.stringify(counts)); } catch { /* chế độ riêng tư */ }",
+          "file": "apps/web/src/layout/hay-dung.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem(key, JSON.stringify(counts)); } catch { /* chế độ riêng tư */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/pins.ts|nuot:try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* chế độ riêng tư */ }",
+          "file": "apps/web/src/layout/pins.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* chế độ riêng tư */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/rail/RightRail.tsx|nuot:const togglePin = () => setPinned((v) => { try { localStorage.setItem(PIN_KEY, v ? '0' : '1'); } catch { /* chế độ riêng tư */ } return !v; });",
+          "file": "apps/web/src/layout/rail/RightRail.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const togglePin = () => setPinned((v) => { try { localStorage.setItem(PIN_KEY, v ? '0' : '1'); } cat",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/rail/TroLyPanel.tsx|nuot:useEffect(() => { try { sessionStorage.setItem(STORE, JSON.stringify(msgs.slice(-40))); } catch { /* chế độ riêng tư */ } }, [msgs]);",
+          "file": "apps/web/src/layout/rail/TroLyPanel.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): useEffect(() => { try { sessionStorage.setItem(STORE, JSON.stringify(msgs.slice(-40))); } catch { /*",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/layout/useGon.ts|nuot:const choose = (key: string) => { setCurrent(key); try { localStorage.setItem(KEY, key); } catch { /* chế độ riêng tư */ } };",
+          "file": "apps/web/src/layout/useGon.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const choose = (key: string) => { setCurrent(key); try { localStorage.setItem(KEY, key); } catch { /",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/api.ts|nuot:set: (t: string) => { try { localStorage.setItem(TOKEN_KEY, t); } catch { /* chế độ riêng tư */ } },",
+          "file": "apps/web/src/lib/api.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): set: (t: string) => { try { localStorage.setItem(TOKEN_KEY, t); } catch { /* chế độ riêng tư */ } },",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/api.ts|nuot:clear: () => { try { localStorage.removeItem(TOKEN_KEY); } catch { /* bỏ qua */ } },",
+          "file": "apps/web/src/lib/api.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): clear: () => { try { localStorage.removeItem(TOKEN_KEY); } catch { /* bỏ qua */ } },",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/api.ts|nuot:const json = (await res.json().catch(() => null)) as ApiFailure | null;",
+          "file": "apps/web/src/lib/api.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const json = (await res.json().catch(() => null)) as ApiFailure | null;",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/auth.tsx|nuot:const q = await api.get<{ branches: string[] | null; theoChiNhanh: Record<string, string[]>; camTheoChiNhanh?: Record<string, string[]> }>('/api/v1/quyen-chi-nhanh').catch(() => null);",
+          "file": "apps/web/src/lib/auth.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const q = await api.get<{ branches: string[] | null; theoChiNhanh: Record<string, string[]>; camTheo",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/auth.tsx|nuot:try { localStorage.setItem('ketoan.tenant', tenantCode); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/lib/auth.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem('ketoan.tenant', tenantCode); } catch { /* bỏ qua */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/colResize.ts|nuot:try { localStorage.setItem(keyOf(cells), JSON.stringify(cells.map((c) => Math.round(c.getBoundingClientRect().width)))); } catch { /* trình duyệt chặn lưu: bỏ qua */ }",
+          "file": "apps/web/src/lib/colResize.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem(keyOf(cells), JSON.stringify(cells.map((c) => Math.round(c.getBoundingCli",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/colResize.ts|nuot:if (t.cells) try { localStorage.removeItem(keyOf(t.cells)); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/lib/colResize.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): if (t.cells) try { localStorage.removeItem(keyOf(t.cells)); } catch { /* bỏ qua */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/excelChuan.ts|nuot:for (const [r1, c1, r2, c2] of sh.merges ?? []) { try { ws.mergeCells(r1 + 1, c1 + 1, r2 + 1, c2 + 1); } catch { /* trùng ô gộp: bỏ qua */ } }",
+          "file": "apps/web/src/lib/excelChuan.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): for (const [r1, c1, r2, c2] of sh.merges ?? []) { try { ws.mergeCells(r1 + 1, c1 + 1, r2 + 1, c2 + 1",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/format.ts|nuot:try { sessionStorage.setItem(PERIOD_KEY, JSON.stringify({ from, to })); } catch { /* chế độ riêng tư: bỏ qua */ }",
+          "file": "apps/web/src/lib/format.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { sessionStorage.setItem(PERIOD_KEY, JSON.stringify({ from, to })); } catch { /* chế độ riêng tư",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/giaoDien.ts|nuot:try { id = localStorage.getItem(KEY) ?? ''; } catch { /* chế độ riêng tư */ }",
+          "file": "apps/web/src/lib/giaoDien.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { id = localStorage.getItem(KEY) ?? ''; } catch { /* chế độ riêng tư */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/giaoDien.ts|nuot:try { localStorage.setItem(KEY, id); } catch { /* chế độ riêng tư */ }",
+          "file": "apps/web/src/lib/giaoDien.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem(KEY, id); } catch { /* chế độ riêng tư */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/kiemForm.ts|nuot:try { if (on) localStorage.setItem(KHOA, '1'); else localStorage.removeItem(KHOA); } catch { /* trình duyệt chặn lưu */ }",
+          "file": "apps/web/src/lib/kiemForm.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { if (on) localStorage.setItem(KHOA, '1'); else localStorage.removeItem(KHOA); } catch { /* trìn",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/kiemForm.ts|nuot:void api.post('/api/v1/validation-log/form', { entity, key: opt.key ?? '', screen: window.location.pathname, failed: msgs.map((title) => ({ code: opt.code ?? 'FORM-CHAN', title })) }).catch(() => undefined);",
+          "file": "apps/web/src/lib/kiemForm.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): void api.post('/api/v1/validation-log/form', { entity, key: opt.key ?? '', screen: window.location.p",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/mockStore.ts|nuot:} catch { /* bỏ qua: chế độ riêng tư / dữ liệu hỏng → dùng mẫu */ }",
+          "file": "apps/web/src/lib/mockStore.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch { /* bỏ qua: chế độ riêng tư / dữ liệu hỏng → dùng mẫu */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/mockStore.ts|nuot:const write = (rows: T[]) => { try { localStorage.setItem(key, JSON.stringify(rows)); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/lib/mockStore.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const write = (rows: T[]) => { try { localStorage.setItem(key, JSON.stringify(rows)); } catch { /* b",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/mockStore.ts|nuot:reset() { try { localStorage.removeItem(key); } catch { /* bỏ qua */ } },",
+          "file": "apps/web/src/lib/mockStore.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): reset() { try { localStorage.removeItem(key); } catch { /* bỏ qua */ } },",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/nhapExcel.ts|nuot:api.getQuiet<{ key: string; label: string }[]>('/api/v1/catalog-trash', { catalog: 'unit-names' }).then((r) => r.data ?? []).catch(() => []),",
+          "file": "apps/web/src/lib/nhapExcel.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): api.getQuiet<{ key: string; label: string }[]>('/api/v1/catalog-trash', { catalog: 'unit-names' }).t",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/tradeDocs.ts|nuot:try { localStorage.setItem(SRC_KEY + kind, s); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/lib/tradeDocs.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem(SRC_KEY + kind, s); } catch { /* bỏ qua */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/lib/workBranch.ts|nuot:try { localStorage.setItem(KEY, JSON.stringify(m)); } catch { /* trình duyệt chặn lưu */ }",
+          "file": "apps/web/src/lib/workBranch.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem(KEY, JSON.stringify(m)); } catch { /* trình duyệt chặn lưu */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/main.tsx|nuot:} catch { /* máy chủ không trả lời: chạy như cũ */ }",
+          "file": "apps/web/src/main.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch { /* máy chủ không trả lời: chạy như cũ */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/api/thu-api/ThuApiPage.tsx|nuot:try { text = JSON.stringify(JSON.parse(text), null, 2); } catch { /* không phải JSON */ }",
+          "file": "apps/web/src/phan-he/api/thu-api/ThuApiPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { text = JSON.stringify(JSON.parse(text), null, 2); } catch { /* không phải JSON */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/api/thu-api/ThuApiPage.tsx|nuot:try { localStorage.setItem(HISTORY, JSON.stringify(h)); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/phan-he/api/thu-api/ThuApiPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.setItem(HISTORY, JSON.stringify(h)); } catch { /* bỏ qua */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/ban-hang/phieu-ban/PhieuBanPages.tsx|nuot:try { localStorage.removeItem(`ketoan.mock.trade.${kind}`); } catch { /* bỏ qua */ }",
+          "file": "apps/web/src/phan-he/ban-hang/phieu-ban/PhieuBanPages.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { localStorage.removeItem(`ketoan.mock.trade.${kind}`); } catch { /* bỏ qua */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/ke-toan/reports/gopNho.ts|nuot:} catch {",
+          "file": "apps/web/src/phan-he/ke-toan/reports/gopNho.ts",
+          "message": "nuốt lỗi im lặng (thân rỗng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch {",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/kho/chuyen-kho/PhieuChuyenKhoForm.tsx|nuot:try { info = (await api.get<ItemRow[]>('/api/v1/inventory/items', { search: sku, limit: 5 })).find((x) => x.sku === sku); } catch { /* giữ mã */ }",
+          "file": "apps/web/src/phan-he/kho/chuyen-kho/PhieuChuyenKhoForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { info = (await api.get<ItemRow[]>('/api/v1/inventory/items', { search: sku, limit: 5 })).find((",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|nuot:const doiTroLy = (an: boolean) => { setAnTroLy(an); try { localStorage.setItem('mh.tro-ly.an', an ? '1' : '0'); } catch { /* chế độ riêng tư */ } };",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const doiTroLy = (an: boolean) => { setAnTroLy(an); try { localStorage.setItem('mh.tro-ly.an', an ? ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|nuot:const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); document.body.style.cursor = ''; try { localStorage.setItem('mh.tro-ly.w', String(w)); } catch { /* bỏ qua */ } };",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseu",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|nuot:const doiCot = (k: string) => setAnCot((x) => { const n = x.includes(k) ? x.filter((y) => y !== k) : [...x, k]; try { localStorage.setItem(`mh.cot-an.${value.kind}`, JSON.stringify(n)); } catch { /* bỏ qua */ } return n; });",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const doiCot = (k: string) => setAnCot((x) => { const n = x.includes(k) ? x.filter((y) => y !== k) :",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|nuot:} catch { /* mã chưa có trong danh mục hàng */ }",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch { /* mã chưa có trong danh mục hàng */ }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|nuot:}) }))).catch(() => undefined);",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): }) }))).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|nuot:}) }))).catch(() => undefined);",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): }) }))).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|nuot:{anCot.length > 0 && <button type=\"button\" className=\"btn btn-xs\" onClick={() => { setAnCot([]); try { localStorage.setItem(`mh.cot-an.${value.kind}`, '[]'); } catch { /* bỏ qua */ } }}>Hiện tất cả</button>}",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): {anCot.length > 0 && <button type=\"button\" className=\"btn btn-xs\" onClick={() => { setAnCot([]); try",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|nuot:{!anTroLy && <div className=\"mh-side-keo\" style={{ right: rongTroLy - 4 }} onMouseDown={keoTroLy} onDoubleClick={() => { setRongTroLy(400); try { localStorage.removeItem('mh.tro-ly.w'); } catch { /* bỏ qua */ } }} title=\"Kéo để đổi bề rộng khung Trợ lý (bấm đúp: về mặc định)\" />}",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): {!anTroLy && <div className=\"mh-side-keo\" style={{ right: rongTroLy - 4 }} onMouseDown={keoTroLy} on",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/chung-tu/mauIn.tsx|nuot:const prof = unc && doc.partnerCode ? await purchaseApi.supplier(doc.partnerCode).catch(() => null) : null;",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/mauIn.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const prof = unc && doc.partnerCode ? await purchaseApi.supplier(doc.partnerCode).catch(() => null) ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/du-lieu/index.ts|nuot:set(p: LastUsed) { try { localStorage.setItem('mh-last', JSON.stringify({ ...lastUsed.get(), ...p })); } catch { /* trình duyệt chặn lưu */ } },",
+          "file": "apps/web/src/phan-he/mua-hang/du-lieu/index.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): set(p: LastUsed) { try { localStorage.setItem('mh-last', JSON.stringify({ ...lastUsed.get(), ...p })",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/hoa-don/BangDongHoaDon.tsx|nuot:}).catch(() => undefined);",
+          "file": "apps/web/src/phan-he/mua-hang/hoa-don/BangDongHoaDon.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): }).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/ton-max/ChuyenShopPage.tsx|nuot:const saveOpts = (o: { rounding: TransferRounding; allocation: TransferAllocation }) => { try { localStorage.setItem(OPT_KEY, JSON.stringify(o)); } catch { /* trình duyệt chặn lưu: bỏ qua */ } };",
+          "file": "apps/web/src/phan-he/mua-hang/ton-max/ChuyenShopPage.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const saveOpts = (o: { rounding: TransferRounding; allocation: TransferAllocation }) => { try { loca",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/mua-hang/ton-max/api.ts|nuot:set: (v: string) => { try { localStorage.setItem(KEY, v); } catch { /* trình duyệt chặn lưu */ } },",
+          "file": "apps/web/src/phan-he/mua-hang/ton-max/api.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): set: (v: string) => { try { localStorage.setItem(KEY, v); } catch { /* trình duyệt chặn lưu */ } },",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/tai-san/assets/AssetPages.tsx|nuot:? Object.fromEntries((await api.get<{ code: string; name: string }[]>('/api/v1/accounts', {}).catch(() => [])).map((a) => [a.code, a.name]))",
+          "file": "apps/web/src/phan-he/tai-san/assets/AssetPages.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): ? Object.fromEntries((await api.get<{ code: string; name: string }[]>('/api/v1/accounts', {}).catch(",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|apps/web/src/phan-he/tai-san/assets/assetPrint.tsx|nuot:const deps = await api.get<{ code: string; name: string }[]>('/api/v1/dimensions/department').catch(() => []);",
+          "file": "apps/web/src/phan-he/tai-san/assets/assetPrint.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const deps = await api.get<{ code: string; name: string }[]>('/api/v1/dimensions/department').catch(",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|modules/phan-quyen/web/screens/RoleEditor.tsx|nuot:const setMode = (v: Mode) => { setModeState(v); try { localStorage.setItem(MODE_KEY, v); } catch { /* chỉ là tiện ích */ } };",
+          "file": "modules/phan-quyen/web/screens/RoleEditor.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const setMode = (v: Mode) => { setModeState(v); try { localStorage.setItem(MODE_KEY, v); } catch { /",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|modules/pos/web/screens/GiaoHangCaiDat.tsx|nuot:const get = (key: string) => api.get<{ value: unknown }>(`/api/v1/settings/values/${key}`).then((r) => r.value).catch(() => null);",
+          "file": "modules/pos/web/screens/GiaoHangCaiDat.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): const get = (key: string) => api.get<{ value: unknown }>(`/api/v1/settings/values/${key}`).then((r) ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|modules/pos/web/screens/GiaoHangCaiDat.tsx|nuot:queryFn: () => api.get<{ ship?: { shipFeeWarning?: string | null } }>('/api/v1/m/phieu-ban/order-settings').then((r) => r.ship?.shipFeeWarning ?? null).catch(() => null),",
+          "file": "modules/pos/web/screens/GiaoHangCaiDat.tsx",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): queryFn: () => api.get<{ ship?: { shipFeeWarning?: string | null } }>('/api/v1/m/phieu-ban/order-set",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/core/actions.ts|nuot:.catch(() => undefined);",
+          "file": "packages/platform/src/core/actions.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): .catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/core/auth.ts|nuot:} catch {",
+          "file": "packages/platform/src/core/auth.ts",
+          "message": "nuốt lỗi im lặng (thân rỗng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): } catch {",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-backup.ts|nuot:await rename(file, `${file}.hong`).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-backup.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await rename(file, `${file}.hong`).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-backup.ts|nuot:await unlink(b.file).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-backup.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await unlink(b.file).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-backup.ts|nuot:await ddl(admin, 'ALTER DATABASE %I RENAME TO %I', oldDb, site.db_name).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-backup.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await ddl(admin, 'ALTER DATABASE %I RENAME TO %I', oldDb, site.db_name).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-backup.ts|nuot:await ddl(admin, 'DROP DATABASE IF EXISTS %I WITH (FORCE)', tmpDb).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-backup.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await ddl(admin, 'DROP DATABASE IF EXISTS %I WITH (FORCE)', tmpDb).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-backup.ts|nuot:await ctl.query(`UPDATE sites SET status = coalesce(resume_status, 'active'), resume_status = NULL, updated_at = now() WHERE id = $1`, [site.id]).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-backup.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await ctl.query(`UPDATE sites SET status = coalesce(resume_status, 'active'), resume_status = NULL, ",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-backup.ts|nuot:await admin.end().catch(() => undefined);",
+          "file": "packages/platform/src/db/site-backup.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await admin.end().catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-lifecycle.ts|nuot:try { return await fn(c); } finally { await c.end().catch(() => undefined); }",
+          "file": "packages/platform/src/db/site-lifecycle.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): try { return await fn(c); } finally { await c.end().catch(() => undefined); }",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-lifecycle.ts|nuot:await unregisterSitePool(s.id).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-lifecycle.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await unregisterSitePool(s.id).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-lifecycle.ts|nuot:await c.query('ROLLBACK').catch(() => undefined);",
+          "file": "packages/platform/src/db/site-lifecycle.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await c.query('ROLLBACK').catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-provisioner.ts|nuot:await ctl.query('ROLLBACK').catch(() => undefined);",
+          "file": "packages/platform/src/db/site-provisioner.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await ctl.query('ROLLBACK').catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-provisioner.ts|nuot:if (dbCreated) await ddl(admin, 'DROP DATABASE IF EXISTS %I WITH (FORCE)', dbName).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-provisioner.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): if (dbCreated) await ddl(admin, 'DROP DATABASE IF EXISTS %I WITH (FORCE)', dbName).catch(() => undef",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-provisioner.ts|nuot:if (roleCreated) await ddl(admin, 'DROP ROLE IF EXISTS %I', appRole).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-provisioner.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): if (roleCreated) await ddl(admin, 'DROP ROLE IF EXISTS %I', appRole).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-provisioner.ts|nuot:await ctl.query('DELETE FROM sites WHERE id = $1', [siteId]).catch(() => undefined);",
+          "file": "packages/platform/src/db/site-provisioner.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await ctl.query('DELETE FROM sites WHERE id = $1', [siteId]).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-provisioner.ts|nuot:await admin.end().catch(() => undefined);",
+          "file": "packages/platform/src/db/site-provisioner.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await admin.end().catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/db/site-registry.ts|nuot:await client.query('SELECT pg_advisory_unlock(727039)').catch(() => undefined);",
+          "file": "packages/platform/src/db/site-registry.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): await client.query('SELECT pg_advisory_unlock(727039)').catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
+        },
+        {
+          "fp": "SC-LOG-2|packages/platform/src/system/diagnostics.ts|nuot:void pruneRunLog(DIAG_STREAM, DIAG_KEEP_MONTHS).catch(() => undefined);",
+          "file": "packages/platform/src/system/diagnostics.ts",
+          "message": "nuốt lỗi im lặng (một dòng) — ghi log.warn({ err }, '…') hoặc chú thích \"// nuot-loi: <lý do>\" (R-LOG-2): void pruneRunLog(DIAG_STREAM, DIAG_KEEP_MONTHS).catch(() => undefined);",
+          "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
         }
       ]
     }

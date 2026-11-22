@@ -9,6 +9,27 @@ Sổ tay này trả lời một câu: **có lỗi thì bắt đầu nhìn ở đ
 
 ## 0. Trước khi bắt đầu
 
+### 0.0 Nhận gói log từ bản cài của khách
+
+> Khuôn từng trường, lệnh gom theo `errFp`, đổi khung giao diện qua source map, quy trình giao cho trợ lý AI: [DOC-LOG-SUA-LOI](DOC-LOG-SUA-LOI.md) <!-- [2026-11-22 10:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 -->.
+<!-- [2026-11-21 08:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): §0.0 đọc gói lay-log -->
+
+Bản cài thật thường **không** bật bộ giám sát. Người vận hành chạy `./scripts/lay-log.sh` và gửi `goi-bao-loi-<giờ>.tar.gz`. Giải nén, đọc theo thứ tự:
+
+| Tệp | Nhìn gì |
+|---|---|
+| `00-tom-tat.txt` | commit đang chạy; `docker compose ps -a`: `db-migrate Exited (1)` → lỗi nâng cấp CSDL, `api Restarting` → API chết khi khởi động; đĩa đầy |
+| `01-suc-khoe.txt` | `/health` và `/health/ready` qua cổng web: 503 `GATEWAY_UNAVAILABLE` (JSON, từ bản có PHASE-038 B2) hoặc trang HTML 502 = API không chạy; 503 `NOT_READY` = API chạy nhưng chưa sẵn sàng <!-- [2026-11-22 12:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2: GATEWAY_UNAVAILABLE, web-loi.log --> |
+| `logs/web/<ngày>.log` | cổng vào (nginx): mỗi lần trả mã ≥ 500 một dòng `<giờ> <mã> <phương thức> <đường dẫn> rid=… upstream=… ustatus=…` + `error_log` mức warn. `upstream=-` và "api could not be resolved" / "connect() failed" = API không chạy; `rid` = `requestId` người dùng thấy trên màn . Dòng của phút gần nhất có thể còn ở `logs/web/dang-ghi.log` (script chuyển sang tệp ngày mỗi phút) <!-- [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B6 --> |
+| `logs/web-client/<ngày>.log` <!-- [2026-11-22 05:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b --> | lỗi lập trình của giao diện (màn báo "Màn này gặp lỗi", lỗi không bắt): `kind` (render / error / promise), `type`, `message` đã che, `frames` (tệp `assets/*.js` của bản dựng — mở source map của đúng `commit` để ra dòng `.ts`), `screen`, `cid` = mã tra cứu người dùng thấy trên màn, `errFp` gom lỗi trùng |
+| `logs/api/<ngày>.log` | dòng `level ≥ 50`. Lỗi khởi động: `evt: bizcity.system.start_failed`, `reason` (`MIGRATION_PENDING`, `DB_UNREACHABLE`, `DB_AUTH_FAILED`, `ENV_INVALID`, `PORT_IN_USE`), `hint`. Lỗi 5xx: `reqId`, `err.stack` (trỏ tệp `.ts`) |
+| `logs/db-migrate/<ngày>.log` | khối mỗi lần chạy: `migrate_started` → dòng migration → `migrate_done` hoặc dòng `fatal` có tên tệp migration, mã PG |
+| `docker-*.log` | 2000 dòng cuối của từng dịch vụ (cả mức `info`), khi `logs/` chưa có (bản cài trước PHASE-038) |
+| (cấu trúc) | `logs/<dịch vụ>/<YYYY-MM-DD>.log`, ngày giờ Việt Nam; một ngày quá trần thì thêm `<ngày>.1.log`. Tệp kiểu cũ (`api-loi.log`…) ở gốc `logs/` là của bản cài trước D038-7 |
+| `env-ten-bien.txt` | biến nào **trống** — thiếu `DB_APP_PASSWORD`, `JWT_SECRET` hay gặp. Không có giá trị |
+
+Thấy `reqId` / `traceId` mà máy dev có bộ giám sát cùng dữ liệu: tiếp ở §0.3. Giá trị trong gói đã che bằng `***`; đừng xin người vận hành gửi `.env`.
+
 ### 0.1 Bật bộ giám sát (máy dev)
 
 ```powershell
