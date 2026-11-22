@@ -20,6 +20,19 @@
 
 Đổi tên chỉ ở repo GitHub; thư mục plugin, tệp chính, slug giữ nguyên.
 
+<!-- [2026-11-23 05:40 AM Johnny Chu - Chu Hoàng Anh] OKT-P-0 — luật tối thượng của chủ (23/11): hai mô hình triển khai + mỗi book là một pháp nhân. -->
+## Luật tối thượng P-0
+
+> **Luật tối thượng P-0 (Johnny Chu – Chu Hoàng Anh, 23/11/2026)** — đứng trên mọi luật khác của chương trình open-pos ⇄ open-ketoan (open-ketoan, open-ketoan-bridge, open-pos-backend, open-pos, open-setup). Mâu thuẫn thì P-0 thắng; luật nào trái P-0 phải sửa.
+>
+> 1. **bizcity.vn (multisite):** "mỗi một blog trên hệ thống multisite của bizcity sẽ yêu cầu một phần mềm kế toán tương ứng. Việc này để demo cho khách mô hình hệ thống chạy như nào." → mỗi blog một tenant, **khoá API riêng từng blog**.
+> 2. **Selfhost (ngoài bizcity):** "ưu tiên khóa chung cho cả mạng để người dùng có thể setup chuỗi nhiều cửa hàng dùng POS nhưng vẫn về 1 open-ketoan tương ứng mỗi tenant id = blog_id" — chủ chốt nghĩa (a): **một bản open-ketoan, một khoá chung (khoá cài đặt), mỗi blog là một tenant riêng**, mỗi cửa hàng sổ riêng trên cùng một máy kế toán. Một site = một cửa hàng = một tenant.
+> 3. **"Chỉ có luật mỗi book là 1 pháp nhân, không có pháp nhân theo tenant id."** Pháp nhân (tên, mã số thuế, loại pháp nhân, hồ sơ kế toán) là thuộc tính của **sổ (book)**. `tenant_id` chỉ là khoá kỹ thuật (cô lập dữ liệu, khoá API, RLS) — không dùng để xác định, đặt tên hay suy ra pháp nhân.
+>
+> Mô hình triển khai phải **khai rõ** (`TGS_ACC_DEPLOYMENT` → lựa chọn ở màn Cài đặt của bridge → một site), không đoán từ khoá đang có. Đặc tả: open-setup `docs/chuong-trinh/OKT/00-ADR-OKT-1.md` §0, `81`, `82`.
+>
+> **Đọc lại các luật dưới theo P-0:** R-OKT-CONN-2 ("cấu hình kết nối theo blog") và R-OKT-CONN-6 ("tenant đi theo khoá API của từng blog") đúng cho bizcity và một cửa hàng; mô hình nhiều cửa hàng selfhost dùng **khoá cài đặt + bảng đăng ký (bản cài, blog) → tenant** (open-setup 82 §3, việc OKT-SET-1). Hồ sơ kế toán (`accounting_profiles`, loại pháp nhân) hôm nay khoá theo `tenant_id` — phải chuyển sang khoá theo sổ (book) theo P-0 ý 3 (việc OKT-P0-3).
+
 ## Nguyên tắc một câu
 
 > **Mỗi shop có một nguồn danh mục do admin chọn: `local` hoặc `ketoan`. Kế toán tắt hay dừng kết nối thì quầy vẫn bán và không mất đơn; luồng bán, logic bán hàng và sổ của open-pos giữ nguyên.**

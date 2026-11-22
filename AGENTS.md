@@ -61,6 +61,19 @@ Dự án: **Bizcity Core Framework** (open-ketoan) — hạ tầng ứng dụng 
 - **Strong trong giao dịch, Eventual sau commit, có Reconciliation**: không dời kiểm Nợ = Có / quyền / kỳ khoá ra chạy nền; đồng bộ ngoài đi outbox + idempotency + một phép đối chiếu có mã.
 - Không ghi "đạt" cho trụ cột nếu không có check / chẩn đoán / test chạy được (R-ECP-SCORE). Mười ba nguyên tắc: [CANON §0.3](docs/00-CANON.md); luật: [R-ECP](docs/rules/RULE-ENTERPRISE-CONTINUITY.md); bản đồ 17 trụ cột: [standard/NEN-MONG-DOANH-NGHIEP.md](docs/standard/NEN-MONG-DOANH-NGHIEP.md).
 
+<!-- [2026-11-23 05:40 AM Johnny Chu - Chu Hoàng Anh] OKT-P-0 — luật tối thượng của chủ (23/11): hai mô hình triển khai + mỗi book là một pháp nhân. -->
+## Luật tối thượng P-0 (open-pos ⇄ open-ketoan)
+
+> **Luật tối thượng P-0 (Johnny Chu – Chu Hoàng Anh, 23/11/2026)** — đứng trên mọi luật khác của chương trình open-pos ⇄ open-ketoan (open-ketoan, open-ketoan-bridge, open-pos-backend, open-pos, open-setup). Mâu thuẫn thì P-0 thắng; luật nào trái P-0 phải sửa.
+>
+> 1. **bizcity.vn (multisite):** "mỗi một blog trên hệ thống multisite của bizcity sẽ yêu cầu một phần mềm kế toán tương ứng. Việc này để demo cho khách mô hình hệ thống chạy như nào." → mỗi blog một tenant, **khoá API riêng từng blog**.
+> 2. **Selfhost (ngoài bizcity):** "ưu tiên khóa chung cho cả mạng để người dùng có thể setup chuỗi nhiều cửa hàng dùng POS nhưng vẫn về 1 open-ketoan tương ứng mỗi tenant id = blog_id" — chủ chốt nghĩa (a): **một bản open-ketoan, một khoá chung (khoá cài đặt), mỗi blog là một tenant riêng**, mỗi cửa hàng sổ riêng trên cùng một máy kế toán. Một site = một cửa hàng = một tenant.
+> 3. **"Chỉ có luật mỗi book là 1 pháp nhân, không có pháp nhân theo tenant id."** Pháp nhân (tên, mã số thuế, loại pháp nhân, hồ sơ kế toán) là thuộc tính của **sổ (book)**. `tenant_id` chỉ là khoá kỹ thuật (cô lập dữ liệu, khoá API, RLS) — không dùng để xác định, đặt tên hay suy ra pháp nhân.
+>
+> Mô hình triển khai phải **khai rõ** (`TGS_ACC_DEPLOYMENT` → lựa chọn ở màn Cài đặt của bridge → một site), không đoán từ khoá đang có. Đặc tả: open-setup `docs/chuong-trinh/OKT/00-ADR-OKT-1.md` §0, `81`, `82`.
+>
+> Làm việc chạm khoá API, tenant, hồ sơ kế toán / pháp nhân, kết nối open-pos → đọc [docs/rules/RULE-OPEN-POS-CONNECTION.md](docs/rules/RULE-OPEN-POS-CONNECTION.md) mục P-0 trước.
+
 ## Yêu cầu kiến trúc: phân hệ nghiệp vụ nằm ở `modules/<key>/` (ADR-0024)
 
 <!-- [2026-11-03 11:45 PM Johnny Chu - Chu Hoàng Anh] ADR-0024 — yêu cầu kiến trúc của chủ dự án: phan-he/ đóng băng, mã phân hệ mới ở modules/<key>/ -->
