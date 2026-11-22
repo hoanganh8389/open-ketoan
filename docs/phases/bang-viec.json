@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 199
+      "count": 198
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 346
+      "count": 347
     }
   ],
   "items": [
@@ -10145,8 +10145,8 @@
       "phase": "PHASE-039",
       "title": "B6 — khoá site (chỉ đọc, Q039-1) và xoá mềm (D039-15)",
       "priority": "P1",
-      "status": "todo",
-      "column": "todo",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "he-thong"

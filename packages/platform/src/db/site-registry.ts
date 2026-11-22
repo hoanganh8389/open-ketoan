@@ -127,7 +127,8 @@ export function siteGate(site: { status: string; schema_version?: string | null 
   return null;
 }
 
-export type SiteResolution = { siteId: string } | { gate: SiteGateCode } | null;
+// [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b (Q039-1): site đang khoá (suspended) phục vụ CHỈ ĐỌC — cờ readOnly (chỉ có khi true)
+export type SiteResolution = { siteId: string; readOnly?: true } | { gate: SiteGateCode } | null;
 
 /** Tên miền → site phục vụ được, hoặc mã cổng lược đồ (503), hoặc null (không có, đã xoá, đang tạo → 404). */
 export async function resolveSiteByHost(host: string | undefined): Promise<SiteResolution> {
@@ -139,7 +140,7 @@ export async function resolveSiteByHost(host: string | undefined): Promise<SiteR
   if (gate) return { gate };
   if (!SERVABLE.has(site.status)) return null;
   ensurePool(site);
-  return { siteId: site.id };
+  return site.status === 'suspended' ? { siteId: site.id, readOnly: true } : { siteId: site.id };
 }
 
 /** Tên miền → mã site đang phục vụ được (active / suspended, qua cổng lược đồ). Còn lại → null. Mở pool của site khi cần. */

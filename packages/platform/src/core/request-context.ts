@@ -21,6 +21,15 @@ import { DEFAULT_SITE_ID, siteMode } from '../db/site.js';
 const SITELESS_PATHS = new Set(['/api/v1/system/health', '/api/v1/system/health/ready', '/metrics']);
 // [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a (D039-14): Provisioning API không thuộc site nào; route tự kiểm tên miền điều hành + khoá prov_…
 const PROVISIONING_PREFIX = '/_sites/';
+// [2026-11-22 01:18 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B6b (Q039-1): site khoá = chỉ đọc — xem / in / xuất (GET), đăng nhập / đăng xuất / đổi mật khẩu, xem trước; ghi khác → 423
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const SUSPENDED_WRITE_OK = new Set(['/api/v1/auth/login', '/api/v1/auth/wp-sso', '/api/v1/auth/logout-others', '/api/v1/auth/change-password']);
+/** Yêu cầu ghi có được chạy trên site đang khoá không (chỉ đọc, Q039-1). */
+export function suspendedAllows(method: string, url: string): boolean {
+  if (READ_METHODS.has(method.toUpperCase())) return true;
+  const p = url.split('?')[0] ?? '';
+  return SUSPENDED_WRITE_OK.has(p) || p.endsWith('/preview');
+}
 
 export interface RequestContext {
   requestId: string;
@@ -87,6 +96,10 @@ export function registerRequestContext(app: FastifyInstance): void {
               ? 'Phần mềm kế toán đang nâng cấp, vui lòng thử lại sau ít phút'
               : 'Nâng cấp phần mềm kế toán gặp lỗi, quản trị đang xử lý; dữ liệu không bị thay đổi';
             reply.code(503).header('retry-after', '60').send({ ok: false, error: { code: r.gate, message, requestId: String(req.id) } });
+            return;
+          }
+          if (r.readOnly && !suspendedAllows(req.method, req.url)) {
+            reply.code(423).send({ ok: false, error: { code: 'SITE_SUSPENDED', message: 'Phần mềm kế toán đang tạm khoá: vẫn xem, in, xuất sổ được nhưng không ghi được. Liên hệ nhà cung cấp để mở lại.', requestId: String(req.id) } });
             return;
           }
           const siteId = r.siteId;
