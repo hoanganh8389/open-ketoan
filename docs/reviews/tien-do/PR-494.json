@@ -1,0 +1,120 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 494,
+  "title": "fix(danh-muc): số hợp đồng mới không được có dấu cách ở Danh mục hợp đồng",
+  "mergedAt": "2026-11-20T08:49:41Z",
+  "base": "aab28bf1",
+  "merge": "52ddb6e2",
+  "authors": [
+    {
+      "id": "WizardTDK",
+      "commits": 1
+    }
+  ],
+  "people": [
+    "WizardTDK"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "WizardTDK",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": false
+  },
+  "files": 2,
+  "impact": {
+    "pillars": [],
+    "rules": [
+      "R-QG"
+    ],
+    "axes": [
+      "T10"
+    ],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 64,
+      "after": 64
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 63,
+      "after": 63
+    },
+    "docMatrix": {
+      "before": null,
+      "after": null
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 46,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": 1,
+    "T3": "—",
+    "T4": "—",
+    "T5": "—",
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": 2,
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T2": [
+      "H-FRAMEWORK"
+    ],
+    "T10": [
+      "không có phát hiện H-*"
+    ]
+  },
+  "score": 75,
+  "grade": null,
+  "verdict": "ĐẠT có điều kiện",
+  "release": "UNVERIFIED",
+  "findings": [
+    {
+      "id": "H-FRAMEWORK",
+      "level": "cảnh báo",
+      "rule": "R-REV-2, R-SIG",
+      "file": "apps/api/src/modules/dimensions/dimension.routes.ts",
+      "line": 0
+    }
+  ],
+  "followUps": []
+}

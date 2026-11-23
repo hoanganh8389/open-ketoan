@@ -1,0 +1,116 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 599,
+  "title": "fix(PHASE-040 B10c-2): print-profile sang defineAction; doi-chieu-dinh-khoan lớp K; run-log ngoại lệ hẹp STD-EVD-4",
+  "mergedAt": "2026-11-22T16:02:45Z",
+  "base": "41dfd52b",
+  "merge": "91ec320f",
+  "authors": [
+    {
+      "id": "hoanganh8389",
+      "commits": 1
+    }
+  ],
+  "people": [
+    "hoanganh8389"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "hoanganh8389",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": true,
+    "wellFormed": true,
+    "kiemChuan": "ĐẠT",
+    "selfcheck": "KHÔNG ĐẠT",
+    "testsPassed": 5
+  },
+  "files": 11,
+  "impact": {
+    "pillars": [],
+    "rules": [
+      "R-API",
+      "R-QG"
+    ],
+    "axes": [
+      "T3",
+      "T10"
+    ],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 60,
+      "after": 60
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 61,
+      "after": 61
+    },
+    "docMatrix": {
+      "before": 69,
+      "after": 69
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 61,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100,
+      "X": 41
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": "—",
+    "T3": "cần người duyệt",
+    "T4": "—",
+    "T5": "—",
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": 2,
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T10": [
+      "không có phát hiện H-*"
+    ]
+  },
+  "score": 100,
+  "grade": null,
+  "verdict": "ĐẠT",
+  "release": "UNVERIFIED",
+  "findings": [],
+  "followUps": []
+}

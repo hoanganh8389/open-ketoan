@@ -10,7 +10,9 @@
  *   node scripts/cham-pr.mjs --since 2026-11-15 --write
  *   node scripts/cham-pr.mjs --board                   chỉ sinh lại docs/reviews/TIEN-DO-PR.md từ các PR-<n>.json
  *   node scripts/cham-pr.mjs --mau-bang-chung          in khối "Bằng chứng chạy máy" điền sẵn SHA để dán vào mô tả PR
- *   node scripts/cham-pr.mjs --nguoi                   điểm theo người → docs/reviews/tien-do/.local/ (không commit, Q040-5)
+ *   node scripts/cham-pr.mjs --nguoi                   điểm theo người + trụ cột theo người → docs/reviews/tien-do/.local/ (không commit, Q040-5)
+ *   node scripts/cham-pr.mjs --nhac                    PR đang mở còn thiếu gì để được VERIFIED / tính tiến độ trụ cột — chỉ in, không gửi
+ *     ([2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27): chủ dự án quyết 2026-11-23 không gửi nhắc lên GitHub)
  *     --selfcheck   chạy thêm selfcheck ở commit trước / sau merge (worktree tạm) để lấy điểm ma trận tuân thủ C-* — chậm
  *     --no-keep-human  khi ghi đè PR-<n>.json đã có, mặc định giữ trục người duyệt đã sửa (`axesBy: "người"`); cờ này bỏ giữ
  *
@@ -25,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import {
   CONTRACT, ciOf, criteriaDiff, docMatrix, evidenceTemplate, gradeOf, identityOf, impactOf, kindOf, parseEvidence, personScores,
   pillarFacets, prScore, regressions, releaseOf, renderBoard, renderPeople, suggestAxes, verdictOf,
+  parsePillarLine, pillarFollowUps, pillarsByPerson, remindersOf, reviewersOf,
 } from './cham-pr.lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -122,6 +125,10 @@ function scorePr(R, n, { withSelfcheck }) {
   const authorIds = new Set([pr.user.login, ...authorCount.keys()].map((s) => s.toLowerCase()));
   const reviews = gh(`repos/${R}/pulls/${n}/reviews?per_page=100`);
   const approvers = new Set(reviews.filter((r) => r.state === 'APPROVED' && !authorIds.has(String(r.user?.login).toLowerCase())).map((r) => r.user.login));
+  // [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27), D040-14: người merge khác tác giả cũng là người duyệt
+  const mergedBy = pr.merged_by?.login ?? null;
+  const reviewers = reviewersOf({ approvers: [...approvers], mergedBy, authorIds: [...authorIds] });
+  const declared = parsePillarLine(pr.body);
 
   const scan = scanRange(base, merge);
   const owners = codeowners(base);
@@ -135,7 +142,7 @@ function scorePr(R, n, { withSelfcheck }) {
   const { runs, locked } = checkRunsOf(R, pr.head.sha);
   const ci = ciOf(runs, locked);
   const evidence = parseEvidence(pr.body);
-  const release = releaseOf({ verdict, ci, evidence, reviewers: approvers.size });
+  const release = releaseOf({ verdict, ci, evidence, reviewers: reviewers.length });
 
   const progress = {
     foundation: { before: fa?.foundation ?? null, after: fb?.foundation ?? null },
@@ -149,6 +156,7 @@ function scorePr(R, n, { withSelfcheck }) {
   const followUps = [
     ...findings.filter((f) => f.level === 'chặn').map((f) => `${f.id} ${f.file}${f.line ? `:${f.line}` : ''} — mở việc khắc phục`),
     ...regressions(progress.criteriaChanged).map((c) => `${c.id} hạ mức ${c.from} → ${c.to ?? 'bỏ'} — ghi lý do hoặc khôi phục`),
+    ...pillarFollowUps({ impact, criteriaChanged: progress.criteriaChanged, declared, knownIds: tcB ? criteriaIds(JSON.parse(tcB)) : null }),
   ];
   return {
     contract: CONTRACT,
@@ -159,8 +167,11 @@ function scorePr(R, n, { withSelfcheck }) {
     merge: merge.slice(0, 8),
     authors,
     people: authors.map((a) => a.id),
-    reviews: approvers.size,
-    reviewers: [...approvers].sort(),
+    reviews: reviewers.length,
+    reviewers,
+    approvedBy: [...approvers].sort(),
+    mergedBy,
+    declaredCriteria: declared,
     ci,
     evidenceBlock: evidence,
     files: files.length,
@@ -178,6 +189,26 @@ function scorePr(R, n, { withSelfcheck }) {
     findings: findings.map(({ id, level, rule, file, line }) => ({ id, level, rule, file, line })),
     followUps,
   };
+}
+
+/** Mã tiêu chí `<trụ cột>/<mã>` có trong tru-cot.json. */
+const criteriaIds = (doc) => new Set((doc?.pillars ?? []).flatMap((p) => (p.criteria ?? []).map((c) => `${p.id}/${c.id}`)));
+
+/** [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27): PR đang mở còn thiếu gì — khối bằng chứng, dòng trụ cột. Chỉ in (không bình luận, không gắn tên lên GitHub). */
+function remind(R) {
+  const open = gh(`repos/${R}/pulls?state=open&base=main&per_page=100`);
+  if (!open.length) { console.log('không có PR nào đang mở vào main'); return; }
+  let missing = 0;
+  for (const pr of open) {
+    const files = gh(`repos/${R}/pulls/${pr.number}/files?per_page=100`).map((x) => x.filename);
+    const impact = impactOf(files);
+    const list = remindersOf({ evidence: parseEvidence(pr.body), declared: parsePillarLine(pr.body), impact, docsOnly: impact.docsOnly });
+    const who = ALIASES[pr.user.login] ?? pr.user.login;
+    if (list.length) missing++;
+    console.log(`#${pr.number} · ${who} · ${pr.title.slice(0, 70)}`);
+    console.log(list.length ? list.map((x) => `   ▲ ${x}`).join('\n') : '   ✔ đủ khối bằng chứng và dòng trụ cột');
+  }
+  console.log(`\n${open.length} PR đang mở · ${missing} PR còn thiếu. Chỉ in — tự nhắc người đóng góp; mẫu: .github/PULL_REQUEST_TEMPLATE.md`);
 }
 
 function listMerged(R, { last, since }) {
@@ -226,8 +257,9 @@ function main() {
     // Q040-5: điểm theo người chỉ ở máy — .local/ bị .gitignore bỏ qua
     mkdirSync(LOCAL_DIR, { recursive: true });
     const f = path.join(LOCAL_DIR, 'DIEM-THEO-NGUOI.md');
-    const rows = personScores(readRecords());
-    writeFileSync(f, renderPeople(rows));
+    const records = readRecords();
+    const rows = personScores(records);
+    writeFileSync(f, renderPeople(rows, pillarsByPerson(records)));
     console.log(`đã ghi ${path.relative(ROOT, f)} (${rows.length} người) — không commit`);
     return;
   }
@@ -237,6 +269,7 @@ function main() {
     return;
   }
   const R = repo();
+  if (flag('--nhac')) { remind(R); return; }
   const one = opt('--pr');
   const nums = one ? [Number(one)] : listMerged(R, { last: opt('--last') ? Number(opt('--last')) : undefined, since: opt('--since') });
   if (!nums.length) { console.error('không có PR nào: dùng --pr <số>, --last <n> hoặc --since <ngày>'); process.exit(2); }

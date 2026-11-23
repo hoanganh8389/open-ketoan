@@ -1,0 +1,166 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 507,
+  "title": "Feat/nt dm 018 bien the chi ma cuoi",
+  "mergedAt": "2026-11-21T01:42:30Z",
+  "base": "8d309aab",
+  "merge": "9c8dfedc",
+  "authors": [
+    {
+      "id": "TrongKien125",
+      "commits": 2
+    }
+  ],
+  "people": [
+    "TrongKien125"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "TrongKien125",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": true,
+    "wellFormed": false,
+    "kiemChuan": null,
+    "selfcheck": null,
+    "testsPassed": null
+  },
+  "files": 11,
+  "impact": {
+    "pillars": [
+      "0",
+      "II"
+    ],
+    "rules": [
+      "R-API",
+      "R-ITEM",
+      "R-MD",
+      "R-QG"
+    ],
+    "axes": [
+      "T3",
+      "T6",
+      "T10"
+    ],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 64,
+      "after": 64
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 63,
+      "after": 63
+    },
+    "docMatrix": {
+      "before": null,
+      "after": null
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 46,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": 1,
+    "T3": "cần người duyệt",
+    "T4": "—",
+    "T5": "—",
+    "T6": 1,
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": 2,
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T2": [
+      "H-FRAMEWORK"
+    ],
+    "T6": [
+      "H-MASTERDATA",
+      "H-SKU"
+    ],
+    "T10": [
+      "không có phát hiện H-*"
+    ]
+  },
+  "score": 67,
+  "grade": null,
+  "verdict": "ĐẠT có điều kiện",
+  "release": "UNVERIFIED",
+  "findings": [
+    {
+      "id": "H-FRAMEWORK",
+      "level": "cảnh báo",
+      "rule": "R-REV-2, R-SIG",
+      "file": "docs/phases/CLAIMS.md",
+      "line": 0
+    },
+    {
+      "id": "H-FRAMEWORK",
+      "level": "cảnh báo",
+      "rule": "R-REV-2, R-SIG",
+      "file": "packages/contracts/src/catalog-hint.ts",
+      "line": 0
+    },
+    {
+      "id": "H-MASTERDATA",
+      "level": "cảnh báo",
+      "rule": "R-REV-2, R-MD",
+      "file": "apps/api/src/modules/catalog/catalog-import.ts",
+      "line": 0
+    },
+    {
+      "id": "H-MASTERDATA",
+      "level": "cảnh báo",
+      "rule": "R-REV-2, R-MD",
+      "file": "apps/api/src/modules/catalog/catalog.service.ts",
+      "line": 0
+    },
+    {
+      "id": "H-SKU",
+      "level": "cảnh báo",
+      "rule": "R-MD-11",
+      "file": "apps/web/src/features/catalog/ProductFullForm.tsx",
+      "line": 188
+    }
+  ],
+  "followUps": [
+    "chạm trụ cột 0 II nhưng mô tả PR không có dòng \"Trụ cột / tiêu chí\" — khai tiêu chí đẩy, hoặc \"không\""
+  ]
+}

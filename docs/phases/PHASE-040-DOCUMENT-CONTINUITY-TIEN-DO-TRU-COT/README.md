@@ -58,6 +58,8 @@
 | D040-10 | **Phân việc:** chuỗi mua (B5, B6) → @Thuy2k; bán hàng + BH12 (B7) → @H-Joyy pull `main`, làm theo Doc 26 §6; chuẩn, công cụ chấm (B1–B4, B8) → Nhóm Lõi | Người sở hữu phân hệ (bộ nhớ dự án: Thuy2k giữ MDG / mua / kho / giá vốn) |
 | D040-11 | **Số bảng đo bằng SQL, không suy từ số migration.** Mỗi PR có migration ghi danh sách bảng trước / sau (CSDL sạch + CSDL nâng cấp) bằng `scripts/kiem-nang-cap.sh` mở rộng | 135 báo cáo vs 134 đo được |
 | D040-12 | **Review R2 đã quá hạn** (nhịp 3 phase / 1 review: R2 phải chạy sau PHASE-034; nay đã mở tới 039). B9 dùng bộ chấm của phase này chạy R2 | docs/reviews/README §Nhịp |
+| D040-13 | **Dòng selfcheck trong khối bằng chứng tính theo chặn lỗi mới.** `VERIFIED` cần `kiem-chuan` ĐẠT (không thêm lỗi mới so với `main`) và dòng `selfcheck --strict` **đã điền** — KHÔNG ĐẠT vì nợ có sẵn của `main` là trung thực, không giữ PR lại. `main` vẫn phải sạch (B10, không nới) <!-- [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27) --> | Chủ dự án chọn 2026-11-23: chấm lùi 131 PR, 0 `VERIFIED`; `main` đỏ 10 check của người khác |
+| D040-14 | **Người merge khác tác giả là người duyệt**, cùng mức với bấm Approve. Tự merge PR của mình → `UNVERIFIED`. Nhắc chỉ in ở máy (`cham-pr.mjs --nhac`), không bình luận / gắn tên lên GitHub | Chủ dự án chọn 2026-11-23: 120 PR gần nhất 0 Approve; 133 / 133 PR từ 2026-11-20 do chính tác giả merge |
 
 ## Câu hỏi cho chủ dự án
 

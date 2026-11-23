@@ -16,6 +16,13 @@
   ],
   "reviews": 0,
   "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "hoanganh8389",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
   "ci": {
     "ran": false,
     "reason": "billing-lock",
@@ -150,5 +157,7 @@
       "line": 0
     }
   ],
-  "followUps": []
+  "followUps": [
+    "chạm trụ cột 0 I II IV VI VIII IX X nhưng mô tả PR không có dòng \"Trụ cột / tiêu chí\" — khai tiêu chí đẩy, hoặc \"không\""
+  ]
 }
