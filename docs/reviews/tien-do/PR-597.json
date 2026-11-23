@@ -1,0 +1,172 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 597,
+  "title": "PHASE-040 B10d-a + B10c-lõi vào main (#595, #596 đã duyệt nhưng merge nhầm vào nhánh trung gian)",
+  "mergedAt": "2026-11-22T15:16:40Z",
+  "base": "02375aff",
+  "merge": "7dfac053",
+  "authors": [
+    {
+      "id": "hoanganh8389",
+      "commits": 4
+    }
+  ],
+  "people": [
+    "hoanganh8389"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "hoanganh8389",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": false
+  },
+  "files": 19,
+  "impact": {
+    "pillars": [
+      "0",
+      "I",
+      "III",
+      "VII",
+      "VIII",
+      "X"
+    ],
+    "rules": [
+      "R-BOUND",
+      "R-CONT",
+      "R-DB",
+      "R-DOC-CONT",
+      "R-INV",
+      "R-LEDGER",
+      "R-POST",
+      "R-QG"
+    ],
+    "axes": [
+      "T1",
+      "T2",
+      "T4",
+      "T5",
+      "T6",
+      "T10",
+      "T12"
+    ],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 60,
+      "after": 60
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 61,
+      "after": 61
+    },
+    "docMatrix": {
+      "before": 69,
+      "after": 69
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 61,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100,
+      "X": 41
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": 2,
+    "T2": 2,
+    "T3": "—",
+    "T4": 2,
+    "T5": 2,
+    "T6": 1,
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": 2,
+    "T11": "—",
+    "T12": 2
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T1": [
+      "không có phát hiện H-*"
+    ],
+    "T2": [
+      "không có phát hiện H-*"
+    ],
+    "T4": [
+      "không có phát hiện H-*"
+    ],
+    "T5": [
+      "không có phát hiện H-*"
+    ],
+    "T6": [
+      "H-MASTERDATA"
+    ],
+    "T10": [
+      "không có phát hiện H-*"
+    ],
+    "T12": [
+      "không có phát hiện H-*"
+    ]
+  },
+  "score": 93,
+  "grade": null,
+  "verdict": "ĐẠT",
+  "release": "UNVERIFIED",
+  "findings": [
+    {
+      "id": "H-MASTERDATA",
+      "level": "cảnh báo",
+      "rule": "R-REV-2, R-MD",
+      "file": "apps/api/src/modules/catalog-trash/catalog-trash.ts",
+      "line": 0
+    },
+    {
+      "id": "H-MASTERDATA",
+      "level": "cảnh báo",
+      "rule": "R-REV-2, R-MD",
+      "file": "apps/api/src/modules/help/help.routes.ts",
+      "line": 0
+    },
+    {
+      "id": "H-MIGRATION",
+      "level": "ghi chú",
+      "rule": "R-DB",
+      "file": "db/migrations/0181_chu_thich_cot_con_thieu.sql",
+      "line": 1
+    }
+  ],
+  "followUps": [
+    "chạm trụ cột 0 I III VII VIII X nhưng mô tả PR không có dòng \"Trụ cột / tiêu chí\" — khai tiêu chí đẩy, hoặc \"không\""
+  ]
+}

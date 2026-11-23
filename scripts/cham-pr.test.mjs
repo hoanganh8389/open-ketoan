@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   ciOf, criteriaDiff, docMatrix, evidenceTemplate, gradeOf, identityOf, impactOf, isoWeek, kindOf, parseEvidence, personScores,
   pillarFacets, prScore, regressions, releaseOf, renderBoard, renderPeople, suggestAxes, verdictOf,
+  parsePillarLine, pillarFollowUps, pillarsByPerson, remindersOf, reviewersOf,
 } from './cham-pr.lib.mjs';
 
 const doc = (pillars) => ({ contract: 'bizcity_pillars@1', pillars });
@@ -123,7 +124,10 @@ test('phát hành: BLOCKED · VERIFIED cần bằng chứng chạy và người 
   assert.equal(releaseOf({ verdict: 'ĐẠT', ci: green, evidence: null, reviewers: 1 }), 'VERIFIED');
   assert.equal(releaseOf({ verdict: 'ĐẠT', ci: { ran: false }, evidence: ev, reviewers: 1 }), 'VERIFIED');
   assert.equal(releaseOf({ verdict: 'ĐẠT', ci: green, evidence: ev, reviewers: 0 }), 'UNVERIFIED');
-  assert.equal(releaseOf({ verdict: 'ĐẠT', ci: { ran: false }, evidence: { ...ev, selfcheck: 'KHÔNG ĐẠT' }, reviewers: 1 }), 'UNVERIFIED');
+  // D040-13: selfcheck --strict KHÔNG ĐẠT vì nợ có sẵn của main vẫn VERIFIED khi kiem-chuan (chặn lỗi mới) ĐẠT
+  assert.equal(releaseOf({ verdict: 'ĐẠT', ci: { ran: false }, evidence: { ...ev, selfcheck: 'KHÔNG ĐẠT' }, reviewers: 1 }), 'VERIFIED');
+  assert.equal(releaseOf({ verdict: 'ĐẠT', ci: { ran: false }, evidence: { ...ev, kiemChuan: 'KHÔNG ĐẠT' }, reviewers: 1 }), 'UNVERIFIED');
+  assert.equal(releaseOf({ verdict: 'ĐẠT', ci: { ran: false }, evidence: { ...ev, wellFormed: false, selfcheck: null }, reviewers: 1 }), 'UNVERIFIED');
   assert.equal(gradeOf('VERIFIED', 91), 'A');
   assert.equal(gradeOf('VERIFIED', 69), 'D');
   assert.equal(gradeOf('UNVERIFIED', 95), null);
@@ -198,4 +202,51 @@ test('điểm theo người: chỉ PR VERIFIED; chưa đủ 3 PR / 4 tuần thì
   assert.equal(b.reviewsGiven, 1);
   assert.equal(b.blocked, 1);
   assert.match(renderPeople(rows), /KHÔNG COMMIT/);
+});
+
+// [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27): người merge là người duyệt, dòng trụ cột, nhắc PR đang mở, trụ cột theo người
+test('người duyệt (D040-14): Approve hoặc merge bởi người khác tác giả; tự merge không tính', () => {
+  assert.deepEqual(reviewersOf({ approvers: [], mergedBy: 'hoanganh8389', authorIds: ['h-joyy'] }), ['hoanganh8389']);
+  assert.deepEqual(reviewersOf({ approvers: [], mergedBy: 'H-Joyy', authorIds: ['h-joyy'] }), []);
+  assert.deepEqual(reviewersOf({ approvers: ['Thuy2k', 'H-Joyy'], mergedBy: 'Thuy2k', authorIds: ['H-Joyy'] }), ['Thuy2k']);
+});
+
+test('dòng "Trụ cột / tiêu chí": mã, "không", chỗ trống của mẫu, in đậm', () => {
+  assert.deepEqual(parsePillarLine('x\nTrụ cột / tiêu chí: X/DC-3, VIII/M-2, X/DC-3\n'), { present: true, ids: ['X/DC-3', 'VIII/M-2'], none: false });
+  assert.deepEqual(parsePillarLine('- **Trụ cột / tiêu chí:** không'), { present: true, ids: [], none: true });
+  assert.equal(parsePillarLine('Trụ cột / tiêu chí: <mã, ví dụ X/DC-3 — hoặc "không">').present, false);
+  assert.equal(parsePillarLine('không có dòng').present, false);
+});
+
+test('việc tiếp về trụ cột: chạm mà không khai, khai mà chưa đổi mức, mã lạ; đổi mức rồi thì im', () => {
+  const impact = { pillars: ['X'], docsOnly: false };
+  assert.match(pillarFollowUps({ impact, declared: { present: false } })[0], /không có dòng "Trụ cột/);
+  assert.deepEqual(pillarFollowUps({ impact: { pillars: ['X'], docsOnly: true }, declared: { present: false } }), []);
+  const known = new Set(['X/DC-3']);
+  assert.match(pillarFollowUps({ impact, declared: { present: true, ids: ['X/DC-3'] }, knownIds: known })[0], /chưa đổi mức/);
+  assert.match(pillarFollowUps({ impact, declared: { present: true, ids: ['X/DC-9'] }, knownIds: known })[0], /không có tiêu chí/);
+  assert.deepEqual(pillarFollowUps({ impact, criteriaChanged: [{ id: 'X/DC-3', from: 'chua', to: 'dat' }], declared: { present: true, ids: ['X/DC-3'] }, knownIds: known }), []);
+});
+
+test('nhắc PR đang mở: thiếu khối, khối chưa điền, kiem-chuan đỏ, thiếu dòng trụ cột; PR chỉ tài liệu không đòi khối', () => {
+  const impact = { pillars: ['VIII'], docsOnly: false };
+  assert.equal(remindersOf({ evidence: { present: false }, declared: { present: false }, impact, docsOnly: false }).length, 2);
+  assert.match(remindersOf({ evidence: { present: true, wellFormed: false }, declared: { present: true, ids: [] }, impact, docsOnly: false })[0], /chưa điền/);
+  assert.match(remindersOf({ evidence: { present: true, wellFormed: true, kiemChuan: 'KHÔNG ĐẠT' }, declared: { present: true }, impact, docsOnly: false })[0], /lỗi mới/);
+  assert.deepEqual(remindersOf({ evidence: { present: false }, declared: { present: false }, impact: { pillars: [] }, docsOnly: true }), []);
+});
+
+test('trụ cột theo người: PR chạm, tiêu chí nâng mức, mã đã khai; bảng chung có mục Theo trụ cột không tên người', () => {
+  const recs = [
+    { pr: 1, people: ['a'], release: 'VERIFIED', mergedAt: '2026-11-22', impact: { pillars: ['X'] }, progress: { criteriaChanged: [{ id: 'X/DC-3', from: 'chua', to: 'dat' }], byPillar: { X: 41 } }, declaredCriteria: { ids: ['X/DC-3'] } },
+    { pr: 2, people: ['b'], release: 'UNVERIFIED', mergedAt: '2026-11-21', impact: { pillars: ['X', 'VIII'] }, progress: { criteriaChanged: [{ id: 'VIII/M-1', from: 'dat', to: 'chua' }] } },
+  ];
+  const rows = pillarsByPerson(recs);
+  assert.deepEqual(rows.find((r) => r.who === 'a' && r.pillar === 'X'), { who: 'a', pillar: 'X', touched: 1, raised: 1, declared: 1, verified: 1 });
+  assert.equal(rows.find((r) => r.who === 'b' && r.pillar === 'VIII').raised, 0); // hạ mức không tính nâng
+  assert.match(renderPeople([], rows), /Trụ cột theo người/);
+  const board = renderBoard(recs.map((r) => ({ ...r, authors: r.people.map((id) => ({ id })), reviews: 0, ci: {}, kind: 'giữ nhịp' })));
+  const sec = board.slice(board.indexOf('## Theo trụ cột'), board.indexOf('## Đường tiến độ'));
+  assert.ok(sec.includes('| X | 41 % | 2 | 1 | 1 | 1 |'), sec);
+  assert.ok(!sec.includes('| a |'));
 });

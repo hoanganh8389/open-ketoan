@@ -1,0 +1,113 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 521,
+  "title": "feat(ban-hang): NT-BH-036 phiếu bán / trả bán cùng mẫu phiếu mua",
+  "mergedAt": "2026-11-21T12:18:33Z",
+  "base": "a166c599",
+  "merge": "0734feef",
+  "authors": [
+    {
+      "id": "H-Joyy",
+      "commits": 5
+    }
+  ],
+  "people": [
+    "H-Joyy"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "H-Joyy",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": false
+  },
+  "files": 7,
+  "impact": {
+    "pillars": [],
+    "rules": [],
+    "axes": [],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 68,
+      "after": 68
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 64,
+      "after": 64
+    },
+    "docMatrix": {
+      "before": null,
+      "after": null
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 61,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": 1,
+    "T3": "—",
+    "T4": "—",
+    "T5": "—",
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": "—",
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T2": [
+      "H-FRAMEWORK"
+    ]
+  },
+  "score": 50,
+  "grade": null,
+  "verdict": "ĐẠT có điều kiện",
+  "release": "UNVERIFIED",
+  "findings": [
+    {
+      "id": "H-FRAMEWORK",
+      "level": "cảnh báo",
+      "rule": "R-REV-2, R-SIG",
+      "file": "docs/phases/CLAIMS.md",
+      "line": 0
+    }
+  ],
+  "followUps": []
+}
