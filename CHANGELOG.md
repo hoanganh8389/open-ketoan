@@ -33,6 +33,17 @@ Mỗi bản ghi đủ sáu mục:
 - **Đổi:** —
 - **Thay đổi định khoản:** —
 
+### Bộ kiểm hướng dẫn theo đúng nút Hướng dẫn của màn (PHASE-040 B10e) <!-- [2026-11-23 11:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10e: mục CHANGELOG (S040-25) -->
+
+- **Thêm:** trang hướng dẫn cho ba màn mà nút Hướng dẫn còn báo "Chưa có hướng dẫn": Thẻ hướng dẫn (HT17), Phiếu xuất điều chỉnh (BH06), Trợ lý (TI12).
+- **Sửa:**
+  - Bộ kiểm SC-DOC-6 kiểm đúng trang mà nút Hướng dẫn của màn sẽ mở (`helpKey`), không còn đòi trang theo khoá menu. Trước đây 26 màn bị báo thiếu nhầm, dù màn đã trỏ vào trang có sẵn.
+  - Bộ tự kiểm chấp nhận mã chẩn đoán có chữ số, giống khuôn mã lỗi đang dùng.
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
 ### Hồ sơ in qua action; ngoại lệ nhật ký JSONL; công cụ đối chiếu định khoản là của Kernel (PHASE-040 B10c-2) <!-- [2026-11-23 02:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-2: mục CHANGELOG (S040-24) -->
 
 - **Đổi:**

@@ -7,7 +7,7 @@
   "required": ["id", "title", "gate", "contract", "rules", "tier", "enforce", "weight"],
   "properties": {
     "id": { "type": "string", "pattern": "^(SC|DG)-[A-Z]+-\\d+$", "description": "SC-* lane selfcheck (tĩnh), DG-* lane diagnostics (CSDL)" },
-    "code": { "type": "string", "pattern": "^[A-Z_]+$", "description": "Mã kiểm của GET /system/diagnostics (chỉ DG-*)" },
+    "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "description": "Mã kiểm của GET /system/diagnostics (chỉ DG-*)" },
     "title": { "type": "string", "minLength": 10 },
     "lane": { "enum": ["selfcheck", "diagnostics"] },
     "gate": { "enum": ["KERNEL", "CONF-MAN", "CONF-STATIC", "CONF-MIG", "CONF-RUN", "DOCS"] },
