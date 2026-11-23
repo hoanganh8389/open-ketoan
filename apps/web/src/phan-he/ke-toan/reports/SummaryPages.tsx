@@ -135,8 +135,12 @@ export function CashBalancesPage() {
     { key: 'label', header: 'Chỉ tiêu', width: 420, noFilter: true, noSort: true,
       render: (r) => <span style={{ paddingLeft: r.level * 18, fontWeight: r.kind === 'data' ? undefined : 700 }}>{r.label}</span> },
     ...days.map((d, i): Column<CashBalanceLine> => ({ key: `d${i}`, header: `Ngày ${dmy(d)}`, type: 'money', width: 150, showZero: true, noFilter: true, noSort: true,
+      footerValue: (vis) => vis.reduce((t, r) => t + (r.kind === 'data' ? Math.round((r.values[i] ?? 0) * 100) : 0), 0) / 100,
       value: (r) => (r.kind === 'group' ? null : r.values[i] ?? 0), bold: (r) => r.kind !== 'data' })),
   ];
+  // [2026-11-23 khanhtd] Tổng cộng (nhiều chi nhánh) tách khỏi bảng → dòng tổng dính đáy, cộng các tài khoản đang hiện; mẫu in giữ dòng cũ
+  const hasTotal = lines.some((r) => r.kind === 'total');
+  const gridLines = lines.filter((r) => r.kind !== 'total');
   return (
     <>
       <PageHeader title="Bảng kê số dư tiền theo ngày" code="ACC80" subtitle="Số dư tiền mặt, tiền gửi từng tài khoản tại cuối ngày, so sánh được với các ngày trước" helpKey="so-du-tien" />
@@ -162,8 +166,8 @@ export function CashBalancesPage() {
           </div>
           <ErrorBox error={error ? errorText(error) : null} />
           {loading ? <Loading /> : !lines.length ? <Empty text="Không có số dư tiền đến ngày này" /> : (
-            <DataGrid storageKey="acc80-v2" rows={lines} rowKey={(r) => r.key} columns={columns}
-              rowKind={(r) => (r.kind === 'group' ? 'group' : r.kind === 'subtotal' || r.kind === 'total' ? 'subtotal' : 'data')}
+            <DataGrid storageKey="acc80-v2" rows={gridLines} rowKey={(r) => r.key} columns={columns} footerLabel={hasTotal ? 'Tổng cộng' : false}
+              rowKind={(r) => (r.kind === 'group' ? 'group' : r.kind === 'subtotal' ? 'subtotal' : 'data')}
               groupLabel={(r) => <b>{r.label}</b>}
               onRowClick={(r) => { if (r.kind === 'data') navigate(`/bao-cao/so-chi-tiet?${new URLSearchParams({ account: r.label.split(' - ')[0]!, from: `${f.to.slice(0, 8)}01`, to: f.to }).toString()}`); }}
               exportName="bang-ke-so-du-tien-theo-ngay" exportTitle={`Bảng kê số dư tiền theo ngày — đến ngày ${dmy(f.to)}`} />

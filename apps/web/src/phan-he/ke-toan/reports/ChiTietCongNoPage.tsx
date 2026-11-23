@@ -123,6 +123,15 @@ export function ChiTietCongNoPage({ preset }: { preset: ChiTietCongNoPreset }) {
   const note = (p: string) => { const n = gop && fam.info(p) ? fam.familyOf(p).length : 0; return n > 1 ? ` — cả nhóm: đơn vị mẹ và ${n - 1} chi nhánh` : ''; };
   const rows = loading ? [] : buildRows(balances, lines, preset.who, note);
   const money = (r: Row, v: number) => (r.kind === 'group' ? null : v);
+  // [2026-11-23 khanhtd] Tổng cộng tách khỏi bảng → dòng tổng dính đáy của DataGrid, cộng lại theo các dòng đang hiện khi lọc
+  //   (trước: dòng 'total' nằm trong bảng, lọc theo TK là mất). Số dư = số dư đầu kỳ của các đối tượng đang hiện + phát sinh đang hiện.
+  const gridRows = rows.filter((r) => r.kind !== 'total');
+  const openNet = new Map(rows.filter((r) => r.kind === 'open').map((r) => [r.p, Math.round((r.dn - r.dc) * 100)]));
+  const allData = rows.reduce((n, r) => n + (r.kind === 'data' ? 1 : 0), 0);
+  const closingNet = (vis: Row[]) => {
+    const ps = vis.length === allData ? [...openNet.keys()] : [...new Set(vis.map((r) => r.p))];
+    return (ps.reduce((t, p) => t + (openNet.get(p) ?? 0), 0) + vis.reduce((t, r) => t + Math.round(r.debit * 100) - Math.round(r.credit * 100), 0)) / 100;
+  };
   const columns: Column<Row>[] = [
     { key: 'postingDate', header: 'Ngày hạch toán', type: 'date', width: 104, noSort: true },
     { key: 'docDate', header: 'Ngày chứng từ', type: 'date', width: 104, noSort: true },
@@ -131,10 +140,10 @@ export function ChiTietCongNoPage({ preset }: { preset: ChiTietCongNoPreset }) {
     { key: 'description', header: 'Diễn giải', width: 300, noSort: true },
     { key: 'acc', header: 'TK công nợ', type: 'code', width: 90, noSort: true },
     { key: 'counter', header: 'TK đối ứng', type: 'code', width: 90, noSort: true },
-    { key: 'debit', header: 'Nợ', band: 'Phát sinh', type: 'money', width: 130, noSort: true, value: (r) => (r.kind === 'open' ? null : money(r, r.debit)) },
-    { key: 'credit', header: 'Có', band: 'Phát sinh', type: 'money', width: 130, noSort: true, value: (r) => (r.kind === 'open' ? null : money(r, r.credit)) },
-    { key: 'dn', header: 'Nợ', band: 'Số dư', type: 'money', width: 130, noSort: true, value: (r) => money(r, r.dn) },
-    { key: 'dc', header: 'Có', band: 'Số dư', type: 'money', width: 130, noSort: true, value: (r) => money(r, r.dc) },
+    { key: 'debit', header: 'Nợ', band: 'Phát sinh', type: 'money', width: 130, noSort: true, sum: true, value: (r) => (r.kind === 'open' ? null : money(r, r.debit)) },
+    { key: 'credit', header: 'Có', band: 'Phát sinh', type: 'money', width: 130, noSort: true, sum: true, value: (r) => (r.kind === 'open' ? null : money(r, r.credit)) },
+    { key: 'dn', header: 'Nợ', band: 'Số dư', type: 'money', width: 130, noSort: true, value: (r) => money(r, r.dn), footerValue: (vis) => side(closingNet(vis)).dn },
+    { key: 'dc', header: 'Có', band: 'Số dư', type: 'money', width: 130, noSort: true, value: (r) => money(r, r.dc), footerValue: (vis) => side(closingNet(vis)).dc },
     { key: 'branchCode', header: 'Chi nhánh', type: 'code', width: 90, hidden: !multi, noSort: true },
   ];
   const err = bal.error ?? led.error;
@@ -157,9 +166,9 @@ export function ChiTietCongNoPage({ preset }: { preset: ChiTietCongNoPreset }) {
           <div className="rp-tieu-de"><h2>{preset.title.toUpperCase()}</h2><i>Tài khoản: {f.account}; {kyText(f.from, f.to)}</i></div>
           <ErrorBox error={err ? errorText(err) : null} />
           {loading ? <Loading /> : !rows.length ? <Empty text="Không có công nợ trong kỳ này" /> : (
-            <DataGrid storageKey={`${preset.code.toLowerCase()}-ctcn-v1`} rows={rows} rowKey={(r) => r.key} columns={columns}
+            <DataGrid storageKey={`${preset.code.toLowerCase()}-ctcn-v1`} rows={gridRows} rowKey={(r) => r.key} columns={columns}
               note={led.data?.truncated ? 'chỉ hiện 20.000 dòng đầu, hãy thu hẹp khoảng ngày' : undefined}
-              rowKind={(r) => (r.kind === 'group' ? 'group' : r.kind === 'sub' || r.kind === 'total' ? 'subtotal' : 'data')}
+              rowKind={(r) => (r.kind === 'group' ? 'group' : r.kind === 'sub' ? 'subtotal' : 'data')}
               groupLabel={(r) => <b>{r.label}</b>}
               onRowClick={(r) => r.entryId && setEntryId(r.entryId)}
               exportName={preset.title} exportTitle={`${preset.title} — ${kyText(f.from, f.to)}`} />
