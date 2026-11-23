@@ -1,5 +1,5 @@
 # PHASE-026 · 10 — Đánh giá mức adapt: trụ cột × tiêu chí × mức đạt
-<!-- [2026-11-04 02:00 AM Johnny Chu - Chu Hoàng Anh] PHASE-026 — SINH TỰ ĐỘNG từ docs/standard/tru-cot.json (bizcity_pillars@1 0.1.0-draft, cập nhật 2026-11-22) bằng scripts/tru-cot-md.mjs — sửa ở tệp JSON rồi chạy lại, không sửa tay ở đây -->
+<!-- [2026-11-04 02:00 AM Johnny Chu - Chu Hoàng Anh] PHASE-026 — SINH TỰ ĐỘNG từ docs/standard/tru-cot.json (bizcity_pillars@1 0.2.0-draft, cập nhật 2026-11-23) bằng scripts/tru-cot-md.mjs — sửa ở tệp JSON rồi chạy lại, không sửa tay ở đây -->
 
 Cùng một nguồn với màn **HT10 Trụ cột & mức đạt** và thẻ **Trụ cột** ở trang chủ phân hệ. Mức đạt đi theo bằng chứng (migration, test, check); không ai tích tay (R-CONT-7). Trọng số: đạt 1 · một phần ½ · tài liệu ¼ · chưa 0.
 

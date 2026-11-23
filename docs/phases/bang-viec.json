@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 369
+      "count": 370
     }
   ],
   "items": [
@@ -10658,6 +10658,21 @@
       "facet": "F7",
       "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
       "line": 37
+    },
+    {
+      "id": "S040-29",
+      "phase": "PHASE-040",
+      "title": "B13 — người giữ tiêu chí trụ cột: trường owner cho 79 tiêu chí ở tru-cot.json theo cách chủ dự án chia 2026-11-23",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 38
     }
   ]
 }
