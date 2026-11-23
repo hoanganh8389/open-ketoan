@@ -128,14 +128,17 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
   const title = soCai ? 'Sổ cái' : 'Sổ chi tiết các tài khoản';
   const code = soCai ? 'ACC88' : 'ACC12';
   const money = (r: Row, v: number) => (r.kind === 'group' ? null : v);
+  // [2026-11-23 khanhtd] Tổng cộng tách khỏi bảng → dòng tổng dính đáy của DataGrid (cộng phát sinh Nợ / Có của các dòng đang hiện,
+  //   tính lại khi lọc theo TK đối ứng, số chứng từ…); trước: dòng 'total' nằm trong bảng, lọc là mất. Mẫu in giữ dòng Tổng cộng như cũ.
+  const gridRows = rows.filter((r) => r.kind !== 'total');
   const columns: Column<Row>[] = soCai ? [
     { key: 'postingDate', header: 'Ngày, tháng ghi sổ', type: 'date', width: 110, noSort: true },
     { key: 'docNo', header: 'Số hiệu', band: 'Chứng từ', type: 'code', width: 130, noSort: true },
     { key: 'docDate', header: 'Ngày tháng', band: 'Chứng từ', type: 'date', width: 104, noSort: true },
     { key: 'description', header: 'Diễn giải', width: 320, noSort: true },
     { key: 'counter', header: 'Số hiệu TK đối ứng', type: 'code', width: 110, noSort: true },
-    { key: 'debit', header: 'Nợ', band: 'Số tiền', type: 'money', width: 140, noSort: true, value: (r) => money(r, r.debit) },
-    { key: 'credit', header: 'Có', band: 'Số tiền', type: 'money', width: 140, noSort: true, value: (r) => money(r, r.credit) },
+    { key: 'debit', header: 'Nợ', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, value: (r) => money(r, r.debit) },
+    { key: 'credit', header: 'Có', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, value: (r) => money(r, r.credit) },
     { key: 'lineCount', header: 'Số dòng', type: 'number', width: 70, noSort: true, hidden: !f.gop, title: 'Số dòng chi tiết (từng mã hàng) đã cộng gộp vào dòng này. Bấm vào dòng để xem bút toán với từng dòng mã hàng.' },
     { key: 'branchCode', header: 'Chi nhánh', type: 'code', width: 90, hidden: !multi, noSort: true },
   ] : [
@@ -144,8 +147,8 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
     { key: 'docNo', header: 'Số chứng từ', type: 'code', width: 130, noSort: true },
     { key: 'description', header: 'Diễn giải', width: 300, noSort: true },
     { key: 'counter', header: 'TK đối ứng', type: 'code', width: 90, noSort: true },
-    { key: 'debit', header: 'Phát sinh Nợ', type: 'money', width: 130, noSort: true, value: (r) => money(r, r.debit) },
-    { key: 'credit', header: 'Phát sinh Có', type: 'money', width: 130, noSort: true, value: (r) => money(r, r.credit) },
+    { key: 'debit', header: 'Phát sinh Nợ', type: 'money', width: 130, noSort: true, sum: true, value: (r) => money(r, r.debit) },
+    { key: 'credit', header: 'Phát sinh Có', type: 'money', width: 130, noSort: true, sum: true, value: (r) => money(r, r.credit) },
     { key: 'lineCount', header: 'Số dòng', type: 'number', width: 70, noSort: true, hidden: !f.gop, title: 'Số dòng chi tiết (từng mã hàng) đã cộng gộp vào dòng này. Bấm vào dòng để xem bút toán với từng dòng mã hàng.' },
     { key: 'dn', header: 'Dư Nợ', type: 'money', width: 130, noSort: true, value: (r) => (r.kind === 'total' ? null : money(r, r.dn)) },
     { key: 'dc', header: 'Dư Có', type: 'money', width: 130, noSort: true, value: (r) => (r.kind === 'total' ? null : money(r, r.dc)) },
@@ -169,8 +172,8 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
           <div className="rp-tieu-de"><h2>{title.toUpperCase()}</h2><i>{kyText(f.from, f.to)}</i></div>
           <ErrorBox error={error ? errorText(error) : null} />
           {!accounts.length ? <Empty text="Chọn tài khoản để xem" /> : loading ? <Loading /> : !rows.length ? <Empty /> : (
-            <DataGrid storageKey={soCai ? 'acc88-v3' : 'acc12-v3'} rows={rows} rowKey={(r) => r.key} columns={columns}
-              rowKind={(r) => (r.kind === 'group' ? 'group' : r.kind === 'sub' || r.kind === 'total' ? 'subtotal' : 'data')}
+            <DataGrid storageKey={soCai ? 'acc88-v3' : 'acc12-v3'} rows={gridRows} rowKey={(r) => r.key} columns={columns}
+              rowKind={(r) => (r.kind === 'group' ? 'group' : r.kind === 'sub' ? 'subtotal' : 'data')}
               groupLabel={(r) => <b>{r.label}</b>}
               onRowClick={(r) => r.entryId && setEntryId(r.entryId)}
               exportName={soCai ? 'so-cai' : 'so-chi-tiet-cac-tai-khoan'} exportTitle={`${title} — ${kyText(f.from, f.to)}`} />
