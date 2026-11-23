@@ -7,6 +7,7 @@ import {
   ciOf, criteriaDiff, docMatrix, evidenceTemplate, gradeOf, identityOf, impactOf, isoWeek, kindOf, parseEvidence, personScores,
   pillarFacets, prScore, regressions, releaseOf, renderBoard, renderPeople, suggestAxes, verdictOf,
   parsePillarLine, pillarFollowUps, pillarsByPerson, remindersOf, reviewersOf,
+  areaOf, debtCell, debtDiff, debtsInFiles, touchesChecker,
 } from './cham-pr.lib.mjs';
 
 const doc = (pillars) => ({ contract: 'bizcity_pillars@1', pillars });
@@ -152,7 +153,7 @@ test('bảng TIEN-DO-PR: không giờ sinh, mới → cũ, gom tháng khi vượ
   assert.match(md, /\| 2026-10 \| 1 \| 0 \| 0 \|/);
   assert.match(md, /`BLOCKED` 1/);
   assert.match(md, /60 → 61 % \(\+1\)/);
-  assert.match(md, /\| 2026-W47 \| 61 % \| 62 % \| — \| 41 \|/);
+  assert.match(md, /\| 2026-W47 \| 61 % \| 62 % \| — \| — \| 41 \|/); // B14: thêm cột Nợ chuẩn (bản ghi không có nợ → —)
   assert.doesNotMatch(md, /\d{2}:\d{2} UTC/);
 });
 
@@ -249,4 +250,58 @@ test('trụ cột theo người: PR chạm, tiêu chí nâng mức, mã đã kha
   const sec = board.slice(board.indexOf('## Theo trụ cột'), board.indexOf('## Đường tiến độ'));
   assert.ok(sec.includes('| X | 41 % | 2 | 1 | 1 | 1 |'), sec);
   assert.ok(!sec.includes('| a |'));
+});
+
+// [2026-11-23 05:41 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B14 (S040-30): nợ chuẩn — trả / thêm theo PR, đổi thước, nhắc theo tệp, bảng
+const BL = (debts) => ({ checks: Object.fromEntries(Object.entries(debts).map(([k, files]) => [k, { title: 't ' + k, ref: 'r ' + k, debts: files.map((f, i) => ({ fp: k + '|' + f + '|' + i, file: f })) }])) });
+
+test('phần mã của tệp: phân hệ, tính năng web, module, gói, migration', () => {
+  assert.equal(areaOf('apps/api/src/phan-he/mua-hang/routes.ts'), 'mua-hang');
+  assert.equal(areaOf('modules/mua-hang/domain/src/x.ts'), 'mua-hang');
+  assert.equal(areaOf('apps/web/src/features/vouchers/A.tsx'), 'vouchers');
+  assert.equal(areaOf('packages/kernel/src/modules/posting/a.ts'), 'posting');
+  assert.equal(areaOf('db/migrations/0100_x.sql'), 'migrations');
+});
+
+test('nợ chuẩn theo PR: trả, thêm, theo check / phần mã; PR sửa bộ kiểm ghi đổi thước', () => {
+  const a = BL({ 'SC-UI-1': ['apps/web/src/features/vouchers/A.tsx', 'apps/web/src/features/vouchers/A.tsx'], 'SC-LOG-2': ['apps/api/src/phan-he/kho/k.ts'] });
+  const b = BL({ 'SC-UI-1': ['apps/web/src/features/vouchers/A.tsx'], 'SC-LOG-2': ['apps/api/src/phan-he/kho/k.ts'] });
+  const d = debtDiff(a, b);
+  assert.equal(d.before, 3); assert.equal(d.after, 2); assert.equal(d.paid, 1); assert.equal(d.added, 0);
+  assert.deepEqual(d.paidByCheck, { 'SC-UI-1': 1 });
+  assert.deepEqual(d.paidByArea, { vouchers: 1 });
+  assert.deepEqual(d.afterByArea, { vouchers: 1, kho: 1 });
+  assert.match(debtCell(d), /^trả −1 \(SC-UI-1 1\)$/);
+  assert.match(debtCell(debtDiff(a, b, { toolChanged: true })), /^đổi thước −1/);
+  assert.equal(debtCell(debtDiff(a, a)), '—');
+  assert.equal(debtDiff(null, null), null);
+  assert.equal(touchesChecker(['tests/conformance/checks/ui/ui.check.mjs']), true);
+  assert.equal(touchesChecker(['tests/conformance/baseline.json', 'apps/web/x.tsx']), false);
+});
+
+test('nhắc nợ theo tệp đang sửa: gom tệp × check, kèm tiêu đề và căn cứ', () => {
+  const b = BL({ 'SC-UI-1': ['a.tsx', 'a.tsx', 'b.tsx'], 'SC-LOG-2': ['a.tsx'] });
+  assert.deepEqual(debtsInFiles(b, ['a.tsx']), [
+    { file: 'a.tsx', check: 'SC-UI-1', n: 2, title: 't SC-UI-1', ref: 'r SC-UI-1' },
+    { file: 'a.tsx', check: 'SC-LOG-2', n: 1, title: 't SC-LOG-2', ref: 'r SC-LOG-2' },
+  ]);
+  assert.deepEqual(debtsInFiles(b, ['c.tsx']), []);
+});
+
+test('bảng: cột Nợ chuẩn, mục Nợ chuẩn theo phần mã, đường tuần, trả nợ theo người (không tính đổi thước)', () => {
+  const a = BL({ 'SC-UI-1': ['apps/web/src/features/vouchers/A.tsx', 'apps/web/src/features/vouchers/A.tsx'] });
+  const b = BL({ 'SC-UI-1': ['apps/web/src/features/vouchers/A.tsx'] });
+  const base = { authors: [{ id: 'a' }], people: ['a'], reviews: 0, ci: {}, kind: 'giữ nhịp', progress: {}, release: 'UNVERIFIED', score: null };
+  const recs = [
+    { ...base, pr: 2, mergedAt: '2026-11-23', debt: debtDiff(a, b) },
+    { ...base, pr: 1, mergedAt: '2026-11-22', debt: debtDiff(BL({ 'SC-X': ['z'] }), a, { toolChanged: true }) },
+  ];
+  const md = renderBoard(recs);
+  assert.match(md, /trả nợ chuẩn 1 chỗ \(1 PR\)/);
+  assert.match(md, /## Nợ chuẩn theo phần mã/);
+  assert.ok(md.includes('| vouchers | 1 | 1 |'), md);
+  assert.match(md, /\| Tuần \| Nền móng \| Trụ cột \| Ma trận chứng từ \| Nợ chuẩn \|/);
+  const p = personScores(recs).find((x) => x.id === 'a');
+  assert.equal(p.debtPaid, 1);
+  assert.match(renderPeople([p]), /Trả nợ chuẩn/);
 });

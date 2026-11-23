@@ -19,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ALWAYS_OK, CLAIMS_FILE, inScope, isDocsOnly, parseClaims, sharedTouched } from '../tests/conformance/checks/flow/flow.lib.mjs';
 // [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3 (S040-8): kiem nhắc (▲) khi PR của nhánh thiếu khối "Bằng chứng chạy máy" (D040-8); không đổi kiểm R-FLOW
-import { impactOf, parseEvidence, parsePillarLine } from './cham-pr.lib.mjs';
+import { debtDiff, debtsInFiles, impactOf, parseEvidence, parsePillarLine } from './cham-pr.lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -130,6 +130,25 @@ function kiem() {
     const files = String(e.stdout ?? '').split('\n').slice(1).map((l) => l.trim());
     const conflicted = files.slice(0, Math.max(0, files.indexOf(''))).filter(Boolean);
     add('fail', 'R-FLOW-5', `gộp thử với origin/main xung đột${conflicted.length ? `: ${conflicted.slice(0, 8).join(', ')}` : ''}`);
+  }
+
+  // [2026-11-23 05:41 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B14 (S040-30): nợ chuẩn — tệp đang sửa còn nợ gì (chỉ nhắc, không chặn — R-GATE-9),
+  // nhánh đã trả bao nhiêu chỗ. Migration đã chạy không sửa (R-DB-15) nên không nhắc.
+  {
+    const show = (r) => { const s = tryGit('show', `${r}:tests/conformance/baseline.json`); try { return s ? JSON.parse(s) : null; } catch { return null; } }; // nuot-loi: baseline hỏng / chưa có → bỏ phần nhắc nợ
+    const blMain = show('origin/main');
+    const blHere = show(ref);
+    if (blMain) {
+      const d = debtDiff(blMain, blHere ?? blMain);
+      if (d?.paid) add('ok', 'S040-30', `nhánh trả ${d.paid} chỗ nợ chuẩn: ${Object.entries(d.paidByCheck).map(([k, n]) => `${k} ${n}`).join(', ')}`);
+      const left = debtsInFiles(blHere ?? blMain, changed.filter((f) => !f.startsWith('db/migrations/')));
+      const files = [...new Set(left.map((x) => x.file))];
+      for (const file of files.slice(0, 8)) {
+        const xs = left.filter((x) => x.file === file);
+        add('warn', 'S040-30', `${file} còn ${xs.reduce((s, x) => s + x.n, 0)} chỗ nợ chuẩn — ${xs.map((x) => `${x.check} ×${x.n} (${x.title}${x.ref ? `; ${x.ref}` : ''})`).join('; ')}. Sửa luôn trong PR này rồi chạy node tests/conformance/selfcheck.mjs --update-baseline`);
+      }
+      if (files.length > 8) add('warn', 'S040-30', `… và ${files.length - 8} tệp khác còn nợ chuẩn`);
+    }
   }
 
   // D040-8 — khối bằng chứng chạy máy trong mô tả PR (CI chưa chạy được thì đây là bằng chứng duy nhất). Chỉ nhắc, không chặn.

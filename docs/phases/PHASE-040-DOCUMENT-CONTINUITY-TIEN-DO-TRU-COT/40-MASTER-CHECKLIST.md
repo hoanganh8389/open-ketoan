@@ -36,7 +36,7 @@ Ký hiệu: ☐ chưa · 🟡 đang · ✅ xong · ⛔ chờ người ngoài nh�
 | S040-27 | B11 — chấm được tiến độ người đóng góp: `VERIFIED` theo chặn lỗi mới (kiem-chuan ĐẠT + dòng selfcheck đã điền), merge bởi người khác tác giả tính là duyệt; dòng "Trụ cột / tiêu chí" ở mẫu PR; `cham-pr.mjs --nhac` chỉ in; nhắc ở copilot-instructions {he-thong} | W11 | P1 | có | ✅ 2026-11-23 — D040-13 / D040-14; dòng trụ cột ở mẫu PR; `--nhac`; trụ cột theo người; chấm lùi từ #475 |
 | S040-28 | B12 — phiếu nghiệm thu bắt đầu từ tiêu chí trụ cột: ô "Trụ cột / tiêu chí" ở `_MAU.md`, mục "Phiếu và trụ cột" ở README nghiệm thu, câu giao việc §10 mang tiêu chí + nhắc khối bằng chứng {he-thong} | W11 | P1 | có | ✅ 2026-11-23 — chỉ tài liệu |
 | S040-29 | B13 — người giữ tiêu chí trụ cột: trường `owner` cho 79 tiêu chí ở `tru-cot.json` theo cách chủ dự án chia 2026-11-23 {he-thong} | W11 | P1 | có | ✅ 2026-11-23 — chỉ tài liệu; hiện người giữ ở HT10 / bộ chấm là bước sau |
-| S040-30 | B14 — nợ chuẩn: đo chỗ nợ `baseline.json` được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước), nhắc nợ của tệp đang sửa ở `nhan-viec.mjs kiem` {he-thong} | W11 | P1 | có | 🟡 2026-11-23 — giữ chỗ |
+| S040-30 | B14 — nợ chuẩn: đo chỗ nợ `baseline.json` được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước), nhắc nợ của tệp đang sửa ở `nhan-viec.mjs kiem` {he-thong} | W11 | P1 | có | ✅ 2026-11-23 — đo nợ theo PR / phần mã / người; nhắc nợ của tệp đang sửa; chấm lại 133 PR: 1016 chỗ còn, 0 chỗ trả bằng mã |
 
 ## Ca nghiệm thu
 

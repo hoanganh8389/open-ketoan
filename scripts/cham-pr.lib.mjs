@@ -231,12 +231,13 @@ export function identityOf({ login, name }, aliases = {}) {
  */
 export function personScores(records) {
   const people = new Map();
-  const get = (id) => people.get(id) ?? people.set(id, { id, prs: 0, verified: 0, scores: [], weeks: new Set(), reviewsGiven: 0, blocked: 0 }).get(id);
+  const get = (id) => people.get(id) ?? people.set(id, { id, prs: 0, verified: 0, scores: [], weeks: new Set(), reviewsGiven: 0, blocked: 0, debtPaid: 0 }).get(id);
   for (const r of records) {
     for (const a of r.people ?? []) {
       const p = get(a);
       p.prs++;
       if (r.release === 'BLOCKED') p.blocked++;
+      if (r.debt && !r.debt.toolChanged) p.debtPaid += r.debt.paid ?? 0; // B14 (S040-30): nợ chuẩn trả bằng mã, mỗi tác giả của PR được ghi
       if (r.release === 'VERIFIED' && r.score != null) { p.verified++; p.scores.push(r.score * (r.difficulty ?? 1)); p.weeks.add(isoWeek(r.mergedAt)); }
     }
     for (const rv of r.reviewers ?? []) if (!(r.people ?? []).includes(rv)) get(rv).reviewsGiven++;
@@ -246,16 +247,16 @@ export function personScores(records) {
     const avg = p.scores.length ? Math.round(p.scores.reduce((a, b) => a + b, 0) / p.scores.length) : null;
     const reviewPart = Math.min(100, p.reviewsGiven * 20);
     const total = enough && avg != null ? Math.round((0.7 * avg + 0.05 * reviewPart) / 0.75) : null;
-    return { id: p.id, prs: p.prs, verified: p.verified, weeks: p.weeks.size, avgScore: avg, reviewsGiven: p.reviewsGiven, blocked: p.blocked, total, state: enough ? 'đủ mẫu' : 'chưa đủ mẫu' };
+    return { id: p.id, prs: p.prs, verified: p.verified, weeks: p.weeks.size, avgScore: avg, reviewsGiven: p.reviewsGiven, blocked: p.blocked, debtPaid: p.debtPaid, total, state: enough ? 'đủ mẫu' : 'chưa đủ mẫu' };
   }).sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export function renderPeople(rows, pillarRows = null) {
   const md = ['# Điểm theo người — CHỈ Ở MÁY, KHÔNG COMMIT (Q040-5)', '',
     '> Sinh bởi `node scripts/cham-pr.mjs --nguoi` từ `docs/reviews/tien-do/PR-*.json`. Thư mục `.local/` bị `.gitignore` bỏ qua: repo công khai. Gửi riêng từng người; không dùng làm đánh giá nhân sự duy nhất (PHASE-040 · 20 §6).', '',
-    '| Người | PR | PR `VERIFIED` | Tuần có PR `VERIFIED` | TB điểm PR | Review cho người khác | PR `BLOCKED` | Điểm | Trạng thái |',
-    '|---|---|---|---|---|---|---|---|---|'];
-  for (const r of rows) md.push(`| ${r.id} | ${r.prs} | ${r.verified} | ${r.weeks} | ${r.avgScore ?? '—'} | ${r.reviewsGiven} | ${r.blocked} | ${r.total ?? '—'} | ${r.state} |`);
+    '| Người | PR | PR `VERIFIED` | Tuần có PR `VERIFIED` | TB điểm PR | Review cho người khác | PR `BLOCKED` | Trả nợ chuẩn | Điểm | Trạng thái |',
+    '|---|---|---|---|---|---|---|---|---|---|'];
+  for (const r of rows) md.push(`| ${r.id} | ${r.prs} | ${r.verified} | ${r.weeks} | ${r.avgScore ?? '—'} | ${r.reviewsGiven} | ${r.blocked} | ${r.debtPaid ?? 0} | ${r.total ?? '—'} | ${r.state} |`);
   md.push('', 'Lỗi lọt (15 %) và đóng việc khắc phục (10 %) **chưa đo** — điểm chia lại trên phần đã đo (70 % điểm PR + 5 % review).', '');
   if (pillarRows?.length) {
     // [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27): trụ cột theo người
@@ -395,6 +396,87 @@ export function regressions(criteriaChanged) {
   return (criteriaChanged ?? []).filter((c) => c.from != null && (c.to == null || rank[c.to] < rank[c.from]));
 }
 
+// [2026-11-23 05:41 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B14 (S040-30): nợ chuẩn — đo chỗ nợ trong tests/conformance/baseline.json được trả theo từng PR,
+// theo check và phần mã; nhắc khi sửa tệp còn nợ. Bộ kiểm đã chặn nợ MỚI (ratchet); phần này ghi công cho việc trả nợ CŨ để chuẩn đi lên dần.
+
+/**
+ * Phần mã của một tệp — để gom nợ chuẩn: phân hệ (`phan-he/<x>`, `modules/<x>`), tính năng web, module API / Kernel, gói,
+ * migration. Không khớp thì lấy hai cấp thư mục đầu.
+ */
+export function areaOf(file) {
+  const f = String(file ?? '');
+  const m = /(?:^|\/)phan-he\/([^/]+)/.exec(f) ?? /^modules\/([^/]+)/.exec(f) ?? /^apps\/web\/src\/features\/([^/]+)/.exec(f)
+    ?? /^apps\/api\/src\/modules\/([^/]+)/.exec(f) ?? /^packages\/kernel\/src\/modules\/([^/]+)/.exec(f) ?? /^packages\/([^/]+)/.exec(f);
+  if (m) return m[1];
+  if (/^db\/migrations\//.test(f)) return 'migrations';
+  return f.split('/').slice(0, 2).join('/') || '?';
+}
+
+/** Chỉ mục nợ của một bản baseline.json: fp → { check, file, area }. Không có tệp → null. */
+export function debtIndex(baseline) {
+  if (!baseline?.checks) return null;
+  const out = new Map();
+  for (const [check, v] of Object.entries(baseline.checks)) {
+    for (const d of v.debts ?? []) out.set(d.fp ?? `${check}|${d.file}|${d.message}`, { check, file: d.file ?? '', area: areaOf(d.file) });
+  }
+  return out;
+}
+
+/**
+ * Nợ chuẩn trước / sau một PR: số chỗ nợ, chỗ được trả (có ở trước, mất ở sau), chỗ thêm (chỉ được thêm khi Nhóm Lõi
+ * duyệt, có `ref`), gom theo check và phần mã. `toolChanged` = PR sửa bộ kiểm — nợ mất có thể do đổi thước, không phải
+ * do sửa mã; bảng ghi riêng, không tính công trả nợ.
+ */
+export function debtDiff(before, after, { toolChanged = false } = {}) {
+  const a = debtIndex(before);
+  const b = debtIndex(after);
+  if (!a && !b) return null;
+  const A = a ?? new Map();
+  const B = b ?? new Map();
+  const paid = [...A].filter(([k]) => !B.has(k)).map(([, v]) => v);
+  const added = [...B].filter(([k]) => !A.has(k)).map(([, v]) => v);
+  const tally = (list, key) => list.reduce((o, d) => ((o[d[key]] = (o[d[key]] ?? 0) + 1), o), {});
+  return {
+    before: a ? A.size : null, after: b ? B.size : null,
+    paid: paid.length, added: added.length, toolChanged,
+    paidByCheck: tally(paid, 'check'), paidByArea: tally(paid, 'area'),
+    addedByCheck: tally(added, 'check'),
+    afterByArea: tally([...B.values()], 'area'),
+  };
+}
+
+/** PR có sửa bộ kiểm (check, thư viện phát hiện của bộ kiểm) — nợ mất trong PR đó không tính là trả nợ. */
+export const touchesChecker = (files) => files.some((f) => /^tests\/conformance\/(checks|lib)\//.test(f) || f === 'tests/conformance/selfcheck.mjs');
+
+/**
+ * Nợ còn lại trong các tệp đang sửa (nhắc ở `nhan-viec.mjs kiem`): gom theo tệp × check, kèm tiêu đề và căn cứ của check.
+ * Trả [{ file, check, n, title, ref }].
+ */
+export function debtsInFiles(baseline, files) {
+  const want = new Set(files);
+  const out = new Map();
+  for (const [check, v] of Object.entries(baseline?.checks ?? {})) {
+    for (const d of v.debts ?? []) {
+      if (!want.has(d.file)) continue;
+      const k = `${d.file}\u0000${check}`;
+      const x = out.get(k) ?? out.set(k, { file: d.file, check, n: 0, title: v.title ?? '', ref: v.ref ?? '' }).get(k);
+      x.n++;
+    }
+  }
+  return [...out.values()].sort((x, y) => x.file.localeCompare(y.file) || y.n - x.n);
+}
+
+/** Ô "Nợ chuẩn" của một PR: số chỗ trả (check nhiều nhất), thêm; PR sửa bộ kiểm ghi "đổi thước". */
+export function debtCell(d) {
+  if (!d || d.before == null && d.after == null) return '—';
+  if (!d.paid && !d.added) return '—';
+  const top = Object.entries(d.paidByCheck ?? {}).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => `${k} ${n}`).join(', ');
+  const parts = [];
+  if (d.paid) parts.push(`${d.toolChanged ? 'đổi thước ' : 'trả '}−${d.paid}${top ? ` (${top})` : ''}`);
+  if (d.added) parts.push(`thêm +${d.added}`);
+  return parts.join(' · ');
+}
+
 /** Tuần ISO `YYYY-Www` của một thời điểm. */
 export function isoWeek(iso) {
   const d = new Date(String(iso).slice(0, 10) + 'T00:00:00Z');
@@ -425,10 +507,12 @@ export function renderBoard(records, { keep = 50 } = {}) {
   md.push('> **Sinh bởi** `node scripts/cham-pr.mjs --write` từ `docs/reviews/tien-do/PR-*.json` — **không sửa tay** (R-FLOW-8). Cách chấm: [PHASE-040 · 20](../phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/20-CHAM-DIEM-TIEN-DO.md). Trục máy chỉ là **gợi ý** từ luật dò H-*; người duyệt sửa trong `PR-<n>.json` (`axesBy: "người"`).');
   md.push('');
   const by = (k) => sorted.filter((r) => r.release === k).length;
-  md.push(`**${sorted.length} PR** · \`VERIFIED\` ${by('VERIFIED')} · \`UNVERIFIED\` ${by('UNVERIFIED')} · \`BLOCKED\` ${by('BLOCKED')} · đẩy tiến độ ${sorted.filter((r) => r.kind === 'đẩy tiến độ').length}`);
+  // [2026-11-23 05:41 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B14 (S040-30): tổng nợ chuẩn được trả bởi mã (không tính PR sửa bộ kiểm)
+  const paidByCode = sorted.reduce((a, r) => a + (r.debt && !r.debt.toolChanged ? r.debt.paid : 0), 0);
+  md.push(`**${sorted.length} PR** · \`VERIFIED\` ${by('VERIFIED')} · \`UNVERIFIED\` ${by('UNVERIFIED')} · \`BLOCKED\` ${by('BLOCKED')} · đẩy tiến độ ${sorted.filter((r) => r.kind === 'đẩy tiến độ').length} · trả nợ chuẩn ${paidByCode} chỗ (${sorted.filter((r) => r.debt?.paid && !r.debt.toolChanged).length} PR)`);
   md.push('');
-  md.push('| PR · ngày · người | Loại | Tác động | Δ Nền móng | Δ Trụ cột | Δ Ma trận chứng từ | Δ Tuân thủ C | Tiêu chí đổi mức | Điểm · hạng | Kết luận | Phát hành | CI · duyệt · bằng chứng |');
-  md.push('|---|---|---|---|---|---|---|---|---|---|---|---|');
+  md.push('| PR · ngày · người | Loại | Tác động | Δ Nền móng | Δ Trụ cột | Δ Ma trận chứng từ | Δ Tuân thủ C | Tiêu chí đổi mức | Nợ chuẩn | Điểm · hạng | Kết luận | Phát hành | CI · duyệt · bằng chứng |');
+  md.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|');
   for (const r of recent) {
     const who = (r.authors ?? []).map((a) => a.id).join(', ');
     const imp = [r.impact?.pillars?.length ? `trụ cột ${r.impact.pillars.join(' ')}` : '', (r.impact?.rules ?? []).slice(0, 4).join(' ')].filter(Boolean).join(' · ') || '—';
@@ -436,7 +520,7 @@ export function renderBoard(records, { keep = 50 } = {}) {
     const changed = cc.length > 6 ? `${cc.slice(0, 6).join('; ')}; +${cc.length - 6}` : cc.join('; ') || '—';
     const sc = r.score == null ? '—' : `${r.score} %${r.axesBy === 'máy' ? ' (máy gợi ý)' : ''}${r.grade ? ` · ${r.grade}` : ''}`;
     const ci = r.ci?.ran ? (r.ci.green ? 'xanh' : 'đỏ') : `không chạy${r.ci?.reason ? ` (${r.ci.reason})` : ''}`;
-    md.push(`| [#${r.pr}](https://github.com/hoanganh8389/open-ketoan/pull/${r.pr}) · ${String(r.mergedAt).slice(0, 10)} · ${esc(who)} | ${r.kind}${r.regressed?.length ? ` · **lùi ${r.regressed.length}**` : ''} | ${esc(imp)} | ${delta(r.progress?.foundation)} | ${delta(r.progress?.pillars)} | ${delta(r.progress?.docMatrix)} | ${delta(r.progress?.compliance)} | ${esc(changed)} | ${sc} | ${r.verdict} | \`${r.release}\` | ${ci} · ${r.reviews}${r.reviewers?.length ? ` (${esc(r.reviewers.join(', '))})` : ''} · ${r.evidenceBlock?.present ? (r.evidenceBlock.wellFormed ? 'đủ' : 'thiếu dòng') : 'không'} |`);
+    md.push(`| [#${r.pr}](https://github.com/hoanganh8389/open-ketoan/pull/${r.pr}) · ${String(r.mergedAt).slice(0, 10)} · ${esc(who)} | ${r.kind}${r.regressed?.length ? ` · **lùi ${r.regressed.length}**` : ''} | ${esc(imp)} | ${delta(r.progress?.foundation)} | ${delta(r.progress?.pillars)} | ${delta(r.progress?.docMatrix)} | ${delta(r.progress?.compliance)} | ${esc(changed)} | ${debtCell(r.debt)} | ${sc} | ${r.verdict} | \`${r.release}\` | ${ci} · ${r.reviews}${r.reviewers?.length ? ` (${esc(r.reviewers.join(', '))})` : ''} · ${r.evidenceBlock?.present ? (r.evidenceBlock.wellFormed ? 'đủ' : 'thiếu dòng') : 'không'} |`);
   }
   if (older.length) {
     md.push('', '## PR cũ hơn (gom theo tháng)', '', '| Tháng | Số PR | Đẩy tiến độ | `BLOCKED` |', '|---|---|---|---|');
@@ -463,17 +547,30 @@ export function renderBoard(records, { keep = 50 } = {}) {
     md.push('| Trụ cột | % hiện tại | PR chạm | trong đó `VERIFIED` | Tiêu chí nâng mức | PR khai tiêu chí |', '|---|---|---|---|---|---|');
     for (const [p, x] of by) md.push(`| ${p} | ${last[p] == null ? '—' : `${last[p]} %`} | ${x.touched} | ${x.verified} | ${x.raised} | ${x.declared} |`);
   }
+  // [2026-11-23 05:41 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B14 (S040-30): nợ chuẩn theo phần mã — còn bao nhiêu, đã trả bao nhiêu trong cửa sổ
+  {
+    const latest = sorted.find((r) => r.debt?.afterByArea)?.debt;
+    if (latest) {
+      const paid = {};
+      for (const r of sorted) if (r.debt && !r.debt.toolChanged) for (const [a, n] of Object.entries(r.debt.paidByArea ?? {})) paid[a] = (paid[a] ?? 0) + n;
+      const areas = [...new Set([...Object.keys(latest.afterByArea), ...Object.keys(paid)])].sort((x, y) => (latest.afterByArea[y] ?? 0) - (latest.afterByArea[x] ?? 0) || x.localeCompare(y));
+      md.push('', '## Nợ chuẩn theo phần mã', '', `Nợ chuẩn = chỗ mã cũ chưa theo luật, đang được cho qua trong \`tests/conformance/baseline.json\` (bộ kiểm chặn nợ **mới**). Còn ${latest.after} chỗ. Trả nợ = sửa mã rồi \`node tests/conformance/selfcheck.mjs --update-baseline\`; PR sửa bộ kiểm không tính. \`nhan-viec.mjs kiem\` nhắc nợ của tệp đang sửa.`, '');
+      md.push('| Phần mã | Còn nợ | Đã trả trong các PR trên |', '|---|---|---|');
+      for (const a of areas.slice(0, 25)) md.push(`| ${esc(a)} | ${latest.afterByArea[a] ?? 0} | ${paid[a] ?? 0} |`);
+      if (areas.length > 25) md.push(`| … ${areas.length - 25} phần khác | ${areas.slice(25).reduce((s, a) => s + (latest.afterByArea[a] ?? 0), 0)} | ${areas.slice(25).reduce((s, a) => s + (paid[a] ?? 0), 0)} |`);
+    }
+  }
   // đường theo tuần: giá trị "sau" của PR merge cuối cùng trong tuần
   const weeks = new Map();
   for (const r of [...sorted].reverse()) weeks.set(isoWeek(r.mergedAt), r);
   const pillarIds = [...new Set(sorted.flatMap((r) => Object.keys(r.progress?.byPillar ?? {})))]
     .sort((a, b) => ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'].indexOf(a) - ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'].indexOf(b));
   md.push('', '## Đường tiến độ theo tuần', '', 'Giá trị sau PR merge cuối cùng của tuần. Trụ cột đứng yên nhiều tuần là chỗ cần nhìn.', '');
-  md.push(`| Tuần | Nền móng | Trụ cột | Ma trận chứng từ | ${pillarIds.join(' | ')} |`);
-  md.push(`|---|---|---|---|${pillarIds.map(() => '---').join('|')}|`);
+  md.push(`| Tuần | Nền móng | Trụ cột | Ma trận chứng từ | Nợ chuẩn | ${pillarIds.join(' | ')} |`);
+  md.push(`|---|---|---|---|---|${pillarIds.map(() => '---').join('|')}|`);
   for (const [w, r] of [...weeks].sort().reverse()) {
     const v = (o) => (o?.after == null ? '—' : `${o.after} %`);
-    md.push(`| ${w} | ${v(r.progress?.foundation)} | ${v(r.progress?.pillars)} | ${v(r.progress?.docMatrix)} | ${pillarIds.map((p) => (r.progress?.byPillar?.[p] == null ? '—' : r.progress.byPillar[p])).join(' | ')} |`);
+    md.push(`| ${w} | ${v(r.progress?.foundation)} | ${v(r.progress?.pillars)} | ${v(r.progress?.docMatrix)} | ${r.debt?.after ?? '—'} | ${pillarIds.map((p) => (r.progress?.byPillar?.[p] == null ? '—' : r.progress.byPillar[p])).join(' | ')} |`);
   }
   md.push('');
   return md.join('\n');

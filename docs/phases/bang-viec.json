@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 4
+      "count": 3
     },
     {
       "key": "merging",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 370
+      "count": 371
     }
   ],
   "items": [
@@ -10679,15 +10679,9 @@
       "phase": "PHASE-040",
       "title": "B14 — nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước), nhắc nợ của tệp đang sửa ở nhan-viec.mjs kiem {…",
       "priority": "P1",
-      "status": "partial",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, PHASE-040)",
-        "branch": "feat/phase-040-b14-no-chuan",
-        "state": "đang làm",
-        "since": "2026-11-23",
-        "dot": "PHASE-040 · S040-30 — B14 nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR / phần mã / người, nhắ…"
-      },
+      "status": "done",
+      "column": "done",
+      "claim": null,
       "modules": [
         "chung-tu",
         "mua-hang",

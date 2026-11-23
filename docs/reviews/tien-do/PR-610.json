@@ -1,0 +1,162 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 610,
+  "title": "docs(CLAIMS): giữ chỗ PHASE-040 S040-27 — B11 chấm tiến độ người đóng góp",
+  "mergedAt": "2026-11-23T04:49:11Z",
+  "base": "35c8867f",
+  "merge": "4e2ca563",
+  "authors": [
+    {
+      "id": "hoanganh8389",
+      "commits": 2
+    }
+  ],
+  "people": [
+    "hoanganh8389"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "hoanganh8389",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": true,
+    "wellFormed": false,
+    "kiemChuan": "ĐẠT",
+    "selfcheck": null,
+    "testsPassed": null
+  },
+  "files": 4,
+  "impact": {
+    "pillars": [],
+    "rules": [],
+    "axes": [],
+    "docsOnly": true
+  },
+  "progress": {
+    "foundation": {
+      "before": 60,
+      "after": 60
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 61,
+      "after": 61
+    },
+    "docMatrix": {
+      "before": 69,
+      "after": 69
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 61,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100,
+      "X": 41
+    },
+    "criteriaChanged": []
+  },
+  "debt": {
+    "before": 1016,
+    "after": 1016,
+    "paid": 0,
+    "added": 0,
+    "toolChanged": false,
+    "paidByCheck": {},
+    "paidByArea": {},
+    "addedByCheck": {},
+    "afterByArea": {
+      "mua-hang": 109,
+      "db/migrations": 3,
+      "migrations": 278,
+      "apps/api": 2,
+      "posting": 39,
+      "kho": 24,
+      "apps/web": 90,
+      "access": 6,
+      "auth": 1,
+      "catalog": 59,
+      "documents": 27,
+      "ledger": 4,
+      "policy": 3,
+      "sale-programs": 16,
+      "system": 27,
+      "vouchers": 91,
+      "ban-hang": 5,
+      "dev": 1,
+      "ke-toan": 68,
+      "quy": 10,
+      "tai-san": 16,
+      "thue": 27,
+      "sites": 2,
+      "launcher": 3,
+      "api": 2,
+      "phan-quyen": 1,
+      "pos": 2,
+      "platform": 33,
+      "dimensions": 1,
+      "doc-refs": 1,
+      "loi.ts": 3,
+      "docker-compose.yml": 1,
+      "docs/contracts": 1,
+      "contracts": 11,
+      "kernel": 2,
+      "accounts": 1,
+      "closing": 1,
+      "conformance": 1,
+      "default-data": 6,
+      "intake": 1,
+      "inventory": 17,
+      "posting-config": 17,
+      "tax-codes": 1,
+      "tests/conformance": 2
+    }
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": "—",
+    "T3": "—",
+    "T4": "—",
+    "T5": "—",
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": "—",
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {},
+  "score": null,
+  "grade": null,
+  "verdict": "ĐẠT",
+  "release": "UNVERIFIED",
+  "findings": [],
+  "followUps": []
+}
