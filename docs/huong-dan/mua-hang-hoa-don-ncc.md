@@ -23,6 +23,16 @@ Trước khi ghi luôn có bước **xem trước**:
 
 Hoá đơn trùng (cùng NCC + ký hiệu + số; số "0000101" và "101" là một) không ghi lại.
 
+### Cầu nối hoá đơn (tự động)
+
+Cầu nối là chương trình trên máy tải hoá đơn: đọc hoá đơn tool tải về, đẩy lên đây.
+
+1. Ở **HT02 Khoá API** của trang này, tạo khoá, chỉ tích **Gửi chứng từ**. Mỗi công ty × mỗi trang (bản test, bản chính, sổ thuế) một khoá.
+2. Trên máy tải hoá đơn, mở **Cầu nối hoá đơn**, chọn công ty, **+ Thêm kết nối**, dán khoá, bấm **Kiểm tra**. Cầu nối hỏi trang này khoá thuộc đơn vị nào; MST khác công ty thì không cho lưu.
+3. Dòng **Cầu nối hoá đơn** trên màn này hiện máy nào, công ty nào, chạy lúc nào, lần tới, còn bao nhiêu tờ chờ gửi. Rê chuột để xem chi tiết.
+
+Quá 1 ngày cầu nối không báo về (mà không tạm ngừng) thì hiện **Mất liên lạc** và nhắc ở **Việc cần làm**: máy tải hoá đơn có thể đã tắt.
+
 ### Hoá đơn nhập từ XML
 
 - **NCC:** tìm theo mã số thuế người bán. Chưa có thì tự tạo NCC, mã là mã số thuế. Hai đối tượng cùng mã số thuế mà không rõ NCC nào thì báo **Trùng MST** để kế toán xử lý.

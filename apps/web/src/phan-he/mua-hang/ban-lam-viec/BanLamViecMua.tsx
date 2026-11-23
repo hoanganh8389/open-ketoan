@@ -26,7 +26,7 @@ const NGAN: Record<string, string> = {
   contract_expiring: 'HĐ sắp hết hạn', contract_no_price: 'HĐ chưa có giá',
   credit_over: 'vượt hạn mức', order_pending: 'chờ duyệt', order_no_contract: 'không theo hợp đồng', price_diff: 'lệch giá hợp đồng', blocked: 'bị chặn duyệt',
   orders: 'chưa nhận đủ', outside: 'nhập ngoài đơn', expired: 'lô hết hạn', near: 'lô cận date',
-  inv_late: 'quá hạn nhận HĐ', receipt_no_invoice: 'thiếu hoá đơn', inv_wait: 'chờ hoá đơn', inv_unmatched: 'HĐ chưa nhận mã', inv_no_receipt: 'HĐ chưa có phiếu nhập', costs: 'chi phí chưa phân bổ',
+  inv_late: 'quá hạn nhận HĐ', receipt_no_invoice: 'thiếu hoá đơn', inv_wait: 'chờ hoá đơn', inv_unmatched: 'HĐ chưa nhận mã', inv_no_receipt: 'HĐ chưa có phiếu nhập', bridge_stale: 'cầu nối mất liên lạc', costs: 'chi phí chưa phân bổ',
   overdue: 'nợ quá hạn', due: 'đến hạn hôm nay', soon: 'sắp đến hạn',
   return_no_ref: 'chưa gắn phiếu nhập',
   rebates: 'thưởng chưa quyết toán', contract_expired: 'HĐ hết hạn chưa thanh lý', gifts: 'quà vượt tồn',
