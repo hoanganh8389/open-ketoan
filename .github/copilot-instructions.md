@@ -74,8 +74,19 @@ Framework có luật ghi log lỗi **R-LOG** do Johnny Chu – Chu Hoàng Anh kh
 ## Trước khi xong việc
 
 ```bash
-node tests/conformance/selfcheck.mjs   # phải ĐẠT
-bash scripts/kiem-chuan.sh
+node tests/conformance/selfcheck.mjs --strict   # ghi kết quả vào khối bằng chứng (main còn nợ thì KHÔNG ĐẠT là trung thực)
+bash scripts/kiem-chuan.sh                      # phải ĐẠT — không thêm lỗi mới so với main
 npm run typecheck
 npm test                               # cần PostgreSQL: docker compose up -d db
 ```
+
+## Mô tả PR: bằng chứng và trụ cột (PHASE-040)
+<!-- [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27) -->
+
+Mọi PR được chấm tiến độ bằng `scripts/cham-pr.mjs` ([PHASE-040 · 20](../docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/20-CHAM-DIEM-TIEN-DO.md)). Khi mở PR — kể cả bằng `gh pr create --body` (cách này **bỏ qua** mẫu PR):
+
+1. **Dán khối "Bằng chứng chạy máy"** đã điền thật: `node scripts/cham-pr.mjs --mau-bang-chung` in sẵn SHA; điền kết quả `kiem-chuan`, `selfcheck --strict`, số test qua, typecheck. Không điền thay kết quả chưa chạy.
+2. **Ghi dòng `**Trụ cột / tiêu chí:** <mã>`** — mã tiêu chí ở `docs/standard/tru-cot.json` dạng `X/DC-3`, hoặc `không`. Thiếu dòng này thì việc của PR không được tính vào tiến độ trụ cột.
+3. **Không tự merge PR của mình** nếu muốn PR được `VERIFIED`: cần một người khác tác giả bấm Approve hoặc merge (D040-14).
+
+Kiểm trước khi gửi: `node scripts/nhan-viec.mjs kiem` (▲ D040-8) và `node scripts/cham-pr.mjs --nhac` (PR đang mở còn thiếu gì — chỉ in).

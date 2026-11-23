@@ -8,6 +8,8 @@
 | Bộ phận yêu cầu | <Phòng kế toán / Kho / Mua hàng / …> |
 | Ngày tạo | <dd/mm/yyyy> |
 | Trạng thái | Nháp |
+| Trụ cột / tiêu chí | <mã ở docs/standard/tru-cot.json, vd X/DC-6 — mức hiện tại → mức đích (vd một phần → đạt); hoặc "không"> |
+<!-- [2026-11-23 05:13 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B12 (S040-28): phiếu bắt đầu từ tiêu chí trụ cột — chọn ở màn HT10 / thẻ "Trụ cột" của phân hệ; xem docs/nghiem-thu/README.md §Phiếu và trụ cột -->
 
 ## 1. Mục đích quản trị
 <Làm để biết / kiểm soát cái gì, ai dùng, dùng khi nào. 2–4 dòng.>
@@ -54,6 +56,7 @@
 | Ngày chạy | |
 | Bản code (commit) | |
 | Test tự động | `apps/api/test/<tệp>.test.ts` |
+| Tiêu chí lên mức | <X/DC-6: một phần → đạt — test / check nào chứng minh; hoặc "không đổi mức" kèm lý do> |
 
 | Mục | Mong đợi | Phần mềm | Chênh | Giải thích |
 |---|---|---|---|---|

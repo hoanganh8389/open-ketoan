@@ -47,7 +47,7 @@ Bảng quy đổi từ "rubric 7 nhóm" của bản làm việc sang trục — 
 |---|---|
 | `BLOCKED` | trục cổng = 0; phát hiện mức chặn H-* chưa sửa; ghi thẳng sổ; mất lịch sử; chứng từ mới không vào sổ chứng từ chung; bỏ RLS; lẫn `item_id`; đổi trạng thái vượt workflow; migration phá dữ liệu |
 | `UNVERIFIED` | không có bằng chứng chạy máy (D040-8) **hoặc** CI không chạy. Điểm vẫn tính, không quy ra hạng A–D |
-| `VERIFIED` | có bằng chứng chạy (CI xanh, hoặc khối bằng chứng đủ theo §4) và một người duyệt khác tác giả ký |
+| `VERIFIED` | có bằng chứng chạy (CI xanh, hoặc khối bằng chứng đủ theo §4) và một người duyệt khác tác giả ký — **bấm Approve hoặc merge** (D040-14); tự merge PR của mình không tính <!-- [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27) --> |
 
 Hạng (chỉ khi `VERIFIED`): ≥ 90 A · 80–89 B · 70–79 C · < 70 D. Trọng số, ngưỡng là thiết kế nội bộ, hiệu chỉnh sau 2–3 tuần chạy thật.
 
@@ -69,12 +69,21 @@ migration: bảng trước <n> → sau <m> (chỉ khi có migration; sạch + n�
 
 Bộ chấm kiểm khối này **có mặt và đúng khuôn**, và chạy lại `kiem-chuan.sh` + `selfcheck` ở commit merge để so. Lệch giữa khối dán và chạy lại → ghi phát hiện, giữ `UNVERIFIED`.
 
+<!-- [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27) -->
+**Đủ để `VERIFIED` (D040-13):** `kiem-chuan` ĐẠT — chặn lỗi mới so với `main` — và dòng `selfcheck --strict` đã điền kết quả. KHÔNG ĐẠT vì nợ có sẵn của `main` không giữ PR lại; `main` vẫn phải sạch (B10).
+
+**Dòng trụ cột** ngay dưới mục Mô tả của mẫu PR: `**Trụ cột / tiêu chí:** X/DC-3, VIII/M-2` (mã ở `docs/standard/tru-cot.json`) hoặc `không`. % trụ cột chỉ tăng khi mức tiêu chí trong `tru-cot.json` đổi; dòng này nối việc của PR với tiêu chí để người duyệt đổi mức. Bộ chấm ghi việc tiếp theo khi: PR có mã chạm trụ cột (theo đường dẫn) mà không đổi mức và không khai; khai mã mà `tru-cot.json` chưa đổi mức; khai mã không có.
+
+`gh pr create --body` bỏ qua mẫu PR — `.github/copilot-instructions.md` nhắc trợ lý AI dán khối và dòng trụ cột (`AGENTS.md` thuộc dòng giữ chỗ NT-HT-003, thêm sau).
+
 ## 5. Chạy thế nào
 
 ```text
 node scripts/cham-pr.mjs --pr 576            # một PR đã merge
 node scripts/cham-pr.mjs --since 2026-11-15  # chạy lùi
 node scripts/cham-pr.mjs --pr 576 --write    # ghi docs/reviews/tien-do/PR-576.json + sinh lại TIEN-DO-PR.md
+node scripts/cham-pr.mjs --nhac              # PR đang mở còn thiếu khối bằng chứng / dòng trụ cột — chỉ in (D040-14)
+node scripts/cham-pr.mjs --nguoi             # điểm theo người + trụ cột theo người → .local/, không commit
 ```
 
 Các bước bên trong (chỉ đọc, chạy trong worktree tạm):
@@ -141,6 +150,7 @@ Cuối bảng: đường tiến độ theo tuần của ba mặt và từng tr�
 - Danh tính <!-- [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3: danh-tinh.json thay .mailmap -->: `docs/reviews/tien-do/danh-tinh.json` (tên commit → tài khoản GitHub, **không ghi email** vì repo công khai — thay `.mailmap`) gộp nhiều tên commit của một người (đo được: `kiennt` / `TrongKien125`, `Võ Hoàng` / `Võ Việt Hoàng` (`H-Joyy`), `Nguyễn Văn Thủy` (`Thuy2k`)). Trình tự động (`claude` trong tác giả commit) không phải người đóng góp; credit thuộc người chỉ đạo phiên (R-SIG).
 - Lỗi lọt: tìm PR gây ra bằng `git blame` + ca tái hiện; người bị gắn có quyền phản biện; không tự suy tội.
 - Không chấm số commit, dòng mã, giờ online; không bảng xếp hạng công khai (Q040-5); không dùng làm đánh giá nhân sự duy nhất.
+- **Trụ cột theo người** <!-- [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27) -->: `--nguoi` ghi thêm bảng người × trụ cột (PR chạm, trong đó `VERIFIED`, tiêu chí nâng mức, mã đã khai) — chỉ ở `.local/`. Bảng chung `TIEN-DO-PR.md` có mục **Theo trụ cột** không tên người.
 
 ## 7. Ảnh chụp đầu tiên (2026-11-22, chưa có bộ chấm — chỉ sự thật)
 

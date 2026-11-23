@@ -1,0 +1,126 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 590,
+  "title": "feat(PHASE-039 B8): Provisioning API cho trang dùng thử — externalRef, sample, bước thật, owner/reset-password",
+  "mergedAt": "2026-11-22T14:13:41Z",
+  "base": "d8930eb1",
+  "merge": "2be67f2a",
+  "authors": [
+    {
+      "id": "hoanganh8389",
+      "commits": 3
+    }
+  ],
+  "people": [
+    "hoanganh8389"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "hoanganh8389",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": true,
+    "wellFormed": false,
+    "kiemChuan": null,
+    "selfcheck": null,
+    "testsPassed": null
+  },
+  "files": 13,
+  "impact": {
+    "pillars": [
+      "VII",
+      "VIII"
+    ],
+    "rules": [
+      "R-API",
+      "R-QG",
+      "R-SITE"
+    ],
+    "axes": [
+      "T3",
+      "T4",
+      "T10"
+    ],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 60,
+      "after": 60
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 61,
+      "after": 61
+    },
+    "docMatrix": {
+      "before": 69,
+      "after": 69
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 61,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100,
+      "X": 41
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": "—",
+    "T3": "cần người duyệt",
+    "T4": 2,
+    "T5": "—",
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": 2,
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T4": [
+      "không có phát hiện H-*"
+    ],
+    "T10": [
+      "không có phát hiện H-*"
+    ]
+  },
+  "score": 100,
+  "grade": null,
+  "verdict": "ĐẠT",
+  "release": "UNVERIFIED",
+  "findings": [],
+  "followUps": [
+    "chạm trụ cột VII VIII nhưng mô tả PR không có dòng \"Trụ cột / tiêu chí\" — khai tiêu chí đẩy, hoặc \"không\""
+  ]
+}

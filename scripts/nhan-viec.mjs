@@ -19,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ALWAYS_OK, CLAIMS_FILE, inScope, isDocsOnly, parseClaims, sharedTouched } from '../tests/conformance/checks/flow/flow.lib.mjs';
 // [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3 (S040-8): kiem nhắc (▲) khi PR của nhánh thiếu khối "Bằng chứng chạy máy" (D040-8); không đổi kiểm R-FLOW
-import { parseEvidence } from './cham-pr.lib.mjs';
+import { impactOf, parseEvidence, parsePillarLine } from './cham-pr.lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -146,6 +146,11 @@ function kiem() {
       if (!ev.present) add('warn', 'D040-8', `PR #${prs[0].number} chưa có khối "Bằng chứng chạy máy" — bộ chấm sẽ ghi UNVERIFIED (${how})`);
       else if (!ev.wellFormed) add('warn', 'D040-8', `PR #${prs[0].number}: khối bằng chứng thiếu dòng kiem-chuan / selfcheck đã điền, hoặc còn chỗ trống của mẫu`);
       else add('ok', 'D040-8', `PR #${prs[0].number} có khối bằng chứng: kiem-chuan ${ev.kiemChuan}, selfcheck ${ev.selfcheck}`);
+      // [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27): PR chạm trụ cột thì khai tiêu chí đẩy (hoặc "không")
+      const touched = impactOf(changed).pillars;
+      const decl = parsePillarLine(prs[0].body);
+      if (touched.length && !decl.present) add('warn', 'S040-27', `PR #${prs[0].number} chạm trụ cột ${touched.join(' ')} — thêm dòng "**Trụ cột / tiêu chí:** <mã tru-cot.json, vd X/DC-3>" hoặc "không" vào mô tả PR`);
+      else if (decl.present) add('ok', 'S040-27', `PR #${prs[0].number} khai trụ cột: ${decl.ids.join(', ') || 'không'}`);
     }
   }
 
