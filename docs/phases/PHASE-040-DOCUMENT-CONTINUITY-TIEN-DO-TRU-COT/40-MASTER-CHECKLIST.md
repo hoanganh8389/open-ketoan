@@ -34,6 +34,7 @@ Ký hiệu: ☐ chưa · 🟡 đang · ✅ xong · ⛔ chờ người ngoài nh�
 | S040-25 | B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT {he-thong} | W10 | P1 | có | 🟡 2026-11-23 — B10d-a xong: SC-DATA-3, SC-DATA-1 hết phát hiện mới; còn SC-SIG-1, -2, SC-UI-1, SC-DOC-6 |
 | S040-26 | B10f — chữ ký R-SIG: chữ ký kiến trúc cho tệp framework do người đóng góp tạo (R-SIG-1, R-SIG-7); dấu cũ sai khuôn và migration đã chạy vào baseline {he-thong} | W10 | P1 | có | ✅ 2026-11-23 — 26 tệp đóng dấu; SC-SIG-1, -2 hết phát hiện mới |
 | S040-27 | B11 — chấm được tiến độ người đóng góp: `VERIFIED` theo chặn lỗi mới (kiem-chuan ĐẠT + dòng selfcheck đã điền), merge bởi người khác tác giả tính là duyệt; dòng "Trụ cột / tiêu chí" ở mẫu PR; `cham-pr.mjs --nhac` chỉ in; nhắc ở copilot-instructions {he-thong} | W11 | P1 | có | 🟡 2026-11-23 — giữ chỗ |
+| S040-29 | B13 — người giữ tiêu chí trụ cột: trường `owner` cho 79 tiêu chí ở `tru-cot.json` theo cách chủ dự án chia 2026-11-23 {he-thong} | W11 | P1 | có | ✅ 2026-11-23 — chỉ tài liệu; hiện người giữ ở HT10 / bộ chấm là bước sau |
 
 ## Ca nghiệm thu
 
