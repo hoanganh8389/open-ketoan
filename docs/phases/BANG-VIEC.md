@@ -11,22 +11,22 @@
 | Chưa ai nhận | 204 |
 | Chờ đủ tín hiệu | 81 |
 | Hoãn | 3 |
-| Xong | 367 |
-| **Tổng** | **690** |
+| Xong | 368 |
+| **Tổng** | **691** |
 
 ## Theo phân hệ (R-FLOW-10)
 
 | Phân hệ | Xong | Chờ đủ tín hiệu | Đang làm | Còn lại | Tổng |
 |---|---|---|---|---|---|
 | danh-muc | 20 | 18 | 1 | 49 | 88 |
-| mua-hang | 62 | 6 | 1 | 38 | 107 |
+| mua-hang | 63 | 6 | 1 | 38 | 108 |
 | kho | 46 | 25 | 1 | 90 | 162 |
-| ban-hang | 62 | 6 | 1 | 40 | 109 |
+| ban-hang | 63 | 6 | 1 | 40 | 110 |
 | quy | 0 | 0 | 0 | 1 | 1 |
-| chung-tu | 71 | 5 | 1 | 29 | 106 |
+| chung-tu | 72 | 5 | 1 | 29 | 107 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 176 | 30 | 2 | 63 | 271 |
+| he-thong | 177 | 30 | 2 | 63 | 272 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
 ## Đang làm (4)
@@ -381,6 +381,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (367)
+## Xong (368)
 
 Chỉ đếm; xem từng việc ở checklist của phase.

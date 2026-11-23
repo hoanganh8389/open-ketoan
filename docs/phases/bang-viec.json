@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 367
+      "count": 368
     }
   ],
   "items": [
@@ -10646,6 +10646,24 @@
       "facet": "F5",
       "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
       "line": 36
+    },
+    {
+      "id": "S040-28",
+      "phase": "PHASE-040",
+      "title": "B12 — phiếu nghiệm thu bắt đầu từ tiêu chí trụ cột: ô \"Trụ cột / tiêu chí\" ở MAU.md, mục \"Phiếu và trụ cột\" ở README nghiệm thu, câu giao việc §10 mang tiêu ch…",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 37
     }
   ]
 }

@@ -182,6 +182,7 @@ Dán nguyên khối này đầu mỗi việc, thay phần trong `< >`:
 Việc: <mô tả chức năng>
 Phân hệ: <mua-hang | ban-hang | kho | quy | ke-toan | tai-san | thue | ...>
 Phiếu nghiệm thu (đã chốt): docs/nghiem-thu/<phân hệ>/NT-<MÃ>-<số>-<tên>.md
+Tiêu chí trụ cột: <mã ở ô "Trụ cột / tiêu chí" của phiếu, vd X/DC-6 một phần → đạt | không>
 Yêu cầu:
 1. Đồng bộ main, chạy selfcheck trước khi sửa.
 2. Chỉ sửa trong phạm vi phân hệ; cần năng lực lõi chưa có thì DỪNG và báo, không sửa Kernel / packages / migration cũ.
@@ -189,7 +190,9 @@ Yêu cầu:
 4. Màn hình theo §7 (Hướng dẫn, chú thích rê chuột, điền sẵn, xem trước rồi sửa).
 5. Viết test khoá đúng từng con số của phiếu nghiệm thu + các trường hợp lệch chuẩn trong phiếu.
 6. Chạy đủ 4 lệnh ở §8; ghi "Kết quả chạy" vào phiếu, chuyển phiếu sang "Chờ nghiệm thu"; báo kết quả thật, liệt kê tệp đã sửa.
+7. Mô tả PR: dòng "**Trụ cột / tiêu chí:** <mã>" và khối "Bằng chứng chạy máy" điền kết quả thật (node scripts/cham-pr.mjs --mau-bang-chung). Không tự merge PR của mình.
 ```
+<!-- [2026-11-23 05:13 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B12 (S040-28): câu giao việc mang tiêu chí trụ cột và nhắc khối bằng chứng — gh pr create --body bỏ qua mẫu PR -->
 
 ## 11. Đọc thêm khi cần
 

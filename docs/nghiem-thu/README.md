@@ -33,6 +33,18 @@ docs/nghiem-thu/
 
 Phiếu **Chưa đạt** ghi rõ chỗ sai, quay về **Đang làm**. Đổi yêu cầu sau khi đã chốt → sửa phiếu, ghi vào mục "Lịch sử thay đổi", chốt lại.
 
+## Phiếu và trụ cột
+<!-- [2026-11-23 05:13 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B12 (S040-28): nối phiếu nghiệm thu với tiêu chí trụ cột — trước đây 64 / 64 phiếu không nhắc trụ cột nào nên việc làm xong không hiện thành tiến độ -->
+
+Mỗi phiếu đẩy **một tiêu chí trụ cột** lên một mức, hoặc ghi rõ "không" (sửa lỗi nhỏ, đổi giao diện). Trụ cột là bảng mức đạt của phần mềm ở `docs/standard/tru-cot.json` (màn **HT10**, thẻ **Trụ cột** ở trang chủ phân hệ chỉ hiện tiêu chí của phân hệ đó).
+
+1. **Chọn tiêu chí khi viết phiếu:** mở thẻ Trụ cột của phân hệ, lọc *chỉ tiêu chí chưa đạt*, đọc cột *Khoảng cách* — phiếu lấp đúng khoảng cách đó. Ghi ô **Trụ cột / tiêu chí** ở đầu phiếu: mã `X/DC-6`, mức hiện tại → mức đích.
+2. **Khi giao việc:** ô "Tiêu chí trụ cột" ở câu giao việc ([sổ tay §10](../HUONG-DAN-LAM-VIEC.md#10-câu-giao-việc-cho-ai-agent)) chép từ phiếu.
+3. **Khi chạy xong:** mục 7 ghi **Tiêu chí lên mức** — test / check nào chứng minh. Mức chỉ đổi khi có bằng chứng.
+4. **Khi mở PR:** mô tả PR có dòng `**Trụ cột / tiêu chí:** X/DC-6` và khối *Bằng chứng chạy máy* (mẫu PR). PR đổi luôn mức trong `tru-cot.json` (rồi `node scripts/tru-cot-md.mjs`), hoặc để người duyệt đổi. Bộ chấm `scripts/cham-pr.mjs` đọc dòng này: PR chạm trụ cột mà không khai thì không được tính vào tiến độ.
+
+Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần** · **tài liệu** (mới có luật, chưa có mã) · **chưa**.
+
 ## Quy trình
 
 1. **Viết phiếu** từ `_MAU.md`: mục đích quản trị, khai báo trước, các bước thao tác, số liệu đầu vào, kết quả mong đợi (từng con số + bút toán Nợ / Có + báo cáo phải thấy), các trường hợp lệch chuẩn.
