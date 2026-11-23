@@ -1,3 +1,4 @@
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-21 08:40 AM Võ Hoàng] PHASE-031 — S031-17: rulepack `policy` của Conformance Engine (10-THIET-KE §9) — năm kiểm DG-POLICY-1..5, chỉ đọc, không chặn
 // [2026-11-21 05:50 PM Võ Hoàng] PHASE-031 — S031-32 phần đo (31-S031-7 §2, 00 §16 mục 6): thêm DG-POLICY-6 — bản retired còn effective_to NULL, kèm số sự việc tham chiếu; chỉ đọc
 /**

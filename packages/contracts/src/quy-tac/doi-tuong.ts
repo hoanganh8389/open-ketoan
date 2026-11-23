@@ -1,3 +1,4 @@
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-19 Nguyễn Văn Thủy] quy tắc khai báo Đối tượng (khách hàng DM12, nhà cung cấp DM13, nhân viên DM04, nhóm DM08) — docs/nghiep-vu/25 (đóng góp)
 // Mỗi mã: title (câu ngắn, có {biến}), why (vì sao), fix (cách sửa), okText (câu khi đã qua), field (ô trên form). Thêm mã mới: thêm một dòng
 // + FINDING_BASIS (legal-basis.ts) + CATALOG_HINT_EXAMPLES (catalog-hint.ts) rồi `node scripts/sinh-ma-loi.mjs --write`.

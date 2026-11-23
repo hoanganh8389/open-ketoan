@@ -1,4 +1,5 @@
 # PHASE-028 · 81 — Chi tiết các chỗ sửa LÕI trong mã làm thử sau W5
+<!-- [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo -->
 <!-- [2026-11-09 09:00 PM kiennt] PHASE-028 — chi tiết từng chỗ sửa lõi (Platform, Kernel, hợp đồng, bộ kiểm) của 8 commit làm thử: trước / sau, vì sao, ai bị ảnh hưởng, hiệu năng, rủi ro, cách lùi, test — để chủ dự án / Nhóm Lõi chốt (R-FLOW-2) -->
 
 > Đi kèm [80-DE-XUAT-SAU-W5](80-DE-XUAT-SAU-W5.md). Mã nằm ở các nhánh cục bộ (chưa đẩy); mã commit ghi ở cột "Commit". Đọc trên `main` @ `6b295c15`.

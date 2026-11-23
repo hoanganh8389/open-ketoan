@@ -33,6 +33,19 @@ Mỗi bản ghi đủ sáu mục:
 - **Đổi:** —
 - **Thay đổi định khoản:** —
 
+### Chữ ký kiến trúc cho tệp framework do người đóng góp tạo (PHASE-040 B10f) <!-- [2026-11-23 09:02 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f: mục CHANGELOG (S040-26) -->
+
+- **Đổi:** 26 tệp framework do người đóng góp tạo được chủ dự án đóng dấu duyệt (R-SIG-1, R-SIG-7). Mỗi tệp chỉ thêm một dòng chú thích, không đổi mã.
+- **Không sửa:**
+  - Migration đã chạy ở các bản cài, kể cả chỉ để thêm dấu.
+  - Dấu cũ sai khuôn của người đóng góp (R-SIG-3).
+  - Hai loại này được ghi vào baseline kèm lý do. Dấu mới thì in bằng `node scripts/ky-dau.mjs`.
+- **Thêm:** —
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
 ### Bộ kiểm hướng dẫn theo đúng nút Hướng dẫn của màn (PHASE-040 B10e) <!-- [2026-11-23 11:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10e: mục CHANGELOG (S040-25) -->
 
 - **Thêm:** trang hướng dẫn cho ba màn mà nút Hướng dẫn còn báo "Chưa có hướng dẫn": Thẻ hướng dẫn (HT17), Phiếu xuất điều chỉnh (BH06), Trợ lý (TI12).

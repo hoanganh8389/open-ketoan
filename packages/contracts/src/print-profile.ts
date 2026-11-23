@@ -1,3 +1,4 @@
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-11 Nguyễn Văn Thủy] Hồ sơ in (HT16 Báo cáo, chứng từ): thông tin đơn vị trên bản in, người ký, ngày ký (đóng góp)
 /**
  * Hồ sơ in — MỘT nơi khai mọi thứ in lên đầu trang / chân trang của báo cáo, chứng từ:

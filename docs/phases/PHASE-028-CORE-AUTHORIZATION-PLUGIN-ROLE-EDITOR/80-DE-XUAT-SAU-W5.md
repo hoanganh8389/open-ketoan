@@ -1,4 +1,5 @@
 # PHASE-028 · 80 — Sau W5: vá an toàn, quyền theo loại chứng từ, Role Editor dạng bảng
+<!-- [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo -->
 <!-- [2026-11-09 01:45 PM kiennt] PHASE-028 — giai đoạn 0 (chỉ tài liệu): rà mã sau W5, 7 quyết định chờ chủ (D-AUTH-17..23), xếp đợt tiếp vào wave sẵn có, việc dọn giữ chỗ -->
 <!-- [2026-11-09 08:30 PM kiennt] PHASE-028 — cập nhật sau khi có mã trên nhánh (8 commit): trạng thái từng việc, đính chính phát hiện, tách quyết định đã có / mới, khoảng trống phạm vi chi nhánh so với HTsoft, kết quả kiểm -->
 

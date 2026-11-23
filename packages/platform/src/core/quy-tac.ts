@@ -1,4 +1,5 @@
 // @bizcity-layer P actions
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-19 Nguyễn Văn Thủy] lỗi theo bộ quy tắc khai báo (docs/nghiep-vu/25): mọi module ném lỗi có MÃ quy tắc + ô, giao diện tô đỏ, nhật ký HT19 ghi mã (đóng góp)
 /**
  * QUY TẮC KHAI BÁO — cách dùng ở mọi module (danh mục, chứng từ):

@@ -1,4 +1,5 @@
 // @bizcity-layer K kernel/subledgers/inventory
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-20 kiennt] NT-KHO-004 — hàng nhận giữ hộ (loại kho không thuộc sở hữu, vd KNB) chỉ ghi số lượng, không ghi giá trị (đóng góp)
 /**
  * KHO GIỮ HỘ (NT-KHO-004). Loại kho `owned = false` (KNB – Kho hàng nhận giữ hộ): hàng của bên khác, không phải tài sản của đơn vị.

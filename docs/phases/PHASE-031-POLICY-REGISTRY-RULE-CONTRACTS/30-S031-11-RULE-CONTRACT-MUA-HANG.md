@@ -1,5 +1,6 @@
 <!-- [2026-11-21 02:00 PM Võ Hoàng] PHASE-031 — chữ chốt thiết kế S031-11 (Rule Contract purchase.*@1 bọc engine mua hàng) trước PR code, R-FLOW-2 (anh Hoàng chốt 21/11) -->
 # 30. S031-11 — Rule Contract `purchase.*@1` bọc bộ máy mua hàng
+<!-- [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo -->
 
 > Căn cứ: checklist S031-11 ("bọc `engine.ts`, không đổi kết quả; hồi quy mua hàng"); `00-MASTER-PLAN.md` mục 4 (khuôn Rule Contract, `domain: 'sale'` — "purchase.* bọc engine mua hàng ở S031-11"); `BAN-GIAO.md` (chính sách mua hàng hôm nay không tính lại được ở cửa nạp).
 

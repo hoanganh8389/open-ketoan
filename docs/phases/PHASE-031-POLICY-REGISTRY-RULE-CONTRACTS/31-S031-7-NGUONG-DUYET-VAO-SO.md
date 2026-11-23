@@ -1,5 +1,6 @@
 <!-- [2026-11-21 04:00 PM Võ Hoàng] PHASE-031 — chữ chốt thiết kế S031-7 (ngưỡng duyệt vào sổ chính sách, approval.levels@1, store settings) và S031-32 phần đo, trước PR code, R-FLOW-2 (anh Hoàng chốt 21/11) -->
 # 31. S031-7 — Ngưỡng duyệt vào sổ chính sách (`approval.levels@1`, `store: settings`); S031-32 phần đo
+<!-- [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo -->
 
 > Căn cứ: checklist S031-7; `10-THIET-KE.md` (cột `store` = `settings` — khoá `setting_values`; Rule Contract đầu tiên có `approval.levels@1`); PHASE-030 `16-CHUAN-CHUNG-TU-DUNG-CHUNG.md` §5 (chính sách duyệt dùng chung: dải tiền → cấp duyệt); migration 0161 (ngưỡng duyệt cấp 2 của yêu cầu thanh toán đã ở khoá `bizcity.payment.approval_thresholds` trong `setting_values`, có phiên bản, ngày hiệu lực).
 

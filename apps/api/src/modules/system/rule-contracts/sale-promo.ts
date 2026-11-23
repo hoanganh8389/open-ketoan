@@ -1,4 +1,5 @@
 // @bizcity-layer P module-sdk
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-13 10:00 AM Võ Hoàng] POS-KM2 — S031-15 đợt 2 (chữ chốt PHASE-031 · 00 §18, phiếu NT-BH-012): năm khuôn khuyến mại mở rộng — bậc, giảm tổng đơn / mã giảm giá, quà tổng đơn, combo, món rẻ nhất (đóng góp)
 /**
  * KHUYẾN MẠI MỞ RỘNG — năm Rule Contract nội dung nội tuyến (phát hành qua POST /api/v1/policies, chủ ban-hang).
