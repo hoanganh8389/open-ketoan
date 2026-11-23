@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 3
+      "count": 4
     },
     {
       "key": "merging",
@@ -10622,6 +10622,30 @@
       "facet": "F1",
       "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
       "line": 35
+    },
+    {
+      "id": "S040-27",
+      "phase": "PHASE-040",
+      "title": "B11 — chấm được tiến độ người đóng góp: VERIFIED theo chặn lỗi mới (kiem-chuan ĐẠT + dòng selfcheck đã điền), merge bởi người khác tác giả tính là duyệt; dòng …",
+      "priority": "P1",
+      "status": "partial",
+      "column": "doing",
+      "claim": {
+        "who": "hoanganh8389 (phiên Claude, PHASE-040)",
+        "branch": "feat/phase-040-b11-cham-nguoi",
+        "state": "đang làm",
+        "since": "2026-11-23",
+        "dot": "PHASE-040 · S040-27 — B11 chấm được tiến độ người đóng góp: VERIFIED theo chặn lỗi mới + merge bởi …"
+      },
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 36
     }
   ]
 }

@@ -5,37 +5,38 @@
 
 | Cột | Số việc |
 |---|---|
-| Đang làm | 3 |
+| Đang làm | 4 |
 | Chờ merge | 0 |
 | Bị chặn | 31 |
 | Chưa ai nhận | 204 |
 | Chờ đủ tín hiệu | 81 |
 | Hoãn | 3 |
 | Xong | 367 |
-| **Tổng** | **689** |
+| **Tổng** | **690** |
 
 ## Theo phân hệ (R-FLOW-10)
 
 | Phân hệ | Xong | Chờ đủ tín hiệu | Đang làm | Còn lại | Tổng |
 |---|---|---|---|---|---|
 | danh-muc | 20 | 18 | 1 | 49 | 88 |
-| mua-hang | 62 | 6 | 0 | 38 | 106 |
+| mua-hang | 62 | 6 | 1 | 38 | 107 |
 | kho | 46 | 25 | 1 | 90 | 162 |
-| ban-hang | 62 | 6 | 0 | 40 | 108 |
+| ban-hang | 62 | 6 | 1 | 40 | 109 |
 | quy | 0 | 0 | 0 | 1 | 1 |
-| chung-tu | 71 | 5 | 0 | 29 | 105 |
+| chung-tu | 71 | 5 | 1 | 29 | 106 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 176 | 30 | 1 | 63 | 270 |
+| he-thong | 176 | 30 | 2 | 63 | 271 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
-## Đang làm (3)
+## Đang làm (4)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
 | [S020-25](PHASE-020-KIEM-CHUAN-PHAP-LY-VN/40-MASTER-CHECKLIST.md#L34) | PHASE-020 | thue · tong-hop | D020-11 (a)(b)(c): HT06 "Kiểm sổ" gọn — lượt kiểm lưu kết quả tự chẩn đoán cả sổ vào báo cáo (report.health, … | — | hoanganh8389 (phiên Claude, danh-gia-phase) · `feat/phase-020-s020-25-kiem-so-gon` |
 | [S024-33](PHASE-024-ITEM-MASTER-PHAN-LOAI-HACH-TOAN/40-MASTER-CHECKLIST.md#L44) | PHASE-024 | danh-muc · kho | Bỏ suy tài khoản kho từ tiền tố ở packages/kernel/src/modules/posting/rules/stock.rule.ts:55 (startsWith('15'… | P0 | hoanganh8389 (phiên Claude, danh-gia-phase) · `feat/phase-024-s024-33-tk-kho` |
 | [S036-8b](PHASE-036-THIET-LAP-NHANH-DU-LIEU-MAU/40-MASTER-CHECKLIST.md#L18) | PHASE-036 | he-thong | B6 — Lấy lại bản trước từ defaultdatabackups; org-units/restore-defaults theo cùng khuôn; đơn vị trắng đổi nú… | P1 | hoanganh8389 (phiên Claude, PHASE-036 thiết lập nhanh) · `feat/s036-8b-lay-lai-ban-truoc` |
+| [S040-27](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L36) | PHASE-040 | chung-tu · mua-hang · ban-hang · he-thong | B11 — chấm được tiến độ người đóng góp: VERIFIED theo chặn lỗi mới (kiem-chuan ĐẠT + dòng selfcheck đã điền),… | P1 | hoanganh8389 (phiên Claude, PHASE-040) · `feat/phase-040-b11-cham-nguoi` |
 
 ## Chờ merge (0)
 
