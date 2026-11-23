@@ -25,7 +25,7 @@
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 82
+      "count": 81
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 370
+      "count": 371
     }
   ],
   "items": [
@@ -10679,8 +10679,8 @@
       "phase": "PHASE-040",
       "title": "B14 — nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước), nhắc nợ của tệp đang sửa ở nhan-viec.mjs kiem {…",
       "priority": "P1",
-      "status": "partial",
-      "column": "partial",
+      "status": "done",
+      "column": "done",
       "claim": null,
       "modules": [
         "chung-tu",

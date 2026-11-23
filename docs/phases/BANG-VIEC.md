@@ -9,9 +9,9 @@
 | Chờ merge | 0 |
 | Bị chặn | 31 |
 | Chưa ai nhận | 204 |
-| Chờ đủ tín hiệu | 82 |
+| Chờ đủ tín hiệu | 81 |
 | Hoãn | 3 |
-| Xong | 370 |
+| Xong | 371 |
 | **Tổng** | **693** |
 
 ## Theo phân hệ (R-FLOW-10)
@@ -19,14 +19,14 @@
 | Phân hệ | Xong | Chờ đủ tín hiệu | Đang làm | Còn lại | Tổng |
 |---|---|---|---|---|---|
 | danh-muc | 20 | 18 | 1 | 49 | 88 |
-| mua-hang | 64 | 7 | 0 | 38 | 109 |
+| mua-hang | 65 | 6 | 0 | 38 | 109 |
 | kho | 46 | 25 | 1 | 90 | 162 |
-| ban-hang | 64 | 7 | 0 | 40 | 111 |
+| ban-hang | 65 | 6 | 0 | 40 | 111 |
 | quy | 0 | 0 | 0 | 1 | 1 |
-| chung-tu | 73 | 6 | 0 | 29 | 108 |
+| chung-tu | 74 | 5 | 0 | 29 | 108 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 179 | 31 | 1 | 63 | 274 |
+| he-thong | 180 | 30 | 1 | 63 | 274 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
 ## Đang làm (3)
@@ -286,7 +286,7 @@
 | [S040-19](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L28) | PHASE-040 | he-thong | B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản docs/reviews/REVIEW-R2-.md | P0 | — |
 | [S040-21](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L30) | PHASE-040 | kho · quy · ban-hang | Sau phase — đưa vào sổ các dòng ☐ "sau phase" ở 10 §2 | P1 | — |
 
-## Chờ đủ tín hiệu (82)
+## Chờ đủ tín hiệu (81)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -371,7 +371,6 @@
 | [S040-23](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L32) | PHASE-040 | he-thong | B10b — tầng 0: SC-SEC-5 + SC-CON-7, SC-API-3, SC-KERNEL-7, SC-SEC-2, SC-AUTH-03 | P0 | — |
 | [S040-24](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L33) | PHASE-040 | he-thong | B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2, DG-POLICY-1 tự kiểm —… | P1 | — |
 | [S040-25](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L34) | PHASE-040 | he-thong | B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT | P1 | — |
-| [S040-30](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L39) | PHASE-040 | chung-tu · mua-hang · ban-hang · he-thong | B14 — nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước… | P1 | — |
 
 ## Hoãn (3)
 
@@ -381,6 +380,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (370)
+## Xong (371)
 
 Chỉ đếm; xem từng việc ở checklist của phase.

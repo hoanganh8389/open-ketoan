@@ -39,6 +39,7 @@ Luật: [R-FLOW](../rules/RULE-FLOW.md). **Đọc bản trên `origin/main`** (`
 <!-- [2026-11-23 12:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — trả chỗ B10b: đợt 1 đã merge (#593); phần còn lại ở default-data.* chờ dòng S036-8b, giữ chỗ lại khi dòng đó đóng -->
 <!-- [2026-11-23 11:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — trả chỗ PHASE-038 · B1 (#522 đã merge; dòng hiện lại sau lần gộp main ở NT-BH-037, chồng app.ts với NT-HT-003) -->
 <!-- [2026-11-23 11:49 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — trả chỗ S040-27 (B11 xong trong PR này, R-FLOW-6) -->
+<!-- [2026-11-23 06:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — trả chỗ S040-30 (B14 xong trong PR này, R-FLOW-6) -->
 | Đợt | Việc | Phạm vi | Người nhận | Nhánh | Trạng thái | Từ ngày |
 |---|---|---|---|---|---|---|
 | PHASE-024 · S024-33 — bỏ suy tài khoản kho từ tiền tố trong luật chuyển kho (SC-KERNEL-5); chữ chốt ở dòng S024-33 của checklist PHASE-024 <!-- [2026-11-05 04:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-024 — giữ chỗ S024-33 theo R-FLOW-1 --> | S024-33 | `packages/kernel/src/modules/posting/rules/stock.rule.ts`; `packages/kernel/src/modules/posting/account-resolver.ts`; `apps/api/test/chuyen-kho-tai-khoan-kho.test.ts`; `tests/conformance/baseline.json` (chỉ bỏ dòng SC-KERNEL-5 của `stock.rule.ts`) | hoanganh8389 (phiên Claude, danh-gia-phase) | `feat/phase-024-s024-33-tk-kho` (tạo sau khi PR giữ chỗ này merge) | đang làm | 2026-11-05 |
