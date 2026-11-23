@@ -3,11 +3,14 @@
  * In báo giá; thẻ Lịch sử (người, lúc, cũ → mới). Máy chủ tính lại tiền, kiểm hạn mức, giữ hàng; màn chỉ gửi và hiện kết quả.
  * NT-BH-032: khối Thông tin giao; "Lập chuyến giao" theo số "Giao lần này" và bảng chuyến giao (Đi giao / Đã giao / Hoàn, nhật ký);
  * "Giao tại quầy" = Giao cũ (phiếu bán nháp xuất thẳng từ KCB); nút Copy đơn (đơn mới nháp, giá + khuyến mại tính lại).
+ * NT-BH-037: khung phiếu `DocSheet` cùng mẫu phiếu mua — đầu phiếu, thẻ Hàng hoá / Giao hàng / Lịch sử, cột Trợ lý (Kiểm tra, Giữ hàng,
+ * Tổng tiền). Chỉ đổi bố cục: nút, lời gọi API, dữ liệu gửi, quyền giữ nguyên.
  */
 // [2026-11-17 Võ Hoàng] NGHIEM-THU — NT-BH-023: màn Đơn đặt hàng (đóng góp)
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-032: thông tin giao, chuyến giao, copy đơn (đóng góp)
+// [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: hộp Lập / sửa đơn dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 import { useEffect, useState } from 'react';
-import { BranchPicker, ErrorBox, Field, ItemPicker, Loading, Modal, errorText, useApi, useCan, useMutation, useQuery, useQueryClient } from '@bizcity/ui-kit';
+import { BranchPicker, DocSheet, DocSheetPanel, ErrorBox, Field, ItemPicker, Loading, errorText, useApi, useCan, useMutation, useQuery, useQueryClient } from '@bizcity/ui-kit';
 import { ACTION, M, SELF_CARRIER, SHIP_NEXT, SHIP_STATUS, STATUS, fmt, printQuote, remaining, time, today, vnd, type HistoryEvent, type Order, type ShipStatus } from '../lib';
 
 type DraftLine = { lineKey: string; sku: string; qty: string; unitPrice: string; discount: string; isGift: boolean };
@@ -56,7 +59,7 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
   const qc = useQueryClient();
   const [cur, setCur] = useState<Order | null>(order);
   const [d, setD] = useState<Draft>(order ? fromOrder(order) : blank());
-  const [tab, setTab] = useState<'form' | 'history'>('form');
+  const [tab, setTab] = useState<'hang' | 'giao' | 'history'>('hang');
   const [give, setGive] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<string>('');
   const [dups, setDups] = useState<Dup[]>([]);
@@ -128,9 +131,36 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
   const noWrite = write ? '' : 'Cần quyền phieu-ban:write (kế toán, kế toán trưởng, chủ đơn vị)';
   const noApprove = approver ? '' : 'Chỉ kế toán trưởng / chủ đơn vị duyệt (quyền phieu-ban:order-approve)';
 
+  // Trợ lý — chỉ nhắc (máy chủ vẫn kiểm khi Ghi / Gửi; nút Ghi không khoá theo các dòng này, như trước).
+  const filled = d.lines.filter((l) => l.sku);
+  const checks = editable ? [
+    ...(d.branchCode ? [] : ['Chưa chọn cửa hàng']),
+    ...(filled.length ? [] : ['Chưa có dòng hàng (mã hàng)']),
+    ...(filled.some((l) => !((n(l.qty) ?? 0) > 0)) ? ['Có dòng số lượng trống / bằng 0'] : []),
+    ...(d.partnerCode || d.customerName || d.phone ? [] : ['Chưa có khách: mã khách, tên người đặt hoặc SĐT']),
+    ...(d.validUntil && d.orderDate && d.validUntil < d.orderDate ? ['Hiệu lực đến trước ngày đơn'] : []),
+  ] : [];
+  const giu = (cur?.lines ?? []).map((l) => ({ l, can: remaining(l), held: l.held }));
+  const thieu = status === 'open' ? giu.filter((x) => x.can > x.held) : [];
+  const shipments = cur?.shipments ?? [];
+  const tabs: ['hang' | 'giao' | 'history', string][] = [
+    ['hang', `Hàng hoá (${filled.length})`],
+    ['giao', `Giao hàng${shipments.length ? ` (${shipments.length})` : ''}`],
+    ...(cur ? [['history', 'Lịch sử'] as ['history', string]] : []),
+  ];
+  const on = (k: keyof Draft) => (e: { target: { value: string } }) => setD({ ...d, [k]: e.target.value });
+
   return (
-    <Modal wide title={cur ? `Đơn ${cur.orderNo} · ${STATUS[status].label}` : 'Lập đơn đặt hàng'} onClose={onClose} footer={(
-      <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+    <DocSheet
+      title={cur ? `Đơn đặt hàng ${cur.orderNo}` : 'Đơn đặt hàng (mới)'}
+      badges={<span className={`badge badge-${STATUS[status].tone}`}>{STATUS[status].label}</span>}
+      total={{ label: 'Giá trị đơn', value: cur?.totals.total ?? 0 }}
+      readOnly={!editable}
+      onClose={onClose}
+      sideTitle="Trợ lý đơn hàng"
+      keys="Ctrl + S - Ghi · Esc - Thoát"
+      footNote={run.error ? <span className="mh-bad">{errorText(run.error)}</span> : msg ? <span>{msg}</span> : null}
+      footer={<>
         {editable && <button className="btn btn-primary" disabled={!write || run.isPending} title={noWrite || 'Ghi đơn (máy chủ tính lại tiền)'} onClick={() => run.mutate({ act: 'save' })}>Ghi</button>}
         {cur && status === 'draft' && <button className="btn" disabled={!write || run.isPending} title={noWrite || 'Kiểm hạn mức, nợ quá hạn; không vướng thì giữ hàng ngay'} onClick={() => act('send')}>Gửi</button>}
         {cur && status === 'pending' && <button className="btn" disabled={!approver || run.isPending} title={noApprove || 'Duyệt: đơn vào Đã gửi và giữ hàng'} onClick={() => ask('approve', 'Duyệt đơn')}>Duyệt</button>}
@@ -147,22 +177,53 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
         )}
         {cur && status === 'open' && <button className="btn" disabled={!write || run.isPending} title={noWrite || 'Thôi giữ phần chưa giao: chuyển từ KCB về kho bán'} onClick={() => ask('close', 'Đóng đơn')}>Đóng đơn</button>}
         {cur && ['draft', 'pending', 'open'].includes(status) && <button className="btn" disabled={!write || run.isPending} title={noWrite || 'Chỉ huỷ được khi chưa giao gì; đã giao một phần thì dùng Đóng đơn'} onClick={() => ask('cancel', 'Huỷ đơn')}>Huỷ đơn</button>}
-        {cur && <button className="btn" disabled={!write || run.isPending} title={noWrite || 'Lập đơn nháp mới cùng khách, hàng, số lượng, thông tin giao; giá + khuyến mại tính theo hôm nay'} onClick={() => act('copy')}>Copy đơn</button>}
-        {cur && <button className="btn" onClick={() => printQuote(cur)}>In báo giá</button>}
-        <button className="btn" onClick={onClose}>Đóng cửa sổ</button>
-      </div>
-    )}>
-      {cur && (
-        <div className="row" style={{ gap: 6, marginBottom: 8 }}>
-          <button className={`btn btn-xs${tab === 'form' ? ' btn-primary' : ''}`} onClick={() => setTab('form')}>Đơn</button>
-          <button className={`btn btn-xs${tab === 'history' ? ' btn-primary' : ''}`} onClick={() => setTab('history')}>Lịch sử</button>
-        </div>
-      )}
-      {run.error && <ErrorBox error={errorText(run.error)} />}
-      {msg && <div className="badge badge-info" style={{ marginBottom: 8 }}>{msg}</div>}
-      {cur?.status === 'pending' && <div className="badge badge-warn" style={{ marginBottom: 8 }}>Chờ duyệt: {cur.pendingReasons.join(' · ')}</div>}
-      {cur?.copiedFrom && <div className="muted" style={{ marginBottom: 8 }}>Copy từ {cur.copiedFrom.slice(cur.copiedFrom.indexOf(':') + 1)}</div>}
-      {cur?.rejection && status === 'draft' && <div className="muted" style={{ marginBottom: 8 }}>Bị từ chối bởi {cur.rejection.by} lúc {time(cur.rejection.at)}: {cur.rejection.note}</div>}
+        {cur && <button className="btn" data-view-ok disabled={!write || run.isPending} title={noWrite || 'Lập đơn nháp mới cùng khách, hàng, số lượng, thông tin giao; giá + khuyến mại tính theo hôm nay'} onClick={() => act('copy')}>Copy đơn</button>}
+        {cur && <button className="btn" data-view-ok onClick={() => printQuote(cur)}>In báo giá</button>}
+        <button className="btn" data-view-ok onClick={onClose}>Đóng cửa sổ</button>
+      </>}
+      side={<>
+        <DocSheetPanel title="Kiểm tra" badge={editable ? (checks.length ? <span className="badge badge-warn">{checks.length}</span> : <span className="badge badge-ok">ổn</span>) : undefined}>
+          {msg && <div className="mh-check ok">✓ {msg}</div>}
+          {cur?.status === 'pending' && <div className="mh-check warn">⚠ Chờ duyệt: {cur.pendingReasons.join(' · ')}</div>}
+          {cur?.rejection && status === 'draft' && <div className="mh-check warn">⚠ Bị từ chối bởi {cur.rejection.by} lúc {time(cur.rejection.at)}: {cur.rejection.note}</div>}
+          {cur?.copiedFrom && <div className="muted" style={{ fontSize: 12, marginBottom: 3 }}>Copy từ {cur.copiedFrom.slice(cur.copiedFrom.indexOf(':') + 1)}</div>}
+          {!editable ? <div className="mh-check ok">✓ Đơn {STATUS[status].label.toLowerCase()} — chỉ xem{cur?.closeReason ? `: ${cur.closeReason}` : ''}</div>
+            : checks.length ? checks.map((c) => <div key={c} className="mh-check warn">⚠ {c}</div>)
+            : <div className="mh-check ok">✓ Đủ thông tin — bấm Ghi để lưu đơn</div>}
+          {editable && (
+            <ol className="mh-guide" style={{ marginTop: 6 }}>
+              <li className={cur ? 'done' : ''}><b>Ghi</b> lưu đơn nháp — máy chủ tính lại giá, khuyến mại, tiền</li>
+              <li className={status !== 'draft' ? 'done' : ''}><b>Gửi</b>: kiểm hạn mức, nợ quá hạn; vướng thì chờ duyệt, không vướng thì giữ hàng ngay</li>
+              <li><b>Lập chuyến giao</b> / <b>Giao tại quầy</b> theo số &quot;Giao lần này&quot; (đơn Đã gửi)</li>
+            </ol>
+          )}
+        </DocSheetPanel>
+        <DocSheetPanel title="Giữ hàng" badge={thieu.length ? <span className="badge badge-warn">thiếu {thieu.length}</span> : undefined}>
+          {!cur || status === 'draft' || status === 'pending'
+            ? <div className="muted" style={{ fontSize: 12 }}>Chưa giữ hàng — đơn được gửi (hoặc duyệt) thì máy chủ chuyển hàng từ kho bán sang kho giữ (KCB).</div>
+            : (<>
+              {cur.holdWarehouseCode && <div style={{ fontSize: 12, marginBottom: 4 }}>Giữ ở kho <b>{cur.holdWarehouseCode}</b> (kho bán {cur.warehouseCode})</div>}
+              <div className="mh-kv">
+                <span className="muted">Mã hàng · còn phải giao</span><span className="muted">Đang giữ</span>
+                {giu.map((x) => [
+                  <span key={`${x.l.lineKey}-a`} className={status === 'open' && x.can > x.held ? 'mh-warn' : ''}>{x.l.sku} · {vnd(x.can)}</span>,
+                  <span key={`${x.l.lineKey}-b`}>{vnd(x.held)}</span>,
+                ])}
+              </div>
+              {thieu.length > 0 && <div className="mh-check warn" style={{ marginTop: 4 }}>⚠ {thieu.length} dòng giữ chưa đủ số còn phải giao (thiếu tồn lúc giữ)</div>}
+            </>)}
+        </DocSheetPanel>
+        <DocSheetPanel title="Tổng tiền">
+          <div className="mh-kv">
+            <span>Tiền trước thuế</span><span>{cur ? vnd(cur.totals.beforeTax) || 0 : '—'}</span>
+            <span>Thuế GTGT</span><span>{cur ? vnd(cur.totals.tax) || 0 : '—'}</span>
+            <span className="total">Giá trị đơn</span><span className="total">{cur ? vnd(cur.totals.total) || 0 : '—'}</span>
+            {(n(d.fee) ?? 0) > 0 && <><span>Phí ship thu khách</span><span>{vnd(n(d.fee))}</span></>}
+            {(n(d.cod) ?? 0) > 0 && <><span>Tiền COD</span><span>{vnd(n(d.cod))}</span></>}
+          </div>
+          {editable && <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>Máy chủ tính lại giá, khuyến mại, tiền khi Ghi.</div>}
+        </DocSheetPanel>
+      </>}>
       {dups.length > 0 && (
         <div className="card card-body" style={{ marginBottom: 8 }}>
           <b>Trùng đơn livestream (cùng SĐT, cùng mã hàng trong 24 giờ):</b>
@@ -175,7 +236,106 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
           <button className="btn btn-xs" onClick={() => run.mutate({ act: 'save', onDuplicate: 'keep' })}>Giữ riêng (lập đơn mới)</button>
         </div>
       )}
-      {tab === 'history' && cur ? (
+      <div className="mh-head">
+        <div className="span2"><Field label="Cửa hàng"><BranchPicker value={d.branchCode} onChange={(v) => setD({ ...d, branchCode: v })} disabled={!editable || lockedHead} /></Field></div>
+        <Field label="Kho bán" hint="Trống = kho mặc định"><input className="input" value={d.warehouseCode} disabled={!editable || lockedHead} title={lockedHead ? 'Đơn đang giữ hàng — không đổi kho' : ''} onChange={on('warehouseCode')} /></Field>
+        <Field label="Ngày đơn"><input className="input" type="date" value={d.orderDate} disabled={!editable} onChange={on('orderDate')} /></Field>
+        <Field label="Hiệu lực đến" hint="Báo giá có hạn"><input className="input" type="date" value={d.validUntil} disabled={!editable} onChange={on('validUntil')} /></Field>
+        <Field label="Nguồn">
+          <select className="input" value={d.source} disabled={Boolean(cur)} title={cur ? 'Nguồn chọn lúc lập đơn' : ''} onChange={(e) => setD({ ...d, source: e.target.value as Draft['source'] })}>
+            <option value="manual">Lập tay</option><option value="livestream">Livestream</option>
+          </select>
+        </Field>
+        <Field label="Mã khách"><input className="input" value={d.partnerCode} disabled={!editable || lockedHead} title={lockedHead ? 'Đơn đang giữ hàng — không đổi khách' : ''} onChange={on('partnerCode')} /></Field>
+        <div className="span2"><Field label="Tên người đặt"><input className="input" value={d.customerName} disabled={!editable} onChange={on('customerName')} /></Field></div>
+        <Field label="Số điện thoại"><input className="input" value={d.phone} disabled={!editable} onChange={on('phone')} /></Field>
+        <div className="span2"><Field label="Ghi chú"><input className="input" value={d.note} disabled={!editable} onChange={on('note')} /></Field></div>
+      </div>
+
+      <div className="tabs kp-tabs">
+        {tabs.map(([k, l]) => <button key={k} type="button" className={`tab ${tab === k ? 'active' : ''}`} data-view-ok onClick={() => setTab(k)}>{l}</button>)}
+      </div>
+
+      {tab === 'hang' && (<>
+        {editable && (
+          <div className="lines-bar">
+            <button type="button" className="btn btn-sm btn-primary" onClick={addLine}>+ Thêm dòng</button>
+            <span className="muted" style={{ fontSize: 12 }}>Gõ mã hoặc tên ở ô Mã hàng; đơn giá trống = giá cửa hàng (máy chủ tính khi Ghi)</span>
+          </div>
+        )}
+        <div className="kp-lines-box">
+          <table className="grid">
+            <thead><tr>
+              <th style={{ width: 200 }}>Mã hàng</th><th>Tên</th><th style={{ width: 80 }}>SL</th><th style={{ width: 120 }}>Đơn giá</th><th style={{ width: 100 }}>Chiết khấu</th>
+              <th style={{ width: 46 }}>Quà</th><th style={{ width: 110 }}>Thành tiền</th><th style={{ width: 72 }}>Đã giao</th><th style={{ width: 80 }}>Đang giao</th><th style={{ width: 78 }}>Đang giữ</th>
+              {status === 'open' && <th style={{ width: 100 }}>Giao lần này</th>}<th style={{ width: 52 }} />
+            </tr></thead>
+            <tbody>{d.lines.map((l, i) => {
+              const s = line(l.lineKey);
+              return (
+                <tr key={l.lineKey}>
+                  <td><ItemPicker value={l.sku} onChange={(v) => setLine(i, { sku: v })} disabled={!editable || Boolean(s?.delivered)} /></td>
+                  <td>{s?.name ?? ''}</td>
+                  <td><input className="input" value={l.qty} disabled={!editable} onChange={(e) => setLine(i, { qty: e.target.value })} /></td>
+                  <td><input className="input" value={l.unitPrice} placeholder="giá cửa hàng" disabled={!editable || l.isGift} title={l.isGift ? 'Dòng quà: giá 0' : ''} onChange={(e) => setLine(i, { unitPrice: e.target.value })} /></td>
+                  <td><input className="input" value={l.discount} disabled={!editable || l.isGift} title={l.isGift ? 'Dòng quà: không chiết khấu' : ''} onChange={(e) => setLine(i, { discount: e.target.value })} /></td>
+                  <td style={{ textAlign: 'center' }}><input type="checkbox" checked={l.isGift} disabled={!editable} onChange={(e) => setLine(i, { isGift: e.target.checked })} /></td>
+                  <td style={{ textAlign: 'right' }}>{s ? vnd(s.amountBeforeTax + s.taxAmount) : ''}</td>
+                  <td style={{ textAlign: 'right' }}>{s ? vnd(s.delivered) : ''}</td>
+                  <td style={{ textAlign: 'right' }}>{s?.shipping ? vnd(s.shipping) : ''}</td>
+                  <td style={{ textAlign: 'right' }}>{s ? vnd(s.held) : ''}</td>
+                  {status === 'open' && <td><input className="input" value={give[l.lineKey] ?? ''} placeholder={s ? `≤ ${remaining(s)}` : ''} onChange={(e) => setGive({ ...give, [l.lineKey]: e.target.value })} /></td>}
+                  <td>{editable && !s?.delivered && <button className="btn btn-xs" onClick={() => setD({ ...d, lines: d.lines.filter((_, k) => k !== i) })}>Bỏ</button>}</td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </div>
+        {cur && cur.deliveries.length > 0 && (
+          <div className="muted" style={{ marginTop: 6 }}>
+            Các lần giao: {cur.deliveries.map((x) => `${x.docNo}${x.returned ? ' (đã xoá)' : ''} · ${time(x.at)} · ${x.lines.map((y) => `${y.sku} × ${y.qty}`).join(', ')}`).join(' | ')}
+          </div>
+        )}
+      </>)}
+
+      {tab === 'giao' && (<>
+        <div className="muted" style={{ margin: '0 0 6px', fontSize: 12 }}>Thông tin giao — phí ship và COD mặc định cho chuyến giao đầu tiên</div>
+        <div className="mh-head">
+          <Field label="Người nhận"><input className="input" value={d.receiver} disabled={!editable} onChange={on('receiver')} /></Field>
+          <Field label="SĐT người nhận"><input className="input" value={d.shipPhone} disabled={!editable} onChange={on('shipPhone')} /></Field>
+          <div className="span4"><Field label="Địa chỉ giao"><input className="input" value={d.address} disabled={!editable} onChange={on('address')} /></Field></div>
+          <div className="span2"><Field label="Hãng vận chuyển" hint="SELF = tự giao; hoặc mã hãng (GHN, GHTK…)">
+            <input className="input" list="phieu-ban-carriers" value={d.carrier} disabled={!editable} onChange={(e) => setD({ ...d, carrier: e.target.value.toUpperCase() })} />
+            <datalist id="phieu-ban-carriers"><option value={SELF_CARRIER}>Tự giao</option><option value="GHN" /><option value="GHTK" /><option value="VTP" /></datalist>
+          </Field></div>
+          <Field label="Mã vận đơn"><input className="input" value={d.trackingNo} disabled={!editable} onChange={on('trackingNo')} /></Field>
+          <Field label="Phí ship thu khách"><input className="input" value={d.fee} disabled={!editable} onChange={on('fee')} /></Field>
+          <Field label="Tiền COD"><input className="input" value={d.cod} disabled={!editable} onChange={on('cod')} /></Field>
+        </div>
+        <div style={{ marginTop: 10 }}><b>Chuyến giao</b> <span className="muted">— Đang giao: hàng ở kho KHG (chưa doanh thu); Đã giao: phiếu bán nháp xuất từ KHG</span></div>
+        {shipments.length === 0 ? <div className="muted" style={{ marginTop: 4 }}>Chưa có chuyến giao{status === 'open' ? ' — nhập "Giao lần này" ở thẻ Hàng hoá rồi bấm Lập chuyến giao' : ''}.</div> : (
+          <table className="grid" style={{ marginTop: 4 }}>
+            <thead><tr><th>#</th><th>Trạng thái</th><th>Hàng</th><th>Hãng / mã vận đơn</th><th>Phí ship</th><th>COD</th><th>Phiếu bán</th><th>Nhật ký</th><th /></tr></thead>
+            <tbody>{shipments.map((x) => (
+              <tr key={x.id}>
+                <td>{x.seq}</td>
+                <td><span className={`badge badge-${SHIP_STATUS[x.status].tone}`}>{SHIP_STATUS[x.status].label}</span></td>
+                <td>{x.lines.map((y) => `${y.sku} × ${vnd(y.qty)}`).join(', ')}</td>
+                <td>{x.carrier === SELF_CARRIER ? 'Tự giao' : x.carrier}{x.trackingNo ? ` · ${x.trackingNo}` : ''}</td>
+                <td style={{ textAlign: 'right' }}>{vnd(x.fee)}</td>
+                <td style={{ textAlign: 'right' }}>{vnd(x.cod)}</td>
+                <td>{x.saleDocNo ?? ''}</td>
+                <td className="muted">{x.log.map((g) => `${time(g.at)} ${g.byName || g.by}: ${g.from ? `${SHIP_STATUS[g.from].label} → ` : ''}${SHIP_STATUS[g.to].label}${g.docNo ? ` (${g.docNo})` : ''}${g.note ? ` — ${g.note}` : ''}`).join(' | ')}</td>
+                <td style={{ whiteSpace: 'nowrap' }}>{SHIP_NEXT[x.status].map(([to, label, hint]) => (
+                  <button key={to} className="btn btn-xs" data-view-ok disabled={!shipSua || run.isPending} title={noShipSua || hint} onClick={() => shipTo(x.id, to, label)}>{label}</button>
+                ))}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        )}
+      </>)}
+
+      {tab === 'history' && cur && (
         history.isLoading ? <Loading /> : history.error ? <ErrorBox error={errorText(history.error)} /> : (
           <table className="grid">
             <thead><tr><th>Lúc</th><th>Người</th><th>Việc</th><th>Thay đổi (cũ → mới)</th><th>Ghi chú</th></tr></thead>
@@ -185,93 +345,7 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
             ))}</tbody>
           </table>
         )
-      ) : (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
-            <Field label="Cửa hàng"><BranchPicker value={d.branchCode} onChange={(v) => setD({ ...d, branchCode: v })} disabled={!editable || lockedHead} /></Field>
-            <Field label="Kho bán" hint="Trống = kho mặc định"><input className="input" value={d.warehouseCode} disabled={!editable || lockedHead} title={lockedHead ? 'Đơn đang giữ hàng — không đổi kho' : ''} onChange={(e) => setD({ ...d, warehouseCode: e.target.value })} /></Field>
-            <Field label="Ngày đơn"><input className="input" type="date" value={d.orderDate} disabled={!editable} onChange={(e) => setD({ ...d, orderDate: e.target.value })} /></Field>
-            <Field label="Hiệu lực đến" hint="Báo giá có hạn"><input className="input" type="date" value={d.validUntil} disabled={!editable} onChange={(e) => setD({ ...d, validUntil: e.target.value })} /></Field>
-            <Field label="Mã khách"><input className="input" value={d.partnerCode} disabled={!editable || lockedHead} title={lockedHead ? 'Đơn đang giữ hàng — không đổi khách' : ''} onChange={(e) => setD({ ...d, partnerCode: e.target.value })} /></Field>
-            <Field label="Tên người đặt"><input className="input" value={d.customerName} disabled={!editable} onChange={(e) => setD({ ...d, customerName: e.target.value })} /></Field>
-            <Field label="Số điện thoại"><input className="input" value={d.phone} disabled={!editable} onChange={(e) => setD({ ...d, phone: e.target.value })} /></Field>
-            <Field label="Nguồn">
-              <select className="input" value={d.source} disabled={Boolean(cur)} title={cur ? 'Nguồn chọn lúc lập đơn' : ''} onChange={(e) => setD({ ...d, source: e.target.value as Draft['source'] })}>
-                <option value="manual">Lập tay</option><option value="livestream">Livestream</option>
-              </select>
-            </Field>
-            <Field label="Ghi chú" full><input className="input" value={d.note} disabled={!editable} onChange={(e) => setD({ ...d, note: e.target.value })} /></Field>
-          </div>
-          <div style={{ marginTop: 8 }}><b>Thông tin giao</b> <span className="muted">— phí ship và COD mặc định cho chuyến giao đầu tiên</span></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
-            <Field label="Người nhận"><input className="input" value={d.receiver} disabled={!editable} onChange={(e) => setD({ ...d, receiver: e.target.value })} /></Field>
-            <Field label="SĐT người nhận"><input className="input" value={d.shipPhone} disabled={!editable} onChange={(e) => setD({ ...d, shipPhone: e.target.value })} /></Field>
-            <Field label="Địa chỉ giao" full><input className="input" value={d.address} disabled={!editable} onChange={(e) => setD({ ...d, address: e.target.value })} /></Field>
-            <Field label="Hãng vận chuyển" hint="SELF = tự giao; hoặc mã hãng (GHN, GHTK…)">
-              <input className="input" list="phieu-ban-carriers" value={d.carrier} disabled={!editable} onChange={(e) => setD({ ...d, carrier: e.target.value.toUpperCase() })} />
-              <datalist id="phieu-ban-carriers"><option value={SELF_CARRIER}>Tự giao</option><option value="GHN" /><option value="GHTK" /><option value="VTP" /></datalist>
-            </Field>
-            <Field label="Mã vận đơn"><input className="input" value={d.trackingNo} disabled={!editable} onChange={(e) => setD({ ...d, trackingNo: e.target.value })} /></Field>
-            <Field label="Phí ship thu khách"><input className="input" value={d.fee} disabled={!editable} onChange={(e) => setD({ ...d, fee: e.target.value })} /></Field>
-            <Field label="Tiền COD"><input className="input" value={d.cod} disabled={!editable} onChange={(e) => setD({ ...d, cod: e.target.value })} /></Field>
-          </div>
-          <table className="grid" style={{ marginTop: 8 }}>
-            <thead><tr><th>Mã hàng</th><th>Tên</th><th>SL</th><th>Đơn giá</th><th>Chiết khấu</th><th>Quà</th><th>Thành tiền</th><th>Đã giao</th><th>Đang giao</th><th>Đang giữ</th>{status === 'open' && <th>Giao lần này</th>}<th /></tr></thead>
-            <tbody>{d.lines.map((l, i) => {
-              const s = line(l.lineKey);
-              return (
-                <tr key={l.lineKey}>
-                  <td style={{ minWidth: 160 }}><ItemPicker value={l.sku} onChange={(v) => setLine(i, { sku: v })} disabled={!editable || Boolean(s?.delivered)} /></td>
-                  <td>{s?.name ?? ''}</td>
-                  <td><input className="input" style={{ width: 70 }} value={l.qty} disabled={!editable} onChange={(e) => setLine(i, { qty: e.target.value })} /></td>
-                  <td><input className="input" style={{ width: 110 }} value={l.unitPrice} placeholder="giá cửa hàng" disabled={!editable || l.isGift} title={l.isGift ? 'Dòng quà: giá 0' : ''} onChange={(e) => setLine(i, { unitPrice: e.target.value })} /></td>
-                  <td><input className="input" style={{ width: 90 }} value={l.discount} disabled={!editable || l.isGift} title={l.isGift ? 'Dòng quà: không chiết khấu' : ''} onChange={(e) => setLine(i, { discount: e.target.value })} /></td>
-                  <td><input type="checkbox" checked={l.isGift} disabled={!editable} onChange={(e) => setLine(i, { isGift: e.target.checked })} /></td>
-                  <td style={{ textAlign: 'right' }}>{s ? vnd(s.amountBeforeTax + s.taxAmount) : ''}</td>
-                  <td style={{ textAlign: 'right' }}>{s ? vnd(s.delivered) : ''}</td>
-                  <td style={{ textAlign: 'right' }}>{s?.shipping ? vnd(s.shipping) : ''}</td>
-                  <td style={{ textAlign: 'right' }}>{s ? vnd(s.held) : ''}</td>
-                  {status === 'open' && <td><input className="input" style={{ width: 70 }} value={give[l.lineKey] ?? ''} placeholder={s ? `≤ ${remaining(s)}` : ''} onChange={(e) => setGive({ ...give, [l.lineKey]: e.target.value })} /></td>}
-                  <td>{editable && !s?.delivered && <button className="btn btn-xs" onClick={() => setD({ ...d, lines: d.lines.filter((_, k) => k !== i) })}>Bỏ</button>}</td>
-                </tr>
-              );
-            })}</tbody>
-          </table>
-          <div className="row" style={{ justifyContent: 'space-between', marginTop: 6 }}>
-            {editable ? <button className="btn btn-xs" onClick={addLine}>+ Thêm dòng</button> : <span />}
-            {cur && <b>Tổng: {vnd(cur.totals.total)}</b>}
-          </div>
-          {cur && cur.deliveries.length > 0 && (
-            <div className="muted" style={{ marginTop: 6 }}>
-              Các lần giao: {cur.deliveries.map((x) => `${x.docNo}${x.returned ? ' (đã xoá)' : ''} · ${time(x.at)} · ${x.lines.map((y) => `${y.sku} × ${y.qty}`).join(', ')}`).join(' | ')}
-            </div>
-          )}
-          {cur?.holdWarehouseCode && <div className="muted">Giữ hàng ở kho {cur.holdWarehouseCode} (kho bán {cur.warehouseCode})</div>}
-          {cur && (cur.shipments ?? []).length > 0 && (
-            <>
-              <div style={{ marginTop: 10 }}><b>Chuyến giao</b> <span className="muted">— Đang giao: hàng ở kho KHG (chưa doanh thu); Đã giao: phiếu bán nháp xuất từ KHG</span></div>
-              <table className="grid" style={{ marginTop: 4 }}>
-                <thead><tr><th>#</th><th>Trạng thái</th><th>Hàng</th><th>Hãng / mã vận đơn</th><th>Phí ship</th><th>COD</th><th>Phiếu bán</th><th>Nhật ký</th><th /></tr></thead>
-                <tbody>{(cur.shipments ?? []).map((x) => (
-                  <tr key={x.id}>
-                    <td>{x.seq}</td>
-                    <td><span className={`badge badge-${SHIP_STATUS[x.status].tone}`}>{SHIP_STATUS[x.status].label}</span></td>
-                    <td>{x.lines.map((y) => `${y.sku} × ${vnd(y.qty)}`).join(', ')}</td>
-                    <td>{x.carrier === SELF_CARRIER ? 'Tự giao' : x.carrier}{x.trackingNo ? ` · ${x.trackingNo}` : ''}</td>
-                    <td style={{ textAlign: 'right' }}>{vnd(x.fee)}</td>
-                    <td style={{ textAlign: 'right' }}>{vnd(x.cod)}</td>
-                    <td>{x.saleDocNo ?? ''}</td>
-                    <td className="muted">{x.log.map((g) => `${time(g.at)} ${g.byName || g.by}: ${g.from ? `${SHIP_STATUS[g.from].label} → ` : ''}${SHIP_STATUS[g.to].label}${g.docNo ? ` (${g.docNo})` : ''}${g.note ? ` — ${g.note}` : ''}`).join(' | ')}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{SHIP_NEXT[x.status].map(([to, label, hint]) => (
-                      <button key={to} className="btn btn-xs" disabled={!shipSua || run.isPending} title={noShipSua || hint} onClick={() => shipTo(x.id, to, label)}>{label}</button>
-                    ))}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </>
-          )}
-        </>
       )}
-    </Modal>
+    </DocSheet>
   );
 }
