@@ -44,9 +44,24 @@
 - Bản cài Docker dựng từ nhánh: chụp BH20 (mới / có sẵn), BH18, đợt voucher; lập + ghi thử một đơn BH20, một khuyến mại nháp.
 
 ## 6. Kết quả chạy
-_(điền khi code xong)_
+<!-- [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: kết quả code + kiểm (đóng góp) -->
+Nhánh `feat/nt-bh-037-mau-phieu-mua-module-ban`, 22/11/2026.
+
+| Mục | Kết quả |
+|---|---|
+| ui-kit | `DocSheet`, `DocSheetPanel` (chữ ký `packages/ui-kit/src/doc-sheet.tsx`, `UiKitImpl` kế thừa `UiKitDocSheetImpl`); bản thật ở `apps/web/src/lib/uiKitHost.ts` → `KhungPhieu` / `KhoiTroLy` (nạp lười) |
+| `KhungPhieu` | `total`, `side`, `sideTitle`, `helpKey`, `viewing`, `readOnly`, `onEdit` không bắt buộc; không có `side` → thân một cột (`.kp-mot-cot`); `helpKey` trống → khoá tự sinh như Modal (`modalHelpKey`). BH10 / BH11 không đổi (vẫn truyền đủ) |
+| BH20 | `OrderEditor` dùng `DocSheet`: đầu phiếu 6 cột, thẻ Hàng hoá / Giao hàng / Lịch sử, Trợ lý Kiểm tra / Giữ hàng / Tổng tiền; nút, API, dữ liệu gửi giữ nguyên |
+| BH18 | `KmForm`, `HanMucForm` dùng `DocSheet`; Trùng chương trình đọc `GET /api/v1/m/pos/promo/drafts/:id/overlaps` khi sửa bản nháp (API sẵn có); hộp "Đã lưu — có chương trình trùng", chọn loại, duyệt / từ chối / ngừng / thử tính giữ `Modal` |
+| Voucher | form Thêm / Sửa đợt dùng `DocSheet`; hộp chi tiết đợt giữ `Modal` |
+| typecheck, build web | đạt |
+| test API | `nt-bh-023-don-dat-hang`, `nt-bh-032-giao-hang`: 22 / 22 đạt |
+| selfcheck | không phát hiện mới so với `main` (cùng 16 mục đỏ sẵn có của `main`) |
+| Giao diện (bản cài Docker, đơn vị demo) | BH20 "+ Lập đơn", BH18 thêm khuyến mại (Mua X tặng Y) + có hạn mức, thêm đợt voucher, BH10 mới: mỗi hộp **1** nút Hướng dẫn |
+| Lưu thử | Khuyến mại nháp `NT037-THU` lưu được (hiện hộp cảnh báo 3 chương trình trùng). Đơn BH20: Ctrl + S gửi lên máy chủ, máy chủ từ chối đúng luật "Cửa hàng CN01 chưa có kho mặc định — chọn kho bán" (dữ liệu demo chưa có kho) — lỗi hiện ở chân phiếu |
 
 ## 7. Lịch sử thay đổi
 | Ngày | Thay đổi |
 |---|---|
 | 21/11/2026 | Tạo phiếu, chốt Q1–Q3, thiết kế §3; giữ chỗ code |
+| 22/11/2026 | Code xong: ui-kit `DocSheet` / `DocSheetPanel`, BH20, BH18, đợt voucher; kết quả §6 |
