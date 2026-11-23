@@ -1,4 +1,5 @@
 // @bizcity-layer K kernel/posting
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-15 Nguyễn Văn Thủy] Nhãn cặp Nợ / Có (thay rule-table.ts): bỏ bảng quy tắc định khoản có điều kiện, chỉ giữ nhãn để tách cặp và xem trước (đóng góp)
 /**
  * NHÃN CẶP NỢ / CÓ — luật định khoản (rules/*.rule.ts) gắn vào từng cặp để:

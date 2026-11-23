@@ -5,13 +5,13 @@
 
 | Cột | Số việc |
 |---|---|
-| Đang làm | 4 |
+| Đang làm | 3 |
 | Chờ merge | 0 |
 | Bị chặn | 31 |
 | Chưa ai nhận | 204 |
 | Chờ đủ tín hiệu | 81 |
 | Hoãn | 3 |
-| Xong | 366 |
+| Xong | 367 |
 | **Tổng** | **689** |
 
 ## Theo phân hệ (R-FLOW-10)
@@ -26,17 +26,16 @@
 | chung-tu | 71 | 5 | 0 | 29 | 105 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 175 | 30 | 2 | 63 | 270 |
+| he-thong | 176 | 30 | 1 | 63 | 270 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
-## Đang làm (4)
+## Đang làm (3)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
 | [S020-25](PHASE-020-KIEM-CHUAN-PHAP-LY-VN/40-MASTER-CHECKLIST.md#L34) | PHASE-020 | thue · tong-hop | D020-11 (a)(b)(c): HT06 "Kiểm sổ" gọn — lượt kiểm lưu kết quả tự chẩn đoán cả sổ vào báo cáo (report.health, … | — | hoanganh8389 (phiên Claude, danh-gia-phase) · `feat/phase-020-s020-25-kiem-so-gon` |
 | [S024-33](PHASE-024-ITEM-MASTER-PHAN-LOAI-HACH-TOAN/40-MASTER-CHECKLIST.md#L44) | PHASE-024 | danh-muc · kho | Bỏ suy tài khoản kho từ tiền tố ở packages/kernel/src/modules/posting/rules/stock.rule.ts:55 (startsWith('15'… | P0 | hoanganh8389 (phiên Claude, danh-gia-phase) · `feat/phase-024-s024-33-tk-kho` |
 | [S036-8b](PHASE-036-THIET-LAP-NHANH-DU-LIEU-MAU/40-MASTER-CHECKLIST.md#L18) | PHASE-036 | he-thong | B6 — Lấy lại bản trước từ defaultdatabackups; org-units/restore-defaults theo cùng khuôn; đơn vị trắng đổi nú… | P1 | hoanganh8389 (phiên Claude, PHASE-036 thiết lập nhanh) · `feat/s036-8b-lay-lai-ban-truoc` |
-| [S040-26](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L35) | PHASE-040 | he-thong | B10f — chữ ký R-SIG: chữ ký kiến trúc cho tệp framework do người đóng góp tạo (R-SIG-1, R-SIG-7); dấu cũ sai … | P1 | hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột) · `fix/phase-040-b10f-chu-ky` |
 
 ## Chờ merge (0)
 
@@ -381,6 +380,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (366)
+## Xong (367)
 
 Chỉ đếm; xem từng việc ở checklist của phase.

@@ -1,4 +1,5 @@
 // @bizcity-layer K kernel/config
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-15 Nguyễn Văn Thủy] Quy tắc hạch toán: khung Nợ / Có bất biến của từng nghiệp vụ + tài khoản của quy tắc có phạm vi (đóng góp)
 /**
  * QUY TẮC HẠCH TOÁN — một nguồn mô tả cho màn ACC41, API đọc quy tắc và tài liệu (docs/nghiep-vu/24-quy-tac-hach-toan.md).

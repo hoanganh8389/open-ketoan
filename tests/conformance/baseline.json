@@ -4016,6 +4016,1852 @@
           "why": "Có trước luật R-LOG (2026-11-21). Gồm: tệp đang thuộc phạm vi giữ chỗ khác, mã PHASE-039 (site-*), giao diện web (localStorage / clipboard / ảnh — phần lớn đúng là bỏ qua có chủ ý, cần thêm chú thích lý do) và module đóng góp. Sửa dần khi chạm tệp: ghi log.warn hoặc chú thích \"nuot-loi: <lý do>\"."
         }
       ]
+    },
+    "SC-SIG-1": {
+      "title": "Mọi tệp framework (Kernel, Platform, hợp đồng, hạ tầng, kiến trúc, luật, phase) có chữ ký Johnny Chu - Chu Hoàng Anh (R-SIG-1)",
+      "ref": "R-SIG-1",
+      "debts": [
+        {
+          "fp": "SC-SIG-1|apps/api/src/modules/access/man-hinh.ts|apps/api/src/modules/access/man-hinh.ts",
+          "file": "apps/api/src/modules/access/man-hinh.ts",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Tệp nằm trong dòng giữ chỗ của người khác (NT-HT-003 / PHASE-026) — đóng dấu khi dòng đó đóng (R-FLOW-3).",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|apps/api/src/modules/access/quyen-chi-nhanh.ts|apps/api/src/modules/access/quyen-chi-nhanh.ts",
+          "file": "apps/api/src/modules/access/quyen-chi-nhanh.ts",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Tệp nằm trong dòng giữ chỗ của người khác (NT-HT-003 / PHASE-026) — đóng dấu khi dòng đó đóng (R-FLOW-3).",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0093_gui_len_thue.sql|db/migrations/0093_gui_len_thue.sql",
+          "file": "db/migrations/0093_gui_len_thue.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Tệp nằm trong dòng giữ chỗ của người khác (NT-HT-003 / PHASE-026) — đóng dấu khi dòng đó đóng (R-FLOW-3).",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0094_bien_the_can_date.sql|db/migrations/0094_bien_the_can_date.sql",
+          "file": "db/migrations/0094_bien_the_can_date.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Tệp nằm trong dòng giữ chỗ của người khác (NT-HT-003 / PHASE-026) — đóng dấu khi dòng đó đóng (R-FLOW-3).",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0095_ly_do_theo_man.sql|db/migrations/0095_ly_do_theo_man.sql",
+          "file": "db/migrations/0095_ly_do_theo_man.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Tệp nằm trong dòng giữ chỗ của người khác (NT-HT-003 / PHASE-026) — đóng dấu khi dòng đó đóng (R-FLOW-3).",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0096_quy_tac_dinh_khoan.sql|db/migrations/0096_quy_tac_dinh_khoan.sql",
+          "file": "db/migrations/0096_quy_tac_dinh_khoan.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0097_chuong_trinh_ban_item_id.sql|db/migrations/0097_chuong_trinh_ban_item_id.sql",
+          "file": "db/migrations/0097_chuong_trinh_ban_item_id.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0098_lo_hang.sql|db/migrations/0098_lo_hang.sql",
+          "file": "db/migrations/0098_lo_hang.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0099_phieu_chuyen_kho.sql|db/migrations/0099_phieu_chuyen_kho.sql",
+          "file": "db/migrations/0099_phieu_chuyen_kho.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0100_tai_khoan_ngam_dinh_mat_hang.sql|db/migrations/0100_tai_khoan_ngam_dinh_mat_hang.sql",
+          "file": "db/migrations/0100_tai_khoan_ngam_dinh_mat_hang.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0101_tai_khoan_dien_giai.sql|db/migrations/0101_tai_khoan_dien_giai.sql",
+          "file": "db/migrations/0101_tai_khoan_dien_giai.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0102_doc_bien_the_gui_thue.sql|db/migrations/0102_doc_bien_the_gui_thue.sql",
+          "file": "db/migrations/0102_doc_bien_the_gui_thue.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0103_ho_so_in.sql|db/migrations/0103_ho_so_in.sql",
+          "file": "db/migrations/0103_ho_so_in.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0104_muc_thu_chi.sql|db/migrations/0104_muc_thu_chi.sql",
+          "file": "db/migrations/0104_muc_thu_chi.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0105_muc_thu_chi_chuan.sql|db/migrations/0105_muc_thu_chi_chuan.sql",
+          "file": "db/migrations/0105_muc_thu_chi_chuan.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0106_lap_bctc.sql|db/migrations/0106_lap_bctc.sql",
+          "file": "db/migrations/0106_lap_bctc.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0107_to_khai_thong_tin.sql|db/migrations/0107_to_khai_thong_tin.sql",
+          "file": "db/migrations/0107_to_khai_thong_tin.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0108_ho_so_in_rls.sql|db/migrations/0108_ho_so_in_rls.sql",
+          "file": "db/migrations/0108_ho_so_in_rls.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0109_doc_gia_ton_chi_nhanh.sql|db/migrations/0109_doc_gia_ton_chi_nhanh.sql",
+          "file": "db/migrations/0109_doc_gia_ton_chi_nhanh.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0110_kiem_ke_kho.sql|db/migrations/0110_kiem_ke_kho.sql",
+          "file": "db/migrations/0110_kiem_ke_kho.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0111_ma_hang_tu_suy_duoi.sql|db/migrations/0111_ma_hang_tu_suy_duoi.sql",
+          "file": "db/migrations/0111_ma_hang_tu_suy_duoi.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0112_ma_cha_tu_suy.sql|db/migrations/0112_ma_cha_tu_suy.sql",
+          "file": "db/migrations/0112_ma_cha_tu_suy.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0113_the_huong_dan.sql|db/migrations/0113_the_huong_dan.sql",
+          "file": "db/migrations/0113_the_huong_dan.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0114_mat_hang_nguoi_tao.sql|db/migrations/0114_mat_hang_nguoi_tao.sql",
+          "file": "db/migrations/0114_mat_hang_nguoi_tao.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0115_ma_bien_the_hai_dau.sql|db/migrations/0115_ma_bien_the_hai_dau.sql",
+          "file": "db/migrations/0115_ma_bien_the_hai_dau.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0116_nhom_hang_truy_vet.sql|db/migrations/0116_nhom_hang_truy_vet.sql",
+          "file": "db/migrations/0116_nhom_hang_truy_vet.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0117_nguoi_tao_theo_ten.sql|db/migrations/0117_nguoi_tao_theo_ten.sql",
+          "file": "db/migrations/0117_nguoi_tao_theo_ten.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0118_nhom_hang_ten_day_du.sql|db/migrations/0118_nhom_hang_ten_day_du.sql",
+          "file": "db/migrations/0118_nhom_hang_ten_day_du.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0119_nhom_hang_ghi_chu.sql|db/migrations/0119_nhom_hang_ghi_chu.sql",
+          "file": "db/migrations/0119_nhom_hang_ghi_chu.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0120_mat_hang_nguoi_sua.sql|db/migrations/0120_mat_hang_nguoi_sua.sql",
+          "file": "db/migrations/0120_mat_hang_nguoi_sua.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0121_mst_phien_ban_theo_ngay.sql|db/migrations/0121_mst_phien_ban_theo_ngay.sql",
+          "file": "db/migrations/0121_mst_phien_ban_theo_ngay.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0122_guard_so_cai_gia_von.sql|db/migrations/0122_guard_so_cai_gia_von.sql",
+          "file": "db/migrations/0122_guard_so_cai_gia_von.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0123_bo_phan_chuc_nang.sql|db/migrations/0123_bo_phan_chuc_nang.sql",
+          "file": "db/migrations/0123_bo_phan_chuc_nang.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0124_lam_sach_mat_hang_mau.sql|db/migrations/0124_lam_sach_mat_hang_mau.sql",
+          "file": "db/migrations/0124_lam_sach_mat_hang_mau.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0125_bo_phan_mac_dinh_chi_nhanh.sql|db/migrations/0125_bo_phan_mac_dinh_chi_nhanh.sql",
+          "file": "db/migrations/0125_bo_phan_mac_dinh_chi_nhanh.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0126_tai_khoan_ngam_dinh_theo_loai.sql|db/migrations/0126_tai_khoan_ngam_dinh_theo_loai.sql",
+          "file": "db/migrations/0126_tai_khoan_ngam_dinh_theo_loai.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0127_bo_phan_theo_so_do.sql|db/migrations/0127_bo_phan_theo_so_do.sql",
+          "file": "db/migrations/0127_bo_phan_theo_so_do.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0128_loai_kho.sql|db/migrations/0128_loai_kho.sql",
+          "file": "db/migrations/0128_loai_kho.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0129_phong_ban_theo_shop.sql|db/migrations/0129_phong_ban_theo_shop.sql",
+          "file": "db/migrations/0129_phong_ban_theo_shop.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0130_dinh_danh_phong_ban.sql|db/migrations/0130_dinh_danh_phong_ban.sql",
+          "file": "db/migrations/0130_dinh_danh_phong_ban.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0131_co_cau_nhieu_goc.sql|db/migrations/0131_co_cau_nhieu_goc.sql",
+          "file": "db/migrations/0131_co_cau_nhieu_goc.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0132_doi_tuong_cha_con.sql|db/migrations/0132_doi_tuong_cha_con.sql",
+          "file": "db/migrations/0132_doi_tuong_cha_con.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0133_loai_kho_thung_rac.sql|db/migrations/0133_loai_kho_thung_rac.sql",
+          "file": "db/migrations/0133_loai_kho_thung_rac.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0134_but_toan_gop_tai_khoan.sql|db/migrations/0134_but_toan_gop_tai_khoan.sql",
+          "file": "db/migrations/0134_but_toan_gop_tai_khoan.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0135_but_toan_gop_ma_hang.sql|db/migrations/0135_but_toan_gop_ma_hang.sql",
+          "file": "db/migrations/0135_but_toan_gop_ma_hang.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0136_but_toan_gop_dinh_danh.sql|db/migrations/0136_but_toan_gop_dinh_danh.sql",
+          "file": "db/migrations/0136_but_toan_gop_dinh_danh.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0138_dinh_danh_phu_kin.sql|db/migrations/0138_dinh_danh_phu_kin.sql",
+          "file": "db/migrations/0138_dinh_danh_phu_kin.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0140_quy_tac_hach_toan.sql|db/migrations/0140_quy_tac_hach_toan.sql",
+          "file": "db/migrations/0140_quy_tac_hach_toan.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0141_gia_von_hang_tang.sql|db/migrations/0141_gia_von_hang_tang.sql",
+          "file": "db/migrations/0141_gia_von_hang_tang.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0142_but_toan_dinh_danh_bat_bien.sql|db/migrations/0142_but_toan_dinh_danh_bat_bien.sql",
+          "file": "db/migrations/0142_but_toan_dinh_danh_bat_bien.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0143_bo_ly_do_theo_man.sql|db/migrations/0143_bo_ly_do_theo_man.sql",
+          "file": "db/migrations/0143_bo_ly_do_theo_man.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0144_chiet_khau_thanh_toan.sql|db/migrations/0144_chiet_khau_thanh_toan.sql",
+          "file": "db/migrations/0144_chiet_khau_thanh_toan.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0145_chuyen_kho_nhap_dieu_chinh.sql|db/migrations/0145_chuyen_kho_nhap_dieu_chinh.sql",
+          "file": "db/migrations/0145_chuyen_kho_nhap_dieu_chinh.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0146_thung_rac_danh_muc.sql|db/migrations/0146_thung_rac_danh_muc.sql",
+          "file": "db/migrations/0146_thung_rac_danh_muc.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0149_vai_tro_nhan_vien.sql|db/migrations/0149_vai_tro_nhan_vien.sql",
+          "file": "db/migrations/0149_vai_tro_nhan_vien.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0150_pham_vi_so_do_to_chuc.sql|db/migrations/0150_pham_vi_so_do_to_chuc.sql",
+          "file": "db/migrations/0150_pham_vi_so_do_to_chuc.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0151_don_vi_gia_von_theo_co_cau.sql|db/migrations/0151_don_vi_gia_von_theo_co_cau.sql",
+          "file": "db/migrations/0151_don_vi_gia_von_theo_co_cau.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0152_lan_tinh_gia_von.sql|db/migrations/0152_lan_tinh_gia_von.sql",
+          "file": "db/migrations/0152_lan_tinh_gia_von.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0153_pham_vi_gia_von_tuy_chon.sql|db/migrations/0153_pham_vi_gia_von_tuy_chon.sql",
+          "file": "db/migrations/0153_pham_vi_gia_von_tuy_chon.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0154_gia_von_chi_tiet_dau_ky.sql|db/migrations/0154_gia_von_chi_tiet_dau_ky.sql",
+          "file": "db/migrations/0154_gia_von_chi_tiet_dau_ky.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0155_cong_thuc_gia_von_tuy_chon.sql|db/migrations/0155_cong_thuc_gia_von_tuy_chon.sql",
+          "file": "db/migrations/0155_cong_thuc_gia_von_tuy_chon.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0156_chenh_lech_tra_ncc.sql|db/migrations/0156_chenh_lech_tra_ncc.sql",
+          "file": "db/migrations/0156_chenh_lech_tra_ncc.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0157_gia_von_theo_loai_kho.sql|db/migrations/0157_gia_von_theo_loai_kho.sql",
+          "file": "db/migrations/0157_gia_von_theo_loai_kho.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0158_so_chung_tu_chung.sql|db/migrations/0158_so_chung_tu_chung.sql",
+          "file": "db/migrations/0158_so_chung_tu_chung.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0159_gom_bang_vao_loi.sql|db/migrations/0159_gom_bang_vao_loi.sql",
+          "file": "db/migrations/0159_gom_bang_vao_loi.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0160_phien_ban_chinh_sach_mua_chung.sql|db/migrations/0160_phien_ban_chinh_sach_mua_chung.sql",
+          "file": "db/migrations/0160_phien_ban_chinh_sach_mua_chung.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0161_nguong_duyet_tt_vao_cau_hinh.sql|db/migrations/0161_nguong_duyet_tt_vao_cau_hinh.sql",
+          "file": "db/migrations/0161_nguong_duyet_tt_vao_cau_hinh.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0162_dau_xoa_va_sao_luu_vao_thung_rac.sql|db/migrations/0162_dau_xoa_va_sao_luu_vao_thung_rac.sql",
+          "file": "db/migrations/0162_dau_xoa_va_sao_luu_vao_thung_rac.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0163_bo_bang_van_hanh.sql|db/migrations/0163_bo_bang_van_hanh.sql",
+          "file": "db/migrations/0163_bo_bang_van_hanh.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0164_so_chung_tu_duyet_lien_ket.sql|db/migrations/0164_so_chung_tu_duyet_lien_ket.sql",
+          "file": "db/migrations/0164_so_chung_tu_duyet_lien_ket.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0165_hop_dong_mua_xuyen_suot.sql|db/migrations/0165_hop_dong_mua_xuyen_suot.sql",
+          "file": "db/migrations/0165_hop_dong_mua_xuyen_suot.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0166_chuan_loai_va_vong_doi_chung_tu.sql|db/migrations/0166_chuan_loai_va_vong_doi_chung_tu.sql",
+          "file": "db/migrations/0166_chuan_loai_va_vong_doi_chung_tu.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0167_so_chung_tu_quyen_module.sql|db/migrations/0167_so_chung_tu_quyen_module.sql",
+          "file": "db/migrations/0167_so_chung_tu_quyen_module.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0168_ngay_hieu_luc_thuoc_tinh_doi_tuong.sql|db/migrations/0168_ngay_hieu_luc_thuoc_tinh_doi_tuong.sql",
+          "file": "db/migrations/0168_ngay_hieu_luc_thuoc_tinh_doi_tuong.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0169_loai_thue_co_dinh.sql|db/migrations/0169_loai_thue_co_dinh.sql",
+          "file": "db/migrations/0169_loai_thue_co_dinh.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0170_ma_bien_the_duoi_so.sql|db/migrations/0170_ma_bien_the_duoi_so.sql",
+          "file": "db/migrations/0170_ma_bien_the_duoi_so.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0173_co_cau_mot_bang.sql|db/migrations/0173_co_cau_mot_bang.sql",
+          "file": "db/migrations/0173_co_cau_mot_bang.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0174_bo_cay_cu.sql|db/migrations/0174_bo_cay_cu.sql",
+          "file": "db/migrations/0174_bo_cay_cu.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0175_dinh_danh_bo_phan_don_vi_hach_toan.sql|db/migrations/0175_dinh_danh_bo_phan_don_vi_hach_toan.sql",
+          "file": "db/migrations/0175_dinh_danh_bo_phan_don_vi_hach_toan.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0176_chi_nhanh_dang_lam_viec.sql|db/migrations/0176_chi_nhanh_dang_lam_viec.sql",
+          "file": "db/migrations/0176_chi_nhanh_dang_lam_viec.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0177_chi_nhanh_lam_viec_moi_chung_tu.sql|db/migrations/0177_chi_nhanh_lam_viec_moi_chung_tu.sql",
+          "file": "db/migrations/0177_chi_nhanh_lam_viec_moi_chung_tu.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0178_kho_khuyen_mai_nhan_tra.sql|db/migrations/0178_kho_khuyen_mai_nhan_tra.sql",
+          "file": "db/migrations/0178_kho_khuyen_mai_nhan_tra.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-1|db/migrations/0179_hoa_don_ncc_vao_so_chung_tu.sql|db/migrations/0179_hoa_don_ncc_vao_so_chung_tu.sql",
+          "file": "db/migrations/0179_hoa_don_ncc_vao_so_chung_tu.sql",
+          "message": "tệp framework chưa có dấu [YYYY-MM-DD HH:MM AM/PM Johnny Chu - Chu Hoàng Anh] <MÃ> — <mô tả> (RULE-SIGNATURE §1)",
+          "why": "Migration đã chạy ở các bản cài: không sửa tệp, kể cả thêm dòng dấu (tinh thần R-DB-15 / R-SIG-6); chủ dự án duyệt tệp này qua PR gộp, ghi ở PHASE-040 · B10f.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        }
+      ]
+    },
+    "SC-SIG-2": {
+      "title": "Dấu thay đổi đúng khuôn, người là người chỉ đạo — không phải agent / model (R-SIG-4, R-SIG-5)",
+      "ref": "R-SIG-3",
+      "debts": [
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/dimensions/dimension.routes.ts|format:apps/api/src/modules/dimensions/dimension.routes.ts:84",
+          "file": "apps/api/src/modules/dimensions/dimension.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] ghi đủ trước / sau để xem lịch sử thay đổi (Cơ cấu tổ chức) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/doc-refs/doc-ref.routes.ts|format:apps/api/src/modules/doc-refs/doc-ref.routes.ts:5",
+          "file": "apps/api/src/modules/doc-refs/doc-ref.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] Sổ chứng từ chung business_documents (0156): danh sách + một chứng từ đủ đầu phiếu, phiê",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/catalog-rules.routes.ts|format:apps/api/src/modules/system/catalog-rules.routes.ts:170",
+          "file": "apps/api/src/modules/system/catalog-rules.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] lỗi form tự chặn (chưa gửi máy chủ) cũng vào nhật ký kiểm — đếm lỗi hay gặp (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/catalog-rules.routes.ts|format:apps/api/src/modules/system/catalog-rules.routes.ts:185",
+          "file": "apps/api/src/modules/system/catalog-rules.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] nhật ký kiểm khai báo (JSONL, docs/nghiep-vu/25 §3.5) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/metrics.routes.ts|format:apps/api/src/modules/system/metrics.routes.ts:30",
+          "file": "apps/api/src/modules/system/metrics.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] lượt tự chẩn đoán đọc từ nhật ký JSONL (0161) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/schema-catalog.ts|format:apps/api/src/modules/system/schema-catalog.ts:42",
+          "file": "apps/api/src/modules/system/schema-catalog.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] xếp lại theo sơ đồ Document Kernel → phân hệ → Accounting Kernel (0166, docs/nghiep-vu/2",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/schema-catalog.ts|format:apps/api/src/modules/system/schema-catalog.ts:89",
+          "file": "apps/api/src/modules/system/schema-catalog.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] lớp trung gian bút toán gộp theo tài khoản (0134) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/schema-catalog.ts|format:apps/api/src/modules/system/schema-catalog.ts:97",
+          "file": "apps/api/src/modules/system/schema-catalog.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] bảng mới 0113–0121 (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/schema-catalog.ts|format:apps/api/src/modules/system/schema-catalog.ts:145",
+          "file": "apps/api/src/modules/system/schema-catalog.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] bảng giá vốn theo cơ cấu (0150–0153) và thùng rác chung (0146, 0157, 0160) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/schema-catalog.ts|format:apps/api/src/modules/system/schema-catalog.ts:161",
+          "file": "apps/api/src/modules/system/schema-catalog.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] danh mục bảng: financial_statements (0106) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/schema-catalog.ts|format:apps/api/src/modules/system/schema-catalog.ts:213",
+          "file": "apps/api/src/modules/system/schema-catalog.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] danh mục bảng: print_profiles (0103) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/schema-catalog.ts|format:apps/api/src/modules/system/schema-catalog.ts:257",
+          "file": "apps/api/src/modules/system/schema-catalog.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] đối tượng cha – con (0132) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/modules/system/schema-catalog.ts|format:apps/api/src/modules/system/schema-catalog.ts:299",
+          "file": "apps/api/src/modules/system/schema-catalog.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] 0121 — dòng nhỏ nhất, MST / cơ cấu theo phiên bản ngày (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/phan-he/loi.ts|format:apps/api/src/phan-he/loi.ts:51",
+          "file": "apps/api/src/phan-he/loi.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-20 Nguyễn Văn Thủy] cơ cấu một bảng: đơn vị – phân kho – bộ phận (0173) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/phan-he/loi.ts|format:apps/api/src/phan-he/loi.ts:56",
+          "file": "apps/api/src/phan-he/loi.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] lịch sử thay đổi nút Cơ cấu tổ chức (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|apps/api/src/phan-he/loi.ts|format:apps/api/src/phan-he/loi.ts:76",
+          "file": "apps/api/src/phan-he/loi.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] hồ sơ in HT16 (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0100_tai_khoan_ngam_dinh_mat_hang.sql|format:db/migrations/0100_tai_khoan_ngam_dinh_mat_hang.sql:1",
+          "file": "db/migrations/0100_tai_khoan_ngam_dinh_mat_hang.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-11 Nguyễn Văn Thủy] PHASE-026 — tài khoản ngầm định theo mặt hàng: doanh thu, trả lại, giá vốn, kho (công tắ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0101_tai_khoan_dien_giai.sql|format:db/migrations/0101_tai_khoan_dien_giai.sql:1",
+          "file": "db/migrations/0101_tai_khoan_dien_giai.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-11 Nguyễn Văn Thủy] DM Tài khoản (ACC1) theo chuẩn danh mục phổ biến: thêm Diễn giải (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0103_ho_so_in.sql|format:db/migrations/0103_ho_so_in.sql:1",
+          "file": "db/migrations/0103_ho_so_in.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-11 Nguyễn Văn Thủy] 0103 Hồ sơ in (màn HT16 Báo cáo, chứng từ) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0104_muc_thu_chi.sql|format:db/migrations/0104_muc_thu_chi.sql:1",
+          "file": "db/migrations/0104_muc_thu_chi.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-11 Nguyễn Văn Thủy] 0104 Mục thu / chi: chiều phân tích dòng tiền trên dòng phiếu thu / chi (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0105_muc_thu_chi_chuan.sql|format:db/migrations/0105_muc_thu_chi_chuan.sql:1",
+          "file": "db/migrations/0105_muc_thu_chi_chuan.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-11 Nguyễn Văn Thủy] 0105 Mục thu / chi theo danh mục chuẩn: Loại (mục thu / mục chi), phát sinh định kỳ, 42 ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0106_lap_bctc.sql|format:db/migrations/0106_lap_bctc.sql:1",
+          "file": "db/migrations/0106_lap_bctc.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-11 Nguyễn Văn Thủy] 0106 Lập báo cáo tài chính: lưu bộ BCTC đã lập theo kỳ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0107_to_khai_thong_tin.sql|format:db/migrations/0107_to_khai_thong_tin.sql:1",
+          "file": "db/migrations/0107_to_khai_thong_tin.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-11 Nguyễn Văn Thủy] 0107 Tờ khai 01/GTGT theo mẫu chuẩn: thông tin đầu / cuối tờ khai và lựa chọn khi lập (đ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0108_ho_so_in_rls.sql|format:db/migrations/0108_ho_so_in_rls.sql:1",
+          "file": "db/migrations/0108_ho_so_in_rls.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-11 Nguyễn Văn Thủy] 0108 Hồ sơ in (print_profiles, 0103) thiếu RLS: bật RLS + FORCE + chính sách cô lập đơn ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0111_ma_hang_tu_suy_duoi.sql|format:db/migrations/0111_ma_hang_tu_suy_duoi.sql:1",
+          "file": "db/migrations/0111_ma_hang_tu_suy_duoi.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] mã hàng tự suy theo đuôi: bỏ ô Biến thể / Gửi lên thuế trên giao diện, hệ thống tự điền ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0112_ma_cha_tu_suy.sql|format:db/migrations/0112_ma_cha_tu_suy.sql:1",
+          "file": "db/migrations/0112_ma_cha_tu_suy.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] mã cha tự suy theo mã hàng, bỏ khai báo cha – con trên giao diện (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0113_the_huong_dan.sql|format:db/migrations/0113_the_huong_dan.sql:1",
+          "file": "db/migrations/0113_the_huong_dan.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] thẻ hướng dẫn sử dụng soạn trong hệ thống, gắn linh hoạt vào từng màn / hộp thoại (đóng ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0114_mat_hang_nguoi_tao.sql|format:db/migrations/0114_mat_hang_nguoi_tao.sql:1",
+          "file": "db/migrations/0114_mat_hang_nguoi_tao.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] mặt hàng: người tạo (truy vết), danh sách lọc mặt hàng thêm hôm nay (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0115_ma_bien_the_hai_dau.sql|format:db/migrations/0115_ma_bien_the_hai_dau.sql:1",
+          "file": "db/migrations/0115_ma_bien_the_hai_dau.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] mã biến thể: chữ ở đầu hoặc cuối mã cha, mã cha giữ nguyên (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0116_nhom_hang_truy_vet.sql|format:db/migrations/0116_nhom_hang_truy_vet.sql:1",
+          "file": "db/migrations/0116_nhom_hang_truy_vet.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] nhóm hàng: người tạo / sửa, thời gian, lịch sử thay đổi (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0117_nguoi_tao_theo_ten.sql|format:db/migrations/0117_nguoi_tao_theo_ten.sql:1",
+          "file": "db/migrations/0117_nguoi_tao_theo_ten.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] người tạo / sửa ghi họ tên thay cho \"user:<id>\" (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0118_nhom_hang_ten_day_du.sql|format:db/migrations/0118_nhom_hang_ten_day_du.sql:1",
+          "file": "db/migrations/0118_nhom_hang_ten_day_du.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] nhóm hàng: thêm Tên nhóm hàng đầy đủ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0119_nhom_hang_ghi_chu.sql|format:db/migrations/0119_nhom_hang_ghi_chu.sql:1",
+          "file": "db/migrations/0119_nhom_hang_ghi_chu.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] nhóm hàng: ghi chú (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0120_mat_hang_nguoi_sua.sql|format:db/migrations/0120_mat_hang_nguoi_sua.sql:1",
+          "file": "db/migrations/0120_mat_hang_nguoi_sua.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-12 Nguyễn Văn Thủy] mặt hàng: người sửa lần cuối (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0121_mst_phien_ban_theo_ngay.sql|format:db/migrations/0121_mst_phien_ban_theo_ngay.sql:1",
+          "file": "db/migrations/0121_mst_phien_ban_theo_ngay.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] mọi dòng ở đơn vị nhỏ nhất + MST theo phiên bản ngày hiệu lực (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0122_guard_so_cai_gia_von.sql|format:db/migrations/0122_guard_so_cai_gia_von.sql:1",
+          "file": "db/migrations/0122_guard_so_cai_gia_von.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] sửa guard sổ cái: giữ luật 0091 (điền giá vốn chỉ qua hàm, không qua cờ phiên) cùng ngoạ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0123_bo_phan_chuc_nang.sql|format:db/migrations/0123_bo_phan_chuc_nang.sql:1",
+          "file": "db/migrations/0123_bo_phan_chuc_nang.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] bộ phận = phòng ban chức năng; shop không còn là bộ phận riêng (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0124_lam_sach_mat_hang_mau.sql|format:db/migrations/0124_lam_sach_mat_hang_mau.sql:1",
+          "file": "db/migrations/0124_lam_sach_mat_hang_mau.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Quay về dữ liệu gốc cho Nhóm hàng + Mặt hàng (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0125_bo_phan_mac_dinh_chi_nhanh.sql|format:db/migrations/0125_bo_phan_mac_dinh_chi_nhanh.sql:1",
+          "file": "db/migrations/0125_bo_phan_mac_dinh_chi_nhanh.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Chi nhánh chưa gắn bộ phận → Bán hàng (BH) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0126_tai_khoan_ngam_dinh_theo_loai.sql|format:db/migrations/0126_tai_khoan_ngam_dinh_theo_loai.sql:1",
+          "file": "db/migrations/0126_tai_khoan_ngam_dinh_theo_loai.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Tài khoản ngầm định theo LOẠI chứng từ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0127_bo_phan_theo_so_do.sql|format:db/migrations/0127_bo_phan_theo_so_do.sql:1",
+          "file": "db/migrations/0127_bo_phan_theo_so_do.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Bộ phận thành cây theo sơ đồ phòng ban của công ty (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0128_loai_kho.sql|format:db/migrations/0128_loai_kho.sql:1",
+          "file": "db/migrations/0128_loai_kho.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Loại kho + nghiệp vụ dùng loại kho nào (theo thứ tự ưu tiên) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0129_phong_ban_theo_shop.sql|format:db/migrations/0129_phong_ban_theo_shop.sql:1",
+          "file": "db/migrations/0129_phong_ban_theo_shop.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Mỗi chi nhánh / cửa hàng một phòng ban riêng, ánh xạ rõ ràng (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0130_dinh_danh_phong_ban.sql|format:db/migrations/0130_dinh_danh_phong_ban.sql:1",
+          "file": "db/migrations/0130_dinh_danh_phong_ban.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Định danh bất biến cho phòng ban (và mọi chiều phân tích), lưu vào từng dòng sổ (đóng gó",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0131_co_cau_nhieu_goc.sql|format:db/migrations/0131_co_cau_nhieu_goc.sql:1",
+          "file": "db/migrations/0131_co_cau_nhieu_goc.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Cơ cấu tổ chức một màn: nhiều gốc (nhiều công ty cha) + loại nút Công ty / Đơn vị (đóng ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0132_doi_tuong_cha_con.sql|format:db/migrations/0132_doi_tuong_cha_con.sql:1",
+          "file": "db/migrations/0132_doi_tuong_cha_con.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Đối tượng (nhà cung cấp, khách hàng) có định danh bất biến dt_ và quan hệ cha – con (đón",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0133_loai_kho_thung_rac.sql|format:db/migrations/0133_loai_kho_thung_rac.sql:1",
+          "file": "db/migrations/0133_loai_kho_thung_rac.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Loại kho có thùng rác: Xoá = chuyển vào thùng rác (vẫn trong CSDL), khôi phục / xoá vĩnh",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0134_but_toan_gop_tai_khoan.sql|format:db/migrations/0134_but_toan_gop_tai_khoan.sql:1",
+          "file": "db/migrations/0134_but_toan_gop_tai_khoan.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Lớp trung gian \"bút toán gộp theo tài khoản\" (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0135_but_toan_gop_ma_hang.sql|format:db/migrations/0135_but_toan_gop_ma_hang.sql:1",
+          "file": "db/migrations/0135_but_toan_gop_ma_hang.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Bút toán gộp theo tài khoản (0134) mang thêm mã hàng: dòng gộp chỉ một mã thì có mã / tê",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0136_but_toan_gop_dinh_danh.sql|format:db/migrations/0136_but_toan_gop_dinh_danh.sql:1",
+          "file": "db/migrations/0136_but_toan_gop_dinh_danh.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Bút toán gộp theo tài khoản (0134) mang đủ bộ định danh như dòng sổ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0138_dinh_danh_phu_kin.sql|format:db/migrations/0138_dinh_danh_phu_kin.sql:1",
+          "file": "db/migrations/0138_dinh_danh_phu_kin.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-13 Nguyễn Văn Thủy] Phủ kín bộ định danh cn_ / kho_ / dt_ cho 19 bảng cũ (nợ ghi ở test dinh-danh-canh-cua) ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0140_quy_tac_hach_toan.sql|format:db/migrations/0140_quy_tac_hach_toan.sql:1",
+          "file": "db/migrations/0140_quy_tac_hach_toan.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-15 Nguyễn Văn Thủy] Quy tắc hạch toán gọn: Mục đích xuất thay lý do; bỏ bảng quy tắc định khoản có điều kiện",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0141_gia_von_hang_tang.sql|format:db/migrations/0141_gia_von_hang_tang.sql:1",
+          "file": "db/migrations/0141_gia_von_hang_tang.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-15 Nguyễn Văn Thủy] Tài khoản của quy tắc cho đơn vị đang có: giá vốn hàng tặng kèm, doanh thu / giá vốn bán",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0142_but_toan_dinh_danh_bat_bien.sql|format:db/migrations/0142_but_toan_dinh_danh_bat_bien.sql:1",
+          "file": "db/migrations/0142_but_toan_dinh_danh_bat_bien.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-15 Nguyễn Văn Thủy] Bút toán: branch_uid bất biến như branch_id; partner_uid đổi cùng partner_id (đường E2) ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0143_bo_ly_do_theo_man.sql|format:db/migrations/0143_bo_ly_do_theo_man.sql:1",
+          "file": "db/migrations/0143_bo_ly_do_theo_man.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-15 Nguyễn Văn Thủy] Bỏ bảng lý do theo màn (0095): phân hệ đọc bảng (posting-flow) đã gỡ, lý do không còn đổ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0144_chiet_khau_thanh_toan.sql|format:db/migrations/0144_chiet_khau_thanh_toan.sql:1",
+          "file": "db/migrations/0144_chiet_khau_thanh_toan.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-15 Nguyễn Văn Thủy] Khoá payment_discount_income (chiết khấu thanh toán được hưởng, 515) cho đơn vị đang có ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0145_chuyen_kho_nhap_dieu_chinh.sql|format:db/migrations/0145_chuyen_kho_nhap_dieu_chinh.sql:1",
+          "file": "db/migrations/0145_chuyen_kho_nhap_dieu_chinh.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-15 Nguyễn Văn Thủy] Phiếu chuyển kho: nháp → duyệt xuất; sửa sau duyệt bằng bản điều chỉnh; lưu vết phiếu đi",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0146_thung_rac_danh_muc.sql|format:db/migrations/0146_thung_rac_danh_muc.sql:1",
+          "file": "db/migrations/0146_thung_rac_danh_muc.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-17 Nguyễn Văn Thủy] Thùng rác chung cho danh mục: Xoá → vào thùng rác (lưu nguyên dòng, kể cả item_id);",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0151_don_vi_gia_von_theo_co_cau.sql|format:db/migrations/0151_don_vi_gia_von_theo_co_cau.sql:1",
+          "file": "db/migrations/0151_don_vi_gia_von_theo_co_cau.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-17 Nguyễn Văn Thủy] Giá vốn tính theo CHI NHÁNH trên cây cơ cấu tổ chức (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0152_lan_tinh_gia_von.sql|format:db/migrations/0152_lan_tinh_gia_von.sql:1",
+          "file": "db/migrations/0152_lan_tinh_gia_von.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-17 Nguyễn Văn Thủy] Lần tính giá vốn theo chi nhánh trên Cơ cấu tổ chức (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0153_pham_vi_gia_von_tuy_chon.sql|format:db/migrations/0153_pham_vi_gia_von_tuy_chon.sql:1",
+          "file": "db/migrations/0153_pham_vi_gia_von_tuy_chon.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-17 Nguyễn Văn Thủy] Phạm vi tính giá vốn chọn tuỳ ý trên cây cơ cấu: nút bất kỳ (miền, chi nhánh, tỉnh) hoặc",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0154_gia_von_chi_tiet_dau_ky.sql|format:db/migrations/0154_gia_von_chi_tiet_dau_ky.sql:1",
+          "file": "db/migrations/0154_gia_von_chi_tiet_dau_ky.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-17 Nguyễn Văn Thủy] Bảng giá vốn đủ cột + nhập Excel là ĐGBQ ĐẦU KỲ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0155_cong_thuc_gia_von_tuy_chon.sql|format:db/migrations/0155_cong_thuc_gia_von_tuy_chon.sql:1",
+          "file": "db/migrations/0155_cong_thuc_gia_von_tuy_chon.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-17 Nguyễn Văn Thủy] Công thức giá vốn tuỳ chọn: mỗi lần tính chọn một công thức (bộ lựa chọn) do người dùng ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0156_chenh_lech_tra_ncc.sql|format:db/migrations/0156_chenh_lech_tra_ncc.sql:1",
+          "file": "db/migrations/0156_chenh_lech_tra_ncc.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-17 Nguyễn Văn Thủy] Khoá purchase_return_diff (chênh lệch hàng trả nhà cung cấp) cho đơn vị đang có (đóng gó",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0156_chenh_lech_tra_ncc.sql|format:db/migrations/0156_chenh_lech_tra_ncc.sql:13",
+          "file": "db/migrations/0156_chenh_lech_tra_ncc.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): <!-- [2026-11-17 Nguyễn Văn Thủy] viết lại theo cách tính và cách ghi sổ hiện tại (đóng góp) -->",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0157_gia_von_theo_loai_kho.sql|format:db/migrations/0157_gia_von_theo_loai_kho.sql:1",
+          "file": "db/migrations/0157_gia_von_theo_loai_kho.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-17 Nguyễn Văn Thủy] Giá vốn tách theo loại kho (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0157_gia_von_theo_loai_kho.sql|format:db/migrations/0157_gia_von_theo_loai_kho.sql:18",
+          "file": "db/migrations/0157_gia_von_theo_loai_kho.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): <!-- [2026-11-17 Nguyễn Văn Thủy] viết lại theo cách tính và cách ghi sổ hiện tại (đóng góp) -->",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0158_so_chung_tu_chung.sql|format:db/migrations/0158_so_chung_tu_chung.sql:1",
+          "file": "db/migrations/0158_so_chung_tu_chung.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-18 Nguyễn Văn Thủy] Sổ chứng từ chung business_documents: một đầu phiếu cho mọi chứng từ nghiệp vụ (đóng góp",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0159_gom_bang_vao_loi.sql|format:db/migrations/0159_gom_bang_vao_loi.sql:1",
+          "file": "db/migrations/0159_gom_bang_vao_loi.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-18 Nguyễn Văn Thủy] Gom bảng về khung chung của lõi, đợt 1: bỏ 4 bảng riêng (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0160_phien_ban_chinh_sach_mua_chung.sql|format:db/migrations/0160_phien_ban_chinh_sach_mua_chung.sql:1",
+          "file": "db/migrations/0160_phien_ban_chinh_sach_mua_chung.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-18 Nguyễn Văn Thủy] Gom bảng về lõi, đợt 2: phiên bản chính sách mua về document_versions, bỏ purchase_polic",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0161_nguong_duyet_tt_vao_cau_hinh.sql|format:db/migrations/0161_nguong_duyet_tt_vao_cau_hinh.sql:1",
+          "file": "db/migrations/0161_nguong_duyet_tt_vao_cau_hinh.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-18 Nguyễn Văn Thủy] Gom bảng về lõi, đợt 2: ngưỡng duyệt cấp 2 của yêu cầu thanh toán về setting_values, bỏ ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0162_dau_xoa_va_sao_luu_vao_thung_rac.sql|format:db/migrations/0162_dau_xoa_va_sao_luu_vao_thung_rac.sql:1",
+          "file": "db/migrations/0162_dau_xoa_va_sao_luu_vao_thung_rac.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-18 Nguyễn Văn Thủy] Gom bảng về lõi, đợt 3: dấu xoá danh mục và ảnh chụp trước khi nạp dữ liệu gốc về catalo",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0163_bo_bang_van_hanh.sql|format:db/migrations/0163_bo_bang_van_hanh.sql:1",
+          "file": "db/migrations/0163_bo_bang_van_hanh.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-18 Nguyễn Văn Thủy] Gom bảng về lõi, đợt 4: bộ đếm, hàng đợi sự kiện, nhật ký vận hành — bỏ 5 bảng (đóng góp",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0164_so_chung_tu_duyet_lien_ket.sql|format:db/migrations/0164_so_chung_tu_duyet_lien_ket.sql:1",
+          "file": "db/migrations/0164_so_chung_tu_duyet_lien_ket.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-18 Nguyễn Văn Thủy] Sổ chứng từ chung đầy đủ hơn: người duyệt + liên kết áp chính sách, dùng lô, trả kỳ hợp ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0165_hop_dong_mua_xuyen_suot.sql|format:db/migrations/0165_hop_dong_mua_xuyen_suot.sql:1",
+          "file": "db/migrations/0165_hop_dong_mua_xuyen_suot.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-18 Nguyễn Văn Thủy] Hợp đồng mua xuyên suốt + nhãn hàng theo cây nhóm hàng (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0166_chuan_loai_va_vong_doi_chung_tu.sql|format:db/migrations/0166_chuan_loai_va_vong_doi_chung_tu.sql:1",
+          "file": "db/migrations/0166_chuan_loai_va_vong_doi_chung_tu.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-19 Nguyễn Văn Thủy] Sổ chứng từ chung: tên loại chứng từ, vòng đời Thực hiện / Hoàn tất, chính sách giá vào ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0169_loai_thue_co_dinh.sql|format:db/migrations/0169_loai_thue_co_dinh.sql:1",
+          "file": "db/migrations/0169_loai_thue_co_dinh.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-19 kiennt] NT-DM-012 — Loại thuế GTGT cố định theo quy định nhà nước; bỏ Chiều, bỏ Tài khoản; TSCĐ 1332 theo",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0170_ma_bien_the_duoi_so.sql|format:db/migrations/0170_ma_bien_the_duoi_so.sql:1",
+          "file": "db/migrations/0170_ma_bien_the_duoi_so.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-20 kiennt] NT-DM-013 — mã biến thể: phần cuối nhận cả chữ số; mã cha = 9 số đầu (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0173_co_cau_mot_bang.sql|format:db/migrations/0173_co_cau_mot_bang.sql:1",
+          "file": "db/migrations/0173_co_cau_mot_bang.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-20 Nguyễn Văn Thủy] CƠ CẤU TỔ CHỨC MỘT BẢNG: đơn vị – phân kho – bộ phận; mọi chứng từ mang 3 item_id (đóng ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0174_bo_cay_cu.sql|format:db/migrations/0174_bo_cay_cu.sql:1",
+          "file": "db/migrations/0174_bo_cay_cu.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-20 Nguyễn Văn Thủy] BỎ CÂY CŨ org_units: cơ cấu chỉ còn MỘT cây là bảng đơn vị branches (0173) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0175_dinh_danh_bo_phan_don_vi_hach_toan.sql|format:db/migrations/0175_dinh_danh_bo_phan_don_vi_hach_toan.sql:1",
+          "file": "db/migrations/0175_dinh_danh_bo_phan_don_vi_hach_toan.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-20 Nguyễn Văn Thủy] Bộ phận (dimensions) và đơn vị hạch toán (accounting_units) có branch_id (0173, 0174) → ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0176_chi_nhanh_dang_lam_viec.sql|format:db/migrations/0176_chi_nhanh_dang_lam_viec.sql:1",
+          "file": "db/migrations/0176_chi_nhanh_dang_lam_viec.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-21 Nguyễn Văn Thủy] CHI NHÁNH ĐANG LÀM VIỆC trên mọi chứng từ (sổ chứng từ chung business_documents) (đóng g",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0177_chi_nhanh_lam_viec_moi_chung_tu.sql|format:db/migrations/0177_chi_nhanh_lam_viec_moi_chung_tu.sql:1",
+          "file": "db/migrations/0177_chi_nhanh_lam_viec_moi_chung_tu.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-21 Nguyễn Văn Thủy] Chi nhánh đang làm việc tự ghi cho MỌI chứng từ (không cần từng form gửi lên) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|db/migrations/0179_hoa_don_ncc_vao_so_chung_tu.sql|format:db/migrations/0179_hoa_don_ncc_vao_so_chung_tu.sql:1",
+          "file": "db/migrations/0179_hoa_don_ncc_vao_so_chung_tu.sql",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): -- [2026-11-21 Nguyễn Văn Thủy] Hoá đơn NCC vào sổ chứng từ chung + phiếu nhập nhiều hoá đơn theo chuẩn Document Kernel ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|docker-compose.yml|format:docker-compose.yml:59",
+          "file": "docker-compose.yml",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): # [2026-11-18 Nguyễn Văn Thủy] 0161: job ghi dòng nhật ký cũ ra JSONL (DATA_DIR/nhat-ky) — cùng ổ appdata với API",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|docs/contracts/BIZCITY-ERRORS-v1.md|format:docs/contracts/BIZCITY-ERRORS-v1.md:346",
+          "file": "docs/contracts/BIZCITY-ERRORS-v1.md",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): <!-- [2026-11-17 Võ Hoàng] NGHIEM-THU — 1.13.0-draft (đóng góp, chờ chủ dự án duyệt) -->",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/catalog-hint.ts|format:packages/contracts/src/catalog-hint.ts:31",
+          "file": "packages/contracts/src/catalog-hint.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] thêm unit (ĐVT), bank (TK ngân hàng), branch (chi nhánh); quy tắc từng danh mục ở src/qu",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/catalog-hint.ts|format:packages/contracts/src/catalog-hint.ts:201",
+          "file": "packages/contracts/src/catalog-hint.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-21 kiennt] NT-DM-018 — mã biến thể mới chỉ thêm ở cuối mã cha (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/catalog-hint.ts|format:packages/contracts/src/catalog-hint.ts:253",
+          "file": "packages/contracts/src/catalog-hint.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] điều kiện form thêm / sửa mặt hàng đang tự kiểm — cùng bộ mã để thống kê chung (đóng góp",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/doc-refs.ts|format:packages/contracts/src/doc-refs.ts:17",
+          "file": "packages/contracts/src/doc-refs.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] applies = áp chính sách / chương trình, uses = dùng lô hàng (0162) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/documents.ts|format:packages/contracts/src/documents.ts:136",
+          "file": "packages/contracts/src/documents.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] chứng từ theo hợp đồng (0163) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/documents.ts|format:packages/contracts/src/documents.ts:258",
+          "file": "packages/contracts/src/documents.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] Mục đích xuất (hủy hàng hỏng, dùng cho bộ phận, tặng khách…) quyết TK đối ứng; trống = t",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/errors.ts|format:packages/contracts/src/errors.ts:154",
+          "file": "packages/contracts/src/errors.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Võ Hoàng] NGHIEM-THU — NT-BH-022 máy bán bán đúng bảng giá (BIZCITY-ERRORS 1.13.0-draft §4c, đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/print-profile.ts|format:packages/contracts/src/print-profile.ts:2",
+          "file": "packages/contracts/src/print-profile.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] Hồ sơ in (HT16 Báo cáo, chứng từ): thông tin đơn vị trên bản in, người ký, ngày ký (đóng",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/quy-tac/doi-tuong.ts|format:packages/contracts/src/quy-tac/doi-tuong.ts:2",
+          "file": "packages/contracts/src/quy-tac/doi-tuong.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] quy tắc khai báo Đối tượng (khách hàng DM12, nhà cung cấp DM13, nhân viên DM04, nhóm DM0",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/quy-tac/nhom-hang.ts|format:packages/contracts/src/quy-tac/nhom-hang.ts:2",
+          "file": "packages/contracts/src/quy-tac/nhom-hang.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] quy tắc khai báo Nhóm hàng / phân loại hàng (DM11: nhóm, ngành, nhãn, loại; nhóm hạch to",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/contracts/src/quy-tac/to-chuc-ngan-hang.ts|format:packages/contracts/src/quy-tac/to-chuc-ngan-hang.ts:2",
+          "file": "packages/contracts/src/quy-tac/to-chuc-ngan-hang.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] quy tắc khai báo Đơn vị tính (DM15), Tài khoản ngân hàng (DM09), Chi nhánh (DM02 / cơ cấ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/db/seed.ts|format:packages/kernel/src/db/seed.ts:217",
+          "file": "packages/kernel/src/db/seed.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định (hiệu lực, căn cứ), đánh dấu mã cũ, khoá TK thuế TSCĐ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/index.ts|format:packages/kernel/src/index.ts:124",
+          "file": "packages/kernel/src/index.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] nhãn cặp Nợ / Có (bỏ bảng quy tắc định khoản có điều kiện) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/accounts/account.schemas.ts|format:packages/kernel/src/modules/accounts/account.schemas.ts:22",
+          "file": "packages/kernel/src/modules/accounts/account.schemas.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] Diễn giải tài khoản (0101) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/closing/closing.service.ts|format:packages/kernel/src/modules/closing/closing.service.ts:634",
+          "file": "packages/kernel/src/modules/closing/closing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] phiên bản ở document_versions chung (0157, bỏ closing_rule_versions) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/conformance/conformance.service.ts|format:packages/kernel/src/modules/conformance/conformance.service.ts:97",
+          "file": "packages/kernel/src/modules/conformance/conformance.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] ảnh chụp lượt Kiểm chuẩn ở nhật ký JSONL (0161) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/default-data/default-data.routes.ts|format:packages/kernel/src/modules/default-data/default-data.routes.ts:73",
+          "file": "packages/kernel/src/modules/default-data/default-data.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] chạy thật quay về dữ liệu gốc phải nhập mật khẩu (xem trước thì không) — đỡ bấm nhầm (đó",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/default-data/default-data.safety.ts|format:packages/kernel/src/modules/default-data/default-data.safety.ts:115",
+          "file": "packages/kernel/src/modules/default-data/default-data.safety.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] ảnh chụp ở catalog_trash (0160, bỏ default_data_backups) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/default-data/default-data.service.ts|format:packages/kernel/src/modules/default-data/default-data.service.ts:96",
+          "file": "packages/kernel/src/modules/default-data/default-data.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] phòng ban riêng của chi nhánh (0129) không thuộc dữ liệu gốc nhưng phải giữ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/default-data/default-data.service.ts|format:packages/kernel/src/modules/default-data/default-data.service.ts:102",
+          "file": "packages/kernel/src/modules/default-data/default-data.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] chi nhánh chưa gắn / gắn chung Cửa hàng → phòng ban riêng của chi nhánh (0129) (đóng góp",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/default-data/default-data.service.ts|format:packages/kernel/src/modules/default-data/default-data.service.ts:272",
+          "file": "packages/kernel/src/modules/default-data/default-data.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] Nhóm hàng + mặt hàng: làm sạch hẳn, giữ mã đã phát sinh, nạp bộ mẫu nhỏ (0124) (đóng góp",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/default-data/default-data.service.ts|format:packages/kernel/src/modules/default-data/default-data.service.ts:408",
+          "file": "packages/kernel/src/modules/default-data/default-data.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] gốc ghi phòng ban chung (Cửa hàng) → mỗi chi nhánh phòng ban riêng (0129); phòng ban đã ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/documents/document.repository.ts|format:packages/kernel/src/modules/documents/document.repository.ts:57",
+          "file": "packages/kernel/src/modules/documents/document.repository.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-21 Nguyễn Văn Thủy] policy_check ghi NGAY trong câu INSERT: bảng cất phiên bản chỉ được thêm (trigger",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/documents/document.service.ts|format:packages/kernel/src/modules/documents/document.service.ts:403",
+          "file": "packages/kernel/src/modules/documents/document.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-20 kiennt] NT-KHO-004 — hàng nhận giữ hộ chỉ ghi số lượng: bỏ giá trị dòng kho giữ hộ, chặn chuyển giữ hộ ↔ ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/documents/document.service.ts|format:packages/kernel/src/modules/documents/document.service.ts:878",
+          "file": "packages/kernel/src/modules/documents/document.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] xem thử bút toán của một chứng từ CHƯA lưu (màn Quy tắc hạch toán, API cho hệ thống nguồ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/intake/tax-findings.ts|format:packages/kernel/src/modules/intake/tax-findings.ts:3",
+          "file": "packages/kernel/src/modules/intake/tax-findings.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — IN-VAT-001 kiểm cả loại thuế cố định (chiều both) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:97",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] GIÁ VỐN TÁCH THEO LOẠI KHO (0155): loại kho bỏ chọn \"tính chung\" thì nhóm tính giá = đơn",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:158",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] CÔNG THỨC GIÁ VỐN TUỲ CHỌN (0153): mỗi lần tính chọn một bộ lựa chọn (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:283",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] nhập Excel = ĐGBQ ĐẦU KỲ: giá trị tồn đầu = SL tồn đầu × đơn giá nhập, rồi bình quân với",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:321",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] hàng trả NCC gom lại, định giá sau khi đủ tồn đầu + nhập trong kỳ (trần, chênh lệch) (đó",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:615",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] phạm vi chọn trên cây cơ cấu (nút bất kỳ hoặc một shop): đặt làm điểm tính giá vốn rồi t",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:622",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] loại kho tính giá vốn riêng (bỏ chọn ở ô Loại kho tính chung) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:623",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-20 kiennt] NT-KHO-004 — loại kho không thuộc sở hữu (giữ hộ) luôn tính riêng: tồn giữ hộ (giá trị 0) không k",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:726",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] chọn chi nhánh trên Cơ cấu tổ chức: đơn giá vẫn tính chung một lượt (chuyển hàng giữa ch",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:781",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] lưu LẦN TÍNH GIÁ VỐN theo chi nhánh (0150): mốc cơ cấu (id + uid của nút), kỳ, khoảng ng",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:913",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] TK kho theo loại kho của kho xuất / nhập (ưu tiên hơn TK kho của quy tắc) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:944",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] TK đối ứng theo Mục đích xuất của phiếu, không có thì thừa / thiếu chờ xử lý (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/costing.service.ts|format:packages/kernel/src/modules/inventory/costing.service.ts:954",
+          "file": "packages/kernel/src/modules/inventory/costing.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] chênh lệch hàng trả NCC: tồn kho trên sổ đã giảm theo tiền trên phiếu trả, đưa về đúng g",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/inventory-movement.repository.ts|format:packages/kernel/src/modules/inventory/inventory-movement.repository.ts:104",
+          "file": "packages/kernel/src/modules/inventory/inventory-movement.repository.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] thuế, chiết khấu của dòng mua / trả NCC (cùng dấu amount) cho công thức giá vốn tuỳ chọn",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/inventory.routes.ts|format:packages/kernel/src/modules/inventory/inventory.routes.ts:35",
+          "file": "packages/kernel/src/modules/inventory/inventory.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] chi nhánh tính giá vốn = điểm tính giá vốn trên Cơ cấu tổ chức (0149) và số shop bên dướ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/inventory.routes.ts|format:packages/kernel/src/modules/inventory/inventory.routes.ts:47",
+          "file": "packages/kernel/src/modules/inventory/inventory.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] các lần tính giá vốn theo chi nhánh và bảng đơn giá của một lần (0150) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/inventory.routes.ts|format:packages/kernel/src/modules/inventory/inventory.routes.ts:53",
+          "file": "packages/kernel/src/modules/inventory/inventory.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] kiểm tra tệp giá vốn bình quân đầu kỳ trước khi nhập (không ghi) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/inventory/kho-giu-ho.ts|format:packages/kernel/src/modules/inventory/kho-giu-ho.ts:3",
+          "file": "packages/kernel/src/modules/inventory/kho-giu-ho.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-20 kiennt] NT-KHO-004 — hàng nhận giữ hộ (loại kho không thuộc sở hữu, vd KNB) chỉ ghi số lượng, không ghi g",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/ledger/balance.diagnostics.ts|format:packages/kernel/src/modules/ledger/balance.diagnostics.ts:23",
+          "file": "packages/kernel/src/modules/ledger/balance.diagnostics.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] tài khoản tiền mặt lấy từ hình thức thanh toán (nguồn TK tiền của Quy tắc hạch toán), kh",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/ledger/ledger.diagnostics.ts|format:packages/kernel/src/modules/ledger/ledger.diagnostics.ts:332",
+          "file": "packages/kernel/src/modules/ledger/ledger.diagnostics.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] đọc theo thứ tự: DROP TABLE / DROP TRIGGER ở migration sau gỡ trigger (bảng đã gom về lõ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/ledger/ledger.service.ts|format:packages/kernel/src/modules/ledger/ledger.service.ts:61",
+          "file": "packages/kernel/src/modules/ledger/ledger.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] tài khoản ngoài bảng (loại 0) ghi đơn, không vào bút toán Nợ / Có: ghi kép làm Báo cáo t",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/pack.actions.ts|format:packages/kernel/src/modules/posting-config/pack.actions.ts:105",
+          "file": "packages/kernel/src/modules/posting-config/pack.actions.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — gói ghi đè KCT / KKKN (chiều, TK cũ) thì trả về loại thuế cố định theo quy định (đóng",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/pack.ts|format:packages/kernel/src/modules/posting-config/pack.ts:52",
+          "file": "packages/kernel/src/modules/posting-config/pack.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] chỉ nhận khoá tài khoản của Quy tắc hạch toán (scheme.ts) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/policy.ts|format:packages/kernel/src/modules/posting-config/policy.ts:33",
+          "file": "packages/kernel/src/modules/posting-config/policy.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định: hiệu lực, mã cũ (đóng góp) — bản chụp cũ không có valid_from / val",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/posting-config.repository.ts|format:packages/kernel/src/modules/posting-config/posting-config.repository.ts:6",
+          "file": "packages/kernel/src/modules/posting-config/posting-config.repository.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] bỏ bảng quy tắc định khoản (0096) và công tắc lý do; nạp Mục đích xuất (0140) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/posting-config.repository.ts|format:packages/kernel/src/modules/posting-config/posting-config.repository.ts:29",
+          "file": "packages/kernel/src/modules/posting-config/posting-config.repository.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định: hiệu lực, mã cũ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/posting-config.repository.ts|format:packages/kernel/src/modules/posting-config/posting-config.repository.ts:61",
+          "file": "packages/kernel/src/modules/posting-config/posting-config.repository.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] TK kho theo loại kho (0128/0133): kho → TK kho chi tiết của loại; chi nhánh → kho mặc đị",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/posting-config.repository.ts|format:packages/kernel/src/modules/posting-config/posting-config.repository.ts:137",
+          "file": "packages/kernel/src/modules/posting-config/posting-config.repository.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định (nhà nước quy định, không thuộc chính sách đơn vị): bản chụp chính ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/posting-config.routes.ts|format:packages/kernel/src/modules/posting-config/posting-config.routes.ts:115",
+          "file": "packages/kernel/src/modules/posting-config/posting-config.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] Quy tắc hạch toán (màn ACC41) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/posting-config.routes.ts|format:packages/kernel/src/modules/posting-config/posting-config.routes.ts:263",
+          "file": "packages/kernel/src/modules/posting-config/posting-config.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] chỉ tài khoản chi tiết, trong phạm vi của khoá (như màn Quy tắc hạch toán) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/posting-config.schemas.ts|format:packages/kernel/src/modules/posting-config/posting-config.schemas.ts:59",
+          "file": "packages/kernel/src/modules/posting-config/posting-config.schemas.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] khoá tài khoản của quy tắc lấy từ scheme.ts (một nguồn: màn Quy tắc hạch toán, API, tài ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/reason-ensure.ts|format:packages/kernel/src/modules/posting-config/reason-ensure.ts:32",
+          "file": "packages/kernel/src/modules/posting-config/reason-ensure.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] phân hệ cần mục đích xuất riêng (nhận / xuất quà…) thì nhờ Kernel ghi — không ghi thẳng ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/scheme.routes.ts|format:packages/kernel/src/modules/posting-config/scheme.routes.ts:3",
+          "file": "packages/kernel/src/modules/posting-config/scheme.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] API Quy tắc hạch toán: đọc khung + tài khoản, đổi tài khoản trong phạm vi, mục đích xuất",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/scheme.ts|format:packages/kernel/src/modules/posting-config/scheme.ts:3",
+          "file": "packages/kernel/src/modules/posting-config/scheme.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] Quy tắc hạch toán: khung Nợ / Có bất biến của từng nghiệp vụ + tài khoản của quy tắc có ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/scheme.ts|format:packages/kernel/src/modules/posting-config/scheme.ts:67",
+          "file": "packages/kernel/src/modules/posting-config/scheme.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định không khai TK: TK thuế lấy từ ba khoá dưới; thêm khoá thuế đầu vào ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/scheme.ts|format:packages/kernel/src/modules/posting-config/scheme.ts:78",
+          "file": "packages/kernel/src/modules/posting-config/scheme.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] chiết khấu thanh toán được hưởng khi trả NCC đúng hạn (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/scheme.ts|format:packages/kernel/src/modules/posting-config/scheme.ts:80",
+          "file": "packages/kernel/src/modules/posting-config/scheme.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-17 Nguyễn Văn Thủy] chênh lệch giữa tiền trên phiếu trả NCC và giá trị trừ khỏi giá vốn (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting-config/scheme.ts|format:packages/kernel/src/modules/posting-config/scheme.ts:154",
+          "file": "packages/kernel/src/modules/posting-config/scheme.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] quà NCC không hoá đơn: phiếu nhận quà ghi theo mục đích NQUA (sửa ở bảng Mục đích xuất) ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/account-resolver.ts|format:packages/kernel/src/modules/posting/account-resolver.ts:4",
+          "file": "packages/kernel/src/modules/posting/account-resolver.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] Tài khoản chỉ lấy từ 5 nguồn của Quy tắc hạch toán; bỏ tài khoản trên lý do, theo mặt hà",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/account-resolver.ts|format:packages/kernel/src/modules/posting/account-resolver.ts:116",
+          "file": "packages/kernel/src/modules/posting/account-resolver.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định (chiều 'both', không khai TK): TK theo Quy tắc hạch toán; mua TSCĐ ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/pair-tags.ts|format:packages/kernel/src/modules/posting/pair-tags.ts:3",
+          "file": "packages/kernel/src/modules/posting/pair-tags.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] Nhãn cặp Nợ / Có (thay rule-table.ts): bỏ bảng quy tắc định khoản có điều kiện, chỉ giữ ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/posting.service.ts|format:packages/kernel/src/modules/posting/posting.service.ts:40",
+          "file": "packages/kernel/src/modules/posting/posting.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] partner_uid (0138) đổi cùng partner_id, trigger dấu vết ghi (0142); branch_uid bị ép khô",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/posting.service.ts|format:packages/kernel/src/modules/posting/posting.service.ts:142",
+          "file": "packages/kernel/src/modules/posting/posting.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] tài khoản do bộ định khoản tra theo Quy tắc hạch toán; không còn bảng quy tắc đè (đóng g",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/posting.service.ts|format:packages/kernel/src/modules/posting/posting.service.ts:160",
+          "file": "packages/kernel/src/modules/posting/posting.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-13 Nguyễn Văn Thủy] tài khoản theo dõi phòng ban mà chi nhánh chưa ánh xạ phòng ban → báo lỗi để vào cấu hìn",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/rules/cash.rule.ts|format:packages/kernel/src/modules/posting/rules/cash.rule.ts:61",
+          "file": "packages/kernel/src/modules/posting/rules/cash.rule.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] TK trung gian theo Quy tắc hạch toán, lý do không đổi tài khoản (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/rules/purchase.rule.ts|format:packages/kernel/src/modules/posting/rules/purchase.rule.ts:29",
+          "file": "packages/kernel/src/modules/posting/rules/purchase.rule.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] tài khoản chỉ theo Quy tắc hạch toán (loại kho → TK kho của quy tắc); phiếu không mang t",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/rules/sale.rule.ts|format:packages/kernel/src/modules/posting/rules/sale.rule.ts:75",
+          "file": "packages/kernel/src/modules/posting/rules/sale.rule.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] bán nội bộ cho chi nhánh khác (lý do có cờ giá vốn theo giá bán): công nợ / doanh thu / ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/posting/rules/stock.rule.ts|format:packages/kernel/src/modules/posting/rules/stock.rule.ts:107",
+          "file": "packages/kernel/src/modules/posting/rules/stock.rule.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-15 Nguyễn Văn Thủy] TK đối ứng: Mục đích xuất của phiếu → không có thì thừa / thiếu chờ xử lý của quy tắc (đ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/tax-codes/loai-thue-co-dinh.ts|format:packages/kernel/src/modules/tax-codes/loai-thue-co-dinh.ts:3",
+          "file": "packages/kernel/src/modules/tax-codes/loai-thue-co-dinh.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — danh mục loại thuế GTGT cố định theo quy định nhà nước + quy đổi mã cũ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/vouchers/voucher.routes.ts|format:packages/kernel/src/modules/vouchers/voucher.routes.ts:38",
+          "file": "packages/kernel/src/modules/vouchers/voucher.routes.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] nhập Excel phiếu thu / chi / báo có / báo nợ / phiếu kế toán thành phiếu nháp chờ duyệt ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/kernel/src/modules/vouchers/voucher.service.ts|format:packages/kernel/src/modules/vouchers/voucher.service.ts:100",
+          "file": "packages/kernel/src/modules/vouchers/voucher.service.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định dùng chung mua / bán (chiều 'both', không khai TK): chiều suy từ TK",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/events.ts|format:packages/platform/src/core/events.ts:254",
+          "file": "packages/platform/src/core/events.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] dấu đã xử lý = consumed_at trên chính dòng giao đang khoá (0161, bỏ event_consumptions) ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/http.ts|format:packages/platform/src/core/http.ts:66",
+          "file": "packages/platform/src/core/http.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] mọi lần GHI bị từ chối (400 / 404 / 409 / 422) của người đã đăng nhập → nhật ký kiểm kha",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/http.ts|format:packages/platform/src/core/http.ts:83",
+          "file": "packages/platform/src/core/http.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] lỗi quy tắc (details.findings có field) → error.fields để giao diện tô đỏ đúng ô (docs/n",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/http.ts|format:packages/platform/src/core/http.ts:89",
+          "file": "packages/platform/src/core/http.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] thêm error.fields [{ path, message }] (đường dẫn trường) để giao diện tô đỏ đúng ô; deta",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/libraries/usage.ts|format:packages/platform/src/core/libraries/usage.ts:84",
+          "file": "packages/platform/src/core/libraries/usage.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] số đếm ghi nhật ký JSONL luồng \"thu-vien\" (0161, bỏ bảng library_usage_daily); đọc thì c",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/nhat-ky-kiem.ts|format:packages/platform/src/core/nhat-ky-kiem.ts:2",
+          "file": "packages/platform/src/core/nhat-ky-kiem.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] nhật ký kiểm khai báo (JSONL, docs/nghiep-vu/25 §3.5): mỗi lần lưu danh mục / chứng từ g",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/quy-tac.ts|format:packages/platform/src/core/quy-tac.ts:3",
+          "file": "packages/platform/src/core/quy-tac.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] lỗi theo bộ quy tắc khai báo (docs/nghiep-vu/25): mọi module ném lỗi có MÃ quy tắc + ô, ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/run-log.ts|format:packages/platform/src/core/run-log.ts:2",
+          "file": "packages/platform/src/core/run-log.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] Nhật ký vận hành dạng JSONL — không tạo bảng cho lịch sử / lượt chạy (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/core/workflow.ts|format:packages/platform/src/core/workflow.ts:24",
+          "file": "packages/platform/src/core/workflow.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 Nguyễn Văn Thủy] thêm in_progress (đang thực hiện) theo vòng đời Nháp → Trình → Duyệt → Thực hiện → Hoàn ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/db/client.ts|format:packages/platform/src/db/client.ts:50",
+          "file": "packages/platform/src/db/client.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-21 Nguyễn Văn Thủy] kèm chi nhánh đang làm việc của yêu cầu (sổ chứng từ chung ghi nơi lập, 0177) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/db/migrate.ts|format:packages/platform/src/db/migrate.ts:137",
+          "file": "packages/platform/src/db/migrate.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] 0161: dòng nhật ký cũ (tự chẩn đoán, Kiểm chuẩn, số đếm thư viện) ra JSONL rồi bỏ bảng t",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/db/types.ts|format:packages/platform/src/db/types.ts:604",
+          "file": "packages/platform/src/db/types.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định: hiệu lực, mã cũ (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/db/types.ts|format:packages/platform/src/db/types.ts:699",
+          "file": "packages/platform/src/db/types.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-12 Nguyễn Văn Thủy] thẻ hướng dẫn (0113) (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/db/types.ts|format:packages/platform/src/db/types.ts:844",
+          "file": "packages/platform/src/db/types.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-11 Nguyễn Văn Thủy] 0103 hồ sơ in (đóng góp)",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|packages/platform/src/system/diagnostics.ts|format:packages/platform/src/system/diagnostics.ts:309",
+          "file": "packages/platform/src/system/diagnostics.ts",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] lượt tự chẩn đoán ghi nhật ký JSONL luồng \"chan-doan\" (0161, bỏ bảng diagnostic_runs) (đ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|tests/conformance/checks/gates/gates.lib.mjs|format:tests/conformance/checks/gates/gates.lib.mjs:56",
+          "file": "tests/conformance/checks/gates/gates.lib.mjs",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-18 Nguyễn Văn Thủy] đọc migration theo thứ tự: DROP TABLE / DROP TRIGGER ở migration sau gỡ trigger khỏi dan",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        },
+        {
+          "fp": "SC-SIG-2|tests/conformance/lib/layers.mjs|format:tests/conformance/lib/layers.mjs:139",
+          "file": "tests/conformance/lib/layers.mjs",
+          "message": "dấu sai khuôn (cần [YYYY-MM-DD HH:MM AM/PM <người>] <MÃ> — <mô tả>): // [2026-11-20 Nguyễn Văn Thủy] modules/co-cau/ (cơ cấu tổ chức một bảng đơn vị, 0174 thay org-units) cùng lớp M danh mụ",
+          "why": "Dấu cũ của người đóng góp sai khuôn (thường thiếu giờ). R-SIG-3 cấm sửa dấu cũ; dấu mới dùng scripts/ky-dau.mjs.",
+          "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
+        }
+      ]
     }
   }
 }

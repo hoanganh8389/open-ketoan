@@ -1,4 +1,5 @@
 // @bizcity-layer P module-sdk
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-21 05:20 PM Võ Hoàng] PHASE-031 — S031-7 (31-S031-7 §1 mục 2–3): đánh chỉ mục khoá ngưỡng duyệt (setting_values) vào sổ đăng ký chính sách, store = settings
 /**
  * ĐÁNH CHỈ MỤC KHOÁ CẤU HÌNH VÀO SỔ ĐĂNG KÝ CHÍNH SÁCH (PHASE-031 · 31-S031-7). Nội dung vẫn ở `setting_values` (một nguồn); `policy_registry`
