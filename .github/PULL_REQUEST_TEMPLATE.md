@@ -5,6 +5,11 @@
 
 <!-- 1–2 câu: làm gì, vì sao. Liên kết việc / mục audit (A-xx) / giai đoạn lộ trình nếu có. -->
 
+<!-- [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27): tiêu chí trụ cột PR đẩy — mã ở docs/standard/tru-cot.json dạng <trụ cột>/<mã>, ví dụ X/DC-3, VIII/M-2;
+     PR không đẩy tiêu chí nào thì ghi "không". Đổi mức tiêu chí trong tru-cot.json cùng PR (hoặc để người duyệt đổi).
+     Thiếu dòng này mà PR chạm trụ cột → bộ chấm ghi việc tiếp "khai tiêu chí" và trụ cột không được tính tiến độ. -->
+**Trụ cột / tiêu chí:** <mã, ví dụ X/DC-3 — hoặc "không">
+
 ## Tầng bị đụng
 
 - [ ] T0 Nhân (`core/`, `modules/{documents,posting,ledger}`, `packages/contracts`, trigger sổ cái) → **1 người duyệt**; ghi mức K0–K3 và (K2 / K3) mục **K**: đụng gì, số đo, đường lui
@@ -32,14 +37,16 @@
 - [ ] **R-SIG** — Mỗi phần đổi có chức năng trong tệp framework có dấu `[YYYY-MM-DD HH:MM AM/PM <người chỉ đạo>] <MÃ> — <mô tả>` (`node scripts/ky-dau.mjs`); không xoá dấu cũ, không ghi tên agent ([RULE-SIGNATURE](../docs/rules/RULE-SIGNATURE.md)).
 - [ ] **R-SEC** — Không bí mật trong code; không ghép đầu vào vào SQL (`sql.raw`); tệp tải lên có trần; không PII trong log / PR.
 - [ ] **R-REL** — Đã thêm dòng vào `CHANGELOG.md` mục `[Chưa phát hành]` (đổi định khoản K2+ ghi ở mục riêng).
-- [ ] **Bộ kiểm** — `node tests/conformance/selfcheck.mjs` ĐẠT; không thêm nợ vào `baseline.json` (trừ khi nhóm Lõi duyệt, có `ref`).
+- [ ] **Bộ kiểm** — `bash scripts/kiem-chuan.sh` ĐẠT (không thêm lỗi mới so với `main`); ghi kết quả `selfcheck --strict` vào khối bằng chứng dù ĐẠT hay KHÔNG ĐẠT; không thêm nợ vào `baseline.json` (trừ khi nhóm Lõi duyệt, có `ref`). <!-- [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27), D040-13 -->
 
 ## Bằng chứng chạy máy
 <!-- [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3 (S040-8): khối bằng chứng mọi PR, cùng khuôn scripts/cham-pr.mjs đọc (PHASE-040 · 20 §4, D040-8) -->
 
 <!-- Bắt buộc với mọi PR có mã khi CI chưa chạy được; với T0 thêm dòng diagnostics (docs/ops/DIAGNOSTICS.md §4).
      In khối điền sẵn SHA: node scripts/cham-pr.mjs --mau-bang-chung
-     Thiếu khối hoặc thiếu dòng kiem-chuan / selfcheck → bộ chấm ghi PR là UNVERIFIED; khối dán khác kết quả chạy lại → ghi phát hiện. -->
+     Thiếu khối hoặc thiếu dòng kiem-chuan / selfcheck → bộ chấm ghi PR là UNVERIFIED; khối dán khác kết quả chạy lại → ghi phát hiện.
+     [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27), D040-13 / D040-14: VERIFIED = kiem-chuan ĐẠT + dòng selfcheck đã điền (main còn nợ thì KHÔNG ĐẠT là trung thực)
+     + một người khác tác giả bấm Approve hoặc merge. Tự merge PR của mình → UNVERIFIED. -->
 
 ```text
 == BẰNG CHỨNG ==

@@ -1,0 +1,115 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 569,
+  "title": "feat(PHASE-039 B7a): nhiều site chạy bằng docker compose + cap-nhat.sh nâng từng site",
+  "mergedAt": "2026-11-22T07:16:32Z",
+  "base": "66a327bc",
+  "merge": "6d3dd427",
+  "authors": [
+    {
+      "id": "hoanganh8389",
+      "commits": 4
+    }
+  ],
+  "people": [
+    "hoanganh8389"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "hoanganh8389",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": false
+  },
+  "files": 11,
+  "impact": {
+    "pillars": [
+      "VI"
+    ],
+    "rules": [
+      "R-LOG",
+      "R-OBS",
+      "R-QG"
+    ],
+    "axes": [
+      "T10"
+    ],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 68,
+      "after": 68
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 64,
+      "after": 64
+    },
+    "docMatrix": {
+      "before": null,
+      "after": null
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 61,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": "—",
+    "T3": "—",
+    "T4": "—",
+    "T5": "—",
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": 2,
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T10": [
+      "không có phát hiện H-*"
+    ]
+  },
+  "score": 100,
+  "grade": null,
+  "verdict": "ĐẠT",
+  "release": "UNVERIFIED",
+  "findings": [],
+  "followUps": [
+    "chạm trụ cột VI nhưng mô tả PR không có dòng \"Trụ cột / tiêu chí\" — khai tiêu chí đẩy, hoặc \"không\""
+  ]
+}

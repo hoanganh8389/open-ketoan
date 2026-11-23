@@ -10628,7 +10628,7 @@
       "phase": "PHASE-040",
       "title": "B11 — chấm được tiến độ người đóng góp: VERIFIED theo chặn lỗi mới (kiem-chuan ĐẠT + dòng selfcheck đã điền), merge bởi người khác tác giả tính là duyệt; dòng …",
       "priority": "P1",
-      "status": "partial",
+      "status": "done",
       "column": "doing",
       "claim": {
         "who": "hoanganh8389 (phiên Claude, PHASE-040)",

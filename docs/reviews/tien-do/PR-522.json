@@ -1,0 +1,109 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 522,
+  "title": "PHASE-038 B1: nhật ký lỗi cố định logs/ (api-loi.log, db-migrate.log, lỗi khởi động ghi đồng bộ)",
+  "mergedAt": "2026-11-21T16:28:25Z",
+  "base": "dfb60b04",
+  "merge": "3c07f255",
+  "authors": [
+    {
+      "id": "hoanganh8389",
+      "commits": 2
+    }
+  ],
+  "people": [
+    "hoanganh8389"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "hoanganh8389",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": false
+  },
+  "files": 16,
+  "impact": {
+    "pillars": [],
+    "rules": [
+      "R-QG"
+    ],
+    "axes": [
+      "T10"
+    ],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 68,
+      "after": 68
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 64,
+      "after": 64
+    },
+    "docMatrix": {
+      "before": null,
+      "after": null
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 61,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": "—",
+    "T2": "—",
+    "T3": "—",
+    "T4": "—",
+    "T5": "—",
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": 2,
+    "T11": "—",
+    "T12": "—"
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T10": [
+      "không có phát hiện H-*"
+    ]
+  },
+  "score": 100,
+  "grade": null,
+  "verdict": "ĐẠT",
+  "release": "UNVERIFIED",
+  "findings": [],
+  "followUps": []
+}

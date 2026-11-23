@@ -250,13 +250,20 @@ export function personScores(records) {
   }).sort((a, b) => a.id.localeCompare(b.id));
 }
 
-export function renderPeople(rows) {
+export function renderPeople(rows, pillarRows = null) {
   const md = ['# Điểm theo người — CHỈ Ở MÁY, KHÔNG COMMIT (Q040-5)', '',
     '> Sinh bởi `node scripts/cham-pr.mjs --nguoi` từ `docs/reviews/tien-do/PR-*.json`. Thư mục `.local/` bị `.gitignore` bỏ qua: repo công khai. Gửi riêng từng người; không dùng làm đánh giá nhân sự duy nhất (PHASE-040 · 20 §6).', '',
     '| Người | PR | PR `VERIFIED` | Tuần có PR `VERIFIED` | TB điểm PR | Review cho người khác | PR `BLOCKED` | Điểm | Trạng thái |',
     '|---|---|---|---|---|---|---|---|---|'];
   for (const r of rows) md.push(`| ${r.id} | ${r.prs} | ${r.verified} | ${r.weeks} | ${r.avgScore ?? '—'} | ${r.reviewsGiven} | ${r.blocked} | ${r.total ?? '—'} | ${r.state} |`);
   md.push('', 'Lỗi lọt (15 %) và đóng việc khắc phục (10 %) **chưa đo** — điểm chia lại trên phần đã đo (70 % điểm PR + 5 % review).', '');
+  if (pillarRows?.length) {
+    // [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27): trụ cột theo người
+    md.push('## Trụ cột theo người', '', 'PR chạm = gợi ý từ đường dẫn tệp; nâng mức = tiêu chí tru-cot.json lên mức trong PR của người đó; khai = mã ở dòng "Trụ cột / tiêu chí".', '',
+      '| Người | Trụ cột | PR chạm | trong đó `VERIFIED` | Tiêu chí nâng mức | Mã đã khai |', '|---|---|---|---|---|---|');
+    for (const r of pillarRows) md.push(`| ${r.who} | ${r.pillar} | ${r.touched} | ${r.verified} | ${r.raised} | ${r.declared} |`);
+    md.push('');
+  }
   return md.join('\n');
 }
 
@@ -272,12 +279,95 @@ export function ciOf(checkRuns, lockedMessage) {
 
 /**
  * Trạng thái phát hành (PHASE-040 · 20 §3): BLOCKED khi kết luận KHÔNG ĐẠT; VERIFIED khi có bằng chứng chạy
- * (CI xanh, hoặc khối bằng chứng đúng khuôn với kết quả ĐẠT) **và** một người duyệt khác tác giả; còn lại UNVERIFIED.
+ * (CI xanh, hoặc khối bằng chứng đúng khuôn với kiem-chuan ĐẠT) **và** một người duyệt khác tác giả; còn lại UNVERIFIED.
+ * [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27), D040-13: dòng selfcheck chỉ cần **đã điền** — main còn nợ của người khác thì `--strict` KHÔNG ĐẠT là trung thực;
+ * PR chỉ bị giữ khi thêm lỗi mới (kiem-chuan, chặn lỗi mới). Main vẫn phải sạch (B10, không nới).
+ * Người duyệt = người bấm Approve **hoặc người merge** khác tác giả (D040-14) — `reviewers` đã gộp cả hai.
  */
 export function releaseOf({ verdict, ci, evidence, reviewers }) {
   if (verdict === 'KHÔNG ĐẠT') return 'BLOCKED';
-  const ran = ci?.ran && ci?.green || evidence?.wellFormed && evidence.kiemChuan === 'ĐẠT' && evidence.selfcheck === 'ĐẠT';
+  const ran = ci?.ran && ci?.green || evidence?.wellFormed && evidence.kiemChuan === 'ĐẠT' && evidence.selfcheck != null;
   return ran && reviewers > 0 ? 'VERIFIED' : 'UNVERIFIED';
+}
+
+/** Người duyệt của PR (D040-14): người Approve khác tác giả, cộng người merge nếu khác tác giả. */
+export function reviewersOf({ approvers = [], mergedBy = null, authorIds = [] }) {
+  const authors = new Set(authorIds.map((s) => String(s).toLowerCase()));
+  const out = new Set(approvers.filter((a) => !authors.has(String(a).toLowerCase())));
+  if (mergedBy && !authors.has(String(mergedBy).toLowerCase())) out.add(mergedBy);
+  return [...out].sort();
+}
+
+const PILLAR_IDS = ['0', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
+/**
+ * Dòng "Trụ cột / tiêu chí:" trong mô tả PR ([2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27)): người đóng góp khai tiêu chí của docs/standard/tru-cot.json mà PR
+ * đẩy, dạng `X/DC-3` (nhiều mã cách bằng dấu phẩy), hoặc "không" khi PR không đẩy tiêu chí nào. Còn chỗ trống `<…>`
+ * hoặc không có dòng → `present: false`.
+ */
+export function parsePillarLine(body) {
+  const m = /^[ \t>*-]*\**Trụ cột\s*\/\s*tiêu chí\**\s*:\s*(.*)$/im.exec(String(body ?? ''));
+  if (!m) return { present: false, ids: [], none: false };
+  const v = m[1].replace(/^\*+\s*/, '').trim(); // '**Trụ cột / tiêu chí:** …' — dấu đậm đứng sau dấu hai chấm
+  if (!v || /<[^>]*>/.test(v)) return { present: false, ids: [], none: false };
+  const ids = [...new Set([...v.matchAll(/\b(0|X|IX|VIII|VII|VI|V|IV|III|II|I)\/([A-Z]{1,3}-\d+[a-z]?)\b/g)].map((x) => `${x[1]}/${x[2]}`))];
+  return { present: true, ids, none: !ids.length && /^(không|—|-|none)\b/i.test(v) };
+}
+
+/**
+ * Việc tiếp theo về trụ cột ([2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27)): PR có mã chạm trụ cột mà không đổi mức tiêu chí nào và không khai dòng
+ * "Trụ cột / tiêu chí" → nhắc khai; khai mã mà tru-cot.json chưa đổi mức → người duyệt xác nhận rồi đổi mức; mã khai
+ * không có trong tru-cot.json → sửa mã.
+ */
+export function pillarFollowUps({ impact, criteriaChanged = [], declared, knownIds = null }) {
+  const out = [];
+  const changed = new Set(criteriaChanged.map((c) => c.id));
+  if (!declared?.present) {
+    if (impact?.pillars?.length && !impact.docsOnly && !changed.size) out.push(`chạm trụ cột ${impact.pillars.join(' ')} nhưng mô tả PR không có dòng "Trụ cột / tiêu chí" — khai tiêu chí đẩy, hoặc "không"`);
+    return out;
+  }
+  for (const id of declared.ids) {
+    if (knownIds && !knownIds.has(id)) out.push(`khai ${id} nhưng tru-cot.json không có tiêu chí này — sửa mã`);
+    else if (!changed.has(id)) out.push(`khai đẩy ${id} nhưng tru-cot.json chưa đổi mức — người duyệt xác nhận rồi đổi mức`);
+  }
+  return out;
+}
+
+/**
+ * Trụ cột theo người ([2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27)): mỗi người × trụ cột — số PR chạm (gợi ý từ đường dẫn), số tiêu chí được nâng mức trong
+ * tru-cot.json, số mã tiêu chí đã khai. Không phải điểm — để thấy ai đang đẩy trụ cột nào, trụ cột nào không ai chạm.
+ */
+export function pillarsByPerson(records) {
+  const rank = { chua: 0, 'tai-lieu': 1, 'mot-phan': 2, dat: 3 };
+  const rows = new Map();
+  const get = (who, p) => {
+    const k = `${who}\u0000${p}`;
+    return rows.get(k) ?? rows.set(k, { who, pillar: p, touched: 0, raised: 0, declared: 0, verified: 0 }).get(k);
+  };
+  for (const r of records) {
+    const up = (r.progress?.criteriaChanged ?? []).filter((c) => c.from != null && c.to != null && rank[c.to] > rank[c.from]);
+    for (const who of r.people ?? []) {
+      for (const p of r.impact?.pillars ?? []) { const x = get(who, p); x.touched++; if (r.release === 'VERIFIED') x.verified++; }
+      for (const c of up) get(who, c.id.split('/')[0]).raised++;
+      for (const id of r.declaredCriteria?.ids ?? []) get(who, id.split('/')[0]).declared++;
+    }
+  }
+  return [...rows.values()].sort((a, b) => a.who.localeCompare(b.who) || PILLAR_IDS.indexOf(a.pillar) - PILLAR_IDS.indexOf(b.pillar));
+}
+
+/**
+ * Nhắc cho một PR đang mở (`cham-pr.mjs --nhac`, [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27)) — chỉ in, không gửi lên GitHub (chủ dự án quyết 2026-11-23).
+ * Trả danh sách chỗ thiếu; rỗng = đủ.
+ */
+export function remindersOf({ evidence, declared, impact, docsOnly }) {
+  const out = [];
+  if (!docsOnly) {
+    if (!evidence?.present) out.push('thiếu khối "Bằng chứng chạy máy" (node scripts/cham-pr.mjs --mau-bang-chung)');
+    else if (!evidence.wellFormed) out.push('khối bằng chứng chưa điền dòng kiem-chuan / selfcheck, hoặc còn chỗ trống của mẫu');
+    else if (evidence.kiemChuan !== 'ĐẠT') out.push('kiem-chuan KHÔNG ĐẠT — PR thêm lỗi mới so với main');
+  }
+  if (!declared?.present && impact?.pillars?.length && !docsOnly) out.push(`chạm trụ cột ${impact.pillars.join(' ')} — thêm dòng "Trụ cột / tiêu chí: <mã>" hoặc "Trụ cột / tiêu chí: không"`);
+  return out;
 }
 
 export function gradeOf(release, score) {
@@ -346,7 +436,7 @@ export function renderBoard(records, { keep = 50 } = {}) {
     const changed = cc.length > 6 ? `${cc.slice(0, 6).join('; ')}; +${cc.length - 6}` : cc.join('; ') || '—';
     const sc = r.score == null ? '—' : `${r.score} %${r.axesBy === 'máy' ? ' (máy gợi ý)' : ''}${r.grade ? ` · ${r.grade}` : ''}`;
     const ci = r.ci?.ran ? (r.ci.green ? 'xanh' : 'đỏ') : `không chạy${r.ci?.reason ? ` (${r.ci.reason})` : ''}`;
-    md.push(`| [#${r.pr}](https://github.com/hoanganh8389/open-ketoan/pull/${r.pr}) · ${String(r.mergedAt).slice(0, 10)} · ${esc(who)} | ${r.kind}${r.regressed?.length ? ` · **lùi ${r.regressed.length}**` : ''} | ${esc(imp)} | ${delta(r.progress?.foundation)} | ${delta(r.progress?.pillars)} | ${delta(r.progress?.docMatrix)} | ${delta(r.progress?.compliance)} | ${esc(changed)} | ${sc} | ${r.verdict} | \`${r.release}\` | ${ci} · ${r.reviews} · ${r.evidenceBlock?.present ? (r.evidenceBlock.wellFormed ? 'đủ' : 'thiếu dòng') : 'không'} |`);
+    md.push(`| [#${r.pr}](https://github.com/hoanganh8389/open-ketoan/pull/${r.pr}) · ${String(r.mergedAt).slice(0, 10)} · ${esc(who)} | ${r.kind}${r.regressed?.length ? ` · **lùi ${r.regressed.length}**` : ''} | ${esc(imp)} | ${delta(r.progress?.foundation)} | ${delta(r.progress?.pillars)} | ${delta(r.progress?.docMatrix)} | ${delta(r.progress?.compliance)} | ${esc(changed)} | ${sc} | ${r.verdict} | \`${r.release}\` | ${ci} · ${r.reviews}${r.reviewers?.length ? ` (${esc(r.reviewers.join(', '))})` : ''} · ${r.evidenceBlock?.present ? (r.evidenceBlock.wellFormed ? 'đủ' : 'thiếu dòng') : 'không'} |`);
   }
   if (older.length) {
     md.push('', '## PR cũ hơn (gom theo tháng)', '', '| Tháng | Số PR | Đẩy tiến độ | `BLOCKED` |', '|---|---|---|---|');
@@ -358,6 +448,20 @@ export function renderBoard(records, { keep = 50 } = {}) {
       months.set(k, m);
     }
     for (const [k, m] of [...months].sort().reverse()) md.push(`| ${k} | ${m.n} | ${m.up} | ${m.blocked} |`);
+  }
+  // [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27): theo trụ cột — PR chạm, tiêu chí nâng mức, PR khai tiêu chí; trụ cột không ai đẩy thì lộ ra
+  {
+    const rank = { chua: 0, 'tai-lieu': 1, 'mot-phan': 2, dat: 3 };
+    const last = sorted[0]?.progress?.byPillar ?? {};
+    const by = new Map(PILLAR_IDS.map((p) => [p, { touched: 0, verified: 0, raised: 0, declared: 0 }]));
+    for (const r of sorted) {
+      for (const p of r.impact?.pillars ?? []) { const x = by.get(p); if (x) { x.touched++; if (r.release === 'VERIFIED') x.verified++; } }
+      for (const c of r.progress?.criteriaChanged ?? []) if (c.from != null && c.to != null && rank[c.to] > rank[c.from]) by.get(c.id.split('/')[0]) && by.get(c.id.split('/')[0]).raised++;
+      for (const id of r.declaredCriteria?.ids ?? []) by.get(id.split('/')[0]) && by.get(id.split('/')[0]).declared++;
+    }
+    md.push('', '## Theo trụ cột', '', 'PR chạm = gợi ý từ đường dẫn tệp (cột "Tác động"); tiêu chí nâng mức = đổi mức trong `docs/standard/tru-cot.json` — chỉ phần này làm % trụ cột tăng. PR chạm nhiều mà không nâng mức là chỗ người duyệt cần xem PR có đẩy tiêu chí nào không (dòng "Trụ cột / tiêu chí" ở mô tả PR).', '');
+    md.push('| Trụ cột | % hiện tại | PR chạm | trong đó `VERIFIED` | Tiêu chí nâng mức | PR khai tiêu chí |', '|---|---|---|---|---|---|');
+    for (const [p, x] of by) md.push(`| ${p} | ${last[p] == null ? '—' : `${last[p]} %`} | ${x.touched} | ${x.verified} | ${x.raised} | ${x.declared} |`);
   }
   // đường theo tuần: giá trị "sau" của PR merge cuối cùng trong tuần
   const weeks = new Map();
