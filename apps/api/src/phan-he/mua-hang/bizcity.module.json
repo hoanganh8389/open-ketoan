@@ -628,6 +628,7 @@
     "mua-hang.purchase.documents-adjust-cancel",
     "mua-hang.invoice.scan",
     "mua-hang.invoice.bridge-heartbeat",
+    "mua-hang.invoice.buyer-tax-codes-save",
     "mua-hang.purchase.documents-attach-invoice",
     "mua-hang.invoice.ingest-xml",
     "mua-hang.sku-info.lookup",

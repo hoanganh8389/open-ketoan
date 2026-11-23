@@ -23,6 +23,7 @@ import { NhapXmlHoaDon } from './NhapXmlHoaDon';
 import { SOURCE_LABEL, STATE_LABEL, invoiceApi, type InvoiceFileRef, type InvoiceRow, type InvoiceState } from './api';
 import { XemTep } from '../dinh-kem/XemTep';
 import { TinhTrangCauNoi } from './TinhTrangCauNoi';
+import { MstNhanHoaDon } from './MstNhanHoaDon';
 
 const gdtOf = (r: InvoiceRow) => (r.data?.gdt ?? {}) as { tthai?: unknown; maTraCuu?: string; linkTraCuu?: string };
 const gdtStatusOf = (r: InvoiceRow) => GDT_STATUS[Number(gdtOf(r).tthai)];
@@ -40,6 +41,7 @@ export function HoaDonNccPage({ embedPartner }: { embedPartner?: string } = {}) 
   const [open, setOpen] = useState<{ id?: string } | null>(null);
   const [importMode, setImportMode] = useState<'excel' | 'scan' | null>(null);
   const [aliases, setAliases] = useState(false);
+  const [mstNhan, setMstNhan] = useState(false);
   const [xmlOpen, setXmlOpen] = useState(false);
   const [xemTep, setXemTep] = useState<InvoiceFileRef | null>(null);
   const exportRef = useRef<(() => void) | null>(null);
@@ -100,6 +102,8 @@ export function HoaDonNccPage({ embedPartner }: { embedPartner?: string } = {}) 
           <button className="btn btn-sm" onClick={() => setImportMode('excel')}>Nhập Excel</button>
           <button className="btn btn-sm" onClick={() => setImportMode('scan')} disabled={!scan.data?.configured} title={scan.data?.configured ? 'Đọc ảnh / PDF hoá đơn bằng dịch vụ AI đã cấu hình' : 'Chưa cấu hình dịch vụ đọc hoá đơn (INVOICE_AI_URL) — hỏi bộ phận IT'}>Quét ảnh / PDF (AI)</button>
           <button className="btn btn-sm" onClick={() => setAliases(true)} title="Các cách NCC ghi tên / mã hàng mà phần mềm đã học">Bảng nhận diện mã</button>
+          {/* [2026-11-23 Nguyễn Văn Thủy] MH22 — MST nhận hoá đơn: trang nhận hoá đơn của công ty / chi nhánh nào (đóng góp) */}
+          {!embedded && <button className="btn btn-sm" onClick={() => setMstNhan(true)} title="Trang này nhận hoá đơn có MST người mua nào: nhiều công ty, chi nhánh. Cầu nối hoá đơn dùng danh sách này">MST nhận hoá đơn</button>}
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
         </div>
         {!embedded && <TinhTrangCauNoi />}
@@ -115,6 +119,7 @@ export function HoaDonNccPage({ embedPartner }: { embedPartner?: string } = {}) 
       {xemTep && <XemTep file={xemTep as unknown as Attachment} onClose={() => setXemTep(null)} />}
       {xmlOpen && <NhapXmlHoaDon onClose={() => setXmlOpen(false)} onDone={() => void q.refetch()} />}
       {aliases && <BangNhanDien partnerCode={pc} onClose={() => setAliases(false)} />}
+      {mstNhan && <MstNhanHoaDon onClose={() => setMstNhan(false)} />}
     </>
   );
 }
