@@ -8,6 +8,7 @@
  *   rebatePreview    doanh số mua thuần kỳ (nhập − trả), mức thưởng, phân bổ theo mã
  *   costAllocation   phân bổ chi phí mua hàng vào phiếu nhập; realCost giá vốn thực tế từng mã
  */
+import { bridgeStatus } from './cau-noi.js';
 import { sql } from 'kysely';
 import {
   type TraceItem, TAX_RATE, priceFor, AGING_BUCKETS, agingBucket, allocate, baseUnitOf, ratioOf, brandMix, brandShare, computeDoc, creditStatus, daysBetween, expiryState, invoiceDueDate, orderInvoice, orderProgress, orderReconcile, rebateFor, sameInvoice, scheduleStatus,
@@ -529,6 +530,9 @@ export async function purchaseTodo(trx: Db, tenantId: string, ctx: Ctx, asOf = t
   const rcpts = ctx.docs.filter((d) => d.kind === 'receipt' && d.status !== 'cancelled' && d.invoice?.no);
   const invNoReceipt = invs.filter((x) => !rcpts.some((d) => d.partnerCode === x.partner_code && sameInvoice({ no: d.invoice!.no, series: d.invoice!.serial }, { no: x.invoice_no, series: x.invoice_series })));
   if (invNoReceipt.length) items.push({ key: 'inv_no_receipt', level: 'warn', text: 'Hoá đơn NCC chưa có phiếu nhập', count: invNoReceipt.length, amount: invNoReceipt.reduce((s, x) => s + toNumber(x.total), 0), path: '/mua-hang/hoa-don-ncc?tinh-trang=chua_co_phieu' });
+  // [2026-11-23 11:20 AM Nguyễn Văn Thủy] MH22 — cầu nối hoá đơn quá 1 ngày không báo về: máy tải hoá đơn có thể đã tắt (đóng góp)
+  const bridgeLost = (await bridgeStatus(tenantId)).filter((b) => b.stale);
+  if (bridgeLost.length) items.push({ key: 'bridge_stale', level: 'warn', text: 'Cầu nối hoá đơn quá 1 ngày không báo về — kiểm tra máy chạy cầu nối', count: bridgeLost.length, path: '/mua-hang/hoa-don-ncc' });
   // [2026-11-20 Nguyễn Văn Thủy] SOÁT THIẾU / LỆCH theo cột "Kiểm soát hệ thống" của 11 bước mua hàng (motamuahangsau): Bàn làm việc
   // gắn từng việc vào đúng bước (B1 hồ sơ NCC, B2–3 hợp đồng & giá, B5–6 đơn đặt, B8 nhập kho ↔ hoá đơn, B10 trả hàng, B11 thanh lý) (đóng góp)
   const live = ctx.docs.filter((d) => d.status !== 'cancelled');

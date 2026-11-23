@@ -22,6 +22,7 @@ import { NhapHoaDon } from './NhapHoaDon';
 import { NhapXmlHoaDon } from './NhapXmlHoaDon';
 import { SOURCE_LABEL, STATE_LABEL, invoiceApi, type InvoiceFileRef, type InvoiceRow, type InvoiceState } from './api';
 import { XemTep } from '../dinh-kem/XemTep';
+import { TinhTrangCauNoi } from './TinhTrangCauNoi';
 
 const gdtOf = (r: InvoiceRow) => (r.data?.gdt ?? {}) as { tthai?: unknown; maTraCuu?: string; linkTraCuu?: string };
 const gdtStatusOf = (r: InvoiceRow) => GDT_STATUS[Number(gdtOf(r).tthai)];
@@ -101,6 +102,7 @@ export function HoaDonNccPage({ embedPartner }: { embedPartner?: string } = {}) 
           <button className="btn btn-sm" onClick={() => setAliases(true)} title="Các cách NCC ghi tên / mã hàng mà phần mềm đã học">Bảng nhận diện mã</button>
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
         </div>
+        {!embedded && <TinhTrangCauNoi />}
         <div className="filters" style={{ paddingTop: 0 }}>{(['chua_nhan_dien', 'chua_co_phieu', 'lech', 'khop', 'da_huy'] as InvoiceState[]).map(chip)}</div>
         <ErrorBox error={q.error ? errorText(q.error) : null} />
         {q.isLoading ? <Loading /> : (
