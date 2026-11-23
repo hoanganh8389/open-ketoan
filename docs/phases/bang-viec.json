@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 3
+      "count": 4
     },
     {
       "key": "merging",
@@ -10607,6 +10607,27 @@
       "facet": "F5",
       "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
       "line": 34
+    },
+    {
+      "id": "S040-26",
+      "phase": "PHASE-040",
+      "title": "B10f — chữ ký R-SIG: chữ ký kiến trúc cho tệp framework do người đóng góp tạo (R-SIG-1, R-SIG-7); dấu cũ sai khuôn và migration đã chạy vào baseline",
+      "priority": "P1",
+      "status": "todo",
+      "column": "doing",
+      "claim": {
+        "who": "hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột)",
+        "branch": "fix/phase-040-b10f-chu-ky",
+        "state": "đang làm",
+        "since": "2026-11-23",
+        "dot": "PHASE-040 · B10f — chữ ký R-SIG: SC-SIG-1 thêm chữ ký kiến trúc của chủ dự án (người duyệt, R-SIG-7…"
+      },
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 35
     }
   ]
 }
