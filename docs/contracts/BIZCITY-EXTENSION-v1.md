@@ -80,6 +80,9 @@ Luật slot: thành phần chỉ dùng `@bizcity/ui-kit` và client action; lỗ
 | `DocSheet` | `components/phieu-hang/KhungPhieu` | `title: string`, `badges?`, `total?: { label, value }`, `helpKey?` (bỏ trống = theo màn + tiêu đề), `viewing?` (đang xem: F2 / Enter / bấm đúp = `onEdit`), `readOnly?`, `onEdit?`, `onClose`, `sideTitle?`, `side?` (không có = thân một cột), `footNote?`, `footer`, `keys?`, `children`. Một nút "? Hướng dẫn"; Ctrl + S bấm nút chính; Esc đóng; thu nhỏ xuống thanh dưới |
 | `DocSheetPanel` | khối `.mh-panel` của cột Trợ lý | `title`, `badge?`, `children` |
 
+<!-- [2026-11-22 10:50 PM Võ Hoàng] NT-BH-037 — chữ ký đặt ở packages/ui-kit/src/doc-sheet.tsx; DocSheet nạp lười ở uiKitHost; lớp CSS dùng trong thân (đóng góp) -->
+Chữ ký ở `packages/ui-kit/src/doc-sheet.tsx` (`total.value: number`, `title` của khối là `ReactNode`). Bản thật nạp lười (khung phiếu chỉ tải khi module mở form). Trong thân `DocSheet` module dùng lớp CSS cùng phiếu mua: `mh-head` (khối đầu phiếu, lưới 6 cột; `span2`, `span4` = cả dòng), `tabs kp-tabs` + `tab active`, `lines-bar`, `kp-lines-box`; trong khối Trợ lý `mh-check ok|warn`, `mh-kv` (+ `total`), `mh-guide` (+ `done`).
+
 **Ảnh hưởng.** Thêm vào `packages/ui-kit`, `uiKitHost.ts`; `KhungPhieu` nới `total`, `side` thành không bắt buộc (BH10 / BH11 không đổi). Module cũ dùng `Modal` không đổi.
 
 **Kiểm bằng.** typecheck (`UiKitImpl` thiếu `DocSheet` / `DocSheetPanel` → không biên dịch); màn đầu tiên dùng: BH20, form khuyến mại, đợt voucher — chạy thật trên giao diện (NT-BH-037 §5).

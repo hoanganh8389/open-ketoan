@@ -2,11 +2,14 @@
  * BH21 Voucher (phiếu NT-BH-026): thẻ Đợt phát (lập / sửa / ngừng đợt; sinh mã cho danh sách SĐT, nạp mã có sẵn kèm SĐT — dán từ Excel;
  * danh sách mã của đợt, Excel), Tra cứu mã (mã → đợt, khách, hạn, đã dùng ở đơn nào / ngày / cửa hàng, nhật ký; SĐT → mọi mã của khách),
  * Báo cáo (theo đợt / người phát: phát hành, còn, đã dùng, hết hạn, thu hồi; theo cửa hàng dùng; Excel).
+ * NT-BH-037: form Thêm / Sửa đợt dựng bằng khung phiếu `DocSheet` cùng mẫu phiếu mua (khối đầu, cột Trợ lý Kiểm tra / Tóm tắt);
+ * dữ liệu gửi, lời gọi API giữ nguyên. Hộp chi tiết đợt, hộp nhỏ khác vẫn là Modal.
  */
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: màn Voucher (đóng góp)
+// [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: form đợt voucher dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 import { useState } from 'react';
 import {
-  BranchCheckList, DataGrid, ErrorBox, Field, Loading, Modal, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient, type GridColumn,
+  BranchCheckList, DataGrid, DocSheet, DocSheetPanel, ErrorBox, Field, Loading, Modal, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient, type GridColumn,
 } from '@bizcity/ui-kit';
 
 const M = '/api/v1/m/voucher';
@@ -90,16 +93,63 @@ function CampaignForm({ initial, id, onClose }: { initial: Form; id?: string; on
     mutationFn: () => (id ? api.put(`${M}/campaigns/${id}`, { ...toBody(f), status: f.status }) : api.post(`${M}/campaigns`, toBody(f))),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['voucher'] }); onClose(); },
   });
+  // Trợ lý — chỉ nhắc; máy chủ vẫn kiểm khi Lưu (nút Lưu không khoá theo các dòng này, như trước).
+  const checks = [
+    ...(f.code.trim() ? [] : ['Chưa nhập mã đợt']),
+    ...(f.name.trim() ? [] : ['Chưa nhập tên đợt']),
+    ...(Number(f.faceValue) > 0 ? [] : ['Mệnh giá phải lớn hơn 0']),
+    ...(f.validFrom ? [] : ['Chưa chọn từ ngày']),
+    ...(f.validTo && f.validFrom && f.validTo < f.validFrom ? ['Hết hạn trước từ ngày'] : []),
+    ...(f.issuer === 'brand' && !f.issuerPartnerCode.trim() ? ['Hãng phát: chưa nhập mã hãng / NCC'] : []),
+    ...(f.issuer === 'brand' && !f.paymentMethodCode.trim() ? ['Hãng phát: chưa nhập hình thức thanh toán'] : []),
+  ];
+  const vnd = (x: string) => (Number(x) || 0).toLocaleString('vi-VN');
+  const scope = [...list(f.skus), ...list(f.brandCodes).map((b) => `nhãn ${b}`)];
   return (
-    <Modal title={id ? `Sửa đợt ${initial.code}` : 'Thêm đợt phát voucher'} onClose={onClose} wide
-      footer={<><button type="button" className="btn" onClick={onClose}>Đóng</button><button type="button" className="btn btn-primary" disabled={save.isPending} onClick={() => save.mutate()}>Lưu</button></>}>
-      <ErrorBox error={save.error ? errorText(save.error) : null} />
-      <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+    <DocSheet title={id ? `Sửa đợt voucher ${initial.code}` : 'Đợt phát voucher (mới)'} onClose={onClose}
+      badges={id ? <span className={`badge ${f.status === 'active' ? 'badge-ok' : 'badge-gray'}`}>{f.status === 'active' ? 'Đang dùng' : 'Ngừng'}</span> : undefined}
+      total={{ label: 'Mệnh giá', value: Number(f.faceValue) || 0 }}
+      sideTitle="Trợ lý voucher"
+      keys="Ctrl + S - Lưu · Esc - Thoát"
+      footNote={save.error ? <span className="mh-bad">{errorText(save.error)}</span> : null}
+      footer={<><button type="button" className="btn" onClick={onClose}>Đóng</button><button type="button" className="btn btn-primary" disabled={save.isPending} onClick={() => save.mutate()}>Lưu</button></>}
+      side={<>
+        <DocSheetPanel title="Kiểm tra" badge={checks.length ? <span className="badge badge-warn">{checks.length}</span> : <span className="badge badge-ok">ổn</span>}>
+          {checks.length ? checks.map((c) => <div key={c} className="mh-check warn">⚠ {c}</div>) : <div className="mh-check ok">✓ Đủ thông tin — bấm Lưu</div>}
+          <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>Đợt đã phát mã thì không đổi loại, người phát, mệnh giá, đơn tối thiểu, phạm vi — lập đợt mới. Mỗi mã dùng một lần, phần dư mất.</div>
+        </DocSheetPanel>
+        <DocSheetPanel title="Tóm tắt">
+          <div className="mh-kv">
+            <span>Giá trị</span><span>{vnd(f.faceValue)}đ</span>
+            <span>Người phát</span><span>{f.issuer === 'brand' ? `Hãng ${f.issuerPartnerCode || '…'}` : 'TGS'}</span>
+            <span>Đơn tối thiểu</span><span>{Number(f.minOrder) ? `${vnd(f.minOrder)}đ` : 'Không'}</span>
+            <span>Áp dụng</span><span>{f.kind === 'next_purchase' ? (scope.length ? scope.join(', ') : '—') : 'Mọi hàng'}</span>
+            <span>Hiệu lực</span><span>{f.validFrom || '…'} – {f.validTo || 'không hạn'}</span>
+            <span>Hạn mỗi mã</span><span>{f.validDays ? `${f.validDays} ngày` : '—'}</span>
+            <span>Số lượng</span><span>{f.issueMode === 'auto' ? `Tự phát khi mua ≥ ${f.autoMinQty || 1}` : 'Sinh / nạp mã ở chi tiết đợt'}</span>
+          </div>
+        </DocSheetPanel>
+      </>}>
+      <div className="mh-head">
         <Field label="Mã đợt"><input className="input" value={f.code} onChange={set('code')} placeholder="ABBOTT50K" /></Field>
-        <Field label="Tên đợt"><input className="input" value={f.name} onChange={set('name')} /></Field>
-        <Field label="Loại">
+        <div className="span2"><Field label="Tên đợt"><input className="input" value={f.name} onChange={set('name')} /></Field></div>
+        <div className="span2"><Field label="Loại">
           <select className="input" value={f.kind} onChange={set('kind')}>{Object.entries(KIND).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        </Field>
+        </Field></div>
+        {id ? (
+          <Field label="Trạng thái">
+            <select className="input" value={f.status} onChange={set('status')}><option value="active">Đang dùng</option><option value="stopped">Ngừng</option></select>
+          </Field>
+        ) : <div />}
+        <Field label="Từ ngày"><input className="input" type="date" value={f.validFrom} onChange={set('validFrom')} /></Field>
+        <Field label="Hết hạn ngày"><input className="input" type="date" value={f.validTo} onChange={set('validTo')} /></Field>
+        <div className="span2"><Field label="Hạn mỗi mã (ngày từ ngày phát)"><input className="input" type="number" value={f.validDays} onChange={set('validDays')} /></Field></div>
+        <div className="span2"><Field label="Cửa hàng tự phát" hint="Trống = mọi cửa hàng; dùng khi Kiểu phát = Tự động">
+          <input className="input" value={f.autoBranches} disabled={f.issueMode !== 'auto'} onChange={set('autoBranches')} />
+        </Field></div>
+        <div className="span4"><Field label="Ghi chú"><input className="input" value={f.note} onChange={set('note')} /></Field></div>
+      </div>
+      <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
         <Field label="Người phát" hint="TGS = chiết khấu trên hoá đơn (giảm doanh thu + thuế); hãng = hình thức thanh toán (phải thu hãng)">
           <select className="input" value={f.issuer} onChange={set('issuer')}>{Object.entries(ISSUER).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
         </Field>
@@ -111,9 +161,6 @@ function CampaignForm({ initial, id, onClose }: { initial: Form; id?: string; on
         )}
         <Field label="Mệnh giá (đồng)"><input className="input" type="number" value={f.faceValue} onChange={set('faceValue')} /></Field>
         <Field label="Đơn tối thiểu (đồng)"><input className="input" type="number" value={f.minOrder} onChange={set('minOrder')} /></Field>
-        <Field label="Từ ngày"><input className="input" type="date" value={f.validFrom} onChange={set('validFrom')} /></Field>
-        <Field label="Hết hạn ngày"><input className="input" type="date" value={f.validTo} onChange={set('validTo')} /></Field>
-        <Field label="Hạn mỗi mã (ngày từ ngày phát)"><input className="input" type="number" value={f.validDays} onChange={set('validDays')} /></Field>
         {f.kind === 'next_purchase' && <Field label="Mã hàng áp dụng (cách nhau dấu phẩy)"><input className="input" value={f.skus} onChange={set('skus')} /></Field>}
         {f.kind === 'next_purchase' && <Field label="Nhãn áp dụng (mã nhãn)"><input className="input" value={f.brandCodes} onChange={set('brandCodes')} /></Field>}
         <Field label="Kiểu phát">
@@ -122,16 +169,8 @@ function CampaignForm({ initial, id, onClose }: { initial: Form; id?: string; on
         {f.issueMode === 'auto' && <Field label="Điều kiện: mã hàng mua"><input className="input" value={f.autoSkus} onChange={set('autoSkus')} /></Field>}
         {f.issueMode === 'auto' && <Field label="Điều kiện: nhãn mua"><input className="input" value={f.autoBrands} onChange={set('autoBrands')} /></Field>}
         {f.issueMode === 'auto' && <Field label="Số lượng tối thiểu (đơn vị nhỏ nhất)"><input className="input" type="number" value={f.autoMinQty} onChange={set('autoMinQty')} /></Field>}
-        {f.issueMode === 'auto' && <Field label="Cửa hàng (trống = mọi cửa hàng)"><input className="input" value={f.autoBranches} onChange={set('autoBranches')} /></Field>}
-        {id && (
-          <Field label="Trạng thái">
-            <select className="input" value={f.status} onChange={set('status')}><option value="active">Đang dùng</option><option value="stopped">Ngừng</option></select>
-          </Field>
-        )}
-        <Field label="Ghi chú" full><input className="input" value={f.note} onChange={set('note')} /></Field>
       </div>
-      <p className="muted">Đợt đã phát mã thì không đổi loại, người phát, mệnh giá, đơn tối thiểu, phạm vi — lập đợt mới. Mỗi mã dùng một lần, phần dư mất.</p>
-    </Modal>
+    </DocSheet>
   );
 }
 
