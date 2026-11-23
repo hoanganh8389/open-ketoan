@@ -1,4 +1,5 @@
 // @bizcity-layer P permissions
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-17 05:30 PM khanhtd] NT-HT-003 — GĐ4 (§14, H13): Core tự đăng ký màn × thao tác của module mới (manifest extensions.screens[]) vào sổ màn — module không import apps/*
 /**
  * MÀN CỦA MODULE MỚI (`modules/<key>`): module khai màn ở manifest (`extensions.screens[]`, kiểm ở `defineModule` — quyền đã khai,

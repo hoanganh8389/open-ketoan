@@ -1,4 +1,5 @@
 # Rà soát phân quyền theo chi nhánh — 17/11/2026
+<!-- [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo -->
 <!-- [2026-11-17 02:25 PM khanhtd] NT-HT-003 — biên bản rà soát phạm vi chi nhánh (15 ca tái hiện, 9 lỗ) và kết quả sau khi vá (GĐ3) -->
 
 | | |

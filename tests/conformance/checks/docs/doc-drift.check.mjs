@@ -3,7 +3,7 @@
  * Ba chiều tài liệu ↔ mã mà SC-DOC-1 (chỉ liên kết markdown) không thấy:
  *  - SC-DOC-4  `đường/dẫn` trong tài liệu còn hiệu lực phải tồn tại
  *  - SC-DOC-5  "GET /api/v1/…" trong tài liệu phải có route trong mã
- *  - SC-DOC-6  mỗi mục menu web (key) có docs/huong-dan/<key>.md, không thì nút Hướng dẫn hiện "Chưa có hướng dẫn"
+ *  - SC-DOC-6  mỗi helpKey / guideKey viết trên màn có docs/huong-dan/<khoá>.md, không thì nút Hướng dẫn hiện "Chưa có hướng dẫn" (B10e: không theo khoá menu)
  */
 
 /** Nhật ký lịch sử và tài liệu kế hoạch: được phép nhắc thứ đã dời hoặc chưa có. */
@@ -107,26 +107,27 @@ export const checks = [
     },
   },
   {
+    // [2026-11-23 11:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10e (S040-25): kiểm đúng thứ nút Hướng dẫn mở — `helpKey` / `guideKey` viết trên màn
+    // (PageHeader, HelpDrawer), không phải khoá menu. Trước đây 26 mục menu bị báo thiếu dù màn đã trỏ vào trang có sẵn (chủ dự án chọn sửa bộ kiểm 2026-11-23).
     id: 'SC-DOC-6',
-    title: 'Mỗi mục menu web có docs/huong-dan/<key>.md (nút Hướng dẫn của màn)',
+    title: 'Mỗi helpKey / guideKey viết trên màn có docs/huong-dan/<khoá>.md (nút Hướng dẫn của màn)',
     gate: 'DOCS', contract: 'docs', rules: [], conf: [], tier: 2, enforce: 'ratchet', weight: 1, targets: ['repo'],
     run(ctx) {
-      const menus = ctx.repo.files({ under: ['apps/web/src/phan-he'], match: /\/menu\.ts$/ });
-      if (!menus.length) return { examined: 0, findings: [], notes: ['không có apps/web/src/phan-he/*/menu.ts'] };
+      const files = ctx.repo.files({ under: ['apps/web/src'], match: /\.(tsx?|jsx?)$/ });
+      if (!files.length) return { examined: 0, findings: [], notes: ['không có apps/web/src'] };
       const findings = []; const seen = new Set();
-      for (const f of menus) {
+      for (const f of files) {
         const text = ctx.repo.read(f) ?? '';
-        for (const m of text.matchAll(/\{[^{}]*?\bkey:\s*'([^']+)'[^{}]*?\bpath:\s*'\/[^{}]*?\}/g)) {
+        for (const m of text.matchAll(/\b(?:helpKey|guideKey)\s*[=:]\s*["']([a-z0-9][a-z0-9-]*)["']/g)) {
           const key = m[1];
           if (seen.has(key)) continue;
           seen.add(key);
           if (ctx.repo.exists(`docs/huong-dan/${key}.md`)) continue;
           const line = text.slice(0, m.index).split('\n').length;
-          const label = /\blabel:\s*'([^']+)'/.exec(m[0])?.[1] ?? key;
-          findings.push(ctx.finding(f, line, `"${label}" chưa có docs/huong-dan/${key}.md — nút Hướng dẫn hiện "Chưa có hướng dẫn"`, `guide:${key}`));
+          findings.push(ctx.finding(f, line, `màn trỏ nút Hướng dẫn tới "${key}" nhưng chưa có docs/huong-dan/${key}.md — nút hiện "Chưa có hướng dẫn"`, `guide:${key}`));
         }
       }
-      return { examined: seen.size, findings };
+      return { examined: seen.size, findings, notes: ['helpKey dựng lúc chạy (biến) không kiểm tĩnh được'] };
     },
   },
 ];

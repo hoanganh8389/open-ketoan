@@ -11,6 +11,11 @@
  *   GET    /api/v1/purchase/invoices/scan/config     đã cấu hình dịch vụ đọc hoá đơn (AI) chưa
  *   POST   /api/v1/purchase/invoices/scan            gửi ảnh / PDF sang dịch vụ đọc hoá đơn → xem trước như prepare
  *   POST   /api/v1/purchase/invoices/ingest-xml      nhận hoá đơn điện tử XML kèm tệp gốc (màn MH22, cầu nối)
+ *   GET    /api/v1/purchase/invoices/bridge/whoami   khoá API này thuộc đơn vị nào (cầu nối kiểm trước khi đẩy)
+ *   POST   /api/v1/purchase/invoices/bridge/heartbeat cầu nối báo tình trạng sau mỗi lượt
+ *   GET    /api/v1/purchase/invoices/bridge/status   tình trạng cầu nối mới nhất (MH22)
+ *   GET    /api/v1/purchase/invoices/buyer-tax-codes danh sách MST nhận hoá đơn + gợi ý (MH22)
+ *   PUT    /api/v1/purchase/invoices/buyer-tax-codes lưu danh sách MST nhận hoá đơn
  *   GET    /api/v1/purchase/invoice-aliases          bảng nhận diện mã NCC (dữ liệu học)
  *   DELETE /api/v1/purchase/invoice-aliases/:id      xoá một cách ghi đã học (nhật ký ghi đủ nội dung)
  */
@@ -27,6 +32,10 @@ import {
   cancelInvoice, deleteAlias, getInvoice, importInvoices, invoiceInputSchema, listAliases, listInvoices, parsedInvoiceSchema, prepareInvoices, saveInvoice, scanConfigured, scanInvoice,
 } from './hoa-don.js';
 import { ingestInvoiceXml, ingestXmlSchema } from './hoa-don-xml.js';
+import { bridgeStatus, heartbeatSchema, recordHeartbeat, whoami } from './cau-noi.js';
+import { chuanDanhSach, goiYMst, luuMstNhan, MAX_MST_NHAN, mstNhan } from './mst-nhan-hoa-don.js';
+import { logEvents } from './log.js';
+import { Errors } from '../../core/errors.js';
 import { defineAction, mountActions, type AnyActionDef, sameTx } from '@bizcity/platform/core/actions';
 
 const tags = ['Mua hàng — Hoá đơn NCC'];
@@ -42,6 +51,14 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
 
   r.get('/api/v1/purchase/invoices', { preHandler: read, schema: { tags, summary: 'Hoá đơn NCC + tình trạng đối soát', querystring: z.object({ partnerCode: z.string().optional(), from: day.optional(), to: day.optional(), status: z.enum(['active', 'cancelled']).optional() }) },
     handler: async (req) => { const a = authOf(req); const c = await invoiceCtx(a.tenantId, req.query.partnerCode); return ok(await listInvoices(db, a.tenantId, c.docs, c.policies, req.query)); } });
+  // [2026-11-23 11:20 AM Nguyễn Văn Thủy] MH22 — cầu nối hoá đơn hỏi khoá thuộc công ty nào, MH22 đọc tình trạng cầu nối (đóng góp)
+  r.get('/api/v1/purchase/invoices/bridge/whoami', { preHandler: write, schema: { tags, summary: 'Khoá API này thuộc đơn vị nào (mã, tên, MST) — cầu nối so với công ty trước khi đẩy' },
+    handler: async (req) => { const a = authOf(req); return ok(await whoami(db, a.tenantId, a.actorName)); } });
+  // [2026-11-23 01:50 PM Nguyễn Văn Thủy] MH22 — MST nhận hoá đơn: danh sách đang áp + gợi ý từ đơn vị, chi nhánh, hoá đơn đã nhận (đóng góp)
+  r.get('/api/v1/purchase/invoices/buyer-tax-codes', { preHandler: read, schema: { tags, summary: 'MST nhận hoá đơn đầu vào: danh sách đã cấu hình, đang áp và gợi ý' },
+    handler: async (req) => { const a = authOf(req); return ok({ ...(await mstNhan(db, a.tenantId)), suggestions: await goiYMst(db, a.tenantId) }); } });
+  r.get('/api/v1/purchase/invoices/bridge/status', { preHandler: read, schema: { tags, summary: 'Tình trạng cầu nối hoá đơn mới nhất theo máy × công ty × kết nối' },
+    handler: async (req) => ok(await bridgeStatus(authOf(req).tenantId)) });
   r.get('/api/v1/purchase/invoices/scan/config', { preHandler: read, schema: { tags, summary: 'Dịch vụ đọc hoá đơn (AI) đã cấu hình chưa' }, handler: async () => ok({ configured: scanConfigured() }) });
   r.get('/api/v1/purchase/invoices/:id', { preHandler: read, schema: { tags, summary: 'Một hoá đơn NCC + gợi ý mã + đối soát phiếu nhập', params: idParamSchema },
     handler: async (req) => { const a = authOf(req); const inv = await db.selectFrom('supplier_invoices').select('partner_code').where('tenant_id', '=', a.tenantId).where('id', '=', req.params.id).executeTakeFirst(); const c = await invoiceCtx(a.tenantId, inv?.partner_code ?? '-'); return ok(await getInvoice(db, a.tenantId, req.params.id, c.docs, c.policies)); } });
@@ -121,6 +138,32 @@ export const hoaDonRoutesWriteActions: AnyActionDef[] = [
 
 
 export const hoaDonRoutesMoreWriteActions: AnyActionDef[] = [
+  // [2026-11-23 01:50 PM Nguyễn Văn Thủy] MH22 — lưu danh sách MST nhận hoá đơn; nhật ký JSONL ghi trước / sau (đóng góp)
+  defineAction({
+    id: 'mua-hang.invoice.buyer-tax-codes-save', title: 'Lưu danh sách MST nhận hoá đơn đầu vào', tags,
+    description: 'MST gốc nhận mọi chi nhánh, MST có đuôi chỉ nhận đúng chi nhánh đó. Để trống = theo MST đơn vị (HT03). Hoá đơn đã nhận không đổi.',
+    permission: 'settings:write', effect: 'write', sideEffects: ['settings'], idempotency: 'natural',
+    input: z.object({ taxCodes: z.array(z.string().max(30)).max(MAX_MST_NHAN * 2).describe('MST nhận hoá đơn; trống = theo MST đơn vị') }), output: anyOut,
+    expose: { http: { method: 'PUT', path: '/api/v1/purchase/invoices/buyer-tax-codes' }, mcp: false, ai: 'deny' },
+    evidence: { objectType: 'purchase' },
+    handler: async (ctx, input) => {
+      const a = ctx.legacyAuth;
+      const { list, loi } = chuanDanhSach(input.taxCodes);
+      if (loi.length) throw Errors.validation(loi.join('; '));
+      const kq = await luuMstNhan(ctx.data.tx, a.tenantId, list);
+      await logEvents(a.tenantId, [{ event: 'invoice_buyer_tax_codes', docNo: '', user: a.actorName, data: kq }]);
+      return { ...(await mstNhan(ctx.data.tx, a.tenantId)), suggestions: await goiYMst(ctx.data.tx, a.tenantId) };
+    },
+  }),
+  // [2026-11-23 11:20 AM Nguyễn Văn Thủy] MH22 — cầu nối báo tình trạng sau mỗi lượt, ghi nhật ký vận hành JSONL (đóng góp)
+  defineAction({
+    id: 'mua-hang.invoice.bridge-heartbeat', title: 'Cầu nối hoá đơn báo tình trạng', tags,
+    description: 'Máy chạy cầu nối báo lần chạy gần nhất, lần tới, đang chạy hay tạm ngừng và số tờ. Ghi nhật ký vận hành, không đổi dữ liệu nghiệp vụ.',
+    permission: 'documents:write', effect: 'write', sideEffects: ['external'], idempotency: 'natural',
+    input: heartbeatSchema, output: anyOut,
+    expose: { http: { method: 'POST', path: '/api/v1/purchase/invoices/bridge/heartbeat' }, mcp: false, ai: 'deny' },
+    handler: async (ctx, input) => recordHeartbeat(ctx.legacyAuth.tenantId, ctx.legacyAuth.actorName, input),
+  }),
   // [2026-11-06 10:25 PM Nguyễn Văn Thủy] MH22 — nhận một hoá đơn điện tử XML kèm tệp gốc; từng hoá đơn một giao dịch để hoá đơn lỗi không kéo theo hoá đơn khác (đóng góp)
   defineAction({
     id: 'mua-hang.invoice.ingest-xml', title: 'Nhận hoá đơn điện tử XML kèm tệp gốc', tags,

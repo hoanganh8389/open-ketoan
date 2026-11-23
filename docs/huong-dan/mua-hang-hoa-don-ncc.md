@@ -23,6 +23,26 @@ Trước khi ghi luôn có bước **xem trước**:
 
 Hoá đơn trùng (cùng NCC + ký hiệu + số; số "0000101" và "101" là một) không ghi lại.
 
+### Cầu nối hoá đơn (tự động)
+
+Cầu nối là chương trình trên máy tải hoá đơn: đọc hoá đơn tool tải về, đẩy lên đây.
+
+1. Ở **HT02 Khoá API** của trang này, tạo khoá, chỉ tích **Gửi chứng từ**. Mỗi công ty × mỗi trang (bản test, bản chính, sổ thuế) một khoá.
+2. Trên máy tải hoá đơn, mở **Cầu nối hoá đơn**, chọn công ty, **+ Thêm trang cho công ty này**, dán khoá, bấm **Kiểm tra**. Cầu nối hỏi trang này nhận hoá đơn của MST nào (xem **MST nhận hoá đơn** dưới đây); công ty không có trong danh sách thì không cho lưu.
+3. Dòng **Cầu nối hoá đơn** trên màn này hiện máy nào, công ty nào, chạy lúc nào, lần tới, còn bao nhiêu tờ chờ gửi. Rê chuột để xem chi tiết.
+
+Quá 1 ngày cầu nối không báo về (mà không tạm ngừng) thì hiện **Mất liên lạc** và nhắc ở **Việc cần làm**: máy tải hoá đơn có thể đã tắt.
+
+### MST nhận hoá đơn
+
+Một trang nhận được hoá đơn mua vào của nhiều công ty, chi nhánh. Nút **MST nhận hoá đơn** trên thanh công cụ mở danh sách: tích MST nào thì hoá đơn có MST người mua đó mới được nhận (nhập XML, cầu nối).
+
+- **MST gốc** (vd `0106933743`) nhận mọi chi nhánh `0106933743-xxx`. **MST có đuôi** (vd `0106933743-008`) chỉ nhận đúng chi nhánh đó.
+- **Để trống** (bỏ tích hết rồi Ghi): như trước, theo MST đơn vị ở **HT03**, cùng MST gốc là nhận.
+- **Gợi ý điền sẵn:** MST đơn vị, MST khai ở chi nhánh / đơn vị, MST người mua trên hoá đơn đã nhận, kèm số hoá đơn đang có. Công ty khác (vd chuỗi cửa hàng riêng) gõ MST vào ô **Thêm MST**.
+- Đổi danh sách không đổi hoá đơn đã nhận. Hoá đơn trước đây bị báo **Sai người mua**: thêm MST rồi bấm **Đẩy ngay** ở cầu nối, hoặc chờ cầu nối tự gửi lại sau 24 giờ.
+- Lưu ở cài đặt mua hàng của đơn vị; nhật ký ghi ai đổi, trước / sau. Cần quyền sửa cài đặt.
+
 ### Hoá đơn nhập từ XML
 
 - **NCC:** tìm theo mã số thuế người bán. Chưa có thì tự tạo NCC, mã là mã số thuế. Hai đối tượng cùng mã số thuế mà không rõ NCC nào thì báo **Trùng MST** để kế toán xử lý.
@@ -30,7 +50,7 @@ Hoá đơn trùng (cùng NCC + ký hiệu + số; số "0000101" và "101" là m
 - **Xem nhanh trên danh sách:** cột **PDF** mở PDF, không có PDF thì mở bản xem từ cổng thuế; cột **XML** mở nội dung XML gốc. Cột **Mã tra cứu**, **Trang tra cứu** dùng để đối chiếu ở nhà cung cấp hoá đơn.
 - **Hoá đơn không mã:** cổng thuế không có XML. Số tiền và thuế theo cổng thuế, hoá đơn có một dòng tổng hợp, dòng hàng xem ở bản đính kèm. Dòng tổng hợp không có mã hàng nên hiện **Chưa nhận diện mã**.
 - **Cột Trên cổng thuế:** Gốc, Thay thế, Điều chỉnh, Bị thay thế, Bị điều chỉnh, Bị huỷ, theo tình trạng lúc nhập.
-- **Sai người mua:** mã số thuế người mua khác đơn vị thì không nhập.
+- **Sai người mua:** mã số thuế người mua không có trong **MST nhận hoá đơn** (để trống: khác MST gốc của đơn vị) thì không nhập. Thông báo nêu MST trên hoá đơn và chỗ thêm.
 - **Hoá đơn bị thay thế / bị huỷ trên cổng thuế:** không nhập, tránh tính tiền hai lần. Nếu đã nhập từ trước thì hoá đơn vẫn còn và có ghi chú để kế toán xem lại.
 - **Hoá đơn thay thế / điều chỉnh:** vẫn nhập, ghi chú nêu hoá đơn gốc. Hoá đơn điều chỉnh cần kiểm tra lại số tiền.
 - **Hoá đơn đã huỷ trên phần mềm:** không tự nhập lại. Cần nhập lại thì gõ tay.

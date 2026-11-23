@@ -1,4 +1,5 @@
 // @bizcity-layer P module-sdk
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-21 05:10 PM Võ Hoàng] PHASE-031 — S031-7 (31-S031-7 §1 mục 1): Rule Contract approval.levels@1 — dải tiền → các cấp duyệt (rút gọn 16 §5.1), thuần, tất định
 /**
  * CẤP DUYỆT THEO SỐ TIỀN (approval.levels@1). Tham số là các dải tiền liền nhau, nửa mở `from ≤ số tiền < to` (PHASE-030 · 16 §5.1);
