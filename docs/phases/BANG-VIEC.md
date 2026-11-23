@@ -5,14 +5,14 @@
 
 | Cột | Số việc |
 |---|---|
-| Đang làm | 4 |
+| Đang làm | 5 |
 | Chờ merge | 0 |
 | Bị chặn | 31 |
 | Chưa ai nhận | 204 |
 | Chờ đủ tín hiệu | 80 |
 | Hoãn | 3 |
 | Xong | 366 |
-| **Tổng** | **688** |
+| **Tổng** | **689** |
 
 ## Theo phân hệ (R-FLOW-10)
 
@@ -26,10 +26,10 @@
 | chung-tu | 71 | 5 | 0 | 29 | 105 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 175 | 29 | 2 | 63 | 269 |
+| he-thong | 175 | 29 | 3 | 63 | 270 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
-## Đang làm (4)
+## Đang làm (5)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -37,6 +37,7 @@
 | [S024-33](PHASE-024-ITEM-MASTER-PHAN-LOAI-HACH-TOAN/40-MASTER-CHECKLIST.md#L44) | PHASE-024 | danh-muc · kho | Bỏ suy tài khoản kho từ tiền tố ở packages/kernel/src/modules/posting/rules/stock.rule.ts:55 (startsWith('15'… | P0 | hoanganh8389 (phiên Claude, danh-gia-phase) · `feat/phase-024-s024-33-tk-kho` |
 | [S036-8b](PHASE-036-THIET-LAP-NHANH-DU-LIEU-MAU/40-MASTER-CHECKLIST.md#L18) | PHASE-036 | he-thong | B6 — Lấy lại bản trước từ defaultdatabackups; org-units/restore-defaults theo cùng khuôn; đơn vị trắng đổi nú… | P1 | hoanganh8389 (phiên Claude, PHASE-036 thiết lập nhanh) · `feat/s036-8b-lay-lai-ban-truoc` |
 | [S040-25](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L34) | PHASE-040 | he-thong | B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT | P1 | hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột) · `fix/phase-040-b10e-bo-kiem-dung` |
+| [S040-26](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L35) | PHASE-040 | he-thong | B10f — chữ ký R-SIG: chữ ký kiến trúc cho tệp framework do người đóng góp tạo (R-SIG-1, R-SIG-7); dấu cũ sai … | P1 | hoanganh8389 (phiên Claude, PHASE-040 tiến độ trụ cột) · `fix/phase-040-b10f-chu-ky` |
 
 ## Chờ merge (0)
 
