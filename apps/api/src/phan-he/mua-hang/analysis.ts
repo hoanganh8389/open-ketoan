@@ -31,17 +31,22 @@ export interface PurchaseSettings { holidays: string[]; brandOpening: Record<str
   /** [2026-11-13 Nguyễn Văn Thủy] Chặn duyệt phiếu nhập nhận nhiều hơn phần còn lại của đơn đặt / mã ngoài đơn (tắt: chỉ cảnh báo) (đóng góp) */
   blockOverOrder?: boolean;
   /** Đuôi mã biến thể tách riêng khi phân tích đặt hàng (MH26) — lưu riêng qua /purchase/variants, MH12 lưu giữ nguyên. */
-  variantSeparate?: string[] }
+  variantSeparate?: string[];
+  /** [2026-11-23 Nguyễn Văn Thủy] MST người mua nhận hoá đơn đầu vào (MH22, mst-nhan-hoa-don.ts) — lưu riêng ở MH22, MH12 lưu giữ nguyên (đóng góp) */
+  invoiceBuyerTaxCodes?: string[] }
 
 export async function loadSettings(trx: Db, tenantId: string): Promise<PurchaseSettings> {
   const t = await trx.selectFrom('tenants').select('settings').where('id', '=', tenantId).executeTakeFirst();
   const p = ((t?.settings ?? {}) as Record<string, any>).purchase ?? {};
-  return { holidays: p.holidays ?? [], brandOpening: p.brandOpening ?? {}, warnDays: Number(p.warnDays ?? 3), priceWarnPct: Number(p.priceWarnPct ?? 2), requireOrder: Boolean(p.requireOrder), blockOverOrder: Boolean(p.blockOverOrder), ...(Array.isArray(p.variantSeparate) ? { variantSeparate: p.variantSeparate } : {}) };
+  return { holidays: p.holidays ?? [], brandOpening: p.brandOpening ?? {}, warnDays: Number(p.warnDays ?? 3), priceWarnPct: Number(p.priceWarnPct ?? 2), requireOrder: Boolean(p.requireOrder), blockOverOrder: Boolean(p.blockOverOrder), ...(Array.isArray(p.variantSeparate) ? { variantSeparate: p.variantSeparate } : {}),
+    ...(Array.isArray(p.invoiceBuyerTaxCodes) ? { invoiceBuyerTaxCodes: p.invoiceBuyerTaxCodes.map(String) } : {}) };
 }
 
 // [2026-11-03 12:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W5 (SC-MOD-2): ghi qua writeTenantSection của Platform
 export async function saveSettings(trx: Db, tenantId: string, s: PurchaseSettings): Promise<void> {
-  await writeTenantSection(trx, tenantId, 'purchase', s);
+  // [2026-11-23 Nguyễn Văn Thủy] MH12 không gửi danh sách MST nhận hoá đơn (MH22 lưu riêng): giữ nguyên, không xoá mất (đóng góp)
+  const keep = s.invoiceBuyerTaxCodes === undefined ? (await loadSettings(trx, tenantId)).invoiceBuyerTaxCodes : undefined;
+  await writeTenantSection(trx, tenantId, 'purchase', keep ? { ...s, invoiceBuyerTaxCodes: keep } : s);
 }
 
 /** Tài khoản dùng khi ghi sổ / xem trước: Quy tắc hạch toán / hình thức thanh toán → tài khoản chi tiết đầu tiên có trong hệ thống tài khoản. */

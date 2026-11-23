@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 368
+      "count": 370
     }
   ],
   "items": [
@@ -10642,6 +10642,39 @@
       "line": 36
     },
     {
+      "id": "S040-28",
+      "phase": "PHASE-040",
+      "title": "B12 — phiếu nghiệm thu bắt đầu từ tiêu chí trụ cột: ô \"Trụ cột / tiêu chí\" ở MAU.md, mục \"Phiếu và trụ cột\" ở README nghiệm thu, câu giao việc §10 mang tiêu ch…",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 37
+    },
+    {
+      "id": "S040-29",
+      "phase": "PHASE-040",
+      "title": "B13 — người giữ tiêu chí trụ cột: trường owner cho 79 tiêu chí ở tru-cot.json theo cách chủ dự án chia 2026-11-23",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 38
+    },
+    {
       "id": "S040-30",
       "phase": "PHASE-040",
       "title": "B14 — nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước), nhắc nợ của tệp đang sửa ở nhan-viec.mjs kiem {…",
@@ -10657,7 +10690,7 @@
       ],
       "facet": "F5",
       "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
-      "line": 37
+      "line": 39
     }
   ]
 }

@@ -200,6 +200,16 @@ function ChiTietHopDong() {
         <div className="card hd-body">
           {/* [2026-11-19 Nguyễn Văn Thủy] bước 5 = Tệp & nhật ký như hồ sơ NCC: tệp đã có thì hiện, kéo thả / chọn để tải thêm; thanh lý; nhật ký (đóng góp) */}
           {buoc === 'scan' && !isNew && <div style={{ marginBottom: 14 }}><h4 className="mh-h4">Tệp hợp đồng, phụ lục</h4><TepDinhKem ownerType="contract" ownerId={code} defaultKind="hop_dong" simple /></div>}
+          {/* [2026-11-23 Nguyễn Văn Thủy] bước 3: Công nợ & thanh toán lên đầu, giao nhận / đổi trả / phạt bên dưới; hợp đồng mới vẫn thấy khung (đóng góp) */}
+          {buoc === 'dieu-khoan' && (c && !isNew
+            ? <CongNoDieuKhoan partnerCode={c.partnerCode} contractCode={code} start={c.startDate ?? undefined} end={c.endDate ?? undefined} readOnly={c.status === 'liquidated'} />
+            : <section className="hd-box" style={{ marginBottom: 10 }}>
+                <h4 className="mh-h4">Công nợ &amp; điều khoản thanh toán</h4>
+                <table className="mh-mini" style={{ width: '100%' }}><tbody>
+                  {['Điều khoản thanh toán', 'Hạn mức công nợ'].map((t) => <tr key={t}><td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{t}</td><td className="muted" style={{ fontSize: 12.5 }}>Ghi hợp đồng xong thì khai tại đây</td></tr>)}
+                </tbody></table>
+              </section>)}
+          {buoc === 'dieu-khoan' && <h4 className="mh-h4" style={{ marginTop: 6 }}>Giao nhận, đổi trả, phạt</h4>}
           {form ? (
             <fieldset disabled={!editing} className={editing ? '' : 'view-plain'} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }} onDoubleClick={() => !editing && tt.sua && setEditing(true)}>
               {buoc === 'thong-tin' && <div className="hd-grid">
@@ -234,7 +244,7 @@ function ChiTietHopDong() {
                 <Field label="Phạt vi phạm (%)" tip="Tối đa 8% giá trị phần nghĩa vụ bị vi phạm (Điều 301 Luật Thương mại 2005)" error={phatLoi}><NumInput value={v.penaltyPct ?? 0} decimals={2} onChange={(n) => set({ penaltyPct: n || null })} /></Field>
                 <Field label="Lãi chậm thanh toán (%/năm)" tip="Lãi trên số tiền chậm trả (Điều 306 Luật Thương mại 2005)"><NumInput value={v.lateInterestPct ?? 0} decimals={2} onChange={(n) => set({ lateInterestPct: n || null })} /></Field>
                 <Field label="Đổi trả" full><input className="input" value={v.returnTerms} placeholder="vd Đổi hàng lỗi, móp; trả hàng còn hạn dưới 60 ngày" onChange={(e) => set({ returnTerms: e.target.value })} /></Field>
-                <div className="muted full" style={{ fontSize: 12 }}>Công nợ &amp; điều khoản thanh toán khai ở khối bên dưới. Chiết khấu, khuyến mại, thưởng: bước 4 (Giá mua và chính sách) — phiếu tự áp.</div>
+                <div className="muted full" style={{ fontSize: 12 }}>Chiết khấu, khuyến mại, thưởng: khai ở bước 4 Giá mua và chính sách.</div>
               </div>}
               {buoc === 'scan' && <>
                 <h4 className="mh-h4">Thanh lý hợp đồng <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>(bấm Sửa để tích thanh lý)</span></h4>
@@ -254,10 +264,6 @@ function ChiTietHopDong() {
           ) : buoc === 'chung-tu' && det.data ? (
             <ChungTuHopDong code={code} partnerCode={det.data.contract.partnerCode} active={det.data.contract.status === 'active'} docs={det.data.documents} start={det.data.contract.startDate ?? undefined} />
           ) : <Loading />}
-          {/* [2026-11-21 Nguyễn Văn Thủy] công nợ + điều khoản thanh toán là điều khoản hợp đồng — khối riêng ở bước 3, ghi ngay (không qua nút Sửa) (đóng góp) */}
-          {buoc === 'dieu-khoan' && <div style={{ marginTop: 14 }}>{c && !isNew
-            ? <CongNoDieuKhoan partnerCode={c.partnerCode} contractCode={code} start={c.startDate ?? undefined} end={c.endDate ?? undefined} readOnly={c.status === 'liquidated'} />
-            : <div className="muted" style={{ fontSize: 12.5 }}>Công nợ &amp; điều khoản thanh toán: ghi hợp đồng trước, rồi khai ở đây (hạn mức công nợ, hạn thanh toán của hợp đồng).</div>}</div>}
           {buoc === 'scan' && !isNew && <div style={{ marginTop: 16 }}><LichSu contractCode={code} title="Nhật ký hợp đồng — ghi hợp đồng, giá mua, chính sách, tệp (ai làm, lúc nào, đổi gì)" empty="Chưa có thay đổi nào được ghi." /></div>}
         </div>
       </div>

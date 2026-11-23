@@ -10,6 +10,7 @@
 import { z } from 'zod';
 import { appendRunLog, readRunLog } from '@bizcity/platform/core/run-log';
 import type { Db } from '../../db/client.js';
+import { mstNhan } from './mst-nhan-hoa-don.js';
 
 export const BRIDGE_STREAM = 'cau-noi-hoa-don';
 /** Quá chừng này giờ không báo về (mà không tạm ngừng) thì coi là mất liên lạc. */
@@ -34,9 +35,14 @@ export const heartbeatSchema = z.object({
 export type Heartbeat = z.infer<typeof heartbeatSchema>;
 export interface BridgeState extends Heartbeat { keyName: string; receivedAt: string; ageHours: number; stale: boolean }
 
+/**
+ * taxCodes: MST trang này nhận hoá đơn (danh sách ở MH22, trống thì MST gốc của đơn vị) — cầu nối chỉ cho gắn công ty khớp danh sách.
+ * [2026-11-23 Nguyễn Văn Thủy] MH22 — một trang nhận nhiều công ty (đóng góp)
+ */
 export async function whoami(trx: Db, tenantId: string, keyName: string) {
   const t = await trx.selectFrom('tenants').select(['code', 'name', 'tax_code']).where('id', '=', tenantId).executeTakeFirst();
-  return { tenantCode: t?.code ?? '', tenantName: t?.name ?? '', taxCode: t?.tax_code ?? '', keyName };
+  const m = await mstNhan(trx, tenantId);
+  return { tenantCode: t?.code ?? '', tenantName: t?.name ?? '', taxCode: t?.tax_code ?? '', taxCodes: m.effective, taxCodesConfigured: m.list.length > 0, keyName };
 }
 
 export async function recordHeartbeat(tenantId: string, keyName: string, input: Heartbeat) {
