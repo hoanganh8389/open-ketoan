@@ -89,4 +89,6 @@ Mọi PR được chấm tiến độ bằng `scripts/cham-pr.mjs` ([PHASE-040 �
 2. **Ghi dòng `**Trụ cột / tiêu chí:** <mã>`** — mã tiêu chí ở `docs/standard/tru-cot.json` dạng `X/DC-3`, hoặc `không`. Thiếu dòng này thì việc của PR không được tính vào tiến độ trụ cột.
 3. **Không tự merge PR của mình** nếu muốn PR được `VERIFIED`: cần một người khác tác giả bấm Approve hoặc merge (D040-14).
 
+4. **Trả nợ chuẩn của tệp mình sửa** <!-- [2026-11-23 05:41 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B14 (S040-30) -->: `nhan-viec.mjs kiem` ▲ S040-30 liệt kê chỗ mã cũ chưa theo luật trong tệp đang sửa — sửa luôn trong PR (nhỏ, cùng chỗ), rồi `node tests/conformance/selfcheck.mjs --update-baseline`. Không thêm nợ mới vào `baseline.json`.
+
 Kiểm trước khi gửi: `node scripts/nhan-viec.mjs kiem` (▲ D040-8) và `node scripts/cham-pr.mjs --nhac` (PR đang mở còn thiếu gì — chỉ in).

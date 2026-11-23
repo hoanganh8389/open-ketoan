@@ -28,12 +28,14 @@ import {
   CONTRACT, ciOf, criteriaDiff, docMatrix, evidenceTemplate, gradeOf, identityOf, impactOf, kindOf, parseEvidence, personScores,
   pillarFacets, prScore, regressions, releaseOf, renderBoard, renderPeople, suggestAxes, verdictOf,
   parsePillarLine, pillarFollowUps, pillarsByPerson, remindersOf, reviewersOf,
+  debtDiff, touchesChecker,
 } from './cham-pr.lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = path.join(ROOT, 'docs/reviews/tien-do');
 const BOARD = path.join(ROOT, 'docs/reviews/TIEN-DO-PR.md');
 const TRU_COT = 'docs/standard/tru-cot.json';
+const BASELINE = 'tests/conformance/baseline.json'; // [2026-11-23 05:41 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B14 (S040-30): nợ chuẩn trước / sau PR
 const DOC_MATRIX = 'docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/10-MA-TRAN-CHUNG-TU.md';
 const IDENTITIES = path.join(ROOT, 'docs/reviews/tien-do/danh-tinh.json');
 const LOCAL_DIR = path.join(ROOT, 'docs/reviews/tien-do/.local');
@@ -113,6 +115,9 @@ function scorePr(R, n, { withSelfcheck }) {
   const fb = tcB ? pillarFacets(JSON.parse(tcB)) : null;
   const dmA = docMatrix(gitShow(base, DOC_MATRIX));
   const dmB = docMatrix(gitShow(merge, DOC_MATRIX));
+  const blA = gitShow(base, BASELINE);
+  const blB = gitShow(merge, BASELINE);
+  const debt = debtDiff(blA ? JSON.parse(blA) : null, blB ? JSON.parse(blB) : null, { toolChanged: touchesChecker(files) });
 
   const commits = gh(`repos/${R}/pulls/${n}/commits?per_page=100`);
   const authorCount = new Map();
@@ -177,6 +182,7 @@ function scorePr(R, n, { withSelfcheck }) {
     files: files.length,
     impact,
     progress,
+    debt,
     kind: kindOf(progress),
     regressed: regressions(progress.criteriaChanged),
     axes,

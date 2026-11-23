@@ -76,6 +76,15 @@ Bộ chấm kiểm khối này **có mặt và đúng khuôn**, và chạy lại
 
 `gh pr create --body` bỏ qua mẫu PR — `.github/copilot-instructions.md` nhắc trợ lý AI dán khối và dòng trụ cột (`AGENTS.md` thuộc dòng giữ chỗ NT-HT-003, thêm sau).
 
+## 4b. Nợ chuẩn — chuẩn hoá dần
+<!-- [2026-11-23 05:41 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B14 (S040-30) -->
+
+Mục tiêu: luật và tiêu chuẩn xuyên suốt được người đóng góp **chuẩn hoá dần**, không chỉ "không tệ thêm". Bộ kiểm đã chặn nợ **mới** (ratchet, `kiem-chuan`); nợ **cũ** nằm ở `tests/conformance/baseline.json` (đo 2026-11-23: 1020 chỗ — SC-UI-1 467, SC-SIG-2 179, SC-DATA-3 125, SC-LOG-2 118, SC-SIG-1 83 …).
+
+- **Đo theo PR:** bộ chấm so `baseline.json` trước / sau merge → `debt` trong `PR-<n>.json`: số chỗ trả, chỗ thêm (chỉ khi Nhóm Lõi duyệt), theo check và phần mã. PR sửa bộ kiểm (`tests/conformance/checks|lib`) ghi **đổi thước**, không tính công.
+- **Bảng:** cột *Nợ chuẩn* từng PR; mục *Nợ chuẩn theo phần mã* (còn nợ · đã trả); cột *Nợ chuẩn* ở đường tuần. `--nguoi` có cột *Trả nợ chuẩn* (chỉ ở `.local/`).
+- **Nhắc khi sửa tệp còn nợ:** `node scripts/nhan-viec.mjs kiem` ▲ S040-30 liệt kê nợ của từng tệp đang sửa (check, tiêu đề, căn cứ) — chỉ nhắc, không chặn (R-GATE-9); migration đã chạy không nhắc (R-DB-15). Sửa xong: `node tests/conformance/selfcheck.mjs --update-baseline` (chỉ bớt), nhánh được ghi "trả N chỗ".
+
 ## 5. Chạy thế nào
 
 ```text

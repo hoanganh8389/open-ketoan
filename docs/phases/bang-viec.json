@@ -25,7 +25,7 @@
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 81
+      "count": 82
     },
     {
       "key": "paused",
@@ -10640,6 +10640,24 @@
       "facet": "F5",
       "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
       "line": 36
+    },
+    {
+      "id": "S040-30",
+      "phase": "PHASE-040",
+      "title": "B14 — nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước), nhắc nợ của tệp đang sửa ở nhan-viec.mjs kiem {…",
+      "priority": "P1",
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 37
     }
   ]
 }
