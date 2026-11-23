@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 3
+      "count": 4
     },
     {
       "key": "merging",
@@ -10673,6 +10673,30 @@
       "facet": "F1",
       "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
       "line": 38
+    },
+    {
+      "id": "S040-30",
+      "phase": "PHASE-040",
+      "title": "B14 — nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước), nhắc nợ của tệp đang sửa ở nhan-viec.mjs kiem {…",
+      "priority": "P1",
+      "status": "partial",
+      "column": "doing",
+      "claim": {
+        "who": "hoanganh8389 (phiên Claude, PHASE-040)",
+        "branch": "feat/phase-040-b14-no-chuan",
+        "state": "đang làm",
+        "since": "2026-11-23",
+        "dot": "PHASE-040 · S040-30 — B14 nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR / phần mã / người, nhắ…"
+      },
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 39
     }
   ]
 }
