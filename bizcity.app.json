@@ -1,0 +1,29 @@
+{
+  "schema": "bizcity_app@1",
+  "id": "open-ketoan",
+  "name": "Open Kế Toán (Bizcity Core)",
+  "repo": "hoanganh8389/open-ketoan",
+  "public": true,
+  "runtime": "node-ts",
+  "license": "GPL-2.0-or-later",
+  "paid": false,
+  "axes": {
+    "owns": ["item", "uom", "branch", "partner", "ledger", "document"],
+    "uses": ["tenant", "user"]
+  },
+  "sync": {
+    "reconcile": ["RC-SPINE-item", "RC-SPINE-partner", "RC-SPINE-branch"]
+  },
+  "contracts": [
+    "bizcity_spine@1",
+    "bizcity_sync@1",
+    "bizcity_ledger_intake@1",
+    "bizcity_item_master@1",
+    "bizcity_master_data@1",
+    "bizcity_document@1",
+    "bizcity_event@1",
+    "bizcity_mcp@1"
+  ],
+  "docs": { "canon": "docs/canon/README.md", "public": "docs/public/" },
+  "notes": "Chủ của item / uom / branch / partner và sổ cái (bút toán Nợ = Có, chỉ thêm). tenant_id bigint và partner_id bigint là nội bộ, không lộ ra dây: ngoài dùng slug và code. Q-SPINE-3 (chủ duyệt 2026-11-24): mở changefeed since + digest cho items, partners, branches — giữ chỗ ở docs/phases/CLAIMS.md."
+}
