@@ -14,6 +14,7 @@ import { useBranches } from './filters';
 import { CayDonVi } from './CayDonVi';
 import { CayNhomHang, indexNhom, useNhomHang } from './CayNhomHang';
 import type { LocChuan } from './locChuan';
+import { useKhoLoc, WarehouseCheckList } from './ReportPanel';
 
 /** Giá trị "không chi nhánh nào" (trùng BRANCH_NONE của bảng tham số). */
 const CN_NONE = '-';
@@ -49,14 +50,19 @@ function O({ icon, nhan, tomTat, khongDung, children, rong = 420 }: { icon: Reac
 function OChiNhanh({ nguon }: { nguon?: LocChuan['cn'] }) {
   const { data: all = [] } = useBranches();
   const tree = useOrgTree();
-  const [the, setThe] = useState<'cay' | 'ds'>('cay');
+  const [the, setThe] = useState<'cay' | 'ds' | 'kho'>('cay');
   const [tim, setTim] = useState('');
   const v = nguon?.value ?? '';
   const picked = v === CN_NONE ? [] : v ? v.split(',') : all.map((b) => b.code);
   const kho = nguon?.kho?.value ? nguon.kho.value.split(',') : [];
   const tomTat = !nguon || !v ? 'Tất cả chi nhánh' : v === CN_NONE ? 'Chưa chọn' : picked.length === 1
     ? `${picked[0]} · ${all.find((b) => b.code === picked[0])?.name ?? ''}` : `${picked.length} / ${all.length} chi nhánh`;
-  const dat = (codes: string[]) => nguon?.onChange(codes.length === 0 ? CN_NONE : codes.length >= all.length ? '' : all.map((b) => b.code).filter((c) => codes.includes(c)).join(','));
+  const khoDs = useKhoLoc();
+  const dat = (codes: string[]) => {
+    nguon?.onChange(codes.length === 0 ? CN_NONE : codes.length >= all.length ? '' : all.map((b) => b.code).filter((c) => codes.includes(c)).join(','));
+    // Bỏ chi nhánh thì kho của chi nhánh đó rời khỏi danh sách kho đã chọn.
+    if (kho.length) { const kept = kho.filter((c) => codes.includes(khoDs.find((k) => k.code === c)?.branchCode ?? '')); if (kept.length !== kho.length) nguon?.kho?.onChange(kept.join(',')); }
+  };
   const q = tim.trim().toLowerCase();
   return (
     <O icon={<Network size={14} />} nhan="Chi nhánh" tomTat={tomTat + (kho.length ? ` · ${kho.length} kho` : '')} khongDung={!nguon} rong={520}>
@@ -65,8 +71,13 @@ function OChiNhanh({ nguon }: { nguon?: LocChuan['cn'] }) {
           <div className="tabs" style={{ margin: 0 }}>
             <button type="button" className={`tab ${the === 'cay' ? 'active' : ''}`} onClick={() => setThe('cay')} title="Cây theo cơ cấu tổ chức: tích một nút = chọn mọi chi nhánh bên dưới">Cây</button>
             <button type="button" className={`tab ${the === 'ds' ? 'active' : ''}`} onClick={() => setThe('ds')}>Danh sách</button>
+            <button type="button" className={`tab ${the === 'kho' ? 'active' : ''}`} disabled={!nguon?.kho} onClick={() => setThe('kho')}
+              title={nguon?.kho ? 'Chọn riêng từng kho (phân kho); tích kho thì chi nhánh của kho được chọn theo' : 'Màn này không lọc theo kho'}>Kho</button>
           </div>
-          {the === 'cay' ? (
+          {/* [2026-11-25 Nguyễn Văn Thủy] Cây · Danh sách · Kho cùng một lựa chọn (đóng góp) */}
+          {the === 'kho' && nguon?.kho ? (
+            <WarehouseCheckList branches={v} value={nguon.kho.value} onChange={(b, w) => { nguon.onChange(b); nguon.kho?.onChange(w); }} />
+          ) : the === 'cay' ? (
             <CayDonVi tree={tree.data} showBranches showWarehouses={Boolean(nguon?.kho)} checkable height={340} openLevel={2}
               picked={picked} pickedWarehouses={kho} onPick={(b, w) => { dat(b); nguon?.kho?.onChange(w.join(',')); }} />
           ) : (

@@ -422,14 +422,22 @@ export function PanelBranchList({ value, onChange, warehouses }: { value: string
     if (!whRestored.current || !whChange) return;
     try { if (whDraft) localStorage.setItem(whKey(pathname), whDraft); else localStorage.removeItem(whKey(pathname)); } catch { /* bỏ qua */ }
   }, [whDraft, pathname, whChange]);
+  // Bỏ chi nhánh (ở thẻ nào cũng vậy) thì kho của chi nhánh đó rời khỏi danh sách kho đã chọn.
+  const khoDs = useKhoLoc();
+  useEffect(() => {
+    if (!whDraft) return;
+    const b = draft === BRANCH_NONE ? new Set<string>() : draft ? new Set(draft.split(',')) : null;
+    const kept = whDraft.split(',').filter((c) => !b || b.has(khoDs.find((k) => k.code === c)?.branchCode ?? ''));
+    if (kept.length !== whDraft.split(',').length) setWhDraft(kept.join(','));
+  }, [draft, khoDs.length]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => (whChange ? panel?.register(() => { if (whRef.current !== whValueRef.current) whChange(whRef.current); }) : undefined), [panel, whChange]);
   // [2026-11-03 02:30 PM Nguyễn Văn Thủy] SDTC — mở màn luôn ở thẻ Danh sách; tích ở thẻ Cây cũng được nhớ theo màn như thẻ Danh sách
   // Thẻ Danh sách | Cây (như bộ chọn chi nhánh / kho quen dùng). Mở màn luôn ở Danh sách, cần mới chuyển sang Cây.
   // Thanh lọc chuẩn ngoài màn: đọc giá trị đang áp, đổi ở đó là áp ngay (bản nháp ở đây tự theo).
   useDangKyLoc('cn', { value, onChange, kho: warehouses }, `${value}|${whValue}|${Boolean(warehouses)}`);
   // [2026-11-25 Nguyễn Văn Thủy] mở bảng tham số ở thẻ Cây trước — cây phân cấp là cách chọn chính (đóng góp)
-  const [tab, setTab] = useState<'list' | 'tree'>('tree');
-  const pickTab = (t: 'list' | 'tree') => setTab(t);
+  const [tab, setTab] = useState<'list' | 'tree' | 'kho'>('tree');
+  const pickTab = (t: 'list' | 'tree' | 'kho') => setTab(t);
   // Thẻ Danh sách tự nhớ chi nhánh đã tích (BranchCheckList); đang ở thẻ Cây thì nhớ ở đây, cùng một chỗ lưu.
   useEffect(() => {
     if (tab !== 'tree' || draft === BRANCH_NONE) return;
@@ -438,21 +446,14 @@ export function PanelBranchList({ value, onChange, warehouses }: { value: string
   return (
     <>
       <div className="rp-tabs" role="tablist">
-        <button type="button" role="tab" className={tab === 'list' ? 'on' : ''} onClick={() => pickTab('list')} title="Danh sách chi nhánh, mã kho">Danh sách</button>
         <button type="button" role="tab" className={tab === 'tree' ? 'on' : ''} onClick={() => pickTab('tree')} title="Cây theo sơ đồ tổ chức: Công ty → Miền → Chi nhánh → Tỉnh → điểm kinh doanh → kho">Cây</button>
+        <button type="button" role="tab" className={tab === 'list' ? 'on' : ''} onClick={() => pickTab('list')} title="Danh sách chi nhánh">Danh sách</button>
+        {warehouses && <button type="button" role="tab" className={tab === 'kho' ? 'on' : ''} onClick={() => pickTab('kho')} title="Chọn riêng từng kho (phân kho); tích kho thì chi nhánh của kho được chọn theo">Kho</button>}
       </div>
-      {tab === 'tree' ? <PanelBranchTree value={draft} onChange={setDraft} warehouses={warehouses ? { value: whDraft, onChange: setWhDraft } : undefined} /> : (
-        <>
-          <span className="muted" style={{ fontSize: 12, marginTop: 2 }}>Chi nhánh</span>
-          <BranchCheckList value={draft} onChange={setDraft} onRestore={(v) => { setDraft(v); onChange(v); }} />
-          {warehouses && (
-            <>
-              <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>Mã kho</span>
-              <WarehouseCheckList branches={draft} value={whDraft} onChange={setWhDraft} />
-            </>
-          )}
-        </>
-      )}
+      {/* [2026-11-25 Nguyễn Văn Thủy] Cây · Danh sách · Kho là MỘT lựa chọn: tích ở thẻ nào các thẻ kia theo (đóng góp) */}
+      {tab === 'tree' ? <PanelBranchTree value={draft} onChange={setDraft} warehouses={warehouses ? { value: whDraft, onChange: setWhDraft } : undefined} />
+      : tab === 'kho' && warehouses ? <WarehouseCheckList branches={draft} value={whDraft} onChange={(b, w) => { setDraft(b); setWhDraft(w); }} />
+      : <BranchCheckList value={draft} onChange={setDraft} onRestore={(v) => { setDraft(v); onChange(v); }} />}
     </>
   );
 }
@@ -473,51 +474,70 @@ function PanelBranchTree({ value, onChange, warehouses }: { value: string; onCha
   );
 }
 
-interface WarehouseOption { code: string; branchCode: string; name: string; isActive: boolean; isDefault: boolean }
+interface WarehouseOption { code: string; branchCode: string; branchName?: string; name: string; isActive: boolean; isDefault: boolean; typeName?: string }
+
+/** Danh sách kho (có loại kho) dùng chung bảng lọc. */
+export function useKhoLoc() {
+  return useQuery({ queryKey: ['warehouses'], queryFn: () => api.get<WarehouseOption[]>('/api/v1/warehouses'), staleTime: 60_000 }).data ?? [];
+}
 
 /**
- * Mã kho của các chi nhánh đang tích (như màn tồn kho của phần mềm kế toán để bàn: tích chi nhánh thì hiện kho của chi nhánh đó).
- * value: các mã kho cách dấu phẩy; rỗng = không lọc theo kho (mọi kho). Kho mặc định gánh các dòng nhập xuất không ghi mã kho.
- * Bỏ tích chi nhánh thì các kho của chi nhánh đó tự rời khỏi danh sách đã chọn.
+ * Tích / bỏ một kho — cùng cách với thẻ Cây (CayDonVi): chi nhánh '' = mọi chi nhánh, BRANCH_NONE = không chi nhánh nào;
+ * mã kho '' = mọi kho của các chi nhánh đã chọn. Tích kho thì chi nhánh của kho được chọn theo; bỏ hết kho của chi nhánh thì bỏ chi nhánh.
  */
-export function WarehouseCheckList({ branches, value, onChange }: { branches: string; value: string; onChange: (v: string) => void }) {
-  const { data = [] } = useQuery({ queryKey: ['warehouses'], queryFn: () => api.get<WarehouseOption[]>('/api/v1/warehouses'), staleTime: 60_000 });
+export function doiKho(allBranches: string[], kho: WarehouseOption[], branches: string, wh: string, code: string, on: boolean): { branches: string; wh: string } {
+  const b = new Set(branches === BRANCH_NONE ? [] : branches ? branches.split(',') : allBranches);
+  let w = new Set(wh ? wh.split(',') : []);
+  if (!w.size) w = new Set(kho.filter((k) => b.has(k.branchCode)).map((k) => k.code));
+  const k = kho.find((x) => x.code === code);
+  if (!k) return { branches, wh };
+  if (on) { w.add(code); b.add(k.branchCode); } else w.delete(code);
+  if (!kho.some((x) => x.branchCode === k.branchCode && w.has(x.code))) b.delete(k.branchCode);
+  const all = kho.filter((x) => b.has(x.branchCode)).map((x) => x.code);
+  return {
+    branches: b.size === 0 ? BRANCH_NONE : allBranches.every((c) => b.has(c)) ? '' : allBranches.filter((c) => b.has(c)).join(','),
+    wh: all.length && all.every((c) => w.has(c)) ? '' : all.filter((c) => w.has(c)).join(','),
+  };
+}
+
+/**
+ * Thẻ Kho của bộ lọc chi nhánh: mọi kho (tìm theo mã, tên, loại kho, chi nhánh), tích riêng từng kho.
+ * Cùng một lựa chọn với thẻ Cây và Danh sách — onChange trả cả chi nhánh lẫn mã kho.
+ */
+export function WarehouseCheckList({ branches, value, onChange }: { branches: string; value: string; onChange: (branches: string, wh: string) => void }) {
+  const data = useKhoLoc();
+  const { data: brs = [] } = useBranches();
+  const allBr = brs.map((b) => b.code);
   const [text, setText] = useState('');
   const [onlyActive, setOnlyActive] = useState(true);
-  const pickedBranches = branches === BRANCH_NONE ? new Set<string>() : branches ? new Set(branches.split(',')) : null;
-  const ofBranches = data.filter((w) => (!pickedBranches || pickedBranches.has(w.branchCode)) && (!onlyActive || w.isActive || value.split(',').includes(w.code)));
-  const visibleCodes = new Set(ofBranches.map((w) => w.code));
-  const picked = new Set(value ? value.split(',').filter((c) => visibleCodes.has(c)) : []);
-  useEffect(() => {
-    if (!value) return;
-    const kept = value.split(',').filter((c) => visibleCodes.has(c));
-    if (kept.length !== value.split(',').length) onChange(kept.join(','));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branches, data.length]);
+  const b = branches === BRANCH_NONE ? new Set<string>() : branches ? new Set(branches.split(',')) : new Set(allBr);
+  const w = new Set(value ? value.split(',') : []);
+  const isOn = (k: WarehouseOption) => b.has(k.branchCode) && (!w.size || w.has(k.code));
   const q = text.trim().toLowerCase();
-  const shown = ofBranches.filter((w) => !q || w.code.toLowerCase().includes(q) || w.name.toLowerCase().includes(q));
-  const emit = (s: Set<string>) => onChange(ofBranches.filter((w) => s.has(w.code)).map((w) => w.code).join(','));
-  const toggle = (code: string) => { const s = new Set(picked); if (s.has(code)) s.delete(code); else s.add(code); emit(s); };
-  const allOn = ofBranches.length > 0 && picked.size === ofBranches.length;
+  const shown = data.filter((k) => (!onlyActive || k.isActive || isOn(k)) && (!q || `${k.code} ${k.name} ${k.typeName ?? ''} ${k.branchCode} ${k.branchName ?? ''}`.toLowerCase().includes(q)));
+  const nOn = data.filter(isOn).length;
   return (
     <div className="rp-branches">
       <div className="rp-branches-head">
-        <input className="input" placeholder="Tìm mã, tên kho" value={text} onChange={(e) => setText(e.target.value)} />
-        <label className="checkbox" title="Tích / bỏ tích tất cả kho đang hiện"><input type="checkbox" checked={allOn} onChange={() => emit(allOn ? new Set() : new Set(ofBranches.map((w) => w.code)))} /> Chọn</label>
+        <input className="input" placeholder="Tìm mã, tên, loại kho, chi nhánh" value={text} onChange={(e) => setText(e.target.value)} />
+        <label className="checkbox" title="Chỉ hiện kho đang theo dõi"><input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} /> Đang dùng</label>
+      </div>
+      <div className="row" style={{ gap: 4, margin: '4px 0' }}>
+        <button type="button" className="btn btn-xs" onClick={() => onChange('', '')} title="Mọi chi nhánh, mọi kho">Chọn tất</button>
+        <button type="button" className="btn btn-xs" onClick={() => onChange(BRANCH_NONE, '')} title="Bỏ hết rồi tích riêng kho cần xem">Bỏ chọn</button>
       </div>
       <div className="rp-branches-list">
-        {shown.map((w) => (
-          <label key={w.code} className="rp-branch" title={`${w.code} — ${w.name} (chi nhánh ${w.branchCode})${w.isDefault ? ' · kho mặc định' : ''}`}>
-            <span className="mono rp-branch-code">{w.code}</span>
-            <span className="rp-branch-name">{w.name}{w.isDefault ? ' *' : ''}</span>
-            <input type="checkbox" checked={picked.has(w.code)} onChange={() => toggle(w.code)} />
+        {shown.map((k) => (
+          <label key={k.code} className="rp-branch" title={`${k.code} — ${k.name}${k.typeName ? ` (${k.typeName})` : ''} · chi nhánh ${k.branchCode}${k.isDefault ? ' · kho mặc định' : ''}`}>
+            <span className="mono rp-branch-code">{k.code}</span>
+            <span className="rp-branch-name">{k.name}{k.typeName ? <span className="muted"> ({k.typeName})</span> : null}{k.isDefault ? ' *' : ''} <span className="muted mono" style={{ fontSize: 11 }}>· {k.branchCode}</span></span>
+            <input type="checkbox" checked={isOn(k)} onChange={() => { const r = doiKho(allBr, data, branches, value, k.code, !isOn(k)); onChange(r.branches, r.wh); }} />
           </label>
         ))}
-        {shown.length === 0 && <div className="muted" style={{ padding: 6 }}>{data.length ? 'Chi nhánh đang tích chưa có kho' : 'Chưa có danh mục kho (DM12)'}</div>}
+        {shown.length === 0 && <div className="muted" style={{ padding: 6 }}>{data.length ? 'Không thấy kho nào' : 'Chưa có danh mục kho (DM12)'}</div>}
       </div>
       <div className="rp-branches-foot">
-        <span className="muted">{picked.size === 0 ? 'Mọi kho' : `Đang chọn ${picked.size} / ${ofBranches.length} kho`}</span>
-        <label className="checkbox" style={{ fontSize: 11 }} title="Chỉ hiện kho đang theo dõi"><input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} /> Đang dùng</label>
+        <span className="muted">{!w.size ? `Mọi kho của chi nhánh đã chọn (${nOn})` : `Đang chọn ${nOn} kho`}</span>
       </div>
     </div>
   );

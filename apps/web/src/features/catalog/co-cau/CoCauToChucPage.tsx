@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FileDown, FileUp, List, ListTree, MoreHorizontal, Network, Plus, Printer, RefreshCw } from 'lucide-react';
 import { errorText } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { NutTao } from '@/components/NutTao';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorBox, Loading } from '@/components/ui';
 import { NutNhapExcel } from '@/components/NhapExcelWizard';
@@ -55,7 +56,6 @@ export function CoCauToChucPage() {
       <PageHeader title="Cơ cấu tổ chức" code="DM16" helpKey="so-do-to-chuc" subtitle="Đơn vị lồng nhau tuỳ ý (A/B/C…); mỗi đơn vị có phân kho, bộ phận riêng"
         actions={
           <div className="ccm-hd-nut">
-            {canWrite && <button className="btn btn-primary" onClick={() => mo({ loai: 'donvi', code: null, cha: dangChon?.code ?? null })} title="Thêm đơn vị con của đơn vị đang chọn"><Plus size={16} /> Thêm đơn vị</button>}
             <span className="ccm-pop-o" ref={menuRef}>
               <button className="btn" title="Làm mới, xuất / nhập Excel, in" onClick={() => setMenu((x) => !x)}><MoreHorizontal size={16} /></button>
               {menu && (
@@ -71,6 +71,8 @@ export function CoCauToChucPage() {
           </div>
         } />
       <div className="ccm-xem">
+        {/* [2026-11-25 Nguyễn Văn Thủy] nút tạo mới đứng đầu hàng nút, góc trái (quy ước NutTao) (đóng góp) */}
+        {canWrite && <NutTao onClick={() => mo({ loai: 'donvi', code: null, cha: dangChon?.code ?? null })} title="Thêm đơn vị con của đơn vị đang chọn">Thêm đơn vị</NutTao>}
         {([['cay', 'Cây', <ListTree key="i" size={15} />], ['sodo', 'Sơ đồ', <Network key="i" size={15} />], ['ds', 'Danh sách', <List key="i" size={15} />]] as const).map(([v, t, ic]) => (
           <button key={v} type="button" className={xem === v ? 'on' : ''} onClick={() => setXem(v)}>{ic} {t}</button>
         ))}

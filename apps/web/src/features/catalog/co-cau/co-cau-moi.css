@@ -130,7 +130,10 @@
 .ccm-chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #d5dde9; background: #fff; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13.5px; color: #3b4a60; }
 .ccm-chip svg { width: 16px; height: 16px; }
 .ccm-chip.on { border-color: var(--xanh); background: var(--xanh-nhat); color: var(--xanh); font-weight: 600; }
-.ccm-nut-them { border-color: var(--xanh) !important; color: var(--xanh) !important; background: #fff; }
+/* [2026-11-25] nút thêm cùng màu nút tạo mới chuẩn */
+.ccm-nut-them { border-color: var(--brand-600) !important; color: #fff !important; background: var(--brand-600) !important; }
+.ccm-nut-them:hover { background: var(--brand-700) !important; border-color: var(--brand-700) !important; }
+.ccm-nut-them svg { color: #fff; }
 .ccm-ds-loc { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .ccm-ds-loc .ccm-tim { max-width: 380px; }
 .ccm-ds-loc select.input { width: auto; height: 36px; border-radius: 8px; }

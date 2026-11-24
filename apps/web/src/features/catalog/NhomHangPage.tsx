@@ -168,7 +168,7 @@ export function NhomHangPage() {
                     })}
                     {!ds.length && <div className="muted nh3-trong">{khop ? 'Không có nhóm nào khớp.' : c.trong}</div>}
                   </div>
-                  {canWrite && <footer><button type="button" className="nh3-them" disabled={c.lv > 1 && !c.cha} title={c.lv > 1 && !c.cha ? `Chọn một ${c.lv === 2 ? "ngành hàng" : "nhãn hàng"} ở cột bên trái trước` : undefined} onClick={() => setForm({ mode: 'add', parent: c.cha })}>+ {c.them}</button></footer>}
+                  {canWrite && <footer><button type="button" className="btn btn-sm btn-primary nut-tao nh3-them" disabled={c.lv > 1 && !c.cha} title={c.lv > 1 && !c.cha ? `Chọn một ${c.lv === 2 ? "ngành hàng" : "nhãn hàng"} ở cột bên trái trước` : undefined} onClick={() => setForm({ mode: 'add', parent: c.cha })}><Plus size={14} /> {c.them}</button></footer>}
                 </section>
               );
             })}

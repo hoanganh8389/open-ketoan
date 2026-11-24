@@ -133,7 +133,7 @@
 .nh3-tich { flex: none; color: var(--brand-600, #1f66a3); }
 .nh3-trong { padding: 12px 8px; font-size: 12px; }
 .nh3-cot > footer { padding: 8px 12px; border-top: 1px solid var(--line, #e3e7ee); }
-.nh3-them { padding: 0; border: 0; background: none; color: var(--nav, #2457B3); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-.nh3-them:disabled { color: var(--ink-400, #9aa1ad); cursor: default; }
+/* [2026-11-25 Nguyễn Văn Thủy] nút thêm ngành / nhãn / nhóm cùng kiểu nút tạo mới chuẩn (NutTao) (đóng góp) */
+.nh3-them { display: inline-flex; align-items: center; gap: 4px; }
 .nh3-mh { border-top: 1px solid var(--line, #e3e7ee); padding-top: 10px; }
 @media (max-width: 900px) { .nh3-cots { grid-template-columns: 1fr; } .nh3-ds { height: 220px; } }

@@ -2184,3 +2184,9 @@ td.o-loi { background: color-mix(in srgb, var(--bad) 8%, transparent); }
 .tlc-khac { flex: 1; min-width: 0; }
 .tlc-khac .rp-tt { flex-wrap: wrap; }
 @media print { .tlc { display: none !important; } }
+/* [2026-11-25] nút tạo mới (NutTao) luôn cùng màu ở mọi màn, kể cả nơi có kiểu nút riêng */
+.nut-tao, .ccm-xem > button.nut-tao { background: var(--brand-600) !important; border-color: var(--brand-600) !important; color: #fff !important; }
+.nut-tao:hover:not(:disabled), .ccm-xem > button.nut-tao:hover { background: var(--brand-700) !important; border-color: var(--brand-700) !important; }
+.nut-tao svg { color: #fff !important; }
+.ccm-xem > button.nut-tao { margin-right: 6px; }
+.tlc-tha .rp-branches-list { max-height: 340px; overflow: auto; }
