@@ -10,8 +10,11 @@
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-032: thông tin giao, chuyến giao, copy đơn (đóng góp)
 // [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: hộp Lập / sửa đơn dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 import { useEffect, useState } from 'react';
-import { BranchPicker, DocSheet, DocSheetPanel, ErrorBox, Field, ItemPicker, Loading, errorText, useApi, useCan, useMutation, useQuery, useQueryClient } from '@bizcity/ui-kit';
+import { BranchPicker, DocSheet, DocSheetPanel, ErrorBox, Field, ItemPicker, Loading, Modal, errorText, useApi, useCan, useMutation, useQuery, useQueryClient } from '@bizcity/ui-kit';
 import { ACTION, M, SELF_CARRIER, SHIP_NEXT, SHIP_STATUS, STATUS, fmt, printQuote, remaining, time, today, vnd, type HistoryEvent, type Order, type ShipStatus } from '../lib';
+
+// [2026-11-24 Võ Hoàng] NGHIEM-THU — thử thật BH20 24/11: lý do đóng đơn (closeReason của máy chủ) bằng tiếng Việt (đóng góp)
+const CLOSE_REASON: Record<string, string> = { delivered: 'đã giao đủ', manual: 'đóng tay — thôi giữ phần chưa giao' };
 
 type DraftLine = { lineKey: string; sku: string; qty: string; unitPrice: string; discount: string; isGift: boolean };
 type Draft = {
@@ -105,11 +108,10 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
     onSuccess: (r) => { if (r) done(r.o, r.text); },
   });
   const act = (a: string, body?: unknown) => run.mutate({ act: a, body });
-  const ask = (a: string, label: string, required = false) => {
-    const note = window.prompt(`${label} — ghi chú / lý do${required ? ' (bắt buộc)' : ''}`) ?? null;
-    if (note === null || (required && !note.trim())) return;
-    act(a, { note });
-  };
+  // [2026-11-24 Võ Hoàng] NGHIEM-THU — thử thật BH20 24/11: hỏi ghi chú / mã vận đơn bằng hộp thoại trong màn, thay hộp nhập của trình duyệt (window.prompt) (đóng góp)
+  const [hoi, setHoi] = useState<{ title: string; noteLabel: string; required: boolean; tracking: boolean; ok: (note: string, tracking: string) => void } | null>(null);
+  const ask = (a: string, label: string, required = false) =>
+    setHoi({ title: label, noteLabel: required ? 'Lý do (bắt buộc)' : 'Ghi chú / lý do (tuỳ chọn)', required, tracking: false, ok: (note) => act(a, { note }) });
   const setLine = (i: number, patch: Partial<DraftLine>) => setD({ ...d, lines: d.lines.map((l, k) => (k === i ? { ...l, ...patch } : l)) });
   const addLine = () => {
     let k = d.lines.length + 1;
@@ -119,12 +121,9 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
   const line = (key: string) => cur?.lines.find((l) => l.lineKey === key);
   const giveLines = () => Object.entries(give).map(([lineKey, v]) => ({ lineKey, qty: Number(v) || 0 })).filter((x) => x.qty > 0);
   const hasGive = giveLines().length > 0;
-  const shipTo = (sid: string, to: ShipStatus, label: string) => {
-    const note = window.prompt(`${label} — ghi chú${to === 'returned' ? ' / lý do hoàn' : ''} (tuỳ chọn)`);
-    if (note === null) return;
-    const tracking = to === 'shipping' ? window.prompt('Mã vận đơn (để trống = giữ như chuyến)') ?? '' : '';
-    act(`shipments/${sid}/status`, { status: to, ...(note ? { note } : {}), ...(tracking ? { trackingNo: tracking } : {}) });
-  };
+  const shipTo = (sid: string, to: ShipStatus, label: string) =>
+    setHoi({ title: label, noteLabel: `Ghi chú${to === 'returned' ? ' / lý do hoàn' : ''} (tuỳ chọn)`, required: false, tracking: to === 'shipping',
+      ok: (note, tracking) => act(`shipments/${sid}/status`, { status: to, ...(note ? { note } : {}), ...(tracking ? { trackingNo: tracking } : {}) }) });
   const noShipLap = shipLap ? '' : 'Cần quyền phieu-ban:giao-hang-lap';
   const noShipSua = shipSua ? '' : 'Cần quyền phieu-ban:giao-hang-sua (cập nhật chuyến giao)';
   const lockedHead = status === 'open';
@@ -187,9 +186,10 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
           {cur?.status === 'pending' && <div className="mh-check warn">⚠ Chờ duyệt: {cur.pendingReasons.join(' · ')}</div>}
           {cur?.rejection && status === 'draft' && <div className="mh-check warn">⚠ Bị từ chối bởi {cur.rejection.by} lúc {time(cur.rejection.at)}: {cur.rejection.note}</div>}
           {cur?.copiedFrom && <div className="muted" style={{ fontSize: 12, marginBottom: 3 }}>Copy từ {cur.copiedFrom.slice(cur.copiedFrom.indexOf(':') + 1)}</div>}
-          {!editable ? <div className="mh-check ok">✓ Đơn {STATUS[status].label.toLowerCase()} — chỉ xem{cur?.closeReason ? `: ${cur.closeReason}` : ''}</div>
+          {/* // [2026-11-24 Võ Hoàng] NGHIEM-THU — thử thật BH20 24/11: lý do đóng bằng tiếng Việt; câu "ổn" theo trạng thái đơn (đóng góp) */}
+          {!editable ? <div className="mh-check ok">✓ Đơn {STATUS[status].label.toLowerCase()} — chỉ xem{cur?.closeReason ? `: ${CLOSE_REASON[cur.closeReason] ?? cur.closeReason}` : ''}</div>
             : checks.length ? checks.map((c) => <div key={c} className="mh-check warn">⚠ {c}</div>)
-            : <div className="mh-check ok">✓ Đủ thông tin — bấm Ghi để lưu đơn</div>}
+            : <div className="mh-check ok">✓ {!cur ? 'Đủ thông tin — bấm Ghi để lưu đơn' : status === 'draft' ? 'Đủ thông tin — bấm Gửi để giữ hàng' : status === 'open' ? 'Đơn đang mở — nhập "Giao lần này" rồi Lập chuyến giao / Giao tại quầy' : 'Đủ thông tin'}</div>}
           {editable && (
             <ol className="mh-guide" style={{ marginTop: 6 }}>
               <li className={cur ? 'done' : ''}><b>Ghi</b> lưu đơn nháp — máy chủ tính lại giá, khuyến mại, tiền</li>
@@ -264,11 +264,12 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
           </div>
         )}
         <div className="kp-lines-box">
-          <table className="grid">
+          {/* // [2026-11-24 Võ Hoàng] NGHIEM-THU — thử thật BH20 24/11: cột gọn lại + bảng có bề rộng tối thiểu (thiếu chỗ thì cuộn ngang) để cột Tên không bị ép, chữ không đè ô SL (đóng góp) */}
+          <table className="grid" style={{ minWidth: status === 'open' ? 1040 : 950 }}>
             <thead><tr>
-              <th style={{ width: 200 }}>Mã hàng</th><th>Tên</th><th style={{ width: 80 }}>SL</th><th style={{ width: 120 }}>Đơn giá</th><th style={{ width: 100 }}>Chiết khấu</th>
-              <th style={{ width: 46 }}>Quà</th><th style={{ width: 110 }}>Thành tiền</th><th style={{ width: 72 }}>Đã giao</th><th style={{ width: 80 }}>Đang giao</th><th style={{ width: 78 }}>Đang giữ</th>
-              {status === 'open' && <th style={{ width: 100 }}>Giao lần này</th>}<th style={{ width: 52 }} />
+              <th style={{ width: 150 }}>Mã hàng</th><th style={{ minWidth: 120 }}>Tên</th><th style={{ width: 80 }}>SL</th><th style={{ width: 105 }}>Đơn giá</th><th style={{ width: 90 }}>Chiết khấu</th>
+              <th style={{ width: 46 }}>Quà</th><th style={{ width: 100 }}>Thành tiền</th><th style={{ width: 66 }}>Đã giao</th><th style={{ width: 70 }}>Đang giao</th><th style={{ width: 70 }}>Đang giữ</th>
+              {status === 'open' && <th style={{ width: 90 }}>Giao lần này</th>}<th style={{ width: 52 }} />
             </tr></thead>
             <tbody>{d.lines.map((l, i) => {
               const s = line(l.lineKey);
@@ -346,6 +347,22 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
           </table>
         )
       )}
+          {hoi && <HoiGhiChu {...hoi} onClose={() => setHoi(null)} />}
     </DocSheet>
+  );
+}
+
+// [2026-11-24 Võ Hoàng] NGHIEM-THU — thử thật BH20 24/11: hộp thoại nhỏ hỏi ghi chú / lý do (và mã vận đơn khi Đi giao) — thay window.prompt (đóng góp)
+function HoiGhiChu({ title, noteLabel, required, tracking, ok, onClose }: { title: string; noteLabel: string; required: boolean; tracking: boolean; ok: (note: string, tracking: string) => void; onClose: () => void }) {
+  const [note, setNote] = useState('');
+  const [ma, setMa] = useState('');
+  const thieu = required && !note.trim();
+  const xong = () => { if (thieu) return; ok(note.trim(), ma.trim()); onClose(); };
+  return (
+    <Modal title={title} onClose={onClose}
+      footer={<><button className="btn btn-primary" disabled={thieu} title={thieu ? 'Nhập lý do trước' : ''} onClick={xong}>Đồng ý</button><button className="btn" onClick={onClose}>Thôi</button></>}>
+      <Field label={noteLabel} full><input className="input" autoFocus value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') xong(); }} /></Field>
+      {tracking && <Field label="Mã vận đơn (để trống = giữ như chuyến)" full><input className="input" value={ma} onChange={(e) => setMa(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') xong(); }} /></Field>}
+    </Modal>
   );
 }
