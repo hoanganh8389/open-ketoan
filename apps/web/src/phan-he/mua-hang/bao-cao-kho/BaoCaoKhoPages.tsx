@@ -12,7 +12,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { api, errorText } from '@/lib/api';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
-import { BranchSelect } from '@/components/filters';
+import { BranchSelect, DateRange, DenNgay } from '@/components/filters';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { ErrorBox } from '@/components/ui';
@@ -57,8 +57,7 @@ export function SoKhoTheoMatHangPage() {
     <>
       <PageHeader title="Sổ kho theo mặt hàng" code="MH24" helpKey="mua-hang-bao-cao-kho" subtitle="Mỗi mặt hàng: tồn đầu, nhập, nhập lại, nhập / xuất nội bộ, xuất bán, xuất trả, xuất điều chỉnh, SL điều chỉnh ±, khác, tồn cuối — theo chi nhánh / mã kho đã chọn" />
       <FilterLayout filters={<form className="rp-form" onSubmit={(e) => { e.preventDefault(); set({ from: d.from, to: d.to, search: d.search.trim() }); setRan(true); }}>
-        <div className="field"><label>Từ ngày</label><input className="input" type="date" value={d.from} onChange={(e) => setD({ ...d, from: e.target.value })} /></div>
-        <div className="field"><label>Đến ngày</label><input className="input" type="date" value={d.to} onChange={(e) => setD({ ...d, to: e.target.value })} /></div>
+        <DateRange from={d.from} to={d.to} onChange={(a, b) => setD({ ...d, from: a, to: b })} />
         <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} warehouses={{ value: f.warehouseCodes, onChange: (warehouseCodes) => set({ warehouseCodes }) }} />
         <ChonNhomHang value={nhom} onChange={setNhom} />
         <div className="field"><label>Mã / tên hàng</label><input className="input" value={d.search} onChange={(e) => setD({ ...d, search: e.target.value })} /></div>
@@ -108,7 +107,7 @@ export function TonKhoTheoMatHangPage() {
     <>
       <PageHeader title="Tồn kho theo mặt hàng" code="MH25" helpKey="mua-hang-bao-cao-kho" subtitle="Tồn theo từng kho: số lượng, đơn giá, thành tiền, hàng đi đường, tồn max / min theo kho, SL cần nhập" />
       <FilterLayout filters={<form className="rp-form" onSubmit={(e) => { e.preventDefault(); set({ to: d.to, search: d.search.trim() }); setRan(true); }}>
-        <div className="field"><label>Đến ngày</label><input className="input" type="date" value={d.to} onChange={(e) => setD({ ...d, to: e.target.value })} /></div>
+        <DenNgay value={d.to} onChange={(v) => setD({ ...d, to: v })} />
         <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} warehouses={{ value: f.warehouseCodes, onChange: (warehouseCodes) => set({ warehouseCodes }) }} />
         <ChonNhomHang value={nhom} onChange={setNhom} />
         <div className="field"><label>Mã / tên hàng</label><input className="input" value={d.search} onChange={(e) => setD({ ...d, search: e.target.value })} /></div>

@@ -28,7 +28,7 @@ import { congNo, tienPhieu } from './tienPhieu';
 import { TongHopTheoNhom } from '../tong-hop/TongHopMuaPage';
 import { LocKho, matchKho, useKhoOf, type KhoFilter } from '../thanh-phan/LocKho';
 import { FilterLayout } from '@/components/ReportPanel';
-import { BranchSelect } from '@/components/filters';
+import { BranchSelect, DateRange } from '@/components/filters';
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { NccInfo } from '../thanh-phan/NccInfo';
 import { PrintButton } from '@/components/print';
@@ -426,8 +426,7 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
         return (
           <FilterLayout filters={<>
             {!embedded && <div className="field"><label>Nhà cung cấp</label><PartnerPicker kind="supplier" value={partner} onChange={setPartner} placeholder="Mọi nhà cung cấp" /></div>}
-            <div className="field"><label>Từ ngày</label><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-            <div className="field"><label>Đến ngày</label><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+            <DateRange from={from} to={to} remember={false} onChange={(a, b) => { setFrom(a); setTo(b); }} />
             <BranchSelect value={branchCodes} onChange={setBranchCodes} warehouses={{ value: whCodes, onChange: setWhCodes }} />
             {view !== 'phieu' && view !== 'nhom' && <ChonNhomHang value={nhom} onChange={setNhom} />}
             <div className="field"><label>Trạng thái</label>{statusSel}</div>

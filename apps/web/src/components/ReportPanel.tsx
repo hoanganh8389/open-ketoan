@@ -24,6 +24,8 @@ import { FilterPanelCtx, useFilterPanel, type FilterPanelContext } from './filte
 import { CayDonVi } from './CayDonVi';
 import { useOrgTree } from '@/lib/orgUnits';
 import { BoThamSo, BranchBridgeCtx, type BoThamSoProps, type BranchBridge } from './BoThamSo';
+import { LocChuanCtx, useDangKyLoc, type LocChuan, type LocChuanContext } from './locChuan';
+import { ThanhLocChuan } from './ThanhLocChuan';
 
 /**
  * Bề rộng bảng lọc (nhớ theo máy): mặc định 240px để nhường chỗ cho bảng số liệu; kéo rộng tới 600px,
@@ -41,7 +43,9 @@ const readGhim = () => { try { const v = localStorage.getItem(GHIM_KEY); return 
 
 const dmy = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? `${v.slice(8, 10)}/${v.slice(5, 7)}/${v.slice(0, 4)}` : v);
 /** Đọc tham số đang chọn từ bảng lọc (nhãn + giá trị ô) để hiện một dòng tóm tắt trên báo cáo. */
-function tomTat(panel: HTMLElement | null): string[] {
+/** Nhãn của ô kỳ: đã có ở thanh lọc chuẩn thì không lặp lại trong phần tóm tắt. */
+const NHAN_KY = new Set(['Kỳ', 'Từ ngày', 'Đến ngày']);
+function tomTat(panel: HTMLElement | null, bo: { ky?: boolean; cn?: boolean } = {}): string[] {
   if (!panel) return [];
   const out: string[] = [];
   const fields = panel.querySelectorAll<HTMLElement>('.rp-field, .rp-filters .field');
@@ -49,6 +53,7 @@ function tomTat(panel: HTMLElement | null): string[] {
     const label = (f.querySelector(':scope > span, :scope > label')?.textContent ?? '').trim();
     const ctl = f.querySelector<HTMLInputElement | HTMLSelectElement>('select, input:not([type=checkbox]):not([type=radio])');
     if (!label || !ctl) return;
+    if (bo.ky && NHAN_KY.has(label)) return;
     let v = ctl instanceof HTMLSelectElement ? ctl.selectedOptions[0]?.text ?? '' : ctl.value;
     v = dmy(v.trim());
     if (!v || v === 'Tuỳ chọn' || /^(—|-)/.test(v)) return;
@@ -61,7 +66,7 @@ function tomTat(panel: HTMLElement | null): string[] {
     const text = (l.textContent ?? '').trim();
     if (box?.checked && text) out.push(text);
   });
-  const list = panel.querySelector('.rp-branches');
+  const list = bo.cn ? null : panel.querySelector('.rp-branches');
   if (list) {
     const boxes = [...list.querySelectorAll<HTMLInputElement>('.rp-branch input[type=checkbox]')];
     const on = boxes.filter((b) => b.checked).length;
@@ -75,6 +80,11 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
   const [ghim, setGhim] = useState(readGhim);
   const [mo, setMo] = useState(false);
   const [tt, setTt] = useState<string[]>([]);
+  // [2026-11-25 Nguyễn Văn Thủy] UX TOÀN HỆ THỐNG — ô lọc chuẩn (chi nhánh · kỳ · nhóm hàng) đăng ký về đây, hiện ở thanh ngoài (đóng góp)
+  const [loc, setLoc] = useState<LocChuan>({});
+  const locCtx = useMemo<LocChuanContext>(() => ({ dat: (k, n) => setLoc((cur) => ({ ...cur, [k]: n ?? undefined })) }), []);
+  const bo = { ky: Boolean(loc.ky), cn: Boolean(loc.cn) };
+  const doc = () => tomTat(panelRef.current, bo);
   // Ô chi nhánh trong bảng tham số tự đăng ký: có thì khối Bộ tham số hiện cả ở màn chưa nối bộ tham số riêng.
   const bridge = useRef<BranchBridge | null>(null);
   const [coCN, setCoCN] = useState(false);
@@ -83,18 +93,18 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
   panel = <BranchBridgeCtx.Provider value={reg}>{panel}</BranchBridgeCtx.Provider>;
   const doiGhim = () => { const g = !ghim; setGhim(g); setMo(false); try { localStorage.setItem(GHIM_KEY, g ? '1' : '0'); } catch { /* bỏ qua */ } };
   // Tóm tắt tham số: đọc lại sau khi vẽ và khi đóng ngăn kéo.
-  useEffect(() => { if (ghim) return; const t = setTimeout(() => setTt(tomTat(panelRef.current)), 300); return () => clearTimeout(t); }, [ghim, mo]);
+  useEffect(() => { if (ghim) return; const t = setTimeout(() => setTt(doc()), 300); return () => clearTimeout(t); }, [ghim, mo, bo.ky, bo.cn]);
   // [2026-11-11 Nguyễn Văn Thủy] màn đổi tham số bằng mã (bấm tờ khai đã lưu, mở từ danh sách…): đọc lại tóm tắt khi bảng tham số vẽ lại (đóng góp)
   useEffect(() => {
     if (ghim) return;
-    const t = setTimeout(() => { const next = tomTat(panelRef.current); setTt((cur) => (cur.join('|') === next.join('|') ? cur : next)); }, 150);
+    const t = setTimeout(() => { const next = doc(); setTt((cur) => (cur.join('|') === next.join('|') ? cur : next)); }, 150);
     return () => clearTimeout(t);
   }, [panel, ghim]);
   // Bấm nút chính (Tìm kiếm / Xem) trong ngăn kéo: đóng ngăn, báo cáo hiện trọn bề ngang.
   const onPanelClick = (e: React.MouseEvent) => {
     if (ghim) return;
     const b = (e.target as HTMLElement).closest('button');
-    if (b && b.classList.contains('btn-primary') && b.closest('.rp-actions')) setTimeout(() => { setMo(false); setTt(tomTat(panelRef.current)); }, 50);
+    if (b && b.classList.contains('btn-primary') && b.closest('.rp-actions')) setTimeout(() => { setMo(false); setTt(doc()); }, 50);
   };
   useEffect(() => {
     if (!mo) return;
@@ -162,11 +172,11 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
 
   if (!ghim) {
     return (
+      <LocChuanCtx.Provider value={locCtx}>
       <div className="rp-layout rp-keo">
-        <div className="rp-bar">
-          <div className="rp-tt" title="Tham số đang xem">{tt.length ? tt.map((x) => <span key={x}>{x}</span>) : <span className="muted">Bấm Chọn tham số để lọc kỳ, chi nhánh…</span>}</div>
-          <button type="button" className="btn btn-sm rp-chon" onClick={() => setMo(true)} title="Mở bảng tham số (kỳ, chi nhánh, kho, tài khoản…)"><SlidersHorizontal size={14} /> Chọn tham số</button>
-        </div>
+        <ThanhLocChuan loc={loc}
+          khac={<div className="rp-tt" title="Các tham số khác đang xem — sửa ở Chọn tham số">{tt.map((x) => <span key={x}>{x}</span>)}</div>}
+          nutThamSo={<button type="button" className="btn btn-sm rp-chon" onClick={() => setMo(true)} title="Lọc kết hợp nâng cao: mọi tham số của màn (nhà cung cấp, tài khoản, trạng thái…) và bộ tham số đã lưu"><SlidersHorizontal size={14} /> Chọn tham số</button>} />
         {mo && <div className="rp-keo-mask" onMouseDown={() => setMo(false)} />}
         <aside className={`rp-panel rp-keo-panel${mo ? ' mo' : ''}`} ref={panelRef} onClickCapture={onPanelClick} aria-hidden={!mo}>
           <div className="rp-keo-head">
@@ -179,10 +189,13 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
         </aside>
         <div className="rp-main">{children}</div>
       </div>
+      </LocChuanCtx.Provider>
     );
   }
 
   return (
+    <LocChuanCtx.Provider value={locCtx}>
+    <ThanhLocChuan loc={loc} />
     <div className={`rp-layout${collapsed ? ' collapsed' : ''}${mOpen ? '' : ' m-closed'}`} style={{ gridTemplateColumns: `${width}px 12px minmax(0, 1fr)` }}>
       <button type="button" className="rp-mtoggle" onClick={() => setMOpen((x) => !x)}>{mOpen ? '▾' : '▸'} Bộ lọc</button>
       <aside className="rp-panel" ref={panelRef} style={{ height: maxH }}>
@@ -195,11 +208,13 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
       </div>
       <div className="rp-main">{children}</div>
     </div>
+    </LocChuanCtx.Provider>
   );
 }
 
 /** Bảng lọc bên trái: ô Kỳ (chọn nhanh Hôm nay, Tháng này, Quý này…) + Từ ngày + Đến ngày. */
 export function SideKy({ from, to, onChange }: { from: string; to: string; onChange: (from: string, to: string) => void }) {
+  useDangKyLoc('ky', { from, to, onChange }, `${from}|${to}`);
   return (
     <>
       <SideField label="Kỳ">
@@ -410,7 +425,10 @@ export function PanelBranchList({ value, onChange, warehouses }: { value: string
   useEffect(() => (whChange ? panel?.register(() => { if (whRef.current !== whValueRef.current) whChange(whRef.current); }) : undefined), [panel, whChange]);
   // [2026-11-03 02:30 PM Nguyễn Văn Thủy] SDTC — mở màn luôn ở thẻ Danh sách; tích ở thẻ Cây cũng được nhớ theo màn như thẻ Danh sách
   // Thẻ Danh sách | Cây (như bộ chọn chi nhánh / kho quen dùng). Mở màn luôn ở Danh sách, cần mới chuyển sang Cây.
-  const [tab, setTab] = useState<'list' | 'tree'>('list');
+  // Thanh lọc chuẩn ngoài màn: đọc giá trị đang áp, đổi ở đó là áp ngay (bản nháp ở đây tự theo).
+  useDangKyLoc('cn', { value, onChange, kho: warehouses }, `${value}|${whValue}|${Boolean(warehouses)}`);
+  // [2026-11-25 Nguyễn Văn Thủy] mở bảng tham số ở thẻ Cây trước — cây phân cấp là cách chọn chính (đóng góp)
+  const [tab, setTab] = useState<'list' | 'tree'>('tree');
   const pickTab = (t: 'list' | 'tree') => setTab(t);
   // Thẻ Danh sách tự nhớ chi nhánh đã tích (BranchCheckList); đang ở thẻ Cây thì nhớ ở đây, cùng một chỗ lưu.
   useEffect(() => {

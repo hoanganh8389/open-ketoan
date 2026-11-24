@@ -12,7 +12,7 @@ import { api, errorText } from '@/lib/api';
 import { today } from '@/lib/format';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
-import { BranchSelect } from '@/components/filters';
+import { BranchSelect, DenNgay } from '@/components/filters';
 import { Empty, ErrorBox, Loading } from '@/components/ui';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { AccountPicker, ListPicker, PartnerPicker } from '@/components/pickers';
@@ -58,7 +58,7 @@ export function AgingDuePage({ preset }: { preset: AgingDuePreset }) {
             <div className="field"><label>Số tài khoản</label><AccountPicker className="input" value={f.account} onChange={(account) => set({ account })} /></div>
             <div className="field"><label>Nhóm KH</label><ListPicker items={groups} value={f.groupCode} onChange={(groupCode) => set({ groupCode })} placeholder="Tất cả" /></div>
             <div className="field"><label>KH/NCC</label><PartnerPicker value={f.partnerCode} onChange={(partnerCode) => set({ partnerCode })} placeholder="Tất cả" /></div>
-            <div className="field"><label>Đến ngày</label><input type="date" className="input" value={f.asOf} onChange={(e) => e.target.value && set({ asOf: e.target.value })} /></div>
+            <DenNgay value={f.asOf} onChange={(v) => set({ asOf: v })} />
             <div className="field"><label>Bước nhảy</label><input className="input num" inputMode="numeric" value={stepText} onChange={(e) => setStepText(e.target.value)} onBlur={() => set({ step: Math.min(365, Math.max(1, Number(stepText) || 30)) })} /></div>
             <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} />
           </>

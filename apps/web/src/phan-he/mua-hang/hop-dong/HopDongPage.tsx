@@ -12,6 +12,7 @@ import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Copy, Plus, X } from 'lucide-react';
+import { NutTao } from '@/components/NutTao';
 import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Field, Loading, NumInput } from '@/components/ui';
@@ -63,12 +64,14 @@ export function HopDongMuaPage({ embedded, partner }: { embedded?: boolean; part
   const body = (
       <div className={embedded ? '' : 'card'}>
         <div className="row" style={{ gap: 8, padding: '8px 12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ width: 260 }}><PartnerPicker value={ncc} onChange={setNcc} kind="supplier" placeholder="Lọc theo nhà cung cấp" /></div>
-          <input className="input" style={{ width: 240 }} placeholder="Tìm số hợp đồng, tên, NCC…" value={find} onChange={(e) => setFind(e.target.value)} />
-          {tt.sua && <button className="btn btn-sm btn-primary" onClick={() => navigate(hopDongMoiPath(ncc || undefined))}><Plus size={14} /> Thêm hợp đồng</button>}
+          {/* [2026-11-25 Nguyễn Văn Thủy] nút tạo mới luôn đứng đầu, góc trái (quy ước NutTao); ô lọc / tìm dồn sang phải (đóng góp) */}
+          {tt.sua && <NutTao onClick={() => navigate(hopDongMoiPath(ncc || undefined))}>Thêm hợp đồng</NutTao>}
           {/* [2026-11-19 Nguyễn Văn Thủy] nhân bản hợp đồng đang chọn: chép thông tin, hàng hoá, điều khoản sang hợp đồng mới (đóng góp) */}
           {tt.sua && <button className="btn btn-sm" disabled={!sel} title={sel ? `Nhân bản hợp đồng ${sel.code}: chép thông tin, hàng hoá, điều khoản — nhập số hợp đồng mới rồi Ghi` : 'Chọn một hợp đồng để nhân bản'} onClick={() => sel && navigate(hopDongNhanBanPath(sel.code))}><Copy size={13} /> Nhân bản</button>}
           <span className="muted" style={{ fontSize: 12 }}>Bấm đúp một dòng để mở hợp đồng</span>
+          <span className="spacer" style={{ flex: 1 }} />
+          <div style={{ width: 260 }}><PartnerPicker value={ncc} onChange={setNcc} kind="supplier" placeholder="Lọc theo nhà cung cấp" /></div>
+          <input className="input" style={{ width: 240 }} placeholder="Tìm số hợp đồng, tên, NCC…" value={find} onChange={(e) => setFind(e.target.value)} />
         </div>
         <ErrorBox error={q.error ? errorText(q.error) : null} />
         {q.isLoading ? <Loading /> : (

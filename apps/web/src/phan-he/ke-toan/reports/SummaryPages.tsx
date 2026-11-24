@@ -12,7 +12,7 @@ import { api, errorText } from '@/lib/api';
 import { defaultFrom, defaultTo, periodFrom } from '@/lib/format';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
-import { BranchSelect, DateRange, useBranches } from '@/components/filters';
+import { BranchSelect, DateRange, DenNgay, useBranches } from '@/components/filters';
 import { Empty, ErrorBox, Loading, Money } from '@/components/ui';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { AccountPicker } from '@/components/pickers';
@@ -148,7 +148,7 @@ export function CashBalancesPage() {
         print={<PrintButton screen="ACC80" templates={CASH_BALANCE_TEMPLATES} disabled={!lines.length} getDocs={() => [{ to: f.to, days, branchText, lines }]} />}
         filters={
           <>
-            <div className="field"><label>Đến ngày</label><input type="date" className="input" value={f.to} onChange={(e) => set({ to: e.target.value })} /></div>
+            <DenNgay value={f.to} onChange={(v) => set({ to: v })} />
             <label className="checkbox"><input type="checkbox" checked={f.compare} onChange={(e) => set({ compare: e.target.checked })} /> So sánh với ngày trước</label>
             <div className="field"><label>Số ngày trước</label>
               <select className="select input" value={f.days} disabled={!f.compare} onChange={(e) => set({ days: Number(e.target.value) })}>

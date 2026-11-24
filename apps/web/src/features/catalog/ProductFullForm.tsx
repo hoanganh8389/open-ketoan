@@ -10,7 +10,8 @@
  *                    Không chịu thuế (KCT) là một lựa chọn thuế suất — máy chủ suy cờ KCT từ mã VAT ra.
  * Lưu một lần: PUT /api/v1/catalog/products/:sku (đơn vị tính thay cả bộ; ô giá để trống = chưa khai giá).
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { CayNhomHang, indexNhom, useNhomHang } from '@/components/CayNhomHang';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
 import { ErrorBox, Field, Loading, Modal, NumInput, useViewAgain } from '@/components/ui';
@@ -538,6 +539,12 @@ function MaHangGiaiThich({ sku, hint, auto, isNew }: { sku: string; hint: SkuPre
 function ChonNhomCay({ classes, value, label, onChange, defaultOpen }: { classes: ItemClassLite[]; value: string | null; label: string; onChange: (c: string) => void; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(Boolean(defaultOpen));
   const [msg, setMsg] = useState('');
+  // [2026-11-25 Nguyễn Văn Thủy] thẻ "+ Thêm nhóm mới" ngay trong ô chọn: không phải mở màn DM11 (đóng góp)
+  const [the, setThe] = useState<'chon' | 'them'>('chon');
+  const [cha, setCha] = useState<string | null>(null);
+  const [form, setForm] = useState<{ parent: string | null } | null>(null);
+  const nh = useNhomHang();
+  const nix = useMemo(() => indexNhom(nh.data), [nh.data]);
   // Cấp của từng nhóm (1 = gốc); chỉ cho chọn từ cấp 3.
   const lv = useMemo(() => {
     const by = new Map(classes.map((c) => [c.code, c]));
@@ -555,11 +562,13 @@ function ChonNhomCay({ classes, value, label, onChange, defaultOpen }: { classes
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const off = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } };
+    const off = (e: MouseEvent) => { if (!form && box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !form) { e.stopPropagation(); setOpen(false); } };
     document.addEventListener('mousedown', off); window.addEventListener('keydown', esc, true);
     return () => { document.removeEventListener('mousedown', off); window.removeEventListener('keydown', esc, true); };
-  }, [open]);
+  }, [open, form]);
+  const nhomCha = cha ? nix.byCode.get(cha) ?? null : null;
+  const capCha = cha ? nix.level(cha) : 0;
   return (
     <div ref={box} style={{ position: 'relative' }}>
       <button type="button" className="input" style={{ textAlign: 'left', width: '100%', cursor: 'pointer' }} onClick={() => setOpen((x) => !x)}>
@@ -569,17 +578,46 @@ function ChonNhomCay({ classes, value, label, onChange, defaultOpen }: { classes
       {open && (
         <div className="cay-nhom-drop">
           <button type="button" className="btn btn-sm cay-nhom-x" onClick={() => setOpen(false)} title="Đóng (Esc)">✕ Đóng</button>
+          <div className="tabs" style={{ margin: '0 0 6px' }}>
+            <button type="button" className={`tab ${the === 'chon' ? 'active' : ''}`} onClick={() => setThe('chon')}>Chọn nhóm</button>
+            <button type="button" className={`tab ${the === 'them' ? 'active' : ''}`} onClick={() => setThe('them')} title="Chưa có nhóm phù hợp: tạo nhóm mới ngay tại đây (không phải mở Danh mục nhóm hàng)">+ Thêm nhóm mới</button>
+          </div>
+          {the === 'them' ? (
+            <div>
+              <div className="muted" style={{ fontSize: 12.5, marginBottom: 6 }}>Bấm chọn nhóm cha (cấp 1 hoặc 2) rồi bấm Thêm. Nhóm cấp 3 tạo xong được chọn luôn cho mặt hàng.</div>
+              <CayNhomHang list={nh.data} selected={cha} onSelect={setCha} height={300} openLevel={1} hideInactive />
+              <div className="row" style={{ gap: 6, marginTop: 6, justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-sm" onClick={() => setForm({ parent: null })}>+ Thêm nhóm cấp 1</button>
+                <button type="button" className="btn btn-sm btn-primary" disabled={!nhomCha || capCha >= 3} onClick={() => setForm({ parent: cha })}
+                  title={!nhomCha ? 'Bấm chọn nhóm cha trên cây' : capCha >= 3 ? 'Nhóm cấp 3 là cấp cuối, không có nhóm con' : ''}>
+                  + Thêm nhóm con{nhomCha ? ` của "${nhomCha.name}"` : ''}
+                </button>
+              </div>
+            </div>
+          ) : <>
           {msg && <div className="alert alert-bad cay-nhom-msg">{msg}</div>}
           <GroupTree classes={classes.filter((c) => c.isActive || c.code === value).map((c) => ({ ...c, products: (c as { products?: number }).products ?? 0 })) as never} value={value} onChange={(c) => {
             if (!c) return;
             if ((lv.get(c) ?? 0) < 3) { setMsg(`"${classes.find((x) => x.code === c)?.name ?? c}" mới là nhóm cấp ${lv.get(c) ?? 0} — phải chọn tới nhóm cấp 3 (nhóm sản phẩm).`); return; }
             setMsg(''); onChange(c); setOpen(false);
           }} leafOnly autoFocus />
+          </>}
         </div>
+      )}
+      {form && (
+        <Suspense fallback={null}>
+          <NhomFormLazy ix={nix} list={nh.data ?? []} form={{ mode: 'add', parent: form.parent }} onClose={() => setForm(null)}
+            onSaved={(code) => {
+              setForm(null);
+              // Cấp 3 (nhóm sản phẩm) chọn luôn cho mặt hàng; cấp 1–2 thì để sẵn làm nhóm cha cho nhóm tiếp theo.
+              if (nix.level(form.parent) >= 2) { setMsg(''); onChange(code); setOpen(false); setThe('chon'); } else setCha(code);
+            }} />
+        </Suspense>
       )}
     </div>
   );
 }
+const NhomFormLazy = lazy(() => import('./NhomHangPage').then((m) => ({ default: m.NhomForm })));
 
 // [2026-11-12 Nguyễn Văn Thủy] bước Xem lại khi thêm mặt hàng (đóng góp)
 function XemLai({ v, groupLabel, vatLabel, baseUnit, companyPrice, companyName, ncc }: { v: FullProduct; groupLabel: string; vatLabel: string; baseUnit: string; companyPrice?: number | null; companyName?: string; ncc: NccTam[] }) {

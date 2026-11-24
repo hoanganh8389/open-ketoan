@@ -18,6 +18,7 @@ import { date, defaultFrom, defaultTo, money, periodFrom } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
 // [2026-11-13 08:00 PM kiennt] NT-HT-003 — nút tài sản theo thao tác màn đã đăng ký (ACC28 thẻ tài sản, ACC32 biến động, ACC31 khấu hao, ACC37 loại tài sản) (đóng góp)
 import { useThaoTac } from '@/lib/manHinh';
+import { NutTao } from '@/components/NutTao';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
 import { BranchSelect, DateRange, useBranches, SearchFilter, searchRows, BranchPicker } from '@/components/filters';
@@ -640,7 +641,7 @@ export function AssetEventsPage({ kind }: { kind: EventPageKind }) {
   return (
     <>
       <PageHeader title={meta.title} code={meta.code} subtitle={meta.subtitle} helpKey="tai-san"
-        actions={can('catalog:write') && tt.them && <button className="btn btn-primary" onClick={() => setAdding(true)}><Plus size={16} /> Thêm</button>} />
+/>
       <FilterLayout
         filters={
           <>
@@ -649,6 +650,7 @@ export function AssetEventsPage({ kind }: { kind: EventPageKind }) {
         }
       >
         <div className="card">
+          <div className="vf-toolbar">{/* [2026-11-25 Nguyễn Văn Thủy] nút tạo mới đứng đầu thanh nút, góc trái (quy ước NutTao) (đóng góp) */}{can('catalog:write') && tt.them && <NutTao onClick={() => setAdding(true)}>Thêm</NutTao>}</div>
           {kind === 'revaluation' && <div className="card-body muted" style={{ paddingTop: 0 }}>Nghiệp vụ này không tự ghi sổ cái: bút toán (nếu có) lập bằng phiếu kế toán. Phần mềm dùng số liệu ở đây để tính khấu hao các tháng sau.</div>}
           {kind === 'transfer' && <div className="card-body muted" style={{ paddingTop: 0 }}>Điều chuyển trong cùng đơn vị hạch toán không ghi sổ: tháng điều chuyển chia số trích theo ngày cho hai nơi. Điều chuyển sang đơn vị hạch toán khác: bấm <b>Hạch toán…</b> để lập phiếu kế toán ở cả bên giao và bên nhận (qua phải thu / phải trả nội bộ).</div>}
           <ErrorBox error={q.error ? errorText(q.error) : del.error ? errorText(del.error) : null} />

@@ -130,12 +130,12 @@ export function NhomHangPage() {
       <div className="card nh3">
         {/* [2026-11-18 01:40 PM kiennt] NT-DM-006 — nút chức năng bên trái, tiêu đề khung sang phải; nút Nhân bản nhóm đang chọn (đóng góp) */}
         <div className="catalog-toolbar canh-phai">
+          {canWrite && <button className="btn btn-sm btn-primary" onClick={() => setThemMH({ group: sel })} title={sel ? `Thêm mặt hàng vào "${ix.path(sel)}" — mã tự sinh theo nhóm` : 'Thêm mặt hàng'}><Plus size={14} /> Thêm mặt hàng</button>}
           {canWrite && <button className="btn btn-sm" disabled={!chain.length} title={chain.length ? `Nhân bản nhóm "${chain[chain.length - 1]!.name}": thêm nhóm mới cùng cấp, chép tên, ghi chú (mã ngắn gợi ý mới)` : 'Chọn một nhóm để nhân bản'} onClick={() => { const c = chain[chain.length - 1]; if (c) setForm({ mode: 'add', parent: ix.parentOf(c.code), copy: c.code }); }}><Copy size={14} /> Nhân bản</button>}
           {canWrite && <NutNhapExcel loai={nhapLoai('nhom-hang')!} />}
           <button className="btn btn-sm" onClick={xuat}><FileDown size={14} /> Xuất</button>
           {/* [2026-11-17 Nguyễn Văn Thủy] Thùng rác chung cho danh mục — xoá nhóm đang chọn (đóng góp) */}
           <ThungRacDanhMuc catalog="item-classes.group" title="Nhóm hàng" sel={chain.length ? { key: chain[chain.length - 1]!.code, label: chain[chain.length - 1]!.name } : null} onDone={() => chonNhom(null)} />
-          {canWrite && <button className="btn btn-sm btn-primary" onClick={() => setThemMH({ group: sel })} title={sel ? `Thêm mặt hàng vào "${ix.path(sel)}" — mã tự sinh theo nhóm` : 'Thêm mặt hàng'}><Plus size={14} /> Thêm mặt hàng</button>}
           <span className="spacer" />
           <b className="nh3-title">Duyệt theo Ngành → Nhãn → Nhóm</b>
         </div>
@@ -200,7 +200,7 @@ export function NhomHangPage() {
 }
 
 /** Hộp thoại thêm / sửa nhóm: thuộc nhóm, mã (điền sẵn gợi ý), tên, đang dùng. */
-function NhomForm({ ix, list, form, onClose, onSaved }: { ix: NhomIndex; list: NhomHang[]; form: { mode: 'add'; parent: string | null; copy?: string } | { mode: 'edit'; code: string }; onClose: () => void; onSaved: (code: string, parent: string | null) => void }) {
+export function NhomForm({ ix, list, form, onClose, onSaved }: { ix: NhomIndex; list: NhomHang[]; form: { mode: 'add'; parent: string | null; copy?: string } | { mode: 'edit'; code: string }; onClose: () => void; onSaved: (code: string, parent: string | null) => void }) {
   const qc = useQueryClient();
   const old = form.mode === 'edit' ? ix.byCode.get(form.code)! : null;
   const [parent, setParent] = useState<string | null>(form.mode === 'add' ? form.parent : ix.parentOf(form.code));

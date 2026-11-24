@@ -23,6 +23,7 @@ import { api, errorText, ALL_ROWS } from '@/lib/api';
 import { ChonThue } from '@/lib/thueGtgt';
 import { defaultFrom, money, today } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
+import { NutTao } from '@/components/NutTao';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
 import { DateRange, useBranches, BranchPicker } from '@/components/filters';
@@ -108,7 +109,7 @@ export function DebtVouchersPage({ mode }: { mode: Mode }) {
   return (
     <>
       <PageHeader title={m.title} code={m.code} subtitle={m.subtitle} helpKey="phieu-cong-no"
-        actions={can('documents:write') ? <button className="btn btn-primary" onClick={() => { setNotice(null); setAdding(true); }}><Plus size={16} /> Lập phiếu</button> : undefined} />
+/>
       {notice && <div className="alert alert-ok" style={{ marginBottom: 14 }}>{notice}</div>}
       <FilterLayout
         filters={
@@ -130,6 +131,8 @@ export function DebtVouchersPage({ mode }: { mode: Mode }) {
       >
         <div className="card">
           <div className="vf-toolbar">
+            {/* [2026-11-25 Nguyễn Văn Thủy] nút tạo mới đứng đầu thanh nút, góc trái (quy ước NutTao) (đóng góp) */}
+            {can('documents:write') && <NutTao onClick={() => { setNotice(null); setAdding(true); }}>Lập phiếu</NutTao>}
             <PrintButton bare screen={m.code} templates={LIST_TEMPLATES[mode]} disabled={!picked.length} label={picked.length ? `In ${picked.length} phiếu đã chọn` : 'In (tích chọn dòng)'} getDocs={printPicked} />
           </div>
           <ErrorBox error={q.error ? errorText(q.error) : loadError} />

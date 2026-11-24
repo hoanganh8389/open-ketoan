@@ -2163,3 +2163,24 @@ td.o-loi { background: color-mix(in srgb, var(--bad) 8%, transparent); }
 /* [2026-11-17 kiennt] "Ghi và thoát" luôn đứng ngay trước nút Ghi (nút chính của form), dù chân form có phần bên trái (Theo dõi, Tạo bởi…) (đóng góp) */
 .modal-foot > .ghi-thoat { order: 1; }
 .modal-foot > .btn-primary:not(.ghi-thoat), .modal-foot > .btn-primary:not(.ghi-thoat) ~ * { order: 2; }
+
+/* [2026-11-25 Nguyễn Văn Thủy] UX TOÀN HỆ THỐNG — thanh lọc chuẩn ngoài màn: Chi nhánh · Kỳ · Nhóm hàng · tham số khác · Chọn tham số (đóng góp) */
+.tlc { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.tlc-o { position: relative; display: flex; align-items: center; gap: 4px; flex: none; }
+.tlc-nut { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink-800, inherit); font-size: 12.5px; cursor: pointer; max-width: 320px; }
+.tlc-nut:hover:not(:disabled) { border-color: var(--brand-500, #2457b3); }
+.tlc-nut .tlc-nhan { color: var(--ink-500, #6b7280); }
+.tlc-nut .tlc-gt { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tlc-tat .tlc-nut { opacity: .55; cursor: not-allowed; background: var(--n-100, #f3f4f6); }
+.tlc-tat .tlc-nut .tlc-gt { font-weight: 400; }
+.tlc-ky { height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink-500, #6b7280); }
+.tlc-ky .input, .tlc-ky .select { height: 24px; border: 0; padding: 0 4px; font-size: 12.5px; background-color: transparent; }
+.tlc-ky .select { width: 132px; }
+.tlc-ky input[type=date] { width: 122px; font-weight: 600; color: var(--ink-800, inherit); }
+.tlc-tha { position: absolute; top: 100%; left: 0; margin-top: 4px; max-width: 92vw; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-pop); z-index: 60; }
+.tlc-ds { max-height: 320px; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.tlc-chan { gap: 6px; justify-content: flex-end; align-items: center; margin-top: 6px; }
+.tlc-chan .muted { flex: 1; font-size: 12px; }
+.tlc-khac { flex: 1; min-width: 0; }
+.tlc-khac .rp-tt { flex-wrap: wrap; }
+@media print { .tlc { display: none !important; } }

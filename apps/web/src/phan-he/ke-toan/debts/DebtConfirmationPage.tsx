@@ -12,6 +12,7 @@ import { date, firstDayOfMonth, money, today } from '@/lib/format';
 import { amountInWords } from '@/lib/docso';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
+import { DateRange } from '@/components/filters';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Loading } from '@/components/ui';
 import { useTenant } from '../../../features/system/TenantPage';
@@ -67,8 +68,7 @@ export function DebtConfirmationPage() {
       <FilterLayout
         filters={
           <>
-            <div className="field"><label>Từ ngày</label><input type="date" className="input" value={f.from} onChange={(e) => set({ from: e.target.value })} /></div>
-            <div className="field"><label>Đến ngày</label><input type="date" className="input" value={f.to} onChange={(e) => set({ to: e.target.value })} /></div>
+            <DateRange from={f.from} to={f.to} onChange={(a, b) => set({ from: a, to: b })} />
             <div className="field"><label>Tài khoản</label>
               <select className="select input" value={f.account} onChange={(e) => set({ account: e.target.value })}>
                 <option value="*">Mọi tài khoản công nợ</option><option value="131">131 — Phải thu khách hàng</option><option value="331">331 — Phải trả người bán</option>

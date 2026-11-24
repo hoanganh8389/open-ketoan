@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, Folder, FolderTree } from 'lucide-react';
 import { api } from '@/lib/api';
 import { plain } from './pickers';
+import { useDangKyLoc } from './locChuan';
 import { useFilterPanel } from './filterPanel';
 import './cay-don-vi.css';
 
@@ -205,6 +206,8 @@ export function ChonNhomHang({ value, onChange, label = 'Nhóm hàng' }: { value
   const codes = useMemo(() => (value ? value.split(',').filter(Boolean) : []), [value]);
   const [chon, setChon] = useState(codes.length > 0);
   const inPanel = useFilterPanel() !== null;
+  useDangKyLoc('nhom', inPanel ? { value, onChange } : null, value);
+  useEffect(() => { setChon(codes.length > 0); }, [codes.length > 0]); // đổi ở thanh ngoài thì chế độ Tất cả / Chọn nhóm theo
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {

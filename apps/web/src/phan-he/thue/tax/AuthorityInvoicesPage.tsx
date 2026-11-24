@@ -17,7 +17,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Loading, Modal } from '@/components/ui';
-import { useBranches, BranchPicker } from '@/components/filters';
+import { useBranches, BranchPicker, DateRange } from '@/components/filters';
 import { useTenant } from '../../../features/system/TenantPage';
 import { readAuthorityExcel, readAuthorityXml } from './authorityImport';
 
@@ -144,8 +144,7 @@ export function AuthorityInvoicesPage() {
                 <option value="input">Mua vào</option><option value="output">Bán ra</option>
               </select>
             </div>
-            <div className="field"><label>Từ ngày</label><input type="date" className="input" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-            <div className="field"><label>Đến ngày</label><input type="date" className="input" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+            <DateRange from={from} to={to} remember={false} onChange={(a, b) => { setFrom(a); setTo(b); }} />
             {editable && (tt.nhap || tt.xoa) && (
               <div className="row" style={{ gap: 8, alignSelf: 'flex-end', flexWrap: 'wrap' }}>
                 {tt.nhap && <><label className="btn" title="Tệp tải bằng nút Xuất excel ở màn tra cứu hoá đơn của cổng; chiều mua vào / bán ra theo ô Hoá đơn">
