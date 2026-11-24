@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/PageHeader';
+import { FilterLayout } from '@/components/ReportPanel';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { DateRange } from '@/components/filters';
 import { ErrorBox, Loading } from '@/components/ui';
@@ -52,15 +53,18 @@ export function CongNoHopDongPage() {
   return (
     <>
       <PageHeader title="Công nợ theo hợp đồng" code="MH30" helpKey="mua-hang-hop-dong" subtitle="Công nợ phải trả nhà cung cấp theo từng hợp đồng mua — tổng hợp và chi tiết" />
+      {/* [2026-11-25 Nguyễn Văn Thủy] bộ lọc theo khung chung (thanh lọc chuẩn + Tất cả bộ lọc) (đóng góp) */}
+      <FilterLayout filters={<>
+        <DateRange from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
+        <div className="field"><label>Nhà cung cấp</label><PartnerPicker value={ncc} kind="supplier" onChange={(c) => { setNcc(c); setHd(''); }} placeholder="Tất cả nhà cung cấp" /></div>
+        <div className="field"><label>Hợp đồng</label><ListPicker items={contracts.filter((c) => !ncc || c.partnerCode === ncc).map((c) => ({ code: c.code, name: `${c.partnerName} · ${c.statusText}` }))} value={hd} onChange={setHd} placeholder="Tất cả hợp đồng" /></div>
+      </>}>
       <div className="card">
         <div className="row" style={{ gap: 8, padding: '8px 12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div className="tabs" style={{ margin: 0 }}>
             <button className={`tab ${kind === 'tong-hop' ? 'active' : ''}`} onClick={() => setKind('tong-hop')}>Sổ tổng hợp</button>
             <button className={`tab ${kind === 'chi-tiet' ? 'active' : ''}`} onClick={() => setKind('chi-tiet')}>Sổ chi tiết</button>
           </div>
-          <DateRange from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
-          <div style={{ width: 240 }}><PartnerPicker value={ncc} kind="supplier" onChange={(c) => { setNcc(c); setHd(''); }} placeholder="Tất cả nhà cung cấp" /></div>
-          <div style={{ width: 240 }}><ListPicker items={contracts.filter((c) => !ncc || c.partnerCode === ncc).map((c) => ({ code: c.code, name: `${c.partnerName} · ${c.statusText}` }))} value={hd} onChange={setHd} placeholder="Tất cả hợp đồng" /></div>
         </div>
         <ErrorBox error={q.error ? errorText(q.error) : null} />
         {!q.data ? <Loading /> : kind === 'tong-hop'
@@ -68,6 +72,7 @@ export function CongNoHopDongPage() {
               onRowDoubleClick={(r) => { setHd(r.contractCode); setKind('chi-tiet'); }} emptyText="Không có công nợ theo hợp đồng trong kỳ" />
           : <DataGrid storageKey="mh-cong-no-hd-ct" rows={q.data.lines} rowKey={(r) => `${r.contractCode}|${r.docNo}|${r.date}|${r.account}|${r.debit}|${r.credit}|${r.balance}`} columns={detCols} footerLabel="Cộng" exportName="chi-tiet-cong-no-theo-hop-dong" exportTitle="SỔ CHI TIẾT CÔNG NỢ THEO HỢP ĐỒNG" emptyText="Không có bút toán trong kỳ" />}
       </div>
+      </FilterLayout>
     </>
   );
 }

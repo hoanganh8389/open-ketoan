@@ -218,8 +218,8 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
 }
 
 /** Bảng lọc bên trái: ô Kỳ (chọn nhanh Hôm nay, Tháng này, Quý này…) + Từ ngày + Đến ngày. */
-export function SideKy({ from, to, onChange }: { from: string; to: string; onChange: (from: string, to: string) => void }) {
-  useDangKyLoc('ky', { from, to, onChange }, `${from}|${to}`);
+export function SideKy({ from, to, onChange, dangKy = true }: { from: string; to: string; onChange: (from: string, to: string) => void; /** false: màn tự đăng ký (DangKyLoc) giá trị đang áp. */ dangKy?: boolean }) {
+  useDangKyLoc('ky', dangKy ? { from, to, onChange } : null, `${from}|${to}`);
   return (
     <>
       <SideField label="Kỳ">

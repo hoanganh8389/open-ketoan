@@ -15,7 +15,8 @@ import { Copy, Download, Pencil, RefreshCw, Search, X } from 'lucide-react';
 import { api, errorText } from '@/lib/api';
 import { defaultFrom, today } from '@/lib/format';
 import { PageHeader } from '@/components/PageHeader';
-import { BranchCheckList, ReportSideLayout, SideField, SideKy, branchesPicked } from '@/components/ReportPanel';
+import { BRANCH_NONE, BranchCheckList, KhoiGon, ReportSideLayout, SideField, SideKy, branchesPicked } from '@/components/ReportPanel';
+import { DangKyLoc } from '@/components/locChuan';
 import { Empty, ErrorBox, Loading, openNextInEdit } from '@/components/ui';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import type { ToolButton } from './VoucherModal';
@@ -112,9 +113,14 @@ export function VoucherListPage<R extends { id: string; docKey: string }>({
 
   const panel = (
     <>
-      <SideKy from={draft.from} to={draft.to} onChange={(from, to) => setDraft((x) => ({ ...x, from, to }))} />
-      <span className="muted" style={{ fontSize: 12, marginTop: 2 }}>Chi nhánh</span>
+      {/* [2026-11-25 Nguyễn Văn Thủy] thanh lọc chuẩn ngoài màn: đọc kỳ / chi nhánh đang áp, đổi ở đó là áp ngay (cả bản nháp) (đóng góp) */}
+      <DangKyLoc
+        ky={{ from: f.from, to: f.to, onChange: (from, to) => { setDraft((x) => ({ ...x, from, to })); setF((x) => ({ ...x, from, to })); } }}
+        cn={{ value: f.branchCodes, onChange: (branchCodes) => { setDraft((x) => ({ ...x, branchCodes })); setF((x) => ({ ...x, branchCodes })); } }} />
+      <SideKy dangKy={false} from={draft.from} to={draft.to} onChange={(from, to) => setDraft((x) => ({ ...x, from, to }))} />
+      <KhoiGon nhan="Chi nhánh" tomTat={draft.branchCodes === BRANCH_NONE ? 'Chưa chọn chi nhánh' : draft.branchCodes ? `${draft.branchCodes.split(',').length} chi nhánh` : 'Tất cả chi nhánh'}>
       <BranchCheckList value={draft.branchCodes} onChange={(branchCodes) => setDraft((x) => ({ ...x, branchCodes }))} onRestore={(branchCodes) => { setDraft((x) => ({ ...x, branchCodes })); setF((x) => ({ ...x, branchCodes })); }} />
+      </KhoiGon>
       <div className="rp-actions">
         <button type="button" className="btn btn-primary" onClick={search} disabled={query.isFetching}><Search size={14} /> Tìm kiếm</button>
         {extraPanel?.(picked, run)}

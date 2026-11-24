@@ -23,6 +23,17 @@ export const LocChuanCtx = createContext<LocChuanContext | null>(null);
  * Ô lọc dùng chung gọi hook này để đăng ký với thanh ngoài. `nguon` null = không đăng ký (ô đang ở ngoài bảng tham số).
  * Hàm đổi luôn là bản mới nhất (giữ qua ref) nên màn không cần useCallback.
  */
+/**
+ * Đăng ký thẳng từ màn (đặt phần tử này bên trong bảng tham số): dùng khi màn có bản nháp riêng
+ * (đổi ở bảng tham số chỉ áp khi bấm Tìm kiếm) — thanh ngoài đọc giá trị ĐANG ÁP và đổi là áp ngay.
+ */
+export function DangKyLoc({ ky, cn, nhom }: LocChuan) {
+  useDangKyLoc('ky', ky ?? null, ky ? `${ky.from}|${ky.to}|${Boolean(ky.chiDen)}` : '');
+  useDangKyLoc('cn', cn ?? null, cn ? `${cn.value}|${cn.kho?.value ?? ''}|${Boolean(cn.kho)}` : '');
+  useDangKyLoc('nhom', nhom ?? null, nhom?.value ?? '');
+  return null;
+}
+
 export function useDangKyLoc<K extends LoaiLoc>(k: K, nguon: LocChuan[K] | null, khoa: string) {
   const ctx = useContext(LocChuanCtx);
   const ref = useRef(nguon);

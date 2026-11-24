@@ -15,6 +15,8 @@ import { api, errorText } from '@/lib/api';
 import { defaultTo } from '@/lib/format';
 import { KIND_INFO, emptyDoc, tradeApi, type TradeDoc, type TradeKind } from '@/lib/tradeDocs';
 import { PageHeader } from '@/components/PageHeader';
+import { FilterLayout } from '@/components/ReportPanel';
+import { NutTao } from '@/components/NutTao';
 import { DateRange, BranchSelect } from '@/components/filters';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { khoLabel, useKho } from './ChonKho';
@@ -93,25 +95,28 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
           Đổi nguồn ở <Link to="/tich-hop/nguon-du-lieu">API → Nguồn dữ liệu màn hình</Link>.
         </div>
       )}
-      <div className="card">
-        <div className="filters">
-          <DateRange from={f.from} to={f.to} onChange={(from, to) => setF((x) => ({ ...x, from, to }))} />
-          <BranchSelect value={f.branchCodes} onChange={(v) => setF((x) => ({ ...x, branchCodes: v }))} />
-          <select className="select input" style={{ height: 30, width: 130 }} value={f.status} onChange={(e) => setF((x) => ({ ...x, status: e.target.value }))}>
+      {/* [2026-11-25 Nguyễn Văn Thủy] bộ lọc theo khung chung: thanh lọc chuẩn ngoài màn + Tất cả bộ lọc (đóng góp) */}
+      <FilterLayout filters={<>
+        <DateRange from={f.from} to={f.to} onChange={(from, to) => setF((x) => ({ ...x, from, to }))} />
+        <BranchSelect value={f.branchCodes} onChange={(v) => setF((x) => ({ ...x, branchCodes: v }))} />
+        <div className="field"><label>Trạng thái</label>
+          <select className="select input" value={f.status} onChange={(e) => setF((x) => ({ ...x, status: e.target.value }))}>
             <option value="">Mọi trạng thái</option><option value="draft">Nháp</option><option value="approved">Đã duyệt</option>
-          </select>
-          <form className="row" style={{ gap: 4 }} onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>
-            <input className="input" style={{ width: 220, height: 30 }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm: số phiếu, đối tượng, hoá đơn" />
-            <button className="btn btn-sm" type="submit">Tìm</button>
-          </form>
-        </div>
-        <div className="row" style={{ gap: 6, padding: '6px 0', flexWrap: 'wrap' }}>
-          <button className="btn btn-sm btn-primary" onClick={() => setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? '')))}>+ Thêm</button>
+          </select></div>
+      </>}>
+      <div className="card">
+        <div className="row" style={{ gap: 6, padding: '6px 0', flexWrap: 'wrap', alignItems: 'center' }}>
+          <NutTao onClick={() => setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? '')))}>Thêm</NutTao>
           <button className="btn btn-sm" disabled={!sel} onClick={() => { if (!sel) return; setStartEdit(sel.status !== 'approved'); void open(sel); }}>{sel?.status === 'approved' ? 'Xem' : 'Sửa'}</button>
           <button className="btn btn-sm" disabled={!sel || status.isPending} onClick={() => { if (!sel) return; const s = sel.status === 'approved' ? 'draft' : 'approved'; if (s === 'approved' && gate.advisories.length && !window.confirm(`Duyệt phiếu ${sel.docNo || '(mới)'}?` + advisoryText(gate.advisories))) return; status.mutate({ id: sel.id, s }); }}>{sel?.status === 'approved' ? 'Bỏ duyệt' : 'Duyệt'}</button>
           {TRADE_TEMPLATES[kind] && <PrintButton small screen={code} templates={TRADE_TEMPLATES[kind]!} disabled={!sel} title="In phiếu đang chọn" getDocs={async () => (sel ? [await svc.get(sel.id)] : [])} />}
           <button className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
+          <span style={{ flex: 1 }} />
+          <form className="row" style={{ gap: 4 }} data-no-search onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>
+            <input className="input" style={{ width: 240, height: 28 }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm: số phiếu, đối tượng, hoá đơn" />
+            <button className="btn btn-sm" type="submit">Tìm</button>
+          </form>
         </div>
         <ErrorBox error={q.error ? errorText(q.error) : del.error ? errorText(del.error) : status.error ? errorText(status.error) : null} />
         {q.isLoading ? <Loading /> : (
@@ -120,6 +125,7 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
             emptyText={`Chưa có ${info.label.toLowerCase()} trong khoảng này — bấm "+ Thêm"`} columns={columns} />
         )}
       </div>
+      </FilterLayout>
       {editing && <PhieuHangForm key={formKey} printScreen={code} helpKey={helpKey} startEdit={startEdit} value={editing} readOnly={editing.status === 'approved'} saving={save.isPending} error={save.error} onSave={(d) => save.mutate(d)} onClose={() => { setEditing(null); save.reset(); }} />}
     </>
   );
