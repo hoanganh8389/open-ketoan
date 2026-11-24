@@ -542,7 +542,6 @@ function ChonNhomCay({ classes, value, label, onChange, defaultOpen }: { classes
   // [2026-11-25 Nguyễn Văn Thủy] thẻ "+ Thêm nhóm mới" ngay trong ô chọn: không phải mở màn DM11 (đóng góp)
   const [the, setThe] = useState<'chon' | 'them'>('chon');
   const [cha, setCha] = useState<string | null>(null);
-  const [form, setForm] = useState<{ parent: string | null } | null>(null);
   const nh = useNhomHang();
   const nix = useMemo(() => indexNhom(nh.data), [nh.data]);
   // Cấp của từng nhóm (1 = gốc); chỉ cho chọn từ cấp 3.
@@ -562,12 +561,13 @@ function ChonNhomCay({ classes, value, label, onChange, defaultOpen }: { classes
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const off = (e: MouseEvent) => { if (!form && box.current && !box.current.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && !form) { e.stopPropagation(); setOpen(false); } };
+    // Bấm trong hộp thoại khác mở chồng lên (vd thêm nhóm) không tính là bấm ra ngoài.
+    const hopKhac = (el: Element | null) => { const m = el?.closest('.modal-mask'); return Boolean(m && m !== box.current?.closest('.modal-mask')); };
+    const off = (e: MouseEvent) => { if (!hopKhac(e.target as Element) && box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape' && ![...document.querySelectorAll('.modal-mask')].some((m) => m !== box.current?.closest('.modal-mask') && !m.contains(box.current))) { e.stopPropagation(); setOpen(false); } };
     document.addEventListener('mousedown', off); window.addEventListener('keydown', esc, true);
     return () => { document.removeEventListener('mousedown', off); window.removeEventListener('keydown', esc, true); };
-  }, [open, form]);
-  const nhomCha = cha ? nix.byCode.get(cha) ?? null : null;
+  }, [open]);
   const capCha = cha ? nix.level(cha) : 0;
   return (
     <div ref={box} style={{ position: 'relative' }}>
@@ -584,14 +584,15 @@ function ChonNhomCay({ classes, value, label, onChange, defaultOpen }: { classes
           </div>
           {the === 'them' ? (
             <div>
-              <div className="muted" style={{ fontSize: 12.5, marginBottom: 6 }}>Bấm chọn nhóm cha (cấp 1 hoặc 2) rồi bấm Thêm. Nhóm cấp 3 tạo xong được chọn luôn cho mặt hàng.</div>
-              <CayNhomHang list={nh.data} selected={cha} onSelect={setCha} height={300} openLevel={1} hideInactive />
-              <div className="row" style={{ gap: 6, marginTop: 6, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-sm" onClick={() => setForm({ parent: null })}>+ Thêm nhóm cấp 1</button>
-                <button type="button" className="btn btn-sm btn-primary" disabled={!nhomCha || capCha >= 3} onClick={() => setForm({ parent: cha })}
-                  title={!nhomCha ? 'Bấm chọn nhóm cha trên cây' : capCha >= 3 ? 'Nhóm cấp 3 là cấp cuối, không có nhóm con' : ''}>
-                  + Thêm nhóm con{nhomCha ? ` của "${nhomCha.name}"` : ''}
-                </button>
+              <div className="muted" style={{ fontSize: 12.5, marginBottom: 6 }}>Chọn Ngành → Nhãn → Nhóm như ở Danh mục nhóm hàng; chưa có thì bấm nút thêm ở cột tương ứng. Nhóm cấp 3 vừa thêm được chọn luôn cho mặt hàng.</div>
+              <Suspense fallback={null}>
+                <BaCotLazy sel={cha} onSel={setCha} chieuCao={220}
+                  onDaThem={(code, cap) => { if (cap >= 3) { setMsg(''); onChange(code); setOpen(false); setThe('chon'); } }} />
+              </Suspense>
+              <div className="row" style={{ gap: 6, marginTop: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+                <span className="muted" style={{ fontSize: 12.5 }}>{cha ? nix.path(cha) : 'Chưa chọn nhóm'}</span>
+                <button type="button" className="btn btn-sm btn-primary" disabled={!cha || capCha < 3} onClick={() => { if (cha) { setMsg(''); onChange(cha); setOpen(false); setThe('chon'); } }}
+                  title={!cha || capCha < 3 ? 'Chọn tới nhóm cấp 3 (nhóm sản phẩm)' : ''}>Dùng nhóm này cho mặt hàng</button>
               </div>
             </div>
           ) : <>
@@ -604,20 +605,10 @@ function ChonNhomCay({ classes, value, label, onChange, defaultOpen }: { classes
           </>}
         </div>
       )}
-      {form && (
-        <Suspense fallback={null}>
-          <NhomFormLazy ix={nix} list={nh.data ?? []} form={{ mode: 'add', parent: form.parent }} onClose={() => setForm(null)}
-            onSaved={(code) => {
-              setForm(null);
-              // Cấp 3 (nhóm sản phẩm) chọn luôn cho mặt hàng; cấp 1–2 thì để sẵn làm nhóm cha cho nhóm tiếp theo.
-              if (nix.level(form.parent) >= 2) { setMsg(''); onChange(code); setOpen(false); setThe('chon'); } else setCha(code);
-            }} />
-        </Suspense>
-      )}
     </div>
   );
 }
-const NhomFormLazy = lazy(() => import('./NhomHangPage').then((m) => ({ default: m.NhomForm })));
+const BaCotLazy = lazy(() => import('./NhomHangPage').then((m) => ({ default: m.BaCotNhomHang })));
 
 // [2026-11-12 Nguyễn Văn Thủy] bước Xem lại khi thêm mặt hàng (đóng góp)
 function XemLai({ v, groupLabel, vatLabel, baseUnit, companyPrice, companyName, ncc }: { v: FullProduct; groupLabel: string; vatLabel: string; baseUnit: string; companyPrice?: number | null; companyName?: string; ncc: NccTam[] }) {
