@@ -7,7 +7,7 @@ Repo này là **nguồn luật kỹ thuật gốc** (R-*, hợp đồng `bizcity
 | Tài liệu | Ở đâu | Quan hệ với repo này |
 |---|---|---|
 | **BIZCITY OPEN CANON** | [open-hub/docs/canon](https://github.com/hoanganh8389/open-hub/blob/main/docs/canon/README.md) | bốn trục dữ liệu, một app một trục, B2B, Twin Brain là não không là chủ dữ liệu. Canon §3 lấy chuẩn gốc **từ repo này** (`bizcity_item_master@1`, `bizcity_master_data@1`, `bizcity_document@1`) |
-| **`bizcity_spine@1`** — xương sống xuyên app | [bizcity-platform/docs/standard/BIZCITY-SPINE-v1.md](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-SPINE-v1.md) · schema `packages/contracts/schema/spine/` · kiểm `tools/spine-check.mjs` | đặt tên chung cho định danh, bản sao, gửi sau, đối chiếu để app PHP / Python nối vào lõi này cùng một cách |
+| **`bizcity_spine@1`** — xương sống xuyên app | [bizcity-platform/docs/standard/BIZCITY-SPINE-v1.md](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-SPINE-v1.md) · schema máy đọc ở repo bizcity-platform (thư mục schema/spine của gói contracts) · kiểm `tools/spine-check.mjs` | đặt tên chung cho định danh, bản sao, gửi sau, đối chiếu để app PHP / Python nối vào lõi này cùng một cách |
 
 ## open-ketoan trong xương sống (`bizcity.app.json` ở gốc repo)
 
