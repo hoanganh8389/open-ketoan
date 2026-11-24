@@ -137,6 +137,7 @@ export const LAYER_MAP = [
   ['modules/products/', 'M', 'data/masterdata'],
   ['modules/branches/', 'M', 'data/masterdata'],
   // [2026-11-20 Nguyễn Văn Thủy] modules/co-cau/ (cơ cấu tổ chức một bảng đơn vị, 0174 thay org-units) cùng lớp M danh mục với chi nhánh (đóng góp)
+  ['modules/sync/', 'M', 'data/masterdata'], // [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — Q-SPINE-3: changefeed + digest danh mục (bizcity_sync@1), chỉ đọc trên items / partners / branches
   ['modules/co-cau/', 'M', 'data/masterdata'],
   // [2026-11-10 09:00 PM Nguyễn Văn Thủy] PHASE-026 — modules/posting-flow/ (thiết kế hạch toán: lý do theo màn, sơ đồ dây chuyền) cùng lớp M danh mục (đóng góp)
   ['modules/posting-flow/', 'M', 'data/masterdata'],

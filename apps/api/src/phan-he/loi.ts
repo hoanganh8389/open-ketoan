@@ -86,6 +86,8 @@ import { transferDocRoutes } from './kho/phieu-chuyen-kho.js';
 // [2026-11-12 03:30 PM kiennt] NT-KHO-002 — biên bản kiểm kê kho (KHO02)
 import { stockCountRoutes } from './kho/kiem-ke.js';
 import { inventoryReportRoutes } from '../modules/inventory/inventory-report.routes.js';
+// [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — Q-SPINE-3: changefeed + digest danh mục (bizcity_sync@1)
+import { syncRoutes } from '../modules/sync/sync.routes.js';
 
 export const CORE_ROUTES: Routes[] = [
   authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, mcpRoutes, metricsRoutes, presenceRoutes, clientErrorsRoutes, accessRoutes, appsRoutes, provisioningRoutes,
@@ -96,6 +98,8 @@ export const CORE_ROUTES: Routes[] = [
   intakeRoutes,
   // [2026-11-03 09:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-025 — W1: CORE_ROUTES thêm lineageRoutes (truy vết vòng đời mặt hàng, ADR-0021)
   lineageRoutes,
+  // [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — Q-SPINE-3: GET /api/v1/sync/:axis, /digest
+  syncRoutes,
   // [2026-11-02 10:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-022 — W4: Bàn đánh giá (HT08)
   reviewRoutes,
 ];
