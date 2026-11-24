@@ -38,7 +38,7 @@
 | Khuyến mại website cũ (`promotionId`) | Như cũ |
 
 ## 5. Kiểm
-- Test đơn vị `domain/returns` (nhóm Core, hàng ngoài chương trình, order_gift, không đọc được chương trình) + test API `apps/api/test/nt-bh-038-qua-tra-khuyen-mai-core.test.ts` trên CSDL test.
+- Test đơn vị `domain/returns` (nhóm Core, hàng ngoài chương trình, order_gift, không đọc được chương trình) + test API trên CSDL test (tệp mới, đề xuất: `apps/api/test/nt-bh-038-qua-tra-khuyen-mai-core.test.ts`).
 - Thử thật shop2: bán mua 2 tặng 1 → trả 2 hàng chính → quà tự điền, về `CN02-KKM`.
 
 ## 6. Kết quả chạy
