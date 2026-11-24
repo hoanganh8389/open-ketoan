@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Bug, ChevronLeft, ChevronRight, Copy, Search, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { hienMaTraCuu } from '@/lib/hienMaTraCuu';
 import { khoMaTraCuu, loaiLoi, moTaLyDo, noiDungBaoLoi, noiDungChep, tomTatMa, type PhienBan } from '@/lib/maTraCuu';
 
 /** navigator.clipboard chỉ có ở https / localhost; máy chủ LAN chạy http thì chép bằng ô chữ ẩn. */
@@ -54,9 +55,12 @@ export function MaTraCuu() {
     return () => window.clearTimeout(t);
   }, [daChep]);
 
+  const cheDo = useSyncExternalStore(hienMaTraCuu.nghe, hienMaTraCuu.get);
   const e = ds[Math.min(i, ds.length - 1)];
-  if (!e || an === moiNhat) return null;
+  if (!e || an === moiNhat || cheDo === 'tat') return null;
   const loai = loaiLoi(e);
+  // Tuỳ chọn ở menu tài khoản: mặc định chỉ hiện khay cho lỗi kỹ thuật.
+  if (cheDo === 'ky-thuat' && loai !== 'ky-thuat') return null;
   const bam = async (kieu: 'chep' | 'bao-loi') => {
     const ok = await chep(kieu === 'chep' ? noiDungChep(e) : noiDungBaoLoi(e, pb));
     setDaChep(ok ? kieu : 'loi');

@@ -85,6 +85,8 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
   const locCtx = useMemo<LocChuanContext>(() => ({ dat: (k, n) => setLoc((cur) => ({ ...cur, [k]: n ?? undefined })) }), []);
   const bo = { ky: Boolean(loc.ky), cn: Boolean(loc.cn) };
   const doc = () => tomTat(panelRef.current, bo);
+  /** Tham số khác mặc định ("Tất cả…", "Mọi…" không tính). */
+  const ttLoc = tt.filter((x) => { const i = x.indexOf(': '); return i > 0 && !/^(Tất cả|Mọi|—)/i.test(x.slice(i + 2)); });
   // Ô chi nhánh trong bảng tham số tự đăng ký: có thì khối Bộ tham số hiện cả ở màn chưa nối bộ tham số riêng.
   const bridge = useRef<BranchBridge | null>(null);
   const [coCN, setCoCN] = useState(false);
@@ -174,13 +176,16 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
     return (
       <LocChuanCtx.Provider value={locCtx}>
       <div className="rp-layout rp-keo">
+        {/* [2026-11-25 Nguyễn Văn Thủy] thanh gọn một dòng: chỉ hiện bộ lọc khác mặc định; đủ bộ lọc ở "Tất cả bộ lọc" (đóng góp) */}
         <ThanhLocChuan loc={loc}
-          khac={<div className="rp-tt" title="Các tham số khác đang xem — sửa ở Chọn tham số">{tt.map((x) => <span key={x}>{x}</span>)}</div>}
-          nutThamSo={<button type="button" className="btn btn-sm rp-chon" onClick={() => setMo(true)} title="Lọc kết hợp nâng cao: mọi tham số của màn (nhà cung cấp, tài khoản, trạng thái…) và bộ tham số đã lưu"><SlidersHorizontal size={14} /> Chọn tham số</button>} />
+          khac={<div className="rp-tt" title="Bộ lọc khác đang áp — sửa ở Tất cả bộ lọc">{ttLoc.map((x) => <span key={x}>{x}</span>)}</div>}
+          nutThamSo={<button type="button" className="btn btn-sm rp-chon" onClick={() => setMo(true)}
+            title={['Mọi bộ lọc của màn xếp dọc (chi nhánh, kỳ, nhà cung cấp, trạng thái…) và bộ lọc đã lưu', ...(tt.length ? ['', 'Đang chọn:', ...tt] : [])].join('\n')}>
+            <SlidersHorizontal size={14} /> Tất cả bộ lọc{ttLoc.length ? <span className="tlc-dem">{ttLoc.length}</span> : null}</button>} />
         {mo && <div className="rp-keo-mask" onMouseDown={() => setMo(false)} />}
         <aside className={`rp-panel rp-keo-panel${mo ? ' mo' : ''}`} ref={panelRef} onClickCapture={onPanelClick} aria-hidden={!mo}>
           <div className="rp-keo-head">
-            <b>Chọn tham số</b>
+            <b>Tất cả bộ lọc</b>
             <button type="button" className="btn btn-sm btn-ghost" onClick={doiGhim} title="Ghim bảng tham số bên trái màn (như trước)"><Pin size={14} /> Ghim bên trái</button>
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setMo(false)} aria-label="Đóng" title="Đóng (Esc)"><X size={16} /></button>
           </div>

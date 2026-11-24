@@ -1,7 +1,8 @@
 // [2026-11-06 03:40 AM Nguyễn Văn Thủy] MENU — gom tên, đổi mật khẩu, đăng xuất vào một avatar trên thanh trên cùng (đóng góp)
 import { useEffect, useRef, useState } from 'react';
-import { KeyRound, LogOut, Palette } from 'lucide-react';
+import { Bug, KeyRound, LogOut, Palette } from 'lucide-react';
 import { giaoDien, MAU_GOC } from '@/lib/giaoDien';
+import { hienMaTraCuu, type CheDoMaTraCuu } from '@/lib/hienMaTraCuu';
 import { ROLE_LABELS, type Role } from '@ketoan/contracts';
 import { useAuth } from '@/lib/auth';
 
@@ -12,6 +13,7 @@ export function UserMenu({ onChangePassword }: { onChangePassword: () => void })
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [mau, setMau] = useState(() => giaoDien.get().id);
+  const [cheDo, setCheDo] = useState<CheDoMaTraCuu>(() => hienMaTraCuu.get());
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -41,6 +43,15 @@ export function UserMenu({ onChangePassword }: { onChangePassword: () => void })
                 style={{ background: `linear-gradient(135deg, ${m.nav} 50%, ${m.base} 50%)` }} onClick={() => { giaoDien.set(m.id); setMau(m.id); }} />
             ))}
           </div>
+          {/* [2026-11-25 Nguyễn Văn Thủy] có hiện khay "Mã tra cứu" góc dưới trái không (đóng góp) */}
+          <label className="tk-mau" title="Khay mã lỗi ở góc dưới trái màn hình (câu lỗi vẫn luôn hiện ngay tại màn). Nhớ trên máy này.">
+            <Bug size={16} /> Khay lỗi
+            <select className="select input" style={{ height: 26, fontSize: 12.5, flex: 1 }} value={cheDo} onChange={(e) => { const v = e.target.value as CheDoMaTraCuu; hienMaTraCuu.set(v); setCheDo(v); }}>
+              <option value="ky-thuat">Chỉ lỗi kỹ thuật</option>
+              <option value="tat-ca">Mọi lỗi (cả từ chối đúng luật)</option>
+              <option value="tat">Không hiện</option>
+            </select>
+          </label>
           <button type="button" role="menuitem" onClick={logout}><LogOut size={16} /> Đăng xuất</button>
         </div>
       )}

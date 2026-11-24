@@ -411,7 +411,8 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
           </div>;
         })()}
         <ErrorBox error={error ? errorText(error) : null} />
-        {view === 'nhom' ? <TongHopTheoNhom from={from} to={to} />
+        {/* [2026-11-25 Nguyễn Văn Thủy] mở từ liên kết chưa có kỳ: gom theo nhóm vẫn cần kỳ → mặc định đầu tháng đến hôm nay (đóng góp) */}
+        {view === 'nhom' ? <TongHopTheoNhom from={from || `${today().slice(0, 7)}-01`} to={to || today()} />
         : !isLoading && data && view !== 'phieu' ? (
           <XemTheoMaHang docs={rows} data={data} mode={view} partnerName={names.partnerName} onOpen={(d) => setEditing(d)} locDong={ln.coLoc ? ln.loc : undefined}
             khoText={(d) => { const k = d.kind === 'order' ? khoOf(d.branchCode, d.deliveryWarehouse) : khoOf(d.branchCode, d.warehouseCode); return k; }} />
