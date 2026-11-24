@@ -64,6 +64,7 @@ function OChiNhanh({ nguon }: { nguon?: LocChuan['cn'] }) {
     if (kho.length) { const kept = kho.filter((c) => codes.includes(khoDs.find((k) => k.code === c)?.branchCode ?? '')); if (kept.length !== kho.length) nguon?.kho?.onChange(kept.join(',')); }
   };
   const q = tim.trim().toLowerCase();
+  const hien = all.filter((b) => (b.isActive || picked.includes(b.code)) && (!q || `${b.code} ${b.name}`.toLowerCase().includes(q)));
   return (
     <O icon={<Network size={14} />} nhan="Chi nhánh" tomTat={tomTat + (kho.length ? ` · ${kho.length} kho` : '')} khongDung={!nguon} rong={520}>
       {(dong) => (
@@ -83,8 +84,13 @@ function OChiNhanh({ nguon }: { nguon?: LocChuan['cn'] }) {
           ) : (
             <>
               <input className="input" placeholder="Tìm mã, tên chi nhánh" value={tim} onChange={(e) => setTim(e.target.value)} autoFocus style={{ width: '100%', margin: '6px 0' }} />
+              {/* [2026-11-25 Nguyễn Văn Thủy] chọn tất / bỏ chọn tất cả; đang tìm thì chỉ áp cho các dòng tìm thấy (đóng góp) */}
+              <div className="row" style={{ gap: 4, marginBottom: 4 }}>
+                <button type="button" className="btn btn-xs" onClick={() => (q ? dat([...new Set([...picked, ...hien.map((b) => b.code)])]) : dat(all.map((b) => b.code)))}>{q ? 'Chọn các dòng tìm thấy' : 'Chọn tất'}</button>
+                <button type="button" className="btn btn-xs" onClick={() => (q ? dat(picked.filter((c) => !hien.some((b) => b.code === c))) : dat([]))}>{q ? 'Bỏ chọn các dòng tìm thấy' : 'Bỏ chọn tất cả'}</button>
+              </div>
               <div className="tlc-ds">
-                {all.filter((b) => (b.isActive || picked.includes(b.code)) && (!q || `${b.code} ${b.name}`.toLowerCase().includes(q))).map((b) => (
+                {hien.map((b) => (
                   <label key={b.code} className="checkbox"><input type="checkbox" checked={picked.includes(b.code)}
                     onChange={() => dat(picked.includes(b.code) ? picked.filter((c) => c !== b.code) : [...picked, b.code])} /> <span className="mono">{b.code}</span> {b.name}</label>
                 ))}
@@ -93,7 +99,8 @@ function OChiNhanh({ nguon }: { nguon?: LocChuan['cn'] }) {
           )}
           <div className="row tlc-chan">
             <span className="muted">{tomTat}</span>
-            <button type="button" className="btn btn-sm" onClick={() => { nguon?.onChange(''); nguon?.kho?.onChange(''); }}>Tất cả</button>
+            <button type="button" className="btn btn-sm" onClick={() => { nguon?.onChange(CN_NONE); nguon?.kho?.onChange(''); }} title="Bỏ chọn mọi chi nhánh, kho rồi tích lại cái cần xem">Bỏ chọn tất cả</button>
+            <button type="button" className="btn btn-sm" onClick={() => { nguon?.onChange(''); nguon?.kho?.onChange(''); }}>Chọn tất cả</button>
             <button type="button" className="btn btn-sm btn-primary" onClick={dong}>Xong</button>
           </div>
         </div>
