@@ -146,6 +146,9 @@ services:
       WP_SSO_SECRET: ${WP_SSO_SECRET:-}
       WP_SSO_TENANT: ${WP_SSO_TENANT:-}
       WP_SSO_LOGIN_URL: ${WP_SSO_LOGIN_URL:-}
+      # [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — bizcity_identity@1: aud của vé và công tắc bắt buộc sub
+      WP_SSO_AUD: ${WP_SSO_AUD:-open-ketoan}
+      WP_SSO_REQUIRE_SUB: ${WP_SSO_REQUIRE_SUB:-0}
       WP_EMBED_URL: ${WP_EMBED_URL:-}
       SPREADSHEET_AI_URL: ${SPREADSHEET_AI_URL:-}
       # Tra cứu NCC / khách hàng theo mã số thuế: khoá doanhnghiep.vn (trống = nguồn công khai VietQR); TAX_LOOKUP=off để tắt

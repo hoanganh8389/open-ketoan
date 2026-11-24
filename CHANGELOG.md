@@ -12,6 +12,15 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Đăng nhập WordPress có sub + aud (SPINE-5, C-9-13) <!-- [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — mục CHANGELOG; chủ duyệt bizcity_identity@1 1.0.0 ngày 2026-11-24 -->
+
+- **Thêm:** `POST /api/v1/auth/wp-sso` nhận `sub` (`wp:<id>` | `biz:<id>`) và `aud` trong vé, theo `bizcity_identity@1` (bizcity-platform). Khớp người dùng theo `sub` **trước**, email sau; người dùng cũ chưa có `sub` được gắn ở lần đăng nhập đầu có `sub`; **email đã gắn `sub` khác bị từ chối** (không để vé WordPress khác chiếm tài khoản qua email trùng). `aud` khác `WP_SSO_AUD` (mặc định `open-ketoan`) bị từ chối; `sub` sai khuôn bị từ chối. Cấu hình mới `WP_SSO_AUD`, `WP_SSO_REQUIRE_SUB` (mặc định 0: vé thiếu `sub` vẫn vào trong giai đoạn chuyển 90 ngày; bật 1 để bắt buộc). Test `apps/api/test/wp-sso-sub-aud.test.ts` (9 ca). Chữ chốt: BIZCITY-API-v1 §5.2.
+- **Đổi:** migration 0183 — `users.external_sub text NULL` (CHECK khuôn `wp:<số>` | `biz:<mã>`, chỉ mục duy nhất `(tenant_id, external_sub)` khi khác NULL). Không UPDATE dữ liệu sẵn có. Kiểu cột khai bằng khai báo gộp `UsersTable` ở cuối `packages/platform/src/db/types.ts` (chèn giữa tệp làm lệch số dòng của ba dấu cũ mà SC-SIG-2 chặn theo số dòng).
+- **Sửa:** —
+- **Thay đổi định khoản:** — (không chạm bảng sổ, không đổi quyền / vai)
+- **Nâng cấp cần làm:** chạy migration (`npm run db:migrate` / `scripts/cap-nhat.sh`). Plugin phát vé bên WordPress cần gửi thêm `sub` và `aud`; 90 ngày sau khi cập nhật thì đặt `WP_SSO_REQUIRE_SUB=1`.
+- **Bảo mật:** vé vẫn ký HMAC-SHA256, hạn ≤ 5 phút. Thêm: `aud` chặn dùng vé của app khác; `sub` ổn định thay email làm khoá danh tính; chặn chiếm tài khoản qua email trùng. `is_active = false` vẫn chặn.
+
 ### Changefeed danh mục cho đồng bộ xuyên app (SPINE-3, Q-SPINE-3) <!-- [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — mục CHANGELOG; chủ duyệt chuẩn bizcity_spine@1 2026-11-24 -->
 
 - **Thêm:** `GET /api/v1/sync/:axis` (`items` kèm `codes` + `units` · `partners` · `branches`) và `GET /api/v1/sync/:axis/digest` theo `bizcity_sync@1` — chuẩn xương sống `bizcity_spine@1` ở bizcity-platform: app khác (bridge, cake) kéo bản sao theo con trỏ `(updated_at, id)` và đối chiếu bằng băm; dòng ngừng vẫn có mặt (`deleted`). Mã `apps/api/src/modules/sync/`; test `apps/api/test/spine-changefeed.test.ts` (4 ca); hợp đồng MASTER-DATA §3.1, ITEM-MASTER §5.
