@@ -98,7 +98,7 @@ Luật khớp người dùng (thay cho "khớp theo email" hiện nay):
 3. Vé **không** có `sub` (plugin phát vé chưa cập nhật): hành vi cũ — khớp theo email. Khi `WP_SSO_REQUIRE_SUB=1` (mặc định **0**, bật sau 90 ngày kể từ khi plugin phát vé cập nhật — Q-IDENT-2) ⇒ `UNAUTHORIZED`.
 4. `is_active = false` ở open-ketoan vẫn chặn dù vé hợp lệ (app là người gác cuối). Quyền trong phiên vẫn là `perms` của vé lọc về quyền đã khai (Q-IDENT-1) — không đổi.
 
-Dữ liệu: **migration 0183** (đề xuất): `users.external_sub text NULL` có CHECK khuôn `^(wp:[0-9]+|biz:[A-Za-z0-9_-]{1,64})$`, chỉ mục duy nhất `(tenant_id, external_sub)` khi khác NULL, `COMMENT ON COLUMN`. Không UPDATE dữ liệu sẵn có (người dùng cũ được gắn `sub` ở lần đăng nhập SSO kế tiếp, luật 2). Cấu hình mới: `WP_SSO_AUD`, `WP_SSO_REQUIRE_SUB` (`.env.example`, `docker-compose.yml`, `packages/platform/src/config/env.ts`).
+Dữ liệu: **migration 0183** (đã có, PR #626): `users.external_sub text NULL` có CHECK khuôn `^(wp:[0-9]+|biz:[A-Za-z0-9_-]{1,64})$`, chỉ mục duy nhất `(tenant_id, external_sub)` khi khác NULL, `COMMENT ON COLUMN`. Không UPDATE dữ liệu sẵn có (người dùng cũ được gắn `sub` ở lần đăng nhập SSO kế tiếp, luật 2). Cấu hình mới: `WP_SSO_AUD`, `WP_SSO_REQUIRE_SUB` (`.env.example`, `docker-compose.yml`, `packages/platform/src/config/env.ts`). <!-- [2026-11-24 11:27 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — C-9-16: migration 0183 + WP_SSO_AUD / WP_SSO_REQUIRE_SUB đã vào mã (#626), bỏ chữ (đề xuất) -->
 
 Bằng chứng (`audit_logs`) ghi người dùng theo `user:<id>` như cũ; ánh xạ `sub` → `users.external_sub` để truy ra. Không đổi quyền, không đổi vai, không chạm bảng sổ.
 
