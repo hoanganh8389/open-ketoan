@@ -454,9 +454,8 @@ export function PanelBranchList({ value, onChange, warehouses }: { value: string
         <button type="button" role="tab" className={tab === 'tree' ? 'on' : ''} onClick={() => pickTab('tree')} title="Cây theo sơ đồ tổ chức: Công ty → Miền → Chi nhánh → Tỉnh → điểm kinh doanh → kho">Cây</button>
         <button type="button" role="tab" className={tab === 'list' ? 'on' : ''} onClick={() => pickTab('list')} title="Danh sách chi nhánh">Danh sách</button>
         <button type="button" role="tab" className={tab === 'kho' ? 'on' : ''} disabled={!warehouses} onClick={() => pickTab('kho')}
-          title={warehouses ? 'Chọn riêng từng kho (phân kho); tích kho thì chi nhánh của kho được chọn theo' : 'Màn này không lọc theo kho'}>Kho</button>
+          title={warehouses ? 'Chọn riêng từng kho (phân kho); tích kho thì chi nhánh của kho được chọn theo' : 'Màn này không lọc riêng từng kho — số liệu gồm mọi kho của chi nhánh đã chọn'}>Kho</button>
       </div>
-      {!warehouses && <div className="tlc-canh">Màn này chỉ lọc theo chi nhánh, không lọc riêng từng kho.</div>}
       {/* [2026-11-25 Nguyễn Văn Thủy] Cây · Danh sách · Kho là MỘT lựa chọn: tích ở thẻ nào các thẻ kia theo (đóng góp) */}
       {tab === 'tree' ? <PanelBranchTree value={draft} onChange={setDraft} warehouses={warehouses ? { value: whDraft, onChange: setWhDraft } : undefined} />
       : tab === 'kho' && warehouses ? <WarehouseCheckList branches={draft} value={whDraft} onChange={(b, w) => { setDraft(b); setWhDraft(w); }} />

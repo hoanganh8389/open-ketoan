@@ -73,10 +73,9 @@ function OChiNhanh({ nguon }: { nguon?: LocChuan['cn'] }) {
             <button type="button" className={`tab ${the === 'cay' ? 'active' : ''}`} onClick={() => setThe('cay')} title="Cây theo cơ cấu tổ chức: tích một nút = chọn mọi chi nhánh bên dưới">Cây</button>
             <button type="button" className={`tab ${the === 'ds' ? 'active' : ''}`} onClick={() => setThe('ds')}>Danh sách</button>
             <button type="button" className={`tab ${the === 'kho' ? 'active' : ''}`} disabled={!nguon?.kho} onClick={() => setThe('kho')}
-              title={nguon?.kho ? 'Chọn riêng từng kho (phân kho); tích kho thì chi nhánh của kho được chọn theo' : 'Màn này không lọc theo kho'}>Kho{!nguon?.kho && <Lock size={11} style={{ marginLeft: 3 }} />}</button>
+              title={nguon?.kho ? 'Chọn riêng từng kho (phân kho); tích kho thì chi nhánh của kho được chọn theo' : 'Màn này không lọc riêng từng kho — số liệu gồm mọi kho của chi nhánh đã chọn'}>Kho{!nguon?.kho && <Lock size={11} style={{ marginLeft: 3 }} />}</button>
           </div>
-          {/* [2026-11-25 Nguyễn Văn Thủy] màn không lọc theo kho: thẻ Kho khoá + báo rõ (đóng góp) */}
-          {!nguon?.kho && <div className="tlc-canh">Màn này chỉ lọc theo chi nhánh, không lọc riêng từng kho — số liệu gồm mọi kho của chi nhánh đã chọn.</div>}
+          {/* [2026-11-25 Nguyễn Văn Thủy] màn không lọc theo kho: thẻ Kho khoá, rê chuột mới báo (đóng góp) */}
           {/* [2026-11-25 Nguyễn Văn Thủy] Cây · Danh sách · Kho cùng một lựa chọn (đóng góp) */}
           {the === 'kho' && nguon?.kho ? (
             <WarehouseCheckList branches={v} value={nguon.kho.value} onChange={(b, w) => { nguon.onChange(b); nguon.kho?.onChange(w); }} />
