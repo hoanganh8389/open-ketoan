@@ -80,7 +80,28 @@ Chạy được từ PHASE-031 W3a, đặc tả ở [bizcity_policy@1](BIZCITY-P
 
 Mọi endpoint khác phục vụ giao diện nội bộ và **có thể đổi không báo** (R-API-8).
 
-## 6. Giới hạn
+### 5.2 Đăng nhập một lần từ WordPress (`bizcity_identity@1`) <!-- [2026-11-24 09:50 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 -->
+
+<!-- [2026-11-24 09:50 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — chủ duyệt chuẩn bizcity_identity@1 1.0.0 ngày 2026-11-24 (bizcity-platform/docs/standard/BIZCITY-IDENTITY-v1.md). Đoạn này là chữ chốt phía open-ketoan trước PR mã (R-FLOW §3: migration mới). -->
+
+`POST /api/v1/auth/wp-sso { ticket }` (đã có) nhận thêm hai trường trong vé và nhớ danh tính WordPress của người dùng:
+
+| Trường vé | Việc |
+|---|---|
+| `sub` (`wp:<id>` hoặc `biz:<id>`) | **khoá danh tính xuyên app.** Lưu ở `users.external_sub`. Khớp người dùng theo `sub` **trước**, theo email sau |
+| `aud` | phải bằng `WP_SSO_AUD` (mặc định `open-ketoan`); có `aud` mà sai ⇒ `UNAUTHORIZED`, không có giai đoạn chuyển |
+
+Luật khớp người dùng (thay cho "khớp theo email" hiện nay):
+
+1. Vé **có** `sub`, đã có người dùng mang `external_sub = sub` trong đơn vị ⇒ đăng nhập người đó; email trong vé đổi thì **không** đổi email cục bộ (email là khoá đăng nhập mật khẩu, đổi ở đó là việc của người dùng).
+2. Vé **có** `sub`, chưa ai mang `sub`: tìm theo email. Gặp người dùng **chưa có** `external_sub` ⇒ gắn `sub` vào người đó (lần đầu nối). Gặp người dùng **đã mang `sub` khác** ⇒ `UNAUTHORIZED` (không để vé WordPress khác chiếm tài khoản qua email trùng). Không có ai ⇒ tạo người dùng mới (vai `viewer`, như hiện nay) mang `sub`.
+3. Vé **không** có `sub` (plugin phát vé chưa cập nhật): hành vi cũ — khớp theo email. Khi `WP_SSO_REQUIRE_SUB=1` (mặc định **0**, bật sau 90 ngày kể từ khi plugin phát vé cập nhật — Q-IDENT-2) ⇒ `UNAUTHORIZED`.
+4. `is_active = false` ở open-ketoan vẫn chặn dù vé hợp lệ (app là người gác cuối). Quyền trong phiên vẫn là `perms` của vé lọc về quyền đã khai (Q-IDENT-1) — không đổi.
+
+Dữ liệu: **migration 0183** (đề xuất): `users.external_sub text NULL` có CHECK khuôn `^(wp:[0-9]+|biz:[A-Za-z0-9_-]{1,64})$`, chỉ mục duy nhất `(tenant_id, external_sub)` khi khác NULL, `COMMENT ON COLUMN`. Không UPDATE dữ liệu sẵn có (người dùng cũ được gắn `sub` ở lần đăng nhập SSO kế tiếp, luật 2). Cấu hình mới: `WP_SSO_AUD`, `WP_SSO_REQUIRE_SUB` (`.env.example`, `docker-compose.yml`, `packages/platform/src/config/env.ts`).
+
+Bằng chứng (`audit_logs`) ghi người dùng theo `user:<id>` như cũ; ánh xạ `sub` → `users.external_sub` để truy ra. Không đổi quyền, không đổi vai, không chạm bảng sổ.
+
 
 | | |
 |---|---|
