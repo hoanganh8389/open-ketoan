@@ -22,6 +22,8 @@ export interface DigestRow { id: string; version: number; deleted: boolean }
 export const SYNC_MAX_LIMIT = 1000;
 const DIGEST_CAP = 50000;
 const EPOCH = '1970-01-01T00:00:00Z';
+// [2026-11-24 08:40 PM Johnny Chu - Chu Hoàng Anh] SPINE-4 — sửa: danh mục trống và chưa có con trỏ thì meta.cursor từng là '' (trái bizcity_sync@1: cursor bắt buộc, không rỗng). Bộ kiểm hộp đen bizcity-platform tools/spine-contract.mjs (SC-SPINE-5) bắt được. Nay trả con trỏ "từ đầu"; gửi lại con trỏ này cho cùng kết quả như không gửi.
+export const START_CURSOR = `${EPOCH}|`;
 
 interface AxisSql { from: RawBuilder<unknown>; tenant: RawBuilder<unknown>; id: RawBuilder<unknown>; ts: RawBuilder<unknown>; deleted: RawBuilder<unknown>; data: RawBuilder<unknown> }
 
@@ -101,7 +103,7 @@ export const syncService = {
     const hasMore = res.rows.length > n;
     const data = res.rows.slice(0, n).map(toRow);
     const last = data[data.length - 1];
-    return { data, meta: { cursor: last ? makeCursor(last) : (since ?? ''), as_of: await asOf(), has_more: hasMore } };
+    return { data, meta: { cursor: last ? makeCursor(last) : (since || START_CURSOR), as_of: await asOf(), has_more: hasMore } };
   },
 
   async digest(axis: SyncAxis, tenantId: string, since?: string): Promise<DigestRow[]> {
