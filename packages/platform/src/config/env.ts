@@ -95,6 +95,13 @@ const envSchema = z.object({
    */
   WP_SSO_LOGIN_URL: z.string().default(''),
   /**
+   * [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — bizcity_identity@1 (chủ duyệt 2026-11-24). WP_SSO_AUD: tên app trong vé (`aud`), mặc định open-ketoan; vé có `aud`
+   * khác bị từ chối. WP_SSO_REQUIRE_SUB: 1 = vé thiếu `sub` bị từ chối; mặc định 0 trong giai đoạn chuyển (90 ngày sau khi
+   * plugin phát vé của WordPress cập nhật), rồi bật.
+   */
+  WP_SSO_AUD: z.string().trim().default('open-ketoan'),
+  WP_SSO_REQUIRE_SUB: z.enum(['0', '1']).default('0'),
+  /**
    * KHÔNG DÙNG NỮA (23/10/2026: phần mềm kế toán chạy độc lập, không nhúng vào trang quản trị). Giữ khai báo để .env cũ
    * còn dòng này không lỗi.
    */

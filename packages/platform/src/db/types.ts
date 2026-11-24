@@ -2136,3 +2136,13 @@ export type ProductPostingGroup = Selectable<ProductPostingGroupsTable>;
 export type AccountingEventRow = Selectable<AccountingEventsTable>;
 export type LedgerEntryRow = Selectable<LedgerEntriesTable>;
 export type LedgerLineInsert = Insertable<LedgerLinesTable>;
+
+/**
+ * [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — cột thêm cho UsersTable (migration 0183, bizcity_identity@1: danh tính WordPress của người dùng đăng nhập một lần).
+ * Khai báo gộp (declaration merging) của interface ở cuối tệp, KHÔNG sửa giữa tệp: bộ kiểm SC-SIG-2 chặn nợ cũ theo số dòng,
+ * chèn dòng vào giữa làm ba dấu cũ (dòng 604 / 699 / 844) bị coi là nợ mới. Gộp lại vào UsersTable khi baseline được làm mới.
+ * wp:<id> hoặc biz:<id>; NULL = chưa đăng nhập bằng vé WordPress.
+ */
+export interface UsersTable {
+  external_sub: ColumnType<string | null, string | null | undefined, string | null>;
+}
