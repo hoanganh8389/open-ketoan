@@ -5,14 +5,14 @@
 
 | Cột | Số việc |
 |---|---|
-| Đang làm | 4 |
+| Đang làm | 6 |
 | Chờ merge | 0 |
-| Bị chặn | 31 |
-| Chưa ai nhận | 204 |
+| Bị chặn | 32 |
+| Chưa ai nhận | 210 |
 | Chờ đủ tín hiệu | 81 |
 | Hoãn | 3 |
 | Xong | 370 |
-| **Tổng** | **693** |
+| **Tổng** | **702** |
 
 ## Theo phân hệ (R-FLOW-10)
 
@@ -26,10 +26,10 @@
 | chung-tu | 73 | 5 | 1 | 29 | 108 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 179 | 30 | 2 | 63 | 274 |
+| he-thong | 179 | 30 | 4 | 70 | 283 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
-## Đang làm (4)
+## Đang làm (6)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -37,12 +37,14 @@
 | [S024-33](PHASE-024-ITEM-MASTER-PHAN-LOAI-HACH-TOAN/40-MASTER-CHECKLIST.md#L44) | PHASE-024 | danh-muc · kho | Bỏ suy tài khoản kho từ tiền tố ở packages/kernel/src/modules/posting/rules/stock.rule.ts:55 (startsWith('15'… | P0 | hoanganh8389 (phiên Claude, danh-gia-phase) · `feat/phase-024-s024-33-tk-kho` |
 | [S036-8b](PHASE-036-THIET-LAP-NHANH-DU-LIEU-MAU/40-MASTER-CHECKLIST.md#L18) | PHASE-036 | he-thong | B6 — Lấy lại bản trước từ defaultdatabackups; org-units/restore-defaults theo cùng khuôn; đơn vị trắng đổi nú… | P1 | hoanganh8389 (phiên Claude, PHASE-036 thiết lập nhanh) · `feat/s036-8b-lay-lai-ban-truoc` |
 | [S040-30](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L39) | PHASE-040 | chung-tu · mua-hang · ban-hang · he-thong | B14 — nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước… | P1 | hoanganh8389 (phiên Claude, PHASE-040) · `feat/phase-040-b14-no-chuan` |
+| [S041-1](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L10) | PHASE-041 | he-thong | P0 — kiểm kê sơ bộ: nhãn nền / tách / kế toán cho packages/platform/src, packages/contracts/src, bảng nền tro… | P0 | hoanganh8389 (phiên Claude, tach-goi-chung) · `docs/phase-041-p0-kiem-ke` |
+| [S041-2](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L11) | PHASE-041 | he-thong | P0 — Nhóm Lõi đọc các tệp "tách" / "cần đọc", chốt nhãn; trả Q041-1..3 | P0 | hoanganh8389 (phiên Claude, tach-goi-chung) · `docs/phase-041-p0-kiem-ke` |
 
 ## Chờ merge (0)
 
 —
 
-## Bị chặn (31)
+## Bị chặn (32)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -77,8 +79,9 @@
 | [S037-16](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L25) | PHASE-037 | danh-muc · mua-hang · kho · ban-hang | Phân bổ nguồn (receiptorigin hoặc gộp valuationlayersources), thứ tự lấy nguồn khi xuất, ánh xạ dòng nguồn bề… | P0 | — |
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 | [S040-20](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L29) | PHASE-040 | he-thong | Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ main — PR + 1 người duyệt, check bắt buộc sau khi C… | P0 | — |
+| [S041-4](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L13) | PHASE-041 | he-thong | P2 — cổng đăng ký (§2.2) trong packages/platform, open-ketoan đăng ký phần kế toán; hành vi không đổi | P0 | — |
 
-## Chưa ai nhận (204)
+## Chưa ai nhận (210)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -286,6 +289,12 @@
 | [S040-18](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L27) | PHASE-040 | chung-tu | B8 — trạng thái kế toán suy ra trên HT18; chẩn đoán mồ côi nguồn, hoàn tất thiếu sổ, tệp đổi băm, docref ≠ do… | P1 | — |
 | [S040-19](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L28) | PHASE-040 | he-thong | B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản docs/reviews/REVIEW-R2-.md | P0 | — |
 | [S040-21](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L30) | PHASE-040 | kho · quy · ban-hang | Sau phase — đưa vào sổ các dòng ☐ "sau phase" ở 10 §2 | P1 | — |
+| [S041-3](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L12) | PHASE-041 | he-thong | P1 — @bizcity/contracts (phần nền) + @ketoan/contracts re-export; build xanh, hành vi không đổi | P0 | — |
+| [S041-5](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L14) | PHASE-041 | he-thong | P2 — git subtree split sang repo bizcity-platform; ba tệp masterdata/ + catalog-warn.ts ở lại | P0 | — |
+| [S041-6](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L15) | PHASE-041 | he-thong | P3 — migration nền riêng (nguồn platform), baseline DB đang chạy, diễn tập trên bản sao (so lược đồ) | P0 | — |
+| [S041-7](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L16) | PHASE-041 | he-thong | P4 — phát hành 0.2.0 lên GitHub Packages; CI ma trận open-ketoan + open-cake | P0 | — |
+| [S041-8](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L17) | PHASE-041 | he-thong | P6 — open-ketoan phụ thuộc gói; tệp chuyển tiếp một bản; ADR số kế tiếp (K3) | P0 | — |
+| [S041-9](PHASE-041-TACH-GOI-CHUNG-PLATFORM/40-MASTER-CHECKLIST.md#L18) | PHASE-041 | he-thong | P7 — nhận lớp dữ liệu mềm từ open-cake vào gói chung khi open-ketoan cần | P2 | — |
 
 ## Chờ đủ tín hiệu (81)
 
