@@ -2190,3 +2190,6 @@ td.o-loi { background: color-mix(in srgb, var(--bad) 8%, transparent); }
 .nut-tao svg { color: #fff !important; }
 .ccm-xem > button.nut-tao { margin-right: 6px; }
 .tlc-tha .rp-branches-list { max-height: 340px; overflow: auto; }
+/* [2026-11-25] thẻ bị khoá (vd Kho ở màn không lọc theo kho) nhìn rõ là không bấm được + dòng báo */
+.tlc-tha .tab:disabled, .rp-tabs button:disabled { opacity: .45; cursor: not-allowed; }
+.tlc-canh { margin: 6px 0 2px; padding: 5px 8px; border-radius: 6px; background: #fff7e6; border: 1px solid #f5d48f; color: #8a5a00; font-size: 12px; }
