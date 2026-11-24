@@ -12,7 +12,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { HelpDrawer } from '@/components/HelpDrawer';
 import { SoDoNhom } from './SoDoNhom';
 import { SO_DO, SO_DO_V2 } from '../../layout/so-do-nhom';
-import { DANG_PHAT_TRIEN } from '../../layout/menu-gon';
+import { AN_DANG_PHAT_TRIEN, DANG_PHAT_TRIEN } from '../../layout/menu-gon';
 import { MODULES, isSection, moduleMenu } from '../../layout/menu';
 import { useAppMenu } from '../../layout/useAppMenu';
 import { ModuleIcon } from '../../phan-he/icons';
@@ -130,7 +130,7 @@ export function GroupHomePage() {
               <aside className="card sd-bc">
                 <b>Báo cáo</b>
                 {soDo.reports
-                  ? soDo.reports.filter((r) => !r.path || seen.has(r.path)).map((r) => (r.path
+                  ? soDo.reports.filter((r) => (r.path ? seen.has(r.path) : !AN_DANG_PHAT_TRIEN)).map((r) => (r.path
                     ? <Link key={r.label} to={r.path}>{r.label}</Link>
                     : <span key={r.label} className="sd-bc-soon" title="Đang phát triển, sẽ có ở bản sau">{r.label} <small>{DANG_PHAT_TRIEN}</small></span>))
                   : g.reports.flatMap((s) => s.items).slice(0, 7).map((m) => <Link key={m.key} to={m.path!} title={m.code ? `${m.label} (${m.code})` : m.label}>{m.label}</Link>)}

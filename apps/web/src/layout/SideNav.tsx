@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Banknote, BarChart3, Building2, ChartLine, ChevronRight, Hammer, Landmark, List, ListEnd, Network, PanelLeftClose, PanelLeftOpen, Percent, PiggyBank, Pin, PinOff, Puzzle, Search, Settings, ShoppingBag, ShoppingCart, Warehouse, type LucideIcon } from 'lucide-react';
 import { usePins } from './pins';
-import { DANG_PHAT_TRIEN, matchHere, nhomHien, REPORT_PAGE, type GonGroup } from './menu-gon';
+import { DANG_PHAT_TRIEN, DANG_PHAT_TRIEN_PAGE, matchHere, nhomHien, REPORT_PAGE, type GonGroup } from './menu-gon';
 import type { MenuItem } from '@ketoan/contracts';
 import { NhanPhanHe, NutThemNhanh } from './ThemNhanh';
 
@@ -100,6 +100,8 @@ export function SideNav({ menu, groups, active, onChoose, collapsed, onCollapse,
           );
         })}
         <NavLink to={REPORT_PAGE} end className={() => `gon-row${pathname === REPORT_PAGE && !new URLSearchParams(search).get('nhom') ? ' active' : ''}`} title="Tất cả báo cáo, sổ sách"><BarChart3 size={17} /><span>Báo cáo</span></NavLink>
+        {/* [2026-11-25 Nguyễn Văn Thủy] một mục gom mọi việc đang phát triển (đóng góp) */}
+        <NavLink to={DANG_PHAT_TRIEN_PAGE} className={() => `gon-row${pathname === DANG_PHAT_TRIEN_PAGE ? ' active' : ''}`} title="Các việc đang phát triển, xếp theo nhóm menu"><Hammer size={17} /><span>Đang phát triển</span></NavLink>
       </nav>
       <button className="sidenav-toggle" title={collapsed ? 'Mở rộng menu (Ctrl + B)' : 'Thu gọn menu (Ctrl + B)'} onClick={() => onCollapse(!collapsed)}>
         {collapsed ? <PanelLeftOpen size={16} /> : <><PanelLeftClose size={16} /> Thu gọn</>}

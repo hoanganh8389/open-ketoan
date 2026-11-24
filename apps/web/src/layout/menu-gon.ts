@@ -43,6 +43,10 @@ export const groupHome = (key: string) => `/nhom/${key}`;
 /** Nhóm Thiết lập: không ở menu trái, mở bằng nút bánh răng; màn chưa xếp nhóm nào cũng vào đây. */
 export const THIET_LAP = 'he-thong';
 export const DANG_PHAT_TRIEN = 'đang phát triển';
+// [2026-11-25 Nguyễn Văn Thủy] việc chưa có màn (`soon`) không hiện ở menu / trang nhóm nữa — gom ở trang /dang-phat-trien (đóng góp)
+/** true: ẩn mọi mục "đang phát triển" khỏi menu, trang nhóm, sơ đồ; xem đủ ở trang DANG_PHAT_TRIEN_PAGE. */
+export const AN_DANG_PHAT_TRIEN = true;
+export const DANG_PHAT_TRIEN_PAGE = '/dang-phat-trien';
 
 
 export const GON_DEFS: GonDef[] = [
@@ -218,7 +222,7 @@ export function buildGon(menu: MenuItem[], phanRieng = true): GonGroup[] {
   const flat = flatten(menu);
   const placed = new Set<string>();
   const pick = (paths: string[]) => paths.flatMap((p) => { placed.add(p); const it = flat.get(p); return it ? [it] : []; });
-  const resolve = (list: GonSection[] = []) => list.map((s) => ({ label: s.label, items: pick(s.paths), soon: s.soon })).filter((s) => s.items.length || s.soon?.length);
+  const resolve = (list: GonSection[] = []) => list.map((s) => ({ label: s.label, items: pick(s.paths), soon: AN_DANG_PHAT_TRIEN ? undefined : s.soon })).filter((s) => s.items.length || s.soon?.length);
   const groups: GonGroup[] = GON_DEFS.map(({ the, sections, reports, ...d }) => ({
     ...d,
     home: groupHome(d.key),

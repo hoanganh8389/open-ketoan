@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BarChart3, ChevronDown, ChevronRight, X } from 'lucide-react';
 import type { MenuItem } from '@ketoan/contracts';
-import { DANG_PHAT_TRIEN, matchHere, nhomHien, REPORT_PAGE, type GonGroup } from './menu-gon';
+import { DANG_PHAT_TRIEN, DANG_PHAT_TRIEN_PAGE, matchHere, nhomHien, REPORT_PAGE, type GonGroup } from './menu-gon';
 import { GonIcon } from './SideNav';
 import { HayDungNav } from './ThemNhanh';
 
@@ -55,6 +55,7 @@ export function MobileNav({ menu, groups, active, onChoose, onClose }: {
             </div>
           ))}
           <button type="button" className={`mnav-item top ${pathname === REPORT_PAGE ? 'active' : ''}`} onClick={() => go(null, REPORT_PAGE)}><BarChart3 size={16} /><span style={{ flex: 1 }}>Báo cáo</span></button>
+          <button type="button" className={`mnav-item top ${pathname === DANG_PHAT_TRIEN_PAGE ? 'active' : ''}`} onClick={() => go(null, DANG_PHAT_TRIEN_PAGE)}><BarChart3 size={16} /><span style={{ flex: 1 }}>Đang phát triển</span></button>
         </div>
       </nav>
     </>

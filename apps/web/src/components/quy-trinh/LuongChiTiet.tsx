@@ -7,6 +7,7 @@
  * Khung "Việc cần làm" ở trên (tuỳ chọn). Trang của phân hệ chỉ KHAI DỮ LIỆU (bước, ô) và gắn thêm huy hiệu / cảnh báo / nút qua
  * `badge` / `extra`; không tự vẽ khung. Ô không có `path` (hoặc `soon`) hiện mờ "đang phát triển".
  */
+import { AN_DANG_PHAT_TRIEN } from '@/layout/menu-gon';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
@@ -59,7 +60,8 @@ const isSoon = (n: LuongNode) => n.soon === true || !n.path;
 export function LuongChiTiet({ title, stages, lanes, column, badge, extra, todo, loop, soonLabel = 'đang phát triển' }: LuongChiTietProps) {
   const navigate = useNavigate();
   const open = (n: LuongNode) => { if (!isSoon(n)) navigate(n.path!); };
-  const soonBadge = <span className="mf-badge info">{soonLabel}</span>;
+  // [2026-11-25 Nguyễn Văn Thủy] ô chưa có màn chỉ mờ, không ghi chữ "đang phát triển" (xem trang Đang phát triển) (đóng góp)
+  const soonBadge = AN_DANG_PHAT_TRIEN ? null : <span className="mf-badge info">{soonLabel}</span>;
   const L = {
     cfg: lanes?.cfg ?? ['Khai báo', 'làm một lần, sửa khi cần'],
     main: lanes?.main ?? ['Luồng chính', 'theo thứ tự thời gian'],
