@@ -16,7 +16,7 @@ Mỗi bản ghi đủ sáu mục:
 
 - **Thêm:** `GET /api/v1/sync/:axis` (`items` kèm `codes` + `units` · `partners` · `branches`) và `GET /api/v1/sync/:axis/digest` theo `bizcity_sync@1` — chuẩn xương sống `bizcity_spine@1` ở bizcity-platform: app khác (bridge, cake) kéo bản sao theo con trỏ `(updated_at, id)` và đối chiếu bằng băm; dòng ngừng vẫn có mặt (`deleted`). Mã `apps/api/src/modules/sync/`; test `apps/api/test/spine-changefeed.test.ts` (4 ca); hợp đồng MASTER-DATA §3.1, ITEM-MASTER §5.
 - **Đổi:** migration 0182 — `branches.updated_at` có mặc định, dòng trống điền bằng `created_at`, NOT NULL; trigger BEFORE UPDATE giữ `updated_at` trên items / partners / branches khi câu UPDATE không tự đặt; trigger AFTER trên `item_codes`, `product_units` chạm `items.updated_at` (đổi mã / ĐVT làm mặt hàng xuất hiện lại trong feed); chỉ mục `(tenant_id, updated_at, id)`. Bảng lớp khai `modules/sync/` (M data/masterdata).
-- **Sửa:** —
+- **Sửa:** <!-- [2026-11-24 08:40 PM Johnny Chu - Chu Hoàng Anh] SPINE-4 --> danh mục trống và chưa có con trỏ thì `meta.cursor` từng là chuỗi rỗng (trái `bizcity_sync@1`); nay trả `1970-01-01T00:00:00Z|` (con trỏ "từ đầu"). Do bộ kiểm hộp đen `spine-contract` (bizcity-platform, SC-SPINE-5) bắt được khi chạy vào bản thử.
 - **Thay đổi định khoản:** — (chỉ đọc, không chạm bảng sổ)
 - **Nâng cấp cần làm:** chạy migration (`npm run db:migrate` / `scripts/cap-nhat.sh`). open-ketoan-bridge (bộ kéo C8) và open-cake có thể chuyển sang kéo theo con trỏ thay vì kéo cả bảng.
 - **Bảo mật:** route chỉ đọc, quyền `catalog:read`, cô lập theo đơn vị như mọi route danh mục; `data` của partners / branches không gồm cột ngân hàng, hạn mức.

@@ -121,6 +121,24 @@ describe('items: mã đi cùng dòng; thêm mã làm mặt hàng xuất hiện l
   });
 });
 
+describe('con trỏ khi danh mục trống', () => {
+  // [2026-11-24 08:40 PM Johnny Chu - Chu Hoàng Anh] SPINE-4 — tái hiện lỗi SC-SPINE-5 do bộ kiểm hộp đen bắt: trang rỗng, không since ⇒ cursor phải khác rỗng và gửi lại được.
+  it('trang rỗng vẫn có con trỏ "từ đầu"; gửi lại con trỏ đó ra cùng kết quả', async () => {
+    const fresh = await setupTenant();
+    try {
+      const p = await feed(fresh, 'items');
+      expect(p.data).toEqual([]);
+      expect(p.meta.cursor).toBe('1970-01-01T00:00:00Z|');
+      expect(p.meta.has_more).toBe(false);
+      const again = await feed(fresh, 'items', `?since=${encodeURIComponent(p.meta.cursor)}`);
+      expect(again.data).toEqual([]);
+      expect(again.meta.cursor).toBe(p.meta.cursor);
+    } finally {
+      await fresh.app.close();
+    }
+  });
+});
+
 describe('cửa vào', () => {
   it('trục lạ → 400; con trỏ không đúng khuôn → 400', async () => {
     expect((await call(ctx, 'GET', '/api/v1/sync/ledger')).status).toBe(400);
