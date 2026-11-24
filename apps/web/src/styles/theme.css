@@ -2194,3 +2194,13 @@ td.o-loi { background: color-mix(in srgb, var(--bad) 8%, transparent); }
 .tlc-tha .tab:disabled, .rp-tabs button:disabled { opacity: .45; cursor: not-allowed; }
 .tlc-canh { margin: 6px 0 2px; padding: 5px 8px; border-radius: 6px; background: #fff7e6; border: 1px solid #f5d48f; color: #8a5a00; font-size: 12px; }
 .tlc-dem { display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 9px; background: var(--brand-600); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+
+/* [2026-11-25 Nguyễn Văn Thủy] bảng Tất cả bộ lọc: bộ lọc nhiều lựa chọn gọn một dòng, bấm mới mở (đóng góp) */
+.rp-gon { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.rp-gon-dong { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 0; background: none; cursor: pointer; text-align: left; font: inherit; font-size: 13px; }
+.rp-gon-dong:hover { background: var(--n-100, #f3f5f9); }
+.rp-gon-nhan { flex: none; width: 96px; color: var(--ink-600, #4b5563); font-weight: 600; }
+.rp-gon-gt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--brand-700, #1d4f9a); }
+.rp-gon-mui { flex: none; color: var(--ink-500, #6b7280); }
+.rp-gon.mo { border-color: var(--brand-500, #2457b3); }
+.rp-gon-than { padding: 0 8px 8px; }

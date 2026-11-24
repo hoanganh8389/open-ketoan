@@ -448,8 +448,13 @@ export function PanelBranchList({ value, onChange, warehouses }: { value: string
     if (tab !== 'tree' || draft === BRANCH_NONE) return;
     try { if (draft) localStorage.setItem(pickedKey(pathname), draft); else localStorage.removeItem(pickedKey(pathname)); } catch { /* bỏ qua */ }
   }, [tab, draft, pathname]);
+  // [2026-11-25 Nguyễn Văn Thủy] bảng bộ lọc gọn: chi nhánh chỉ hiện một dòng tóm tắt, bấm mới mở cây / danh sách / kho (đóng góp)
+  const { data: dsCN = [] } = useBranches();
+  const nCN = draft === BRANCH_NONE ? 0 : draft ? draft.split(',').length : dsCN.length;
+  const nKho = whDraft ? whDraft.split(',').length : 0;
+  const tomTatCN = (draft === BRANCH_NONE ? 'Chưa chọn chi nhánh' : !draft ? `Tất cả ${dsCN.length} chi nhánh` : `${nCN} / ${dsCN.length} chi nhánh`) + (warehouses ? (nKho ? ` · ${nKho} kho` : ' · mọi kho') : '');
   return (
-    <>
+    <KhoiGon nhan="Chi nhánh" tomTat={tomTatCN}>
       <div className="rp-tabs" role="tablist">
         <button type="button" role="tab" className={tab === 'tree' ? 'on' : ''} onClick={() => pickTab('tree')} title="Cây theo sơ đồ tổ chức: Công ty → Miền → Chi nhánh → Tỉnh → điểm kinh doanh → kho">Cây</button>
         <button type="button" role="tab" className={tab === 'list' ? 'on' : ''} onClick={() => pickTab('list')} title="Danh sách chi nhánh">Danh sách</button>
@@ -459,8 +464,26 @@ export function PanelBranchList({ value, onChange, warehouses }: { value: string
       {/* [2026-11-25 Nguyễn Văn Thủy] Cây · Danh sách · Kho là MỘT lựa chọn: tích ở thẻ nào các thẻ kia theo (đóng góp) */}
       {tab === 'tree' ? <PanelBranchTree value={draft} onChange={setDraft} warehouses={warehouses ? { value: whDraft, onChange: setWhDraft } : undefined} />
       : tab === 'kho' && warehouses ? <WarehouseCheckList branches={draft} value={whDraft} onChange={(b, w) => { setDraft(b); setWhDraft(w); }} />
-      : <BranchCheckList value={draft} onChange={setDraft} onRestore={(v) => { setDraft(v); onChange(v); }} />}
-    </>
+      : null}
+      {/* Danh sách luôn dựng (ẩn khi ở thẻ khác) để nhớ / lấy lại chi nhánh đã tích theo màn và nối Bộ tham số. */}
+      <div style={tab === 'list' ? undefined : { display: 'none' }}><BranchCheckList value={draft} onChange={setDraft} onRestore={(v) => { setDraft(v); onChange(v); }} /></div>
+    </KhoiGon>
+  );
+}
+
+/**
+ * Một bộ lọc nhiều lựa chọn trong bảng "Tất cả bộ lọc": mặc định chỉ một dòng (nhãn + đang chọn gì), bấm mới mở phần chọn.
+ * Phần chọn luôn được dựng (chỉ ẩn) nên giá trị đang chọn, nhớ theo màn không mất. Bảng có thêm bao nhiêu bộ lọc vẫn gọn.
+ */
+export function KhoiGon({ nhan, tomTat, children }: { nhan: string; tomTat: string; children: ReactNode }) {
+  const [mo, setMo] = useState(false);
+  return (
+    <div className={`rp-gon${mo ? ' mo' : ''}`}>
+      <button type="button" className="rp-gon-dong" onClick={() => setMo((x) => !x)} aria-expanded={mo} title={mo ? 'Thu gọn' : `Bấm để chọn ${nhan.toLowerCase()}`}>
+        <span className="rp-gon-nhan">{nhan}</span><span className="rp-gon-gt">{tomTat}</span><span className="rp-gon-mui">{mo ? '▴' : '▾'}</span>
+      </button>
+      <div className="rp-gon-than" style={mo ? undefined : { display: 'none' }}>{children}</div>
+    </div>
   );
 }
 
