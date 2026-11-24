@@ -87,6 +87,8 @@ Thiết kế và quyết định: [docs/core/06-xuong-ca-dinh-danh.md](../core/0
 
 Hợp đồng nhập cho plugin (`itemId`, `barcode` trên dòng hàng của `bizcity_ledger_intake`), action `core.item.upsert / retire-code / classify` (S024-11 phần còn lại), đệm theo phiên bản danh mục + span `intake.item.resolve` (S024-6 phần còn lại), `products` thành khung nhìn (B2b-2, sau S024-11), giá vốn và báo cáo kho gom theo `item_id` (70 §3.2.1 G2).
 
+- <!-- [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 --> **Changefeed** `GET /api/v1/sync/items` (đề xuất, chốt ở [BIZCITY-MASTER-DATA-v1 §3.1](BIZCITY-MASTER-DATA-v1.md)): mặt hàng kèm `codes` + `units`, con trỏ `(updated_at, item_id)`; migration 0182 chạm `items.updated_at` khi `item_codes` / `product_units` đổi.
+
 ## 6. Bảo đảm
 
 - Test `apps/api/test/item-master.test.ts` (18 ca): đồng bộ, đổi mã, xoá, mã vạch trùng, bất biến ở CSDL, điền ban đầu, Resolver.

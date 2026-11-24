@@ -37,6 +37,25 @@
 - Mã đã bỏ: xem `catalog_tombstones` qua API danh mục (R-MD-10).
 - Mã lạ trong sự việc không làm mất sự việc (R-MD-5): sự việc nằm chờ, kế toán khai rồi định khoản lại.
 
+### 3.1 Changefeed và digest — `bizcity_sync@1` (chốt thiết kế, Q-SPINE-3)
+
+<!-- [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — chủ duyệt 2026-11-24 chuẩn xương sống bizcity_spine@1 (bizcity-platform/docs/standard/BIZCITY-SPINE-v1.md §4.1): open-ketoan là chủ trục item / uom / branch / partner, phải mở cho app khác (bridge, cake) kéo bản sao theo con trỏ và đối chiếu. Tài liệu này là chữ chốt trước PR mã (R-FLOW §3: migration mới). -->
+
+Thay cho "kéo cả bảng mỗi giờ", app khác kéo **phần đã đổi** theo con trỏ và so băm để tìm lệch. Chỉ đọc, quyền `catalog:read`, cô lập theo đơn vị như mọi route danh mục.
+
+| Route | Trả về | Ghi chú |
+|---|---|---|
+| `GET /api/v1/sync/<trục>?since=<cursor>&limit=<1..1000>` (đề xuất) | `{ data: ChangeRow[], meta: { cursor, as_of, has_more } }` | trục ∈ `items` · `partners` · `branches`; thứ tự `(updated_at, id)` ổn định; `limit` mặc định 200 |
+| `GET /api/v1/sync/<trục>/digest?since=<cursor>` (đề xuất) | `[{ id, version, deleted }]` | so băm theo id, không kéo payload; tối đa 50 000 dòng một lần |
+
+- **ChangeRow** `{ id, version, updated_at, deleted, data }`: `id` = `item_id` (ULID) hoặc `id` bigint dạng chuỗi của partners / branches; `version` = epoch ms của `updated_at`; `deleted` = items `status = retired` · partners / branches `is_active = false` — **dòng ngừng vẫn có mặt** để bản sao đóng dòng, không xoá.
+- **Con trỏ** `<updated_at ISO>|<id>` do máy chủ trả, app chỉ chuyền lại; khuôn sai bị chặn ở cửa (`VALIDATION_ERROR`). Trang rỗng trả lại đúng con trỏ đã gửi.
+- **`data` của items** kèm `codes` (`item_codes`: kind, code, valid_from, valid_to) và `units` (`product_units` của mã sku đang hiệu lực: uom, ratio, is_default) — ĐVT đi cùng mặt hàng (chuẩn spine §2: uom thuộc item master). `data` của partners / branches: các cột danh mục công khai (mã, tên, loại, mã số thuế, địa chỉ, liên hệ, nhóm, uid, cha); **không** có cột ngân hàng, hạn mức.
+- **Xoá vật lý** (chỉ cho dòng chưa từng được tham chiếu — `core.partner.delete`, `core.branch.delete`) không vào feed: digest thiếu id, app đối chiếu tự biết (`RC-SPINE-*`).
+- **Migration 0182** (đề xuất, số lấy bằng `scripts/so-tiep-theo.mjs`): `branches.updated_at` (0001 chưa có); trigger `BEFORE UPDATE` giữ `updated_at` trên items / partners / branches khi câu UPDATE không tự đặt; trigger `AFTER` trên `item_codes` và `product_units` chạm `items.updated_at` để đổi mã / ĐVT làm mặt hàng xuất hiện lại trong feed; chỉ mục `(tenant_id, updated_at, id)`. Không UPDATE dữ liệu sẵn có, không chạm bảng sổ.
+- **Không đổi**: hợp đồng ghi (§1, §4), R-MD-1 (lõi giữ, không đồng bộ hai chiều), R-MD-2 (ngoài gửi mã), `catalog_tombstones`.
+- Mã: `apps/api/src/modules/sync/` (route theo khuôn đọc của `branch.routes.ts`), test `apps/api/test/spine-changefeed.test.ts`.
+
 ## 4. Khuôn phần tử
 
 Tên trường đầy đủ của từng danh mục: OpenAPI `/api/docs` (sinh từ zod ở `modules/<ten>/<ten>.schemas.ts`). Plugin chỉ **dựa vào** các trường `code` / `sku` (để gửi), định danh (`id` / `itemId`, để lưu liên kết trong dữ liệu của mình), `name`, `isActive` (hoặc tương đương) — trường khác là thông tin, có thể thêm bất kỳ lúc nào (thay đổi tương thích).
