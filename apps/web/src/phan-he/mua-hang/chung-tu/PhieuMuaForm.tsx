@@ -1123,16 +1123,16 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   <ChonKho branchCode={v.branchCode} value={v.warehouseCode ?? ''} disabled={readOnly} op={({ receipt: 'purchase_in', return: 'purchase_return_out', gift_in: 'gift_in', gift_out: 'gift_out' } as Record<string, string>)[v.kind]} onChange={(c) => set({ warehouseCode: c || undefined })} /></div>}
                 <div className="field span2"><label>Nhà cung cấp (*)</label>
                   <PartnerPicker kind="supplier" value={v.partnerCode} onChange={pickPartner} activeOnly addKind="supplier" disabled={readOnly} />
-                  {v.partnerCode && <span className="muted" style={{ fontSize: 11, display: 'flex', gap: 6, alignItems: 'center' }}><NccInfo code={v.partnerCode} showName={false} />{names.partner(v.partnerCode)?.taxCode ? `MST ${names.partner(v.partnerCode)?.taxCode}` : 'Xem thông tin NCC'}{names.partner(v.partnerCode)?.address ? ` · ${names.partner(v.partnerCode)?.address}` : ''}</span>}
+                  {/* [2026-11-25 Nguyễn Văn Thủy] NCC chỉ hiện tên; MST, địa chỉ rê chuột hoặc bấm (i) xem hồ sơ (đóng góp) */}
+                  {v.partnerCode && <span className="muted" style={{ fontSize: 11.5, display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap', overflow: 'hidden' }}
+                    title={[names.partnerName(v.partnerCode), names.partner(v.partnerCode)?.taxCode ? `MST ${names.partner(v.partnerCode)?.taxCode}` : '', names.partner(v.partnerCode)?.address ?? ''].filter(Boolean).join(' · ')}>
+                    <NccInfo code={v.partnerCode} showName={false} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{names.partnerName(v.partnerCode)}</span></span>}
                 </div>
                 {v.kind !== 'gift_out' && v.partnerCode && (
                   <div className="field span2"><label title="Hợp đồng mua ký với NCC: giá, chiết khấu, hạn thanh toán lấy theo hợp đồng; bút toán, công nợ mang số hợp đồng (xem Công nợ theo hợp đồng MH30). Đơn / phiếu mới tự gợi ý hợp đồng đang hiệu lực; phiếu lập từ đơn theo hợp đồng của đơn">Hợp đồng</label>
                     {/* [2026-11-25 Nguyễn Văn Thủy] ô chọn hợp đồng dùng chung, có nút + thêm hợp đồng ngay tại phiếu (đóng góp) */}
                     <ChonHopDong partnerCode={v.partnerCode} value={v.contractCode ?? ''} disabled={readOnly} onChange={(c) => { hdTouched.current = true; set({ contractCode: c || undefined }); }} />
-                    {hd && (() => { const t = data.policies.find((x) => x.kind === 'payment_term' && x.isActive && x.scope.contractCode === hd.code); return <span className="muted" style={{ fontSize: 11, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                      Hạn thanh toán: <b>{t ? termText(termFromRule(t.rule)) : 'theo điều khoản chung của NCC'}</b>
-                      {!readOnly && (v.kind === 'order' || v.kind === 'receipt') && <button type="button" className="btn btn-xs btn-primary" title="Chọn mặt hàng của hợp đồng, giá lấy theo hợp đồng" onClick={() => setFillHd(true)}>Lấy từ hợp đồng</button>}
-                    </span>; })()}
+                    {/* [2026-11-25 Nguyễn Văn Thủy] bỏ dòng Hạn thanh toán dưới ô hợp đồng (hạn thanh toán ở khối Tổng tiền, Trợ lý); nút Lấy từ hợp đồng ở thanh công cụ bảng hàng (đóng góp) */}
                     {hd && hd.statusText !== 'Đang hiệu lực' && !readOnly && <span className="mh-warn" style={{ fontSize: 11 }}>Hợp đồng {hd.statusText.toLowerCase()}{hd.endDate ? ` (đến ${dmy(hd.endDate)})` : ''}</span>}
                     {/* [2026-11-25 Nguyễn Văn Thủy] hợp đồng áp cho chi nhánh khai hoặc chi nhánh con của nó; đơn đặt xét các chi nhánh NHẬN (không xét chi nhánh lập chứng từ) (đóng góp) */}
                     {hd && hd.branchCodes.length > 0 && !readOnly && (() => { const ngoai = (isOrder ? nhanDs : [v.branchCode]).filter((b) => b && !hdApCho(hd.branchCodes, b));
@@ -1281,13 +1281,13 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                 )}
                 {isOrder && <>
                   <div className="field"><label>Ngày giao hàng</label><input className="input" type="date" value={v.deliveryDate ?? ''} onChange={(e) => set({ deliveryDate: e.target.value || undefined })} /></div>
-                  <div className="field"><label title="Ngân sách mua của đơn — tự lấy theo hạn mức công nợ còn lại (của hợp đồng đã chọn; không theo hợp đồng thì hạn mức chung của NCC), sửa tay được. Chỉ để ước lượng, không chặn (vượt hạn mức thì Kiểm tra báo)">Ngân sách mua</label><input className="input num" value={fmt(v.budget)} placeholder="vd 80.000.000" onChange={(e) => set({ budget: num(e.target.value) || undefined })} />
-                    {hmCredit && <span className="muted" style={{ fontSize: 11 }} title={`Hạn mức ${vnd(hmCredit.limit)} − nợ đang có ${vnd(hmCredit.current)} − đơn / phiếu đang chờ ${vnd(hmCredit.openOrders)}`}>Hạn mức công nợ còn <b>{vnd(hmCon ?? 0)}</b> — {hmNhan}{!readOnly && v.budget !== hmCon && <button type="button" className="btn btn-xs" style={{ marginLeft: 4 }} onClick={() => { budgetAuto.current = hmCon; set({ budget: hmCon }); }}>Lấy</button>}</span>}
-                    {/* [2026-11-25 Nguyễn Văn Thủy] chưa khai hạn mức: mở thẳng bước Điều khoản của hợp đồng (Công nợ & điều khoản thanh toán) để khai (đóng góp) */}
-                    {!hmCredit && a && <span className="muted" style={{ fontSize: 11 }}>{v.contractCode
-                      ? <>Hợp đồng {v.contractCode} chưa khai hạn mức công nợ — <Link to={hopDongPath(v.contractCode, 'dieu-khoan')} target="_blank" title="Mở hợp đồng, bước Điều khoản hợp đồng → khối Công nợ & điều khoản thanh toán → Hạn mức công nợ">khai hạn mức ở hợp đồng</Link></>
-                      : 'NCC chưa khai hạn mức công nợ (ngoài hợp đồng)'}</span>}
-                    {v.budget ? <span style={{ fontSize: 11.5, fontWeight: 700, color: v.budget - calc.beforeTax >= 0 ? 'var(--ok, #16a34a)' : '#dc2626' }}>{v.budget - calc.beforeTax >= 0 ? 'Còn' : 'Vượt'} {vnd(Math.abs(v.budget - calc.beforeTax))} <span className="muted" style={{ fontWeight: 400 }}>(so tổng sau CK chưa thuế)</span></span> : null}</div>
+                  <div className="field"><label title="Ngân sách mua của đơn — tự lấy theo hạn mức công nợ còn lại (của hợp đồng đã chọn; không theo hợp đồng thì hạn mức chung của NCC), sửa tay được. Chỉ để ước lượng, không chặn (vượt hạn mức thì Kiểm tra báo)">Ngân sách mua</label><input className="input num" value={fmt(v.budget)} placeholder="vd 80.000.000" title={hmCredit ? `Hạn mức công nợ còn ${vnd(hmCon ?? 0)} — ${hmNhan}${v.budget ? ` · ${v.budget - calc.beforeTax >= 0 ? 'còn' : 'vượt'} ${vnd(Math.abs(v.budget - calc.beforeTax))} so tổng sau CK chưa thuế` : ''}` : undefined} onChange={(e) => set({ budget: num(e.target.value) || undefined })} />
+                    {/* [2026-11-25 Nguyễn Văn Thủy] ngân sách gọn: đã có số thì chỉ ô số (chi tiết rê chuột), vượt thì báo đỏ; chưa có thì gợi ý hạn mức / khai hạn mức (đóng góp) */}
+                    {v.budget ? (v.budget - calc.beforeTax < 0 && <span style={{ fontSize: 11.5, fontWeight: 700, color: '#dc2626' }} title="So tổng sau CK, chưa thuế">Vượt {vnd(calc.beforeTax - v.budget)}</span>)
+                      : hmCredit ? <span className="muted" style={{ fontSize: 11 }} title={`Hạn mức ${vnd(hmCredit.limit)} − nợ đang có ${vnd(hmCredit.current)} − đơn / phiếu đang chờ ${vnd(hmCredit.openOrders)} — ${hmNhan}`}>Hạn mức còn <b>{vnd(hmCon ?? 0)}</b>{!readOnly && <button type="button" className="btn btn-xs" style={{ marginLeft: 4 }} onClick={() => { budgetAuto.current = hmCon; set({ budget: hmCon }); }}>Lấy</button>}</span>
+                      : a && <span className="muted" style={{ fontSize: 11 }}>{v.contractCode
+                        ? <>Chưa khai hạn mức — <Link to={hopDongPath(v.contractCode, 'dieu-khoan')} target="_blank" title="Mở hợp đồng, bước Điều khoản hợp đồng → Công nợ & điều khoản thanh toán → Hạn mức công nợ">khai ở hợp đồng</Link></>
+                        : 'NCC chưa khai hạn mức công nợ'}</span>}</div>
                 </>}
                 {/* [2026-11-25 Nguyễn Văn Thủy] bỏ khối thống kê Nhãn hàng (theo mặt hàng) ở đầu phiếu cho gọn — nhãn vẫn tự lấy theo dòng hàng (đóng góp) */}
                 <div className="field span4"><label>Ghi chú</label><input className="input" value={v.note ?? ''} onChange={(e) => set({ note: e.target.value })} /></div>
@@ -1324,6 +1324,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                 {!readOnly && (
                   <div className="lines-bar">
                     <button className="btn btn-sm btn-primary" onClick={() => setPickGoods({ text: '', lineType: 'buy' })} title="Mở danh mục mặt hàng: gõ tên không dấu / mã hoặc quét mã, bấm vào dòng là thêm (phím tắt F3)">+ Thêm {isGiftDoc ? 'quà' : 'hàng'} <kbd>F3</kbd></button>
+                    {hd && !readOnly && (v.kind === 'order' || v.kind === 'receipt') && <button className="btn btn-sm" title={`Chọn mặt hàng của hợp đồng ${hd.code}, giá lấy theo hợp đồng`} onClick={() => setFillHd(true)}>Lấy từ hợp đồng</button>}
                     {!isGiftDoc && v.partnerCode && (v.kind === 'order' || v.kind === 'receipt' || v.kind === 'return') && <button className="btn btn-sm" onClick={() => setFill(true)} title="Danh sách mặt hàng NCC này bán: tích chọn, điền số lượng (gợi ý min–max / lần trước), giá tự lấy">Điền mặt hàng của NCC</button>}
                     {!isGiftDoc && lastOfPartner && linesBlank && <button className="btn btn-sm" onClick={() => copyLines(lastOfPartner)} title="Chép mã hàng, số lượng, đơn giá, thuế suất — sửa lại cho đúng lần này">Chép từ phiếu {lastOfPartner.docNo} ({dmy(lastOfPartner.docDate)})</button>}
                     {!isGiftDoc && <button className="btn btn-sm" onClick={() => setPickGoods({ text: '', lineType: 'gift_consumer' })} title="Quà NCC tặng thêm ngoài chương trình. Quà theo chương trình phần mềm tự thêm">+ Quà ngoài chương trình</button>}
