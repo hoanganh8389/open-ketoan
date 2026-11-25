@@ -43,6 +43,8 @@ Repo này theo **[bản đồ chuẩn nền `bizcity_standard_map@1`](https://gi
 | Giao diện React (model · view · controller), mockup | [WEB](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-WEB-v1.md) |
 | Nhiều site / nhiều CSDL · Hub, khoá, 1API | [MULTISITE](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-MULTISITE-v1.md) · [HUB](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-HUB-v1.md) |
 
+**Người dùng · vai · quyền:** tệp khai báo `bizcity.authz.json` ở gốc repo (khuôn `bizcity_authz_manifest@1`, chuẩn USERS-ROLES §3) do test `apps/api/test/authz-manifest.test.ts` giữ khớp mã — đổi quyền / vai / phạm vi khoá có chủ đích thì chạy `UPDATE_AUTHZ=1 npx vitest run test/authz-manifest.test.ts` (trong `apps/api`) rồi commit tệp. Kiểm khuôn chung: `node ../bizcity-platform/tools/users-check.mjs --repo .` <!-- [2026-11-25 12:05 PM Johnny Chu - Chu Hoàng Anh] STD — USERS-1 -->
+
 Kiểm khuôn repo (mức S0–S3):
 
 ```bash
