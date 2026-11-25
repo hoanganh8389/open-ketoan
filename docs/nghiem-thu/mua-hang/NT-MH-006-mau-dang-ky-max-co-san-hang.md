@@ -26,11 +26,12 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 - Nhập: mã đã có trên phiếu → thay Max đề nghị (và ghi chú nếu có); mã chưa có → thêm dòng. Mã không có trong danh mục / max không phải số → dòng đỏ, không đưa vào. Trùng mã trong tệp → lấy dòng sau.
 - Lưu / Gửi duyệt / Duyệt: như cũ (chỉ ghi các dòng đổi max so với hiện tại).
 - **Bổ sung (25/11):** danh sách phiếu MH17 **bỏ dải ô đếm** (Tất cả / Chờ duyệt / Nháp / Đã duyệt / Hàng mới chờ gắn mã). Lọc theo trạng thái bằng ô lọc cột **Trạng thái**; phiếu hàng mới chưa gắn mã xem ở cột **Chưa có mã**.
+- **Bổ sung (25/11):** bỏ dải **"Hai cách đặt tồn max"** (① Shop lập phiếu… / ② Kế toán mua hàng sửa thẳng…) ở đầu **MH17** và **MH16** — hai màn riêng, dải này chiếm chỗ. Lối qua lại giữa hai màn: menu Mua hàng › Đặt hàng.
 - Khung nhập Excel dùng chung của Mua hàng nhận thêm tuỳ chọn **mẫu có sẵn dòng** và **dòng trống bỏ qua** — các màn khác không đổi.
 
 ## 2. Phạm vi
 
-`apps/web/src/phan-he/mua-hang/ton-max/DangKyMaxPage.tsx` (của Nguyễn Văn Thủy — thêm nút và khuôn nhập; đóng góp), `apps/web/src/phan-he/mua-hang/thanh-phan/NhapExcelChung.tsx`, `apps/web/src/phan-he/mua-hang/thanh-phan/ExcelGuide.tsx` (tuỳ chọn thêm, mặc định như cũ). Chỉ giao diện; API không đổi.
+`apps/web/src/phan-he/mua-hang/ton-max/DangKyMaxPage.tsx` (của Nguyễn Văn Thủy — thêm nút và khuôn nhập; đóng góp), `apps/web/src/phan-he/mua-hang/thanh-phan/NhapExcelChung.tsx`, `apps/web/src/phan-he/mua-hang/thanh-phan/ExcelGuide.tsx` (tuỳ chọn thêm, mặc định như cũ); bỏ dải hai cách: `ton-max/TonMaxPage.tsx`, `ton-max/chung.tsx`, `ton-max/ton-max.css` (của Nguyễn Văn Thủy; đóng góp). Chỉ giao diện; API không đổi.
 
 ## 3. Kết quả mong đợi
 
@@ -42,6 +43,7 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 | 4 | Lưu & duyệt | Max ghi đúng các mã đã điền (MH16 thấy) |
 | 5 | Phiếu hàng mới, các màn nhập Excel khác của Mua hàng | Không đổi |
 | 6 | Mở MH17 | Không còn dải ô đếm; lọc cột Trạng thái vẫn dùng được |
+| 7 | Mở MH17, MH16 | Không còn dải "Hai cách đặt tồn max" |
 
 ## 4. Kết quả chạy
 | | |
@@ -60,3 +62,4 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 | 25/11/2026 | Tạo và chốt theo yêu cầu |
 | 25/11/2026 | Tệp mẫu chỉ gồm mặt hàng chưa có max ở shop |
 | 25/11/2026 | Bỏ dải ô đếm trạng thái ở danh sách MH17 |
+| 25/11/2026 | Bỏ dải "Hai cách đặt tồn max" ở MH17, MH16 |
