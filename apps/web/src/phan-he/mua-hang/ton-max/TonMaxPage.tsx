@@ -100,13 +100,14 @@ export function TonMaxPage() {
     { key: 'baseUnit', header: 'ĐVT', width: 60 },
     { key: 'pack', header: 'Quy cách', type: 'qty', width: 70, render: (r) => (r.pack ? <span title={`1 ${r.packUnit} = ${r.pack} ${r.baseUnit}`}>{r.pack} / {r.packUnit}</span> : '') },
     { key: 'ton', header: 'Tồn', type: 'qty', width: 80, className: 'tm-stock', showZero: true, sum: true },
-    ...(isKho ? [{ key: 'shopMaxSum', header: 'Tổng max shop', type: 'qty' as const, width: 100, sum: true, className: 'tm-ref' }] : [
+    // [2026-11-25 kiennt] NT-MH-007 — đổi tên cột cho rõ: "Tổng max các shop" (chỉ xem, cộng max của shop con) / "Max của kho" (ô khai của kho đang xem) (đóng góp)
+    ...(isKho ? [{ key: 'shopMaxSum', header: 'Tổng max các shop', type: 'qty' as const, width: 120, sum: true, className: 'tm-ref', title: 'Cộng max của mọi shop con (chỉ để xem — sửa ở từng shop). Gợi ý max kho = số này + % dự phòng' }] : [
       { key: 'avgPerDay', header: 'Bán / ngày', type: 'qty' as const, width: 80, title: 'Bán trung bình mỗi ngày trong số ngày đo', render: (r: MaxBoardRow) => <span title={`Đo trong ${r.windowDays} ngày gần nhất`}>{qtyFmt(r.avgPerDay)}</span> },
     ]),
     { key: 'suggested', header: 'Gợi ý max', type: 'qty', width: 90, title: 'Gợi ý max', render: (r) => (r.suggested ? <button className="tm-opt" title={isKho || r.shopMaxSum !== undefined ? `Tổng max shop ${qtyFmt(r.shopMaxSum)} + ${q.data?.formula.warehouseBufferPct ?? 10}% dự phòng — bấm để dùng` : `${qtyFmt(r.avgPerDay)} / ngày × ${r.coverDays} ngày — bấm để dùng`} onClick={() => setD(r, { max: r.suggested })}><span className="tm-sug">{qtyFmt(r.suggested)}</span></button> : '') },
-    { key: 'max', header: 'Tồn max', type: 'qty', width: 100, value: (r) => val(r, 'max'), sum: true, className: 'tm-max',
+    { key: 'max', header: isKho ? 'Max của kho' : mode === 'sku' ? 'Max' : 'Max của shop', title: isKho ? 'Max của chính kho đang xem (khai ở đây) — dùng cho phân tích đặt hàng' : 'Max của shop — dùng cho chuyển hàng xuống shop', type: 'qty', width: 110, value: (r) => val(r, 'max'), sum: true, className: 'tm-max',
       render: (r) => <input className={`tm-input${drafts[k(r)]?.max !== undefined ? ' dirty' : ''}`} value={val(r, 'max') || ''} placeholder="0" onChange={(e) => setD(r, { max: num(e.target.value) })} /> },
-    { key: 'min', header: 'Tồn min', type: 'qty', width: 90, value: (r) => val(r, 'min'), hidden: !isKho,
+    { key: 'min', header: 'Min của kho', type: 'qty', width: 100, value: (r) => val(r, 'min'), hidden: !isKho,
       render: (r) => <input className={`tm-input${drafts[k(r)]?.min !== undefined ? ' dirty' : ''}`} value={val(r, 'min') || ''} placeholder="0" onChange={(e) => setD(r, { min: num(e.target.value) })} /> },
     { key: 'gap', header: 'Thiếu so max', type: 'qty', width: 90, value: (r) => Math.max(0, val(r, 'max') - r.ton), render: (r) => { const g = val(r, 'max') - r.ton; return g > 0 ? <span className="tm-low">{qtyFmt(g)}</span> : g < 0 ? <span className="muted">dư {qtyFmt(-g)}</span> : ''; } },
     { key: 'transferMode', header: 'Chuyển xuống shop', width: 130, value: (r) => drafts[k(r)]?.mode ?? r.transferMode, hidden: isKho,
