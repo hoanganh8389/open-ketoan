@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { computeOrder, type CatalogItem } from '../api/domain/order.js';
 import { orderDraftSchema } from '../api/domain/schema.js';
-import { computeReturn, daysSince, refundFor, requiredGiftReturns, returnDeadline, returnableLines, splitRefund, toSaleReturnDocument, type ReturnInput, type SoldLine } from '../api/domain/returns.js';
+import { computeReturn, daysSince, giftPolicyKeys, policyMainSkus, refundFor, requiredGiftReturns, returnDeadline, returnableLines, splitRefund, toSaleReturnDocument, type ReturnInput, type SoldLine } from '../api/domain/returns.js';
 
 const SUA: SoldLine = { lineId: 'l1', sku: 'SUA400', name: 'Sữa bột 400g', unitName: 'Hộp', unitRatio: 1, soldQty: 2, net: 540_000, tax: 43_200, taxRate: 8, taxCode: 'R08', itemId: '01JC0S0A4000000000000000AA', isGift: false };
 const TA: SoldLine = { lineId: 'l2', sku: 'TA01', name: 'Tã quần L', unitName: 'Gói', unitRatio: 1, soldQty: 1, net: 195_455, tax: 19_545, taxRate: 10, taxCode: 'R10', itemId: null, isGift: false };
@@ -114,5 +114,51 @@ describe('NT-BH-005 — đơn mới của đổi hàng', () => {
     expect(reason(computeOrder({ draft: cheap, catalog, paymentMethods: methods, exchange }))).toBe('POS_EXCHANGE_LOWER');
     expect(reason(computeOrder({ draft: order([{ method: 'doi_tru', amount: 200_000 }, { method: 'TM', amount: 230_000 }]), catalog, paymentMethods: methods, exchange }))).toBe('POS_SPLIT_MISMATCH');
     expect(reason(computeOrder({ draft: order([{ method: 'doi_tru', amount: 291_600 }, { method: 'TM', amount: 138_400 }]), catalog, paymentMethods: methods }))).toBe('POS_NOT_SUPPORTED_YET');
+  });
+});
+
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038: quà khuyến mại Core trả theo hàng chính (đóng góp)
+describe('NT-BH-038 — quà khuyến mại Core trả theo hàng chính', () => {
+  // Đơn thử shop2 24/11: 2 SUA mua + 1 SUA tặng (KM-THU-QUA-CN02, mua 2 tặng 1) + 1 TA ngoài chương trình.
+  const QUA: SoldLine = { ...SUA, lineId: 'g1', soldQty: 1, net: 0, tax: 0, isGift: true, policyKey: 'KM-THU-QUA-CN02' };
+  const sold = [SUA, TA, QUA];
+  const skus = { 'KM-THU-QUA-CN02': ['SUA400'] };
+
+  it('dòng quà Core mang policyKey qua returnableLines; giftPolicyKeys chỉ lấy quà không có promotionId', () => {
+    expect(returnableLines(sold, new Map()).find((l) => l.lineId === 'g1')?.policyKey).toBe('KM-THU-QUA-CN02');
+    expect(giftPolicyKeys(sold)).toEqual(['KM-THU-QUA-CN02']);
+    expect(giftPolicyKeys([{ ...QUA, promotionId: 7 }])).toEqual([]);
+  });
+
+  it('trả hết hàng chính → phải trả quà; trả hàng ngoài chương trình → không bắt quà', () => {
+    const lines = returnableLines(sold, new Map());
+    expect([...requiredGiftReturns(lines, new Map([['l1', 2]]), () => null, (k) => skus[k as keyof typeof skus] ?? null)]).toEqual([['g1', 1]]);
+    expect([...requiredGiftReturns(lines, new Map([['l2', 1]]), () => null, (k) => skus[k as keyof typeof skus] ?? null)]).toEqual([]);
+    // Không đọc được chương trình → mọi dòng không phải quà là hàng chính (như cũ): trả TA làm hàng chính giảm 3 → 2, suất 1 × 2 / 3 = 0.
+    expect([...requiredGiftReturns(lines, new Map([['l2', 1]]), () => null)]).toEqual([['g1', 1]]);
+  });
+
+  it('computeReturn từ chối phiếu thiếu quà (POS_GIFT_REQUIRED), nhận khi có quà', () => {
+    const bad = computeReturn(input({ lines: sold, policySkus: skus }, { lines: [{ lineId: 'l1', qty: 2 }] }));
+    expect('problem' in bad && bad.problem.reason).toBe('POS_GIFT_REQUIRED');
+    const ok = computeReturn(input({ lines: sold, policySkus: skus }, { lines: [{ lineId: 'l1', qty: 2 }, { lineId: 'g1', qty: 1 }] }));
+    expect('problem' in ok).toBe(false);
+    const other = computeReturn(input({ lines: sold, policySkus: skus }, { lines: [{ lineId: 'l2', qty: 1 }] }));
+    expect('problem' in other).toBe(false);
+  });
+
+  it('policyMainSkus theo khuôn chương trình', () => {
+    expect(policyMainSkus({ ruleContract: 'sale.promo.buy_x_get_y@1', params: { buy: { sku: 'SUA400', qty: 2 }, get: { sku: 'SUA400', qty: 1 } } })).toEqual(['SUA400']);
+    expect(policyMainSkus({ ruleContract: 'sale.promo.order_gift@1', params: { skus: ['A', 'B'], tiers: [] } })).toEqual(['A', 'B']);
+    expect(policyMainSkus({ ruleContract: 'sale.program.gift@1', params: { sku: 'SUA330', buyQty: 2, giftSku: 'SUA330', giftQty: 1 } })).toEqual(['SUA330']);
+    expect(policyMainSkus({ ruleContract: 'sale.promo.order_gift@1', params: { skus: [], tiers: [] } })).toBeNull();
+    expect(policyMainSkus({ ruleContract: 'sale.promo.tiered@1', params: { skus: ['A'] } })).toBeNull();
+    expect(policyMainSkus({ ruleContract: 'sale.promo.buy_x_get_y@1', params: null })).toBeNull();
+    expect(policyMainSkus(undefined)).toBeNull();
+  });
+
+  it('quà khuyến mại website (promotionId) giữ như cũ', () => {
+    const lines = returnableLines([SUA, { ...QUA, policyKey: undefined, promotionId: 7 }], new Map());
+    expect([...requiredGiftReturns(lines, new Map([['l1', 2]]), () => null)]).toEqual([['g1', 1]]);
   });
 });
