@@ -1,4 +1,4 @@
-// [2026-11-13 Nguyễn Văn Thủy] Nhà cung cấp / khách hàng theo cha – con: xem dạng cây, ô Đơn vị cha, danh sách đơn vị con, lịch sử (đóng góp)
+// [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — Nhà cung cấp / khách hàng theo cha – con: xem dạng cây, ô Đơn vị cha, danh sách đơn vị con, lịch sử (đóng góp)
 /**
  * Cha – con của đối tượng (0132): một nhà cung cấp / khách hàng lớn có công ty mẹ và các chi nhánh (cùng hoặc khác MST).
  *   - Chứng từ ghi vào ĐƠN VỊ NHỎ NHẤT (đơn vị xuất / nhận hoá đơn); cha dùng để gom doanh số, công nợ, tính thưởng.

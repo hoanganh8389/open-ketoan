@@ -1,4 +1,4 @@
-// [2026-11-25 Nguyễn Văn Thủy] Thêm nhanh một mục danh mục (khoản mục, …) ngay tại ô chọn trên chứng từ — cùng hộp khai của màn Danh mục (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — Thêm nhanh một mục danh mục (khoản mục, …) ngay tại ô chọn trên chứng từ — cùng hộp khai của màn Danh mục (đóng góp)
 /**
  * THÊM DANH MỤC NHANH — nút + / F9 ở ô chọn danh mục trên chứng từ mở đúng hộp khai của màn Danh mục (DimensionForm),
  * điền sẵn chữ đang gõ làm tên; ghi xong ô tự chọn mã vừa thêm (danh sách tự tải lại theo khoá ['dimensions', kind]).

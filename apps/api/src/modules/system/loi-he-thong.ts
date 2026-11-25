@@ -1,5 +1,5 @@
 // @bizcity-layer P module-sdk
-// [2026-11-25 Nguyễn Văn Thủy] LỖI HỆ THỐNG (HT20) — máy quét đọc Loki mỗi 60 giây, gom lỗi giống nhau thành mục, chia phân hệ, phân loại
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] HT20 — LỖI HỆ THỐNG (HT20) — máy quét đọc Loki mỗi 60 giây, gom lỗi giống nhau thành mục, chia phân hệ, phân loại
 // (lỗi phần mềm / từ chối), lưu JSONL; màn HT20 + khoá kết nối cho lịch tự sửa và cron dựng lại. Thiết kế: docs/ops/TU-DONG-SUA-LOI.md (đóng góp)
 /**
  *   GET  /api/v1/system/loi                 danh sách mục lỗi (đăng nhập)          POST /api/v1/system/loi/trang-thai | /quet | /tu-sua | /dung-lai

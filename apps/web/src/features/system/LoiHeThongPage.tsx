@@ -1,4 +1,4 @@
-// [2026-11-25 Nguyễn Văn Thủy] HT20 LỖI HỆ THỐNG — lỗi trên máy chủ được gom thành mục theo phân hệ: lịch sử, Tra mã, Sửa lỗi này / Bỏ qua,
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] HT20 — HT20 LỖI HỆ THỐNG — lỗi trên máy chủ được gom thành mục theo phân hệ: lịch sử, Tra mã, Sửa lỗi này / Bỏ qua,
 // công tắc Tự sửa, Dựng lại ngay (cron máy chủ thực hiện). Thiết kế + quy trình cho cả team: docs/ops/TU-DONG-SUA-LOI.md (đóng góp)
 import { useState } from 'react';
 import { Link } from 'react-router-dom';

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// [2026-11-25 Nguyễn Văn Thủy] Kéo lỗi hệ thống (HT20) của con dev về máy local / đánh dấu đã sửa / yêu cầu dựng lại — docs/ops/TU-DONG-SUA-LOI.md (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] HT20 — Kéo lỗi hệ thống (HT20) của con dev về máy local / đánh dấu đã sửa / yêu cầu dựng lại — docs/ops/TU-DONG-SUA-LOI.md (đóng góp)
 //
 //   KET_NOI_URL=https://ketoan-dev.quantri.thegioisua.com  KET_NOI_KEY=kn_…   (hoặc ghi vào tệp .loi/ket-noi.env: KET_NOI_URL=… / KET_NOI_KEY=…)
 //   node scripts/loi/keo-loi.mjs danh-sach [--phan-he mua-hang] [--loai phan-mem|tu-choi] [--tat-ca] [--co-the-nhan]

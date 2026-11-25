@@ -96,7 +96,7 @@ export function BranchPicker({ value, onChange, placeholder = 'Gõ mã hoặc t�
   const cay = useCayDonVi();
   const { can } = useAuth();
   const [adding, setAdding] = useState<string | null>(null);
-  // [2026-11-21 Nguyễn Văn Thủy] xếp theo cây cơ cấu (cha trước, con thụt vào), đơn vị có con in đậm, cấp ở chữ nhỏ bên phải (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — xếp theo cây cơ cấu (cha trước, con thụt vào), đơn vị có con in đậm, cấp ở chữ nhỏ bên phải (đóng góp)
   const items = useMemo(() => {
     const ok = data.filter((b) => !activeOnly || b.isActive || b.code === value);
     const flat = ok.map((b) => ({ code: b.code, name: b.isActive ? b.name : `${b.name} (ngừng)` }));
@@ -119,10 +119,10 @@ export function BranchPicker({ value, onChange, placeholder = 'Gõ mã hoặc t�
     </>
   );
 }
-// [2026-11-11 Nguyễn Văn Thủy] thêm nhanh chi nhánh ngay ở ô chọn (đóng góp)
+// [2026-11-11 12:00 AM Nguyễn Văn Thủy] MH — thêm nhanh chi nhánh ngay ở ô chọn (đóng góp)
 const ThemDonViTheoCay = lazy(() => import('@/components/phieu-hang/ThemTheoCoCau').then((m) => ({ default: m.ThemDonViTheoCay })));
 
-// [2026-11-19 Nguyễn Văn Thủy] thẻ "Cây": tích nút cơ cấu tổ chức = chọn mọi chi nhánh (shop) bên dưới; không tới kho (đóng góp)
+// [2026-11-19 12:00 AM Nguyễn Văn Thủy] MH — thẻ "Cây": tích nút cơ cấu tổ chức = chọn mọi chi nhánh (shop) bên dưới; không tới kho (đóng góp)
 export function BranchMultiSelect({ value, onChange, label, branches, emptyText = 'Tất cả chi nhánh' }: { value: string; onChange: (v: string) => void; label: string; branches: BranchOption[]; /** Chữ khi chưa chọn chi nhánh nào. */ emptyText?: string }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<'cay' | 'ds'>('cay');

@@ -1,5 +1,5 @@
-// [2026-11-25 Nguyễn Văn Thủy] Chọn NHIỀU chi nhánh nhận của đơn đặt: chi nhánh lập chứng từ + mọi chi nhánh con (đệ quy), tích theo cây (đóng góp)
-// [2026-11-25 Nguyễn Văn Thủy] hiện dạng cây thu gọn / mở (như bộ chọn chi nhánh của báo cáo), bỏ chọn được hết, + thêm chi nhánh (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — Chọn NHIỀU chi nhánh nhận của đơn đặt: chi nhánh lập chứng từ + mọi chi nhánh con (đệ quy), tích theo cây (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — hiện dạng cây thu gọn / mở (như bộ chọn chi nhánh của báo cáo), bỏ chọn được hết, + thêm chi nhánh (đóng góp)
 /**
  * CHỌN NHIỀU CHI NHÁNH NHẬN — cây gồm chi nhánh `goc` và cả cây con của nó; bấm ▸ / ▾ để mở / thu gọn nhánh. Chi nhánh tích đầu
  * tiên là nơi nhận chính (dòng hàng mới mặc định nhận ở đây). Bỏ tích chi nhánh đang có dòng hàng → dòng về nơi nhận chính; bỏ hết
@@ -48,7 +48,7 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
   const d0 = goc ? cay.index.get(goc)?.depth ?? 0 : 0;
   const ds = useMemo(() => (goc ? [goc, ...cay.conCua(goc)] : cay.list.map((u) => u.code)).map((b) => { const u = cay.index.get(b); return { b, ten: u?.name ?? b, cap: u?.levelLabel ?? '', sau: Math.max(0, (u?.depth ?? d0) - d0), cha: u?.parentCode ?? null, con: Boolean(u?.hasKids), active: u?.isActive ?? true }; })
     .filter((x) => x.active || value.includes(x.b))
-    // [2026-11-26 Nguyễn Văn Thủy] MH-NHAN — đủ mọi cấp con đệ quy (chi nhánh → cửa hàng…), không chặn ở cấp chi nhánh; kho vẫn chọn ở dòng (đóng góp)
+    // [2026-11-26 12:00 AM Nguyễn Văn Thủy] MH-NHAN — đủ mọi cấp con đệ quy (chi nhánh → cửa hàng…), không chặn ở cấp chi nhánh; kho vẫn chọn ở dòng (đóng góp)
     // Chi nhánh đang tích nhưng ngoài cây của chi nhánh lập (phiếu cũ / đổi chi nhánh lập): hiện cuối, chữ đỏ để bỏ.
     .concat((goc ? value : []).filter((b) => b !== goc && !cay.conCua(goc).includes(b)).map((b) => ({ b, ten: cay.index.get(b)?.name ?? b, cap: 'ngoài chi nhánh lập', sau: 0, cha: null, con: false, active: true, ngoai: true }))), [goc, cay, d0, value]);
   const coTrong = useMemo(() => new Set(ds.map((x) => x.b)), [ds]);

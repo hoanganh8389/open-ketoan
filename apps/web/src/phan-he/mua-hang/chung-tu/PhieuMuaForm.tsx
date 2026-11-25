@@ -72,8 +72,8 @@ const CHOT_KINDS: string[] = ['item_discount', 'qty_tier', 'trade_discount', 'pa
 const ADJUST_KINDS: string[] = ['receipt', 'return', 'exchange', 'gift_in', 'gift_out', 'cost', 'rebate'];
 
 type Tab = 'hang' | 'tien-do' | 'thanh-toan' | 'hoa-don' | 'hach-toan' | 'gia-von' | 'tep' | 'tep-ncc' | 'lich-su';
-// [2026-11-25 Nguyễn Văn Thủy] thứ tự cột mặc định của bảng hàng (do code quy định) + tên cột ở hộp Sắp xếp cột (đóng góp)
-// [2026-11-25 Nguyễn Văn Thủy] mặc định Chi nhánh nhận, Phân kho, Phân tích tồn xuống cuối bảng; thêm cột đơn giá gồm thuế (quy đổi) cạnh đơn giá (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — thứ tự cột mặc định của bảng hàng (do code quy định) + tên cột ở hộp Sắp xếp cột (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — mặc định Chi nhánh nhận, Phân kho, Phân tích tồn xuống cuối bảng; thêm cột đơn giá gồm thuế (quy đổi) cạnh đơn giá (đóng góp)
 const COT_MAC_DINH = ['#', 'chieu', 'loai', 'ma', 'ten', 'dvt', 'km', 'sl', 'sldat', 'theohd', 'conlai', 'gia', 'giagom', 'giahd', 'giadon', 'giahdon', 'ck', 'thue', 'tien', 'vat', 'gom', 'giasau', 'gv', 'ct', 'lo', 'gc', 'cn', 'kho', 'ton', 'ctkm', 'xoa'];
 const COT_NHAN: Record<string, string> = { chieu: 'Chiều', loai: 'Loại hàng', ma: 'Mã hàng', ten: 'Tên hàng', dvt: 'ĐVT', cn: 'Chi nhánh nhận', kho: 'Phân kho', km: 'Khoản mục', sl: 'SL', ton: 'Phân tích tồn',
   conlai: 'Còn phải nhập (đơn)', theohd: 'SL hoá đơn', gia: 'Đơn giá chưa thuế', giagom: 'Đơn giá gồm thuế, trước CK (quy đổi)', tien: 'Thành tiền chưa thuế (sau CK)', sldat: 'SL đơn đặt', giahd: 'Giá hợp đồng chưa thuế', giadon: 'Giá đơn đặt', giahdon: 'Giá hoá đơn', ck: 'CK % · CK (đ)', ctkm: 'Mã CTKM', thue: 'Thuế suất', vat: 'Tiền thuế', gom: 'Thành tiền (gồm thuế)',
@@ -123,16 +123,16 @@ const newKey = () => `L${Date.now().toString(36)}${(seq++).toString(36)}`;
 interface CatalogProduct { sku: string; name: string; unit: string; taxInCode: string | null; brandCode?: string | null; variantCode?: string; typeCode?: string | null; sendToTax?: boolean; parentSku?: string | null }
 
 export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value: PDoc; data: MhData; onClose: () => void; onSaved: () => void; onOpen?: (d: PDoc) => void }) {
-  // [2026-11-21 Nguyễn Văn Thủy] phiếu mới mang chi nhánh đang làm việc của người lập (nơi lập) — có thể khác chi nhánh của phiếu (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — phiếu mới mang chi nhánh đang làm việc của người lập (nơi lập) — có thể khác chi nhánh của phiếu (đóng góp)
   const [v, setV] = useState<PDoc>(() => (value.id.startsWith('new-') && !value.workBranchCode && workBranch.get() ? { ...value, workBranchCode: workBranch.get() } : value));
   const [stored, setStored] = useState<StoredDoc | undefined>(data.docs.find((d) => d.id === value.id));
   const [a, setA] = useState<Analysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [tab, setTab] = useState<Tab>(GOODS_KINDS.includes(value.kind) ? 'hang' : 'hach-toan');
-  // [2026-11-20 Nguyễn Văn Thủy] thu gọn khung Trợ lý mua hàng để bảng hàng rộng hết màn khi đặt hàng; nhớ theo máy (đóng góp)
+  // [2026-11-20 12:00 AM Nguyễn Văn Thủy] MH — thu gọn khung Trợ lý mua hàng để bảng hàng rộng hết màn khi đặt hàng; nhớ theo máy (đóng góp)
   const [anTroLy, setAnTroLy] = useState(() => { try { return localStorage.getItem('mh.tro-ly.an') === '1'; } catch { return false; } });
   const doiTroLy = (an: boolean) => { setAnTroLy(an); try { localStorage.setItem('mh.tro-ly.an', an ? '1' : '0'); } catch { /* chế độ riêng tư */ } };
-  // [2026-11-21 Nguyễn Văn Thủy] kéo mép trái khung Trợ lý để đổi bề rộng (nhớ theo máy) (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — kéo mép trái khung Trợ lý để đổi bề rộng (nhớ theo máy) (đóng góp)
   const [rongTroLy, setRongTroLy] = useState(() => { try { const n = Number(localStorage.getItem('mh.tro-ly.w')); return n >= 260 && n <= 900 ? n : 400; } catch { return 400; } });
   const keoTroLy = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -192,7 +192,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const [excelLines, setExcelLines] = useState(false);
   const [promoNote, setPromoNote] = useState<string[]>([]);
   const [err, setErr] = useState('');
-  // [2026-11-11 Nguyễn Văn Thủy] dán từ Excel (Ctrl + V) vào bảng hàng: báo số dòng đưa vào / bỏ qua (đóng góp)
+  // [2026-11-11 12:00 AM Nguyễn Văn Thủy] MH — dán từ Excel (Ctrl + V) vào bảng hàng: báo số dòng đưa vào / bỏ qua (đóng góp)
   const [danBao, setDanBao] = useState<{ ok: boolean; text: string } | null>(null);
   const [dirty, setDirty] = useState(false);
   // Thu nhỏ xuống thanh dưới (giữ nguyên phiếu đang nhập); chấm cam ở ô = phiếu có thay đổi chưa lưu.
@@ -201,10 +201,10 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const names = useNames();
   const brands = useBrands(data.policies);
   const costItems = useDimension('cost_item'); // [2026-11-20 khanhtd] MUA-HANG — Danh mục khoản mục cho phiếu chi phí (đóng góp)
-  // [2026-11-21 Nguyễn Văn Thủy] khoản mục xếp cây cha – con (cha in đậm, con thụt vào), gõ tìm mã / tên (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — khoản mục xếp cây cha – con (cha in đậm, con thụt vào), gõ tìm mã / tên (đóng góp)
   const kmCay = useKhoanMucCay();
   const kmItems = (cur?: string) => kmCay.items(cur);
-  // [2026-11-25 Nguyễn Văn Thủy] ô khoản mục có + / F9 thêm nhanh (hộp khai của Danh mục khoản mục), ghi xong tự chọn (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — ô khoản mục có + / F9 thêm nhanh (hộp khai của Danh mục khoản mục), ghi xong tự chọn (đóng góp)
   const [themBp, setThemBp] = useState(false);
   const [themKho, setThemKho] = useState<{ branch: string; lineKey: string } | null>(null);
   const [themKm, setThemKm] = useState<{ text: string; chon: (c: string) => void } | null>(null);
@@ -283,7 +283,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     }) })); // phân tích lại với ĐVT mới
   };
   const isGoods = GOODS_KINDS.includes(v.kind);
-  // [2026-11-18 Nguyễn Văn Thủy] hợp đồng mua (0163): chọn NCC → tự gợi ý hợp đồng đang hiệu lực (mọi phiếu mới chưa gắn chứng từ, trừ xuất quà — 19/11 thêm ứng trước, trả tiền, chi phí, thưởng, trả hàng); phiếu lập từ phiếu khác kế thừa (đóng góp)
+  // [2026-11-18 12:00 AM Nguyễn Văn Thủy] MH — hợp đồng mua (0163): chọn NCC → tự gợi ý hợp đồng đang hiệu lực (mọi phiếu mới chưa gắn chứng từ, trừ xuất quà — 19/11 thêm ứng trước, trả tiền, chi phí, thưởng, trả hàng); phiếu lập từ phiếu khác kế thừa (đóng góp)
   const hdTouched = useRef(false);
   const hds = useQuery({ queryKey: ['mua-hang', 'contracts', v.partnerCode], enabled: Boolean(v.partnerCode) && v.kind !== 'gift_out', staleTime: 60_000, queryFn: () => purchaseApi.contracts(v.partnerCode) }).data ?? [];
   const hd = hds.find((c) => c.code === v.contractCode);
@@ -299,7 +299,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const set = (p: Partial<PDoc>) => { setV((x) => ({ ...x, ...p })); setDirty(true); };
   const setLine = (key: string, p: Partial<PLine>) => { setV((x) => ({ ...x, lines: x.lines.map((l) => (l.lineKey === key ? { ...l, ...p } : l)) })); setDirty(true); };
 
-  // [2026-11-21 Nguyễn Văn Thủy] ngân sách mua của đơn đặt lấy theo hạn mức công nợ còn lại: của hợp đồng đã chọn, không thì hạn mức chung / ngoài hợp đồng (docs/nghiep-vu/28) (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — ngân sách mua của đơn đặt lấy theo hạn mức công nợ còn lại: của hợp đồng đã chọn, không thì hạn mức chung / ngoài hợp đồng (docs/nghiep-vu/28) (đóng góp)
   const hmCredit = (a?.credit ?? []).find((x) => x.scope.startsWith('Hợp đồng ')) ?? (a?.credit ?? []).find((x) => !x.scope.startsWith('Nhãn ') && !x.scope.startsWith('Chi nhánh'));
   const hmCon = hmCredit ? Math.max(0, Math.round(hmCredit.limit - hmCredit.current - hmCredit.openOrders)) : undefined;
   const hmNhan = !hmCredit ? '' : hmCredit.scope.startsWith('Hợp đồng ') ? `theo ${hmCredit.scope.toLowerCase()}` : v.contractCode ? `hạn mức chung của NCC (hợp đồng ${v.contractCode} chưa khai hạn mức riêng)` : 'ngoài hợp đồng (hạn mức chung của NCC)';
@@ -328,14 +328,14 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const unitsOf = (sku: string) => extra.units[sku] ?? a?.units[sku] ?? []; // extra = vừa tải lại (kể cả sau khi sửa ĐVT ở modal) nên mới hơn
   // ĐVT của các mã (giá vốn thực tế / ĐVT quy về ĐVT nhỏ nhất — mua Thùng + quà Lon vẫn đúng).
   const allUnits = useMemo(() => ({ ...extra.units, ...(a?.units ?? {}) }), [a, extra]);
-  // [2026-11-21 Nguyễn Văn Thủy] chính sách chưa đủ điều kiện kích hoạt (máy chủ xét: doanh số, nợ quá hạn, hạn mức…) không áp trên phiếu (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — chính sách chưa đủ điều kiện kích hoạt (máy chủ xét: doanh số, nợ quá hạn, hạn mức…) không áp trên phiếu (đóng góp)
   const policiesDung = useMemo(() => { const bl = new Set((a?.blockedPolicies ?? []).map((b) => b.code)); return bl.size ? data.policies.filter((p) => !bl.has(p.code)) : data.policies; }, [a, data.policies]);
   const calc = useMemo(() => computeDoc(v, policiesDung, { holidays: holidays ?? [], units: allUnits }), [v, policiesDung, holidays, allUnits]);
   // Lấy dòng hàng từ hoá đơn NCC đã nhập ở MH22 (cùng NCC): thay dòng hàng hiện có (hỏi trước), ghi số / ngày hoá đơn, giá chưa thuế.
   const invQ = useQuery({ queryKey: ['mua-hang', 'invoices', v.partnerCode, 'for-receipt'], enabled: v.kind === 'receipt' && Boolean(v.partnerCode), staleTime: 30_000, queryFn: () => invoiceApi.list({ partnerCode: v.partnerCode, status: 'active' }) });
   const nccInvoices = (invQ.data ?? []).filter((x) => x.state !== 'da_huy');
   const [fromInv, setFromInv] = useState<{ busy: boolean; note: string }>({ busy: false, note: '' });
-  // [2026-11-21 Nguyễn Văn Thủy] PHIẾU NHẬP NHIỀU HOÁ ĐƠN: danh sách hoá đơn là chuẩn, invoice = hoá đơn đầu (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — PHIẾU NHẬP NHIỀU HOÁ ĐƠN: danh sách hoá đơn là chuẩn, invoice = hoá đơn đầu (đóng góp)
   const invs = invoicesOf(v);
   // Có hoá đơn đầu tiên mà chưa ghi ngày nhận hoá đơn → lấy hôm nay (sửa được ở đầu phiếu).
   const setInvs = (list: DocInvoice[]) => { const f = list[0]; set({ ...(list.length && !v.receivedDate && v.kind === 'receipt' ? { receivedDate: new Date().toLocaleDateString('sv-SE') } : {}), invoices: list, invoice: f ? { no: f.no, ...(f.serial ? { serial: f.serial } : {}), date: f.date, ...(f.total !== undefined ? { total: f.total } : {}) } : undefined }); };
@@ -343,10 +343,10 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const [hdMoi, setHdMoi] = useState<{ serial: string; no: string; date: string; total?: number }>({ serial: '', no: '', date: '' });
   const [themHdTuMh22, setThemHdTuMh22] = useState(false);
   const [lsHd, setLsHd] = useState(false);
-  // [2026-11-25 Nguyễn Văn Thủy] Điều chỉnh hoá đơn chỉ hiện khi đang lập bản điều chỉnh phiếu đã duyệt (hoặc phiếu đã có dữ liệu điều chỉnh);
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — Điều chỉnh hoá đơn chỉ hiện khi đang lập bản điều chỉnh phiếu đã duyệt (hoặc phiếu đã có dữ liệu điều chỉnh);
   // phiếu thường chỉ thêm / bỏ hoá đơn. Gợi ý hoá đơn NCC ở MH22 chưa gán phiếu nhập nào (đóng góp)
   const dangDieuChinhHd = Boolean(stored?.adjust) || invs.some((h) => h.adjusts) || Boolean(v.invoiceFix);
-  // [2026-11-26 Nguyễn Văn Thủy] MH-HD — một ô thêm hoá đơn: gõ / bấm vào ô Số HĐ là hiện gợi ý hoá đơn NCC ở MH22 chưa gán phiếu nhập,
+  // [2026-11-26 12:00 AM Nguyễn Văn Thủy] MH-HD — một ô thêm hoá đơn: gõ / bấm vào ô Số HĐ là hiện gợi ý hoá đơn NCC ở MH22 chưa gán phiếu nhập,
   // lọc theo chữ đang gõ (ký hiệu, số, ngày, tiền), bấm gợi ý là thêm; không có ở MH22 thì điền đủ rồi bấm Thêm (đóng góp)
   const [goiYHdMo, setGoiYHdMo] = useState(false);
   const tuHd = `${hdMoi.serial} ${hdMoi.no}`.toLowerCase().split(/s+/).filter(Boolean);
@@ -586,7 +586,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     if (!isOrder || v.status !== 'draft' || !need.rows.size || !v.lines.some((l) => l.lineType === 'buy' && l.sku && !l.stockInfo && (need.rows.has(l.sku) || [...need.rows.values()].some((r) => r.members?.some((m) => m.sku === l.sku))))) return;
     setV((x) => withSnapshot(x));
   }, [v.lines, need.rows, isOrder, v.status]); // eslint-disable-line react-hooks/exhaustive-deps
-  // [2026-11-25 Nguyễn Văn Thủy] ĐƠN ĐẶT theo hợp đồng: đơn giá lấy theo giá đã thoả thuận (hợp đồng / giá mua của NCC), chiết khấu theo chương trình,
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — ĐƠN ĐẶT theo hợp đồng: đơn giá lấy theo giá đã thoả thuận (hợp đồng / giá mua của NCC), chiết khấu theo chương trình,
   //   thuế theo danh mục mặt hàng — không sửa tay; chỉ sửa số lượng. Không có CK trên đơn tự nhập (đóng góp)
   const giaHd = (l: PLine) => { const f = l.sku && l.lineType === 'buy' ? fixedOf(l) : undefined; return f ? toDocBasis(f.price, f.row.priceIncludesVat, l.taxCode) : 0; };
   useEffect(() => {
@@ -622,7 +622,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const refDoc = data.docs.find((d) => d.id === v.refIds?.[0]);
   /** Nợ còn lại theo sổ của một phiếu nhập (0 = đã trả hết; phiếu chưa duyệt chưa vào sổ). */
   const debtOf = (d: Pick<StoredDoc, 'id' | 'docNo'>) => dueRows.filter((r) => r.purchaseDocId === d.id || r.docNo === d.docNo).reduce((s, r) => s + r.remaining, 0);
-  // [2026-11-21 Nguyễn Văn Thủy] trả tiền NCC cho NHIỀU phiếu nhập (mỗi phiếu kèm chi nhánh nhận) — máy chủ ưu tiên trừ nợ các phiếu đã chọn (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — trả tiền NCC cho NHIỀU phiếu nhập (mỗi phiếu kèm chi nhánh nhận) — máy chủ ưu tiên trừ nợ các phiếu đã chọn (đóng góp)
   const refList = v.kind === 'payment' ? data.docs.filter((d) => (v.refIds ?? []).includes(d.id)) : refDoc ? [refDoc] : [];
   const debtRef = refList.reduce((t, d) => t + debtOf(d), 0);
   const copyLines = (d: StoredDoc) => {
@@ -731,7 +731,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     }
   };
 
-  // [2026-11-25 Nguyễn Văn Thủy] NHÁP LỖI: bấm Ghi / Gửi duyệt / Duyệt mà máy chủ không lưu được phiếu (lỗi gì cũng vậy) → giữ nguyên nội
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — NHÁP LỖI: bấm Ghi / Gửi duyệt / Duyệt mà máy chủ không lưu được phiếu (lỗi gì cũng vậy) → giữ nguyên nội
   // dung phiếu + lỗi vào "Nháp lỗi" (MH11) để mở lại, sửa và để dev truy vết theo mã lỗi / mã tra cứu. Ghi được phiếu thì nháp lỗi tự xong (đóng góp)
   const keyLoi = useRef(value.id.startsWith('new-') ? value.id : `doc-${value.id}`);
   const coLoiLuu = useRef(nhapLoiDangMo.has(keyLoi.current));
@@ -796,7 +796,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     (v.kind === 'cost' || (v.kind === 'rebate' && !v.rebate)) && !(v.refIds ?? []).length && 'Chưa chọn phiếu nhập',
     v.kind === 'payment' && !((v.amount ?? 0) + (v.ckttAmount ?? 0) > 0) && 'Chưa nhập số tiền',
   ].filter(Boolean) as string[];
-  // [2026-11-11 Nguyễn Văn Thủy] báo lỗi tại ô: bấm Ghi / Gửi duyệt / Duyệt mà thiếu → ô đầu phiếu viền đỏ, dòng hàng lỗi tô đỏ (đóng góp)
+  // [2026-11-11 12:00 AM Nguyễn Văn Thủy] MH — báo lỗi tại ô: bấm Ghi / Gửi duyệt / Duyệt mà thiếu → ô đầu phiếu viền đỏ, dòng hàng lỗi tô đỏ (đóng góp)
   const kl = useKiemLoi(readOnly || viewing, { lyDo: () => (problems.length ? `Chưa ghi được: ${problems.join(' · ')}` : null) });
   /** Ô dòng hàng đang lỗi (chỉ tô sau khi đã bấm Ghi): mã hàng, số lượng, đơn giá. */
   const oDong = (l: { sku: string; qty: number; price: number; lineType: string }, o: 'sku' | 'qty' | 'price') => {
@@ -805,20 +805,20 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     return sai ? 'o-loi' : undefined;
   };
 
-  // [2026-11-21 Nguyễn Văn Thủy] ĐƠN NHIỀU KHO / NHIỀU CHI NHÁNH + PHIẾU NHẬP ĐỐI SOÁT 3 BÊN THEO CHI NHÁNH NHẬN (docs/nghiep-vu/27) (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — ĐƠN NHIỀU KHO / NHIỀU CHI NHÁNH + PHIẾU NHẬP ĐỐI SOÁT 3 BÊN THEO CHI NHÁNH NHẬN (docs/nghiep-vu/27) (đóng góp)
   const U = { ...data.units, ...(a?.units ?? {}) };
   /** Kho đã tích ở đầu đơn (tham chiếu) và kho đang dùng ở dòng (phân kho thật của dòng). */
   const khoGiao = isOrder ? (v.deliveryWarehouses?.length ? v.deliveryWarehouses : v.deliveryWarehouse ? [v.deliveryWarehouse] : []) : [];
   const khoTheoDong = isOrder ? [...new Set(v.lines.map((l) => l.warehouseCode ?? '').filter(Boolean))] : [];
   const khoGiaoCua = (d: PDoc) => [...new Set([...(d.deliveryWarehouses ?? []), d.deliveryWarehouse ?? '', ...d.lines.map((l) => l.warehouseCode ?? '')].filter(Boolean))];
   /** Kho gợi ý cho dòng giao chi nhánh b: kho đã tích ở đầu đơn thuộc b; không có thì kho mặc định của b. */
-  // [2026-11-25 Nguyễn Văn Thủy] kho của dòng phải thuộc chi nhánh nhận của dòng hoặc chi nhánh con (đệ quy) (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — kho của dòng phải thuộc chi nhánh nhận của dòng hoặc chi nhánh con (đệ quy) (đóng góp)
   /** Hợp đồng áp cho chi nhánh b: b có trong danh sách của hợp đồng, hoặc một cấp trên của b có. */
   const hdApCho = (ds: string[], b: string) => { let x: string | null | undefined = b; for (let n = 0; x && n < 30; n++) { if (ds.includes(x)) return true; x = cay.index.get(x)?.parentCode; } return false; };
   const trongNhanh = (kho: string, b: string) => [b, ...cay.conCua(b)].includes(cay.khoChu(kho));
   const goiY = (ds: string[], b: string) => ds.find((c) => cay.khoChu(c) === b) || ds.find((c) => trongNhanh(c, b)) || cay.khoMacDinh(b);
   const khoGoiY = (b: string) => goiY(khoGiao, b);
-  // [2026-11-25 Nguyễn Văn Thủy] bỏ tích kho (kể cả kho dòng đang dùng) được; bỏ hết thì dòng để trống phân kho, không tự điền lại (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — bỏ tích kho (kể cả kho dòng đang dùng) được; bỏ hết thì dòng để trống phân kho, không tự điền lại (đóng góp)
   const tatTuDien = useRef(false);
   const doiKhoGiao = (ds: string[]) => {
     tatTuDien.current = ds.length === 0;
@@ -876,7 +876,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
       return { sku, name: dong?.name ?? pd?.name ?? '', bu: baseUnitOf(unitsOf(sku)) || pd?.baseUnit || dong?.unit || '', p: pd, nhanAll, hd, loi, ghi };
     }) : [];
   const lech3 = doiSoat3.filter((x) => x.loi.length);
-  // [2026-11-25 Nguyễn Văn Thủy] CHUỖI GIÁ / SL: hợp đồng → đơn đặt → phiếu nhập → hoá đơn — mọi giá quy cùng loại giá của phiếu và ĐVT của dòng (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — CHUỖI GIÁ / SL: hợp đồng → đơn đặt → phiếu nhập → hoá đơn — mọi giá quy cùng loại giá của phiếu và ĐVT của dòng (đóng góp)
   /** Dòng đơn đặt ứng với dòng phiếu: theo liên kết dòng, không có thì cùng mã hàng mua. */
   const dongDon = (l: PLine) => donGoc?.lines.find((x) => (l.refLineKey && x.lineKey === l.refLineKey) || (x.sku === l.sku && x.lineType === 'buy'));
   const quyDvt = (gia: number, tuDvt: string, l: PLine) => { const us = unitsOf(l.sku); const a1 = ratioOf(us, tuDvt), b1 = ratioOf(us, l.unit); return a1 && b1 ? (gia / a1) * b1 : gia; };
@@ -914,22 +914,22 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     ? [['hang', `Hàng hoá (${v.lines.length})`], ['thanh-toan', 'Hạn trả tiền'], ['hoa-don', 'Hoá đơn & đối soát'], ['hach-toan', 'Hạch toán'], ['gia-von', 'Giá vốn thực tế'], ['tep', 'Tệp đính kèm'], ['tep-ncc', 'Tệp của NCC'], ['lich-su', 'Lịch sử']]
     : isGiftDoc ? [['hang', `Quà (${v.lines.length})`], ['hach-toan', 'Hạch toán'], ['tep', 'Tệp đính kèm'], ['lich-su', 'Lịch sử']] : [['hach-toan', 'Hạch toán'], ['tep', 'Tệp đính kèm'], ['lich-su', 'Lịch sử']];
   const priceLabel = isGiftDoc ? 'Giá trị / ĐVT' : v.priceIncludesVat ? 'Đơn giá gồm thuế' : 'Đơn giá chưa thuế';
-  // [2026-11-21 Nguyễn Văn Thủy] CỘT BẢNG HÀNG: cột tuỳ chọn ẩn / hiện theo người dùng; dòng có chi nhánh nhận (đơn), phân kho, khoản mục riêng (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — CỘT BẢNG HÀNG: cột tuỳ chọn ẩn / hiện theo người dùng; dòng có chi nhánh nhận (đơn), phân kho, khoản mục riêng (đóng góp)
   const coKhoDong = isOrder || showKho;
   const coKmDong = isGoods && !isGiftDoc;
   const COT_TUY: [string, string, boolean][] = [
     ['loai', 'Loại hàng', !isGiftDoc], ['cn', 'Chi nhánh nhận', isOrder], ['kho', isOrder ? 'Giao tại kho' : 'Phân kho', coKhoDong], ['km', 'Khoản mục', coKmDong], ['ton', 'Phân tích tồn', isOrder], ['conlai', 'Còn phải nhập theo đơn (chi nhánh này)', v.kind === 'receipt' && Boolean(donGoc)], ['theohd', 'SL theo hoá đơn', v.kind === 'receipt' && invs.length > 0],
     ['ck', 'Chiết khấu (% và đ)', !isGiftDoc], ['thue', 'Thuế suất', !isGiftDoc], ['tien', 'Thành tiền chưa thuế (sau CK)', !isGiftDoc], ['vat', 'Tiền thuế', !isGiftDoc], ['gom', 'Thành tiền gồm thuế', !isGiftDoc],
     ['gv', 'Giá vốn / ĐVT', !isGiftDoc], ['lo', 'Số lô, NSX, hạn dùng', !isOrder], ['gc', 'Ghi chú', true],
-    // [2026-11-25 Nguyễn Văn Thủy] #45 tab Test: mã chương trình KM áp vào dòng + đơn giá sau CK gồm VAT (đóng góp)
+    // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — #45 tab Test: mã chương trình KM áp vào dòng + đơn giá sau CK gồm VAT (đóng góp)
     ['ctkm', 'Mã CTKM của dòng', !isGiftDoc], ['giasau', 'Đơn giá sau CK, gồm VAT', !isGiftDoc],
-    // [2026-11-25 Nguyễn Văn Thủy] chuỗi hợp đồng → đơn đặt → phiếu nhập → hoá đơn: SL và đơn giá từng bên đặt cạnh nhau (đóng góp)
+    // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — chuỗi hợp đồng → đơn đặt → phiếu nhập → hoá đơn: SL và đơn giá từng bên đặt cạnh nhau (đóng góp)
     ['giagom', 'Đơn giá gồm thuế, trước CK (quy đổi)', !isGiftDoc && !v.priceIncludesVat],
     ['sldat', 'SL đơn đặt', v.kind === 'receipt' && Boolean(donGoc)], ['giahd', 'Giá hợp đồng chưa thuế', isOrder || v.kind === 'receipt'],
     ['giadon', 'Giá đơn đặt', v.kind === 'receipt' && Boolean(donGoc)], ['giahdon', 'Giá hoá đơn', v.kind === 'receipt' && invs.length > 0],
   ];
   const co = (k: string) => hien(k) && (COT_TUY.find((c) => c[0] === k)?.[2] ?? false);
-  // [2026-11-25 Nguyễn Văn Thủy] THỨ TỰ CỘT bảng hàng: mặc định theo code (COT_MAC_DINH); người dùng kéo thả ở nút "Sắp xếp cột" — lưu riêng máy đó
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — THỨ TỰ CỘT bảng hàng: mặc định theo code (COT_MAC_DINH); người dùng kéo thả ở nút "Sắp xếp cột" — lưu riêng máy đó
   //   theo loại phiếu (localStorage). Cột # luôn đầu, cột nút dòng luôn cuối (đóng góp)
   const cotHien: Record<string, boolean> = { '#': true, chieu: v.kind === 'exchange', loai: co('loai'), ma: true, ten: true, dvt: true, cn: co('cn'), kho: co('kho'), km: co('km'), sl: true, ton: co('ton'), conlai: co('conlai'), theohd: co('theohd'),
     gia: true, giagom: co('giagom'), sldat: co('sldat'), giahd: co('giahd'), giadon: co('giadon'), giahdon: co('giahdon'), ck: co('ck'), ctkm: co('ctkm'), thue: co('thue'), tien: co('tien'), vat: co('vat'), gom: co('gom'), giasau: co('giasau'), gv: co('gv'), ct: isGiftDoc, lo: co('lo'), gc: co('gc'), xoa: true };
@@ -949,8 +949,8 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     return <>{<td colSpan={truoc.reduce((t, k) => t + soO(k), 0)}>{nhan}</td>}
       {(dau < 0 ? [] : ds.slice(dau)).map((k) => (k in TONG ? <td key={k} className="num">{TONG[k]}</td> : <td key={k} colSpan={soO(k)} />))}</>;
   };
-  // [2026-11-25 Nguyễn Văn Thủy] Chi nhánh nhận ở đầu đơn (chọn nhiều): đơn cũ chưa khai thì suy từ chi nhánh nhận chính + các dòng (đóng góp)
-  // [2026-11-25 Nguyễn Văn Thủy] bỏ chọn hết chi nhánh nhận → danh sách rỗng, đơn nhận tại chi nhánh lập chứng từ (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — Chi nhánh nhận ở đầu đơn (chọn nhiều): đơn cũ chưa khai thì suy từ chi nhánh nhận chính + các dòng (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — bỏ chọn hết chi nhánh nhận → danh sách rỗng, đơn nhận tại chi nhánh lập chứng từ (đóng góp)
   const nhanDs = !isOrder ? [v.branchCode] : v.receiveBranches?.length ? v.receiveBranches
     : [...new Set([v.deliveryBranch ?? '', ...v.lines.filter((l) => l.sku).map((l) => l.branchCode ?? '').filter(Boolean)])].filter(Boolean);
   const nhanMacDinh = isOrder ? nhanDs[0] || v.branchCode : v.branchCode;
@@ -1044,7 +1044,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     return badge ? <span className={`badge badge-${c}`}>{t[0]!.toUpperCase() + t.slice(1)}</span> : <span className={c === 'ok' ? 'mh-ok' : c === 'bad' ? 'mh-bad' : c === 'info' ? 'muted' : 'mh-warn'}>{t}</span>;
   };
 
-  // [2026-11-25 Nguyễn Văn Thủy] khối Tổng tiền: phiếu có bảng hàng đặt ngay dưới bảng (góc phải) cho Trợ lý đỡ dài; phiếu tiền / chi phí vẫn ở Trợ lý (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — khối Tổng tiền: phiếu có bảng hàng đặt ngay dưới bảng (góc phải) cho Trợ lý đỡ dài; phiếu tiền / chi phí vẫn ở Trợ lý (đóng góp)
   const tongTien = (
   <div className="mh-panel">
     <h4>Tổng tiền</h4>
@@ -1990,7 +1990,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                 </tbody></table>
                 {prog.receipts.length > 0 && <div className="muted" style={{ fontSize: 11 }}>Phiếu nhập: {prog.receipts.join(', ')} · <Link to={`/mua-hang/doi-chieu?ncc=${encodeURIComponent(v.partnerCode)}`} onClick={onClose}>đối chiếu chi tiết (MH21)</Link></div>}
                 {!prog.done && v.status !== 'draft' && v.status !== 'cancelled' && onOpen && (deliveryBranches(v).length > 1
-                  // [2026-11-21 Nguyễn Văn Thủy] đơn giao nhiều chi nhánh: mỗi chi nhánh nhận lập phiếu nhập phần của mình (đóng góp)
+                  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — đơn giao nhiều chi nhánh: mỗi chi nhánh nhận lập phiếu nhập phần của mình (đóng góp)
                   ? <div className="row" style={{ gap: 4, flexWrap: 'wrap', marginTop: 6 }}><span className="muted" style={{ width: '100%', fontSize: 12 }}>Đơn giao {deliveryBranches(v).length} chi nhánh — lập phiếu nhập cho từng nơi nhận:</span>
                     {deliveryBranches(v).map((b) => <button key={b} className="btn btn-sm btn-primary" onClick={() => onOpen(receiptFromOrder(v, data.docs, today(), { ...data.units, ...(a?.units ?? {}) }, b))} title={`Phiếu nhập của chi nhánh ${b} ${names.branchName(b)} — chỉ gồm dòng giao cho chi nhánh này`}>Phiếu nhập {b}</button>)}</div>
                   : <button className="btn btn-sm btn-primary" style={{ marginTop: 6 }} onClick={() => onOpen(receiptFromOrder(v, data.docs, today(), { ...data.units, ...(a?.units ?? {}) }))}>Lập phiếu nhập kho từ đơn (chép phần còn lại)</button>)}

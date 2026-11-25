@@ -73,7 +73,7 @@ export function PartnersPage({ fixedKind }: { fixedKind?: 'customer' | 'supplier
   const [back, setBack] = useState<(Partial<Partner> & { isNew?: boolean })[]>([]);
   const setEditing = (v: (Partial<Partner> & { isNew?: boolean }) | null) => { setBack([]); setEditingRaw(v); };
   const [sel, setSel] = useState<Partner | null>(null);
-  // [2026-11-13 Nguyễn Văn Thủy] kiểu xem: danh sách / cây cha – con (đóng góp)
+  // [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — kiểu xem: danh sách / cây cha – con (đóng góp)
   const [xem, setXem] = useState<'ds' | 'cay'>('ds');
   const exportRef = useRef<(() => void) | null>(null);
   const groups = useGroups();
@@ -96,7 +96,7 @@ export function PartnersPage({ fixedKind }: { fixedKind?: 'customer' | 'supplier
     // [2026-11-19 10:28 AM khanhtd] DM12/DM13 — đơn vị cha chưa có tên thì chỉ hiện mã, không thừa " - "
     { key: 'parentCode', header: 'Thuộc đơn vị cha', width: 200, title: 'Đơn vị mẹ của chi nhánh / đơn vị con; trống = đơn vị độc lập', value: (p) => [p.parentCode, p.parentName?.trim()].filter(Boolean).join(' - ') },
     { key: 'childCount', header: 'Số đơn vị con', type: 'number', width: 90, title: 'Số chi nhánh / đơn vị con trực tiếp', hidden: true },
-    // [2026-11-11 Nguyễn Văn Thủy] cột Chức năng: lập chứng từ cho đối tượng ngay từ danh sách (đóng góp)
+    // [2026-11-11 12:00 AM Nguyễn Văn Thủy] MH — cột Chức năng: lập chứng từ cho đối tượng ngay từ danh sách (đóng góp)
     { key: 'chuc-nang', header: 'Chức năng', width: 120, hidden: true, noFilter: true, noSort: true, value: () => '', render: (p) => {
       const to = p.kind === 'supplier' ? `/mua-hang/tong-hop?moi=receipt&ncc=${encodeURIComponent(p.code)}` : p.kind === 'customer' ? `/ban-hang/phieu-ban?them=1&kh=${encodeURIComponent(p.code)}` : null;
       return to ? <Link className="row-act" to={to} onClick={(e) => e.stopPropagation()} title={p.kind === 'supplier' ? 'Lập phiếu nhập mua của nhà cung cấp này' : 'Lập phiếu bán hàng cho khách này'}>{p.kind === 'supplier' ? 'Lập phiếu nhập' : 'Lập phiếu bán'}</Link> : null;
@@ -280,7 +280,7 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
     set({ groupCode, ...(boCha ? { parentCode: null, parentName: null } : {}) });
     void fetchCode(groupCode, kind, boCha, boCha ? null : v.parentCode);
   };
-  // [2026-11-13 Nguyễn Văn Thủy] chọn đơn vị cha: thêm mới thì mã thành mã cha-00x, mang theo vai trò + nhóm của cha (đóng góp)
+  // [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — chọn đơn vị cha: thêm mới thì mã thành mã cha-00x, mang theo vai trò + nhóm của cha (đóng góp)
   const changeParent = async (parentCode: string | null) => {
     set({ parentCode, parentName: null });
     setSuggest(null);
@@ -680,7 +680,7 @@ export function PartnerGroupsPage() {
   );
 }
 
-// [2026-11-25 Nguyễn Văn Thủy] #9 tab Test: ô Thuộc nhóm có + thêm nhanh nhóm (lưu DM08) rồi chọn luôn (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — #9 tab Test: ô Thuộc nhóm có + thêm nhanh nhóm (lưu DM08) rồi chọn luôn (đóng góp)
 function ChonNhomDoiTuong({ kind, choices, value, onChange, noun }: { kind: string; choices: Group[]; value: string; onChange: (g: string | null) => void; noun: string }) {
   const [them, setThem] = useState<string | null>(null);
   return <>

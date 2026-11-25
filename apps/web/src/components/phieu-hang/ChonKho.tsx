@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { useCayDonVi } from '@/lib/cayDonVi';
 import { ListPicker } from '@/components/pickers';
 
-// [2026-11-11 Nguyễn Văn Thủy] nút + cạnh ô kho: thêm kho cho chi nhánh ngay trên phiếu (đóng góp)
+// [2026-11-11 12:00 AM Nguyễn Văn Thủy] MH — nút + cạnh ô kho: thêm kho cho chi nhánh ngay trên phiếu (đóng góp)
 // [2026-11-26 12:40 AM Nguyễn Văn Thủy] MH-NHAN — nút + thêm phân kho bằng hộp Phân kho của sơ đồ tổ chức, gắn sẵn đơn vị (đóng góp)
 const ThemKhoTheoCay = lazy(() => import('@/components/phieu-hang/ThemTheoCoCau').then((m) => ({ default: m.ThemKhoTheoCay })));
 
@@ -82,7 +82,7 @@ function ChonKhoO({ branchCode, value, onChange, disabled, avoid, op, conCua }: 
   }, [branchCode, all.length, avoid, allowed?.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!branchCode) return <select className="select input" disabled><option>— chọn chi nhánh trước —</option></select>;
   if (!list.length && !khoCon.length) return <select className="select input" disabled title="Khai kho cho chi nhánh ở Danh mục kho (DM12)"><option>chi nhánh chưa khai kho</option></select>;
-  // [2026-11-21 Nguyễn Văn Thủy] ô gõ tìm (mã kho, tên kho, mã / tên chi nhánh), kho xếp theo cây chi nhánh: chi nhánh đang chọn trước, chi nhánh con thụt vào (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — ô gõ tìm (mã kho, tên kho, mã / tên chi nhánh), kho xếp theo cây chi nhánh: chi nhánh đang chọn trước, chi nhánh con thụt vào (đóng góp)
   const items = [
     ...list.map((w) => ({ code: w.code, name: `${w.name}${allowed && w.typeCode ? ` (${w.typeCode})` : ''}`, hint: khoCon.length ? branchCode : (w.isDefault ? 'mặc định' : undefined), level: 1, strong: w.code === def?.code })),
     ...khoCon.flatMap(({ u, ws }) => ws.map((w) => ({ code: w.code, name: `${w.name}${allowed && w.typeCode ? ` (${w.typeCode})` : ''}`, hint: u.code, level: 2 }))),

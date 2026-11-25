@@ -182,9 +182,9 @@ export interface Partner { code: string; name: string; taxCode?: string; group?:
 
 export type PolicyKind = 'trade_discount' | 'item_discount' | 'qty_tier' | 'payment_discount' | 'promo_gift' | 'period_rebate' | 'target_rebate' | 'stage_rebate'
   | 'credit_limit' | 'payment_term' | 'supply_target' | 'lot_tracking' | 'gift_budget';
-// [2026-11-13 Nguyễn Văn Thủy] withChildren: chính sách khai ở đơn vị mẹ áp cho mọi đơn vị con (cha – con 0132) (đóng góp)
-// [2026-11-18 Nguyễn Văn Thủy] contractCode: chính sách thuộc hợp đồng mua (Danh mục hợp đồng) — chỉ để gom, không đổi cách áp (đóng góp)
-// [2026-11-19 Nguyễn Văn Thủy] branchCodes: chính sách áp cho nhiều chi nhánh (chọn theo cây cơ cấu); branchCode một chi nhánh giữ cho dữ liệu cũ (đóng góp)
+// [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — withChildren: chính sách khai ở đơn vị mẹ áp cho mọi đơn vị con (cha – con 0132) (đóng góp)
+// [2026-11-18 12:00 AM Nguyễn Văn Thủy] MH — contractCode: chính sách thuộc hợp đồng mua (Danh mục hợp đồng) — chỉ để gom, không đổi cách áp (đóng góp)
+// [2026-11-19 12:00 AM Nguyễn Văn Thủy] MH — branchCodes: chính sách áp cho nhiều chi nhánh (chọn theo cây cơ cấu); branchCode một chi nhánh giữ cho dữ liệu cũ (đóng góp)
 export interface Scope { partnerCode?: string; brandCode?: string; sku?: string; branchCode?: string; branchCodes?: string[]; withChildren?: boolean; contractCode?: string }
 /** Các chi nhánh áp chính sách (trống = mọi chi nhánh): branchCodes, không có thì branchCode cũ. */
 export const scopeBranches = (s: Pick<Scope, 'branchCode' | 'branchCodes'>): string[] => (s.branchCodes?.length ? s.branchCodes : s.branchCode ? [s.branchCode] : []);
@@ -435,7 +435,7 @@ export const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b
 
 /* ------------------------------------------------------------------ chính sách */
 
-// [2026-11-21 Nguyễn Văn Thủy] hạn mức công nợ + điều khoản thanh toán là ĐIỀU KHOẢN HỢP ĐỒNG: gắn hợp đồng X thì chỉ áp phiếu của X (docs/nghiep-vu/28) (đóng góp)
+// [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — hạn mức công nợ + điều khoản thanh toán là ĐIỀU KHOẢN HỢP ĐỒNG: gắn hợp đồng X thì chỉ áp phiếu của X (docs/nghiep-vu/28) (đóng góp)
 /** Loại "điều khoản" của hợp đồng (khai ở bước Điều khoản hợp đồng, không ở danh sách chính sách). */
 export const CONTRACT_BOUND_KINDS: PolicyKind[] = ['credit_limit', 'payment_term'];
 /**
@@ -699,7 +699,7 @@ export function computeDoc(doc: PDoc, policies: Policy[], opts: { holidays?: str
     }
   }
   if (!fromPolicy && od && doc.orderDiscountLines) { buyIdx = buyIdx.filter((i) => doc.orderDiscountLines!.includes(lines[i]!.lineKey)); net = buyIdx.reduce((s, i) => s + lines[i]!.after, 0); }
-  // [2026-11-25 Nguyễn Văn Thủy] CK % trên đơn tính và làm tròn TỪNG DÒNG (như hoá đơn: dòng giống nhau → số giống nhau), tổng CK = cộng
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — CK % trên đơn tính và làm tròn TỪNG DÒNG (như hoá đơn: dòng giống nhau → số giống nhau), tổng CK = cộng
   // các dòng; trước đây tính trên tổng rồi chia → hai dòng y hệt lệch nhau 1 đồng. CK bằng số tiền cố định vẫn phân bổ theo giá trị (đóng góp)
   const pctParts = od?.pct ? buyIdx.map((i) => Math.round((lines[i]!.after * od!.pct!) / 100)) : null;
   const orderDisc = pctParts ? pctParts.reduce((t, x) => t + x, 0) : Math.round(od?.amount ?? 0);

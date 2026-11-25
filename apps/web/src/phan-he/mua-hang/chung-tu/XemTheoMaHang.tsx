@@ -46,7 +46,7 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
     if (!units) return [];
     const out: Row[] = [];
     for (const d of docs) {
-      // [2026-11-25 Nguyễn Văn Thủy] #53 tab Test: phiếu đã huỷ không cộng vào báo cáo (đóng góp)
+      // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — #53 tab Test: phiếu đã huỷ không cộng vào báo cáo (đóng góp)
       if (!d.lines.length || d.status === 'cancelled') continue;
       // Phiếu đã duyệt: dòng đã chốt chiết khấu lúc duyệt; phiếu chưa duyệt: tính theo chính sách hiện hành (như mở phiếu).
       const c = computeDoc(d, d.status === 'approved' ? [] : data.policies, { units });
@@ -121,7 +121,7 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
     if (r.dir === 'in') { x.inQty += r.base; x.inGross += r.grossEx; x.inDisc += r.disc; x.inValue += r.l.beforeTax; x.tax += r.l.tax; if (r.l.lineType !== 'buy') x.giftQty += r.base; }
     else { x.outQty += r.base; x.outValue += r.l.beforeTax; x.tax -= r.l.tax; }
   }
-  // [2026-11-25 Nguyễn Văn Thủy] #53 tab Test: mã chỉ có trên đơn đặt (chưa nhập / trả) không hiện dòng trống ở Tổng hợp mua hàng (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — #53 tab Test: mã chỉ có trên đơn đặt (chưa nhập / trả) không hiện dòng trống ở Tổng hợp mua hàng (đóng góp)
   const sums = [...by.values()].filter((r) => r.inQty || r.outQty || r.inValue || r.outValue).sort((a, b) => a.sku.localeCompare(b.sku));
   const q = (n: number) => Math.round(n * 10000) / 10000;
   // Cột chuẩn của Tổng hợp mua hàng theo mặt hàng đứng trước; cột thêm (nhóm hàng, SL đặt, hàng tặng, thuế…) ẩn sẵn, bật ở nút Cột.

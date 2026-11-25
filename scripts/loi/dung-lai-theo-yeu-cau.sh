@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [2026-11-25 Nguyễn Văn Thủy] Cron máy chủ (aaPanel, mỗi phút): có yêu cầu dựng lại ở HT20 thì chạy cap-nhat.sh --yes và báo kết quả — docs/ops/TU-DONG-SUA-LOI.md §4.1 (đóng góp)
+# [2026-11-25 12:00 AM Nguyễn Văn Thủy] HT20 — Cron máy chủ (aaPanel, mỗi phút): có yêu cầu dựng lại ở HT20 thì chạy cap-nhat.sh --yes và báo kết quả — docs/ops/TU-DONG-SUA-LOI.md §4.1 (đóng góp)
 #
 #   cd /www/wwwroot/<thu-muc-dev> && KET_NOI_URL=https://ketoan-dev.quantri.thegioisua.com KET_NOI_KEY=kn_… ./scripts/loi/dung-lai-theo-yeu-cau.sh
 #
