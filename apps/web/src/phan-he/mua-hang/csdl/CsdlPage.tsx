@@ -77,7 +77,8 @@ const TERMS: [string, string, string][] = [
   ['Giá mua riêng của sản phẩm', 'supplier_products (NCC trống)', 'DM10 → thẻ Mua hàng'],
   ['Giá mua theo từng NCC, mã bên NCC', 'supplier_products', 'Hồ sơ NCC → Hợp đồng & giá → Mặt hàng & giá'],
   ['Chính sách: CK, KM, thưởng, hạn mức, hạn trả', 'purchase_policies', 'MH04 Chính sách · Hồ sơ NCC'],
-  ['Cơ cấu tổ chức → đơn vị cấp 3 (kho mã xx000 nhận hàng) → cửa hàng: tính từ cây đơn vị', 'branches.unit_parent_id, branches.purchase_branch_id → branches.level, branches.parent_id · warehouses', 'DM16 Cơ cấu tổ chức'],
+  // [2026-11-25 kiennt] NT-MH-012 — mô tả quy tắc lai (đóng góp)
+  ['Cơ cấu tổ chức → đơn vị cấp 3 (kho tổng mã xx000 hoặc tên có chữ "Kho") → cửa hàng; cửa hàng chưa thuộc kho tổng nào thì theo đơn vị cha trực tiếp: tính từ cây đơn vị', 'branches.unit_parent_id, branches.purchase_branch_id → branches.level, branches.parent_id · warehouses', 'DM16 Cơ cấu tổ chức'],
   ['Tồn max / min theo chi nhánh – kho – mã', 'stock_levels', 'MH16 Tồn max · DM10 → thẻ Mua hàng'],
   ['Số ngày đo bán, số ngày đủ hàng, cách chuyển (riêng mã)', 'stock_sku_settings', 'MH16 → nút ⚙ / cột Chuyển xuống shop'],
   ['Phiếu đăng ký tồn max (mã có sẵn / hàng mới × shop)', 'stock_max_requests', 'MH17 Phiếu đăng ký tồn max · API cho POS'],

@@ -66,6 +66,7 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-MH-008](mua-hang/NT-MH-008-mh16-bo-dong-chu-thich.md) | MH16: bỏ dòng chú thích; tệp mẫu nhập Excel có sẵn mặt hàng chưa có max | Đã chốt |
 | [NT-MH-009](mua-hang/NT-MH-009-o-so-go-tay.md) | MH16, MH17: ô số gõ tay nhận số lẻ đúng ("1.5" không còn thành 15) | Đã chốt |
 | [NT-MH-010](mua-hang/NT-MH-010-mh02-bo-o-dem.md) | MH02: bỏ dải ô đếm, lọc nhanh thành ô chọn "Hiện" | Đã chốt |
+| [NT-MH-012](mua-hang/NT-MH-012-don-vi-mua-hang-theo-cay.md) | Đơn vị mua hàng, kho tổng, shop tính theo cây cơ cấu hiện có (không bắt cấp 3, mã xx000) | Đã chốt |
 | [NT-MH-013](mua-hang/NT-MH-013-ve-cong-thuc-goi-y.md) | MH18: nút "Về công thức chuẩn" đổi tên "Về công thức gợi ý" | Đã chốt |
 | [NT-HT-001](he-thong/NT-HT-001-so-do-to-chuc.md) | Sơ đồ tổ chức làm gốc: cây 3 cấp, gắn chi nhánh, mua hàng theo cây, bộ lọc cây chi nhánh / kho | Chờ nghiệm thu |
 | [NT-KHO-001](kho/NT-KHO-001-ton-o-chon-hang-theo-kho-xuat.md) | Ô chọn mặt hàng ở phiếu chuyển kho hiện tồn theo kho xuất, ngày phiếu | Đã chốt |
