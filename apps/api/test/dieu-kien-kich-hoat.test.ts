@@ -97,6 +97,17 @@ for (const mode of ['none', 'contract'] as const) describe(mode === 'none' ? 'Đ
     expect((await analyze(doc('receipt', 900))).blockedPolicies?.find((b) => b.code === 'KH-CK2')?.reasons.join(' ')).toMatch(/vượt hạn mức/);
   });
 
+  // [2026-11-25 Nguyễn Văn Thủy] #49 tab Test: điều kiện thanh toán riêng của chương trình (đóng góp)
+  it('điều kiện thanh toán riêng: phiếu trả ngay mới áp; hạn 30 ngày hoặc chưa có hạn → không áp, ghi rõ', async () => {
+    await policy('KH-TTN', 'trade_discount', { pct: 3, activation: { maxPayDays: 0 } });
+    const ngay = await analyze(doc('receipt', 10, { term: { basis: 'immediate', days: 0, workingDays: false } }));
+    expect(ngay.blockedPolicies?.map((b) => b.code) ?? []).not.toContain('KH-TTN');
+    const sau = await analyze(doc('receipt', 10, { term: { basis: 'invoice_date', days: 30, workingDays: false } }));
+    expect(sau.blockedPolicies?.find((b) => b.code === 'KH-TTN')?.reasons.join(' ')).toMatch(/hạn thanh toán 30 ngày/);
+    const chua = await analyze(doc('receipt', 10));
+    expect(chua.blockedPolicies?.find((b) => b.code === 'KH-TTN')?.reasons.join(' ')).toMatch(/chưa có hạn thanh toán/);
+  });
+
   it('điều kiện kích hoạt chỉ khai cho chiết khấu / bậc SL / CKTT / mua X tặng Y', async () => {
     const r = await policy('KH-HM2', 'credit_limit', { limit: 1, activation: { noOverdue: true } }, 400);
     expect(JSON.stringify(r.body)).toMatch(/không khai điều kiện kích hoạt/);

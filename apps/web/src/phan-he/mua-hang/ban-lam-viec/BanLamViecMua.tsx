@@ -42,8 +42,6 @@ const BAO_CAO: { label: string; path: string }[] = [
   { label: 'Tổng hợp mua hàng theo chi nhánh', path: '/mua-hang/tong-hop-chi-nhanh' },
   { label: 'Biên bản đối chiếu công nợ', path: '/cong-no/doi-chieu' },
   { label: 'Sổ chi tiết mua hàng', path: '/mua-hang/bao-cao' },
-  { label: 'Sổ kho theo mặt hàng', path: '/mua-hang/so-kho' },
-  { label: 'Tồn kho theo mặt hàng', path: '/mua-hang/ton-kho' },
 ];
 
 const LAP_NHANH: { label: string; kind: string; chinh?: boolean }[] = [

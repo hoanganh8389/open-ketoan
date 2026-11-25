@@ -5,6 +5,8 @@
  *   minDocValue       giá trị phiếu trước thuế, trước chiết khấu ≥ số này
  *   noOverdue         không có nợ quá hạn ở ngày phiếu
  *   withinCreditLimit dư nợ sau phiếu không vượt hạn mức công nợ
+ *   maxPayDays        [2026-11-25 Nguyễn Văn Thủy] điều kiện thanh toán riêng của chương trình (#49 tab Test): hạn thanh toán của phiếu
+ *                     (trên phiếu, không có thì điều khoản của hợp đồng / NCC) phải ≤ N ngày; 0 = trả ngay (đóng góp)
  * Số liệu (facts) do máy chủ gom theo phạm vi chính sách (hợp đồng xuyên suốt: chính sách của hợp đồng X → phiếu thuộc X;
  * chính sách ngoài hợp đồng → phiếu không theo hợp đồng). Hàm ở đây thuần: chỉ so số liệu với điều kiện.
  */
@@ -16,6 +18,8 @@ export interface Activation {
   minDocValue?: number;
   noOverdue?: boolean;
   withinCreditLimit?: boolean;
+  /** Hạn thanh toán của phiếu tối đa (ngày); 0 = trả ngay. */
+  maxPayDays?: number;
 }
 /** Số liệu để xét điều kiện của một chính sách trên một phiếu. */
 export interface ActivationFacts {
@@ -27,6 +31,8 @@ export interface ActivationFacts {
   overdue?: number;
   /** Số vượt hạn mức sau phiếu (0 = trong hạn mức; undefined = không có hạn mức). */
   creditExceeded?: number;
+  /** Hạn thanh toán của phiếu (ngày) — điều khoản trên phiếu, không có thì của hợp đồng / NCC; undefined = chưa có. */
+  payDays?: number;
   /** Kỳ đang xét (để ghi lý do), vd "tháng 10/2026". */
   periodText?: string;
 }
@@ -49,6 +55,7 @@ export function activationOf(p: Pick<Policy, 'rule' | 'kind'>): Activation | und
   if (n(a.minDocValue) > 0) out.minDocValue = n(a.minDocValue);
   if (a.noOverdue) out.noOverdue = true;
   if (a.withinCreditLimit) out.withinCreditLimit = true;
+  if (a.maxPayDays !== undefined && a.maxPayDays !== null && Number.isFinite(Number(a.maxPayDays)) && Number(a.maxPayDays) >= 0) out.maxPayDays = Math.round(Number(a.maxPayDays));
   return Object.keys(out).length ? out : undefined;
 }
 
@@ -60,6 +67,7 @@ export function activationText(a?: Activation): string {
     a.minDocValue && `giá trị phiếu ≥ ${vnd(a.minDocValue)}`,
     a.noOverdue && 'không có nợ quá hạn',
     a.withinCreditLimit && 'không vượt hạn mức công nợ',
+    a.maxPayDays !== undefined && (a.maxPayDays === 0 ? 'thanh toán ngay' : `thanh toán trong ${a.maxPayDays} ngày`),
   ].filter(Boolean);
   return parts.length ? `Điều kiện: ${parts.join(' · ')}` : '';
 }
@@ -76,6 +84,11 @@ export function activationResult(a: Activation | undefined, f: ActivationFacts):
   if (a.minDocValue) (f.docValue >= a.minDocValue ? met : reasons).push(`giá trị phiếu ${vnd(f.docValue)} / cần ${vnd(a.minDocValue)}`);
   if (a.noOverdue) ((f.overdue ?? 0) > 0 ? reasons : met).push((f.overdue ?? 0) > 0 ? `đang có nợ quá hạn ${vnd(f.overdue!)}` : 'không có nợ quá hạn');
   if (a.withinCreditLimit) ((f.creditExceeded ?? 0) > 0 ? reasons : met).push((f.creditExceeded ?? 0) > 0 ? `vượt hạn mức công nợ ${vnd(f.creditExceeded!)}` : 'trong hạn mức công nợ');
+  if (a.maxPayDays !== undefined) {
+    const can = a.maxPayDays === 0 ? 'trả ngay' : `≤ ${a.maxPayDays} ngày`;
+    if (f.payDays === undefined) reasons.push(`phiếu chưa có hạn thanh toán (chương trình cần ${can})`);
+    else (f.payDays <= a.maxPayDays ? met : reasons).push(`hạn thanh toán ${f.payDays === 0 ? 'trả ngay' : `${f.payDays} ngày`} / cần ${can}`);
+  }
   return { ok: !reasons.length, reasons, met };
 }
 

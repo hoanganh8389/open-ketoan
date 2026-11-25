@@ -11,7 +11,7 @@
 import { writeTenantSection } from '@bizcity/platform/core/settings';
 import { sql } from 'kysely';
 import {
-  ACC, brandMix, brandShare, checkDoc, codeSwaps, computeDoc, creditStatus, docBrand, fefoCheck, findPolicy, orderProgress, postingFor, ratioIn, receiptsOfOrder, scheduleStatus, type OrderLineProgress,
+  ACC, brandMix, brandShare, checkDoc, codeSwaps, computeDoc, creditStatus, docBrand, fefoCheck, findPolicy, termFromRule, orderProgress, postingFor, ratioIn, receiptsOfOrder, scheduleStatus, type OrderLineProgress,
   type Accounts, type Check, type CreditStatus, type ProductUnit, type SupplierProduct, type DocCalc, type Entry, type PDoc, type Policy, type PriceRow, type Product, deliveryBranches, invoicesOf, invoiceQtyBySku,
   TAX_RATE, activationOf, activationResult, activationText, contractApplies, periodRange, scopeBranches } from '@bizcity/mua-hang-domain';
 import { toNumber, type Db } from '../../db/client.js';
@@ -290,7 +290,13 @@ export async function activationGate(trx: Db, tenantId: string, doc: PDoc, docs:
       overdue = overdueRows.filter((r) => { const d = byNo.get(r.docNo); return contractApplies(p, d?.contractCode); }).reduce((t, r) => t + r.remaining, 0);
     }
     const creditExceeded = a.withinCreditLimit ? credit.filter((c) => !c.scope.startsWith('Nhãn ') && !c.scope.startsWith('Chi nhánh')).reduce((t, c) => t + c.exceeded, 0) : undefined;
-    const r = activationResult(a, { purchased, docValue, overdue, creditExceeded, periodText });
+    // Điều kiện thanh toán riêng (#49): hạn trên phiếu, không có thì điều khoản thanh toán của hợp đồng / NCC.
+    let payDays: number | undefined;
+    if (a.maxPayDays !== undefined) {
+      const t = doc.term ?? (() => { const tp = findPolicy(policies, 'payment_term', { date: doc.docDate, partnerCode: doc.partnerCode, branchCode: doc.branchCode, contractCode: hd }); return tp ? termFromRule(tp.rule) : undefined; })();
+      payDays = t ? Number(t.days) || 0 : undefined;
+    }
+    const r = activationResult(a, { purchased, docValue, overdue, creditExceeded, periodText, payDays });
     if (r.ok) passed.push({ code: p.code, name: p.name, met: r.met }); else blocked.push({ code: p.code, name: p.name, reasons: r.reasons });
   }
   return { blocked, passed };

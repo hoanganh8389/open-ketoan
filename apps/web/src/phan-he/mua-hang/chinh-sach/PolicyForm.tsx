@@ -293,6 +293,14 @@ function DieuKienKichHoat({ p, onChange }: { p: Policy; onChange: (a: Activation
         </label>
         <label className="row" style={{ gap: 6, alignItems: 'center' }}><input type="checkbox" checked={Boolean(a.noOverdue)} onChange={(e) => set({ noOverdue: e.target.checked || undefined })} /> Không có nợ quá hạn tại thời điểm lên đơn / phiếu</label>
         <label className="row" style={{ gap: 6, alignItems: 'center' }}><input type="checkbox" checked={Boolean(a.withinCreditLimit)} onChange={(e) => set({ withinCreditLimit: e.target.checked || undefined })} /> Tổng dư nợ sau đơn / phiếu không vượt hạn mức công nợ</label>
+        {/* [2026-11-25 Nguyễn Văn Thủy] #49 tab Test: điều kiện thanh toán riêng của chương trình (vd mua X tặng Y phải trả ngay, khác điều khoản 30 ngày của hợp đồng) (đóng góp) */}
+        <label className="row" style={{ gap: 6, alignItems: 'center', flexWrap: 'wrap' }} title="So với hạn thanh toán của đơn / phiếu (ô Hạn TT trên phiếu; trống thì theo điều khoản thanh toán của hợp đồng / NCC). Phiếu chọn hạn dài hơn thì không áp chương trình này">
+          <input type="checkbox" checked={a.maxPayDays !== undefined} onChange={(e) => set({ maxPayDays: e.target.checked ? 0 : undefined })} />
+          Điều kiện thanh toán riêng: phiếu thanh toán trong tối đa
+          <input className="input num" style={{ width: 64 }} disabled={a.maxPayDays === undefined} inputMode="numeric" value={a.maxPayDays ?? 0}
+            onChange={(e) => set({ maxPayDays: Math.max(0, Math.min(365, Number(e.target.value.replace(/\D/g, '')) || 0)) })} />
+          ngày <span className="muted">(0 = trả ngay; khác điều khoản thanh toán chung của hợp đồng)</span>
+        </label>
       </div>
       {co && <div className="alert alert-info" style={{ fontSize: 12.5, marginTop: 6 }}>{activationText(activationOf(p))} — chưa đạt thì đơn đặt / phiếu nhập không áp chương trình này, Trợ lý ghi rõ còn thiếu gì.</div>}
     </div>
