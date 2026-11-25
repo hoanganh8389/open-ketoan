@@ -73,3 +73,20 @@ Dòng giỏ khớp dòng nào thì tính theo dòng đó. Có `tiers` thì xét 
 | 5 | order_gift@2 multiply, ngưỡng 1.000.000 tặng 1 Q, maxTimes 3 | tổng 3.500.000 | tặng 3 Q |
 | 6 | scope groupCodes [SUA-BOT] | dòng thuộc nhóm khác | không áp |
 | 7 | Bộ ca mẫu `@1` hiện có | — | chạy y như cũ |
+
+## 6. Kết quả làm (nhánh `feat/nt-bh-040-khuon-km-v2`)
+<!-- [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: ghi kết quả làm theo ca, phần chờ mở phạm vi giữ chỗ (đóng góp) -->
+
+| Ca | Kết quả | Ghi chú |
+|---|---|---|
+| 1 | Đạt | Ca mẫu `price_lines@2`, chạy cả qua endpoint |
+| 2 | Đạt ở khuôn (hàm thuần) | Qua endpoint cần nối `giftChoice` ở bộ tính — xem dưới |
+| 3 | Đạt ở khuôn (`pendingChoice`) | Endpoint hiện đưa chương trình chờ chọn vào `skipped`; trả `pendingChoices` cần nối ở bộ tính |
+| 4 | Đạt | Chạy cả qua endpoint |
+| 5 | Đạt | Chạy cả qua endpoint |
+| 6 | Đạt ở khuôn (dòng mang nhóm / nhãn) | Bộ tính tự tra `bizcity_read.products` cần nối ở bộ tính |
+| 7 | Đạt | Bộ ca mẫu `@1` không đổi, test khoá số ca |
+
+Phần nối ở bộ tính và nháp màn BH18 nằm ngoài phạm vi giữ chỗ hiện tại, chờ mở thêm: `apps/api/src/modules/system/rule-contracts/policy-service.ts` (tra nhóm / nhãn + nhóm cha, `giftChoice[policyKey]`, trả `pendingChoices`), `apps/api/src/modules/system/policy.routes.ts` (nhận `giftChoice`), `modules/pos/api/domain/promo.ts` (danh sách khuôn nháp + mã hàng cho cảnh báo trùng của ba khuôn @2), kèm test bộ tính. Bản vá đã thử trên máy local.
+
+Máy bán (open-pos, ngoài phạm vi) cần: gửi `giftChoice: { [policyKey]: sku[] }` khi gọi evaluate; đọc `pendingChoices[]` (`key, version, choose, times, options[{ sku, qty }], problem?`) để mở hộp "Chọn quà tặng" (cột "Đã chọn"), chọn đủ `choose` món rồi gọi lại evaluate; tính ngoại tuyến theo `describe().spec` của ba khuôn @2.
