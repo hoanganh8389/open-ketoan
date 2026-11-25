@@ -30,7 +30,7 @@ const LINE_TYPE: Record<string, string> = { buy: 'Hàng mua', gift_seller: 'KM n
 
 /** grossEx: tiền hàng TRƯỚC chiết khấu, CHƯA thuế (phiếu nhập giá gồm thuế thì quy về chưa thuế); disc = grossEx − beforeTax (chiết khấu chưa thuế). */
 interface Row { key: string; doc: StoredDoc; l: LineCalc; dir: Dir; base: number; baseUnit: string; total: number; grossEx: number; disc: number }
-interface SkuRow { key: string; sku: string; name: string; baseUnit: string; ordered: number; inQty: number; outQty: number; giftQty: number; inGross: number; inDisc: number; inValue: number; outValue: number; tax: number; docs: Set<string> }
+interface SkuRow { key: string; sku: string; name: string; baseUnit: string; ordered: number; inQty: number; outQty: number; giftQty: number; inGross: number; inDisc: number; inValue: number; outValue: number; tax: number; docs: Set<string>; cho: Set<string> }
 
 // [2026-11-03 04:30 PM Nguyễn Văn Thủy] NHOM — locDong: chỉ giữ dòng hàng thuộc nhóm hàng đã chọn (tính phiếu đủ dòng rồi mới lọc, chiết khấu phiếu không đổi)
 export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, locDong }: { docs: StoredDoc[]; data: MhData; mode: 'dong' | 'ma'; partnerName: (c: string) => string; khoText: (d: StoredDoc) => string; onOpen: (d: StoredDoc) => void; locDong?: <T extends { sku: string }>(rows: T[]) => T[] }) {
@@ -46,7 +46,8 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
     if (!units) return [];
     const out: Row[] = [];
     for (const d of docs) {
-      if (!d.lines.length) continue;
+      // [2026-11-25 Nguyễn Văn Thủy] #53 tab Test: phiếu đã huỷ không cộng vào báo cáo (đóng góp)
+      if (!d.lines.length || d.status === 'cancelled') continue;
       // Phiếu đã duyệt: dòng đã chốt chiết khấu lúc duyệt; phiếu chưa duyệt: tính theo chính sách hiện hành (như mở phiếu).
       const c = computeDoc(d, d.status === 'approved' ? [] : data.policies, { units });
       c.lines.forEach((l, i) => {
@@ -110,13 +111,15 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
   const by = new Map<string, SkuRow>();
   for (const r of rows) {
     const k = r.l.sku || `(mới) ${r.l.name}`;
-    const x = by.get(k) ?? by.set(k, { key: k, sku: r.l.sku, name: r.l.name, baseUnit: r.baseUnit, ordered: 0, inQty: 0, outQty: 0, giftQty: 0, inGross: 0, inDisc: 0, inValue: 0, outValue: 0, tax: 0, docs: new Set() }).get(k)!;
+    const x = by.get(k) ?? by.set(k, { key: k, sku: r.l.sku, name: r.l.name, baseUnit: r.baseUnit, ordered: 0, inQty: 0, outQty: 0, giftQty: 0, inGross: 0, inDisc: 0, inValue: 0, outValue: 0, tax: 0, docs: new Set(), cho: new Set() }).get(k)!;
     x.docs.add(r.doc.id);
+    if (r.doc.status !== 'approved' && r.dir !== 'order') x.cho.add(r.doc.id);
     if (r.dir === 'order') { x.ordered += r.base; continue; }
     if (r.dir === 'in') { x.inQty += r.base; x.inGross += r.grossEx; x.inDisc += r.disc; x.inValue += r.l.beforeTax; x.tax += r.l.tax; if (r.l.lineType !== 'buy') x.giftQty += r.base; }
     else { x.outQty += r.base; x.outValue += r.l.beforeTax; x.tax -= r.l.tax; }
   }
-  const sums = [...by.values()].sort((a, b) => a.sku.localeCompare(b.sku));
+  // [2026-11-25 Nguyễn Văn Thủy] #53 tab Test: mã chỉ có trên đơn đặt (chưa nhập / trả) không hiện dòng trống ở Tổng hợp mua hàng (đóng góp)
+  const sums = [...by.values()].filter((r) => r.inQty || r.outQty || r.inValue || r.outValue).sort((a, b) => a.sku.localeCompare(b.sku));
   const q = (n: number) => Math.round(n * 10000) / 10000;
   // Cột chuẩn của Tổng hợp mua hàng theo mặt hàng đứng trước; cột thêm (nhóm hàng, SL đặt, hàng tặng, thuế…) ẩn sẵn, bật ở nút Cột.
   const columns: Column<SkuRow>[] = [
@@ -129,6 +132,7 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
     { key: 'outQty', header: 'Số lượng trả lại', type: 'qty', width: 110, sum: true, value: (r) => q(r.outQty), title: 'Trả NCC + xuất quà + đổi hàng (trả đi)' },
     { key: 'outValue', header: 'Giá trị trả lại', type: 'money', width: 130, sum: true, value: (r) => Math.round(r.outValue), title: 'Tiền hàng trả lại (chưa thuế)' },
     { key: 'netValue', header: 'Tổng giá trị mua', type: 'money', width: 150, sum: true, bold: true, value: (r) => Math.round(r.inValue - r.outValue), title: '= Giá trị mua − Chiết khấu − Giá trị trả lại (chưa thuế)' },
+    { key: 'cho', header: 'Phiếu chưa duyệt', type: 'number', width: 100, title: 'Số phiếu nhập / trả có mã này còn chưa duyệt (dòng chữ cam) — số liệu đã cộng, duyệt xong mới ghi sổ', value: (r) => r.cho.size || '' },
     { key: 'groupPath', header: 'Nhóm hàng (đầy đủ)', width: 260, hidden: true, title: 'Đường dẫn nhóm hàng đầy đủ theo danh mục', value: (r) => info(r.sku)?.groupPath ?? '' },
     { key: 'industry', header: 'Ngành hàng', width: 130, hidden: true, value: (r) => info(r.sku)?.industry ?? '' },
     { key: 'brand', header: 'Nhãn hàng', width: 130, hidden: true, value: (r) => info(r.sku)?.brand ?? '' },
@@ -141,5 +145,5 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
     { key: 'totalPay', header: 'Tổng thanh toán (gồm thuế)', type: 'money', width: 150, sum: true, hidden: true, value: (r) => Math.round(r.inValue - r.outValue + r.tax) },
     { key: 'avg', header: 'Giá mua bình quân', type: 'price', width: 140, hidden: true, value: (r) => (r.inQty - r.giftQty > 0 ? Math.round((r.inValue / (r.inQty - r.giftQty)) * 10000) / 10000 : 0), title: 'Tiền hàng nhập ÷ SL nhập không kể hàng tặng (chưa thuế, sau CK), theo ĐVT nhỏ nhất' },
   ];
-  return <DataGrid storageKey="mh-chung-tu-ma-v2" exportName="tong-hop-mua-hang-theo-mat-hang" rows={sums} rowKey={(r) => r.key} columns={columns} footerLabel="Tổng cộng" emptyText="Không có mã hàng nào trong các phiếu đang lọc" />;
+  return <DataGrid storageKey="mh-chung-tu-ma-v3" exportName="tong-hop-mua-hang-theo-mat-hang" rows={sums} rowKey={(r) => r.key} columns={columns} footerLabel="Tổng cộng" rowClassName={(r) => (r.cho.size ? dongChungTu('pending_approval') : '')} emptyText="Không có mã hàng nào trong các phiếu đang lọc" />;
 }

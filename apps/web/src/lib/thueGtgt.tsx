@@ -77,7 +77,8 @@ export function ChonThue({ value, onChange, ngay, trong, disabled, className = '
       {dung.map((t) => {
         const het = !conHieuLuc(t, ngay);
         const hl = ghiChuHieuLuc(t);
-        return <option key={t.code} value={t.code} disabled={het && t.code !== value}>{`${nhanLoai(t)}${hl ? ` (${hl})` : ''}${het ? ' — hết hiệu lực' : ''}`}</option>;
+        // [2026-11-25 Nguyễn Văn Thủy] #57 tab Test: ô thuế suất chỉ hiện số thuế suất, hiệu lực để ở chú thích rê chuột (đóng góp)
+        return <option key={t.code} value={t.code} disabled={het && t.code !== value} title={[hl && `Hiệu lực ${hl}`, het && 'hết hiệu lực ở ngày chứng từ'].filter(Boolean).join(' — ') || undefined}>{nhanLoai(t)}</option>;
       })}
     </select>
   );
