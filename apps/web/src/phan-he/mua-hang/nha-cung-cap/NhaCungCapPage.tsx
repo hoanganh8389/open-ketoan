@@ -22,7 +22,8 @@ import '../mua-hang.css';
 export function NhaCungCapPage() {
   const [adding, setAdding] = useState(false);
   const navigate = useNavigate();
-  const [scope, setScope] = useState<'active' | 'all'>('active');
+  // [2026-11-25 Nguyễn Văn Thủy] #7 tab Test: mặc định mọi NCC như Danh mục nhà cung cấp (DM13); 'Đang giao dịch' là lọc thêm (đóng góp)
+  const [scope, setScope] = useState<'active' | 'all'>('all');
   const [pick, setPick] = useState('');
   const [group, setGroup] = useState('');
   // [2026-11-13 Nguyễn Văn Thủy] gộp theo đơn vị mẹ: mỗi nhóm cha – con một dòng cộng, các đơn vị bên dưới (đóng góp)
@@ -86,8 +87,8 @@ export function NhaCungCapPage() {
       <div className="card">
         <div className="row" style={{ gap: 8, padding: '8px 12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="tabs" style={{ margin: 0 }}>
-            <button className={`tab ${scope === 'active' ? 'active' : ''}`} onClick={() => setScope('active')}>Đang giao dịch</button>
-            <button className={`tab ${scope === 'all' ? 'active' : ''}`} onClick={() => setScope('all')}>Mọi nhà cung cấp</button>
+            <button className={`tab ${scope === 'all' ? 'active' : ''}`} onClick={() => setScope('all')} title="Mọi nhà cung cấp của Danh mục nhà cung cấp (DM13)">Mọi nhà cung cấp</button>
+            <button className={`tab ${scope === 'active' ? 'active' : ''}`} onClick={() => setScope('active')} title="Chỉ NCC đã có phiếu mua, công nợ hoặc chính sách">Đang giao dịch</button>
           </div>
           <div style={{ width: 220 }}>
             <ListPicker className="input" items={[{ code: '-', name: '(Chưa có nhóm)' }, ...groupList.filter((g) => g.isActive && (g.kind === 'any' || g.kind === 'supplier')).map((g) => ({ code: g.code, name: g.name }))]}
