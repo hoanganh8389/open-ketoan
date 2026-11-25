@@ -1,6 +1,7 @@
 # Sổ tay điều tra lỗi cho nhà phát triển
 <!-- [2026-11-01 07:47 PM Johnny Chu - Chu Hoàng Anh] PHASE-019 — Bàn điều tra cho nhà phát triển: sổ tay điều tra lỗi theo tình huống + thiết kế UI/UX dev trên Prometheus, Loki, Tempo, Grafana, Alertmanager -->
 
+> **Bản dev, cho kế toán + người quản trị:** [TRUY-LOI-BAN-DEV](TRUY-LOI-BAN-DEV.md) — kế toán sửa tại chỗ, gửi mã tra cứu; kiểm / bật bộ truy lỗi bằng scripts/kiem-giam-sat.sh. <!-- [2026-11-25 09:08 PM Johnny Chu - Chu Hoàng Anh] STD-12 -->
 > **Dành cho:** người đóng góp viết phân hệ / giao diện / add-in (vd Nguyễn Văn Thủy) và Nhóm Lõi khi trực.
 > **Đọc trước:** [OBSERVABILITY.md](OBSERVABILITY.md) (bốn nguồn, hai khoá nối) · **Cảnh báo:** [RUNBOOK-CANH-BAO.md](RUNBOOK-CANH-BAO.md) · **Bộ giám sát:** [`infrastructure/monitoring/`](../../infrastructure/monitoring/README.md) · **Đưa vào app:** [PHASE-019](../phases/PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/README.md)
 > © 2026 Johnny Chu (Chu Hoàng Anh) / BizCity — kiến trúc Bizcity Core Framework.
