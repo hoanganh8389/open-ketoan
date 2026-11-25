@@ -1569,7 +1569,23 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   </table>
                 </div>
               </fieldset>
-              {isGoods && <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}><div style={{ minWidth: 340 }}>{tongTien}</div></div>}
+              {/* [2026-11-25 Nguyễn Văn Thủy] bỏ khung Tổng tiền dưới bảng (dòng Cộng của bảng đã có tiền hàng, CK, thuế; Phải trả NCC ở góc trên):
+                  chỉ một dòng mảnh những gì bảng không có — CK trên đơn, hạn thanh toán, CKTT, ứng trước, số phải trả; rê chuột xem bảng tính đủ (đóng góp) */}
+              {isGoods && v.lines.some((l) => l.sku) && (() => {
+                const tach = isGiftDoc ? [] : [
+                  calc.orderDiscount ? `CK trên đơn − ${vnd(calc.orderDiscount)}` : '',
+                  calc.dueDate ? `Hạn thanh toán ${dmy(calc.dueDate)}` : '',
+                  calc.ckttExpected ? `CKTT nếu trả đúng hạn ${vnd(calc.ckttExpected)}` : '',
+                  (a?.prepayment ?? 0) > 0 ? `Đã ứng trước − ${vnd(a!.prepayment)}` : '',
+                ].filter(Boolean);
+                const chiTiet = isGiftDoc ? '' : [`Tiền hàng ${vnd(calc.gross)}`, `Chiết khấu dòng − ${vnd(calc.lineDiscount)}`, `Chiết khấu trên đơn − ${vnd(calc.orderDiscount)}`, `Tiền trước thuế ${vnd(calc.beforeTax)}`, `Thuế GTGT ${vnd(calc.tax)}`, `Phải trả ${vnd(calc.payable)}`].join(' · ');
+                return (
+                  <div className="muted" style={{ display: 'flex', justifyContent: 'flex-end', gap: 14, flexWrap: 'wrap', fontSize: 12, marginTop: 4, padding: '0 4px' }} title={chiTiet}>
+                    {tach.map((t) => <span key={t}>{t}</span>)}
+                    <span style={{ color: 'var(--text)' }}>{isGiftDoc ? 'Giá trị quà' : v.kind === 'exchange' ? 'Chênh lệch' : v.kind === 'return' ? 'Giảm công nợ' : 'Phải trả NCC'} <b style={{ fontSize: 13 }}>{vnd(isGiftDoc ? v.lines.reduce((t, l) => t + l.qty * l.price, 0) : calc.payable)}</b></span>
+                  </div>
+                );
+              })()}
             </>)}
 
             {tab === 'thanh-toan' && (() => {
