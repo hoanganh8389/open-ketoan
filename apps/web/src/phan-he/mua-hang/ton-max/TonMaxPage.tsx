@@ -18,12 +18,11 @@ import { errorText } from '@/lib/api';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { ChonMatHang } from '../thanh-phan/ChonMatHang';
 import { num, qtyFmt, stockApi, useHierarchy, type MaxBoardRow } from './api';
-import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, KhoiSo, isOff } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
+import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, isOff } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { useThaoTac } from '@/lib/manHinh';
 
 type Draft = { max?: number; min?: number; mode?: TransferMode };
-type Filter = '' | 'below' | 'nomax' | 'diff' | 'set';
 const k = (r: { branchCode: string; warehouseCode: string; sku: string }) => `${r.branchCode}|${r.warehouseCode}|${r.sku}`;
 
 export function TonMaxPage() {
@@ -38,7 +37,6 @@ export function TonMaxPage() {
   const [sku, setSku] = useState(params.get('sku') ?? '');
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [extra, setExtra] = useState<MaxBoardRow[]>([]);
-  const [filter, setFilter] = useState<Filter>('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [imp, setImp] = useState(false);
@@ -59,15 +57,8 @@ export function TonMaxPage() {
   const ln = useLocNhomHang(nhom);
   const rows = useMemo(() => {
     const base = [...(q.data?.rows ?? []), ...extra.filter((x) => !(q.data?.rows ?? []).some((r) => k(r) === k(x)))];
-    return ln.loc(base).filter((r) => {
-      const d = drafts[k(r)], max = d?.max ?? r.max;
-      if (filter === 'below') return max > 0 && r.ton < max;
-      if (filter === 'nomax') return !max && (r.avgPerDay > 0 || (r.shopMaxSum ?? 0) > 0);
-      if (filter === 'diff') return r.suggested > 0 && Math.abs(max - r.suggested) / r.suggested > 0.3;
-      if (filter === 'set') return max > 0;
-      return true;
-    });
-  }, [q.data, extra, drafts, filter, ln]);
+    return ln.loc(base);
+  }, [q.data, extra, ln]);
   const all = q.data?.rows ?? [];
   const dirty = Object.keys(drafts).length;
   const setD = (r: MaxBoardRow, d: Draft) => setDrafts((x) => ({ ...x, [k(r)]: { ...x[k(r)], ...d } }));
@@ -109,13 +100,14 @@ export function TonMaxPage() {
     { key: 'baseUnit', header: 'ĐVT', width: 60 },
     { key: 'pack', header: 'Quy cách', type: 'qty', width: 70, render: (r) => (r.pack ? <span title={`1 ${r.packUnit} = ${r.pack} ${r.baseUnit}`}>{r.pack} / {r.packUnit}</span> : '') },
     { key: 'ton', header: 'Tồn', type: 'qty', width: 80, className: 'tm-stock', showZero: true, sum: true },
-    ...(isKho ? [{ key: 'shopMaxSum', header: 'Tổng max shop', type: 'qty' as const, width: 100, sum: true, className: 'tm-ref' }] : [
+    // [2026-11-25 kiennt] NT-MH-007 — đổi tên cột cho rõ: "Tổng max các shop" (chỉ xem, cộng max của shop con) / "Max của kho" (ô khai của kho đang xem) (đóng góp)
+    ...(isKho ? [{ key: 'shopMaxSum', header: 'Tổng max các shop', type: 'qty' as const, width: 120, sum: true, className: 'tm-ref', title: 'Cộng max của mọi shop con (chỉ để xem — sửa ở từng shop). Gợi ý max kho = số này + % dự phòng' }] : [
       { key: 'avgPerDay', header: 'Bán / ngày', type: 'qty' as const, width: 80, title: 'Bán trung bình mỗi ngày trong số ngày đo', render: (r: MaxBoardRow) => <span title={`Đo trong ${r.windowDays} ngày gần nhất`}>{qtyFmt(r.avgPerDay)}</span> },
     ]),
     { key: 'suggested', header: 'Gợi ý max', type: 'qty', width: 90, title: 'Gợi ý max', render: (r) => (r.suggested ? <button className="tm-opt" title={isKho || r.shopMaxSum !== undefined ? `Tổng max shop ${qtyFmt(r.shopMaxSum)} + ${q.data?.formula.warehouseBufferPct ?? 10}% dự phòng — bấm để dùng` : `${qtyFmt(r.avgPerDay)} / ngày × ${r.coverDays} ngày — bấm để dùng`} onClick={() => setD(r, { max: r.suggested })}><span className="tm-sug">{qtyFmt(r.suggested)}</span></button> : '') },
-    { key: 'max', header: 'Tồn max', type: 'qty', width: 100, value: (r) => val(r, 'max'), sum: true, className: 'tm-max',
+    { key: 'max', header: isKho ? 'Max của kho' : mode === 'sku' ? 'Max' : 'Max của shop', title: isKho ? 'Max của chính kho đang xem (khai ở đây) — dùng cho phân tích đặt hàng' : 'Max của shop — dùng cho chuyển hàng xuống shop', type: 'qty', width: 110, value: (r) => val(r, 'max'), sum: true, className: 'tm-max',
       render: (r) => <input className={`tm-input${drafts[k(r)]?.max !== undefined ? ' dirty' : ''}`} value={val(r, 'max') || ''} placeholder="0" onChange={(e) => setD(r, { max: num(e.target.value) })} /> },
-    { key: 'min', header: 'Tồn min', type: 'qty', width: 90, value: (r) => val(r, 'min'), hidden: !isKho,
+    { key: 'min', header: 'Min của kho', type: 'qty', width: 100, value: (r) => val(r, 'min'), hidden: !isKho,
       render: (r) => <input className={`tm-input${drafts[k(r)]?.min !== undefined ? ' dirty' : ''}`} value={val(r, 'min') || ''} placeholder="0" onChange={(e) => setD(r, { min: num(e.target.value) })} /> },
     { key: 'gap', header: 'Thiếu so max', type: 'qty', width: 90, value: (r) => Math.max(0, val(r, 'max') - r.ton), render: (r) => { const g = val(r, 'max') - r.ton; return g > 0 ? <span className="tm-low">{qtyFmt(g)}</span> : g < 0 ? <span className="muted">dư {qtyFmt(-g)}</span> : ''; } },
     { key: 'transferMode', header: 'Chuyển xuống shop', width: 130, value: (r) => drafts[k(r)]?.mode ?? r.transferMode, hidden: isKho,
@@ -123,10 +115,6 @@ export function TonMaxPage() {
     { key: 'cfg', header: '', width: 40, noFilter: true, noSort: true, render: (r) => <button className="btn btn-xs" title="Cài riêng mã: số ngày đo bán, số ngày đủ hàng" onClick={() => setCfgSku(r)}><Settings2 size={13} /></button> },
   ];
 
-  const stats = {
-    all: all.length, set: all.filter((r) => val(r, 'max') > 0).length, below: all.filter((r) => val(r, 'max') > 0 && r.ton < val(r, 'max')).length,
-    nomax: all.filter((r) => !val(r, 'max') && (r.avgPerDay > 0 || (r.shopMaxSum ?? 0) > 0)).length, diff: all.filter((r) => r.suggested > 0 && Math.abs(val(r, 'max') - r.suggested) / r.suggested > 0.3).length,
-  };
   const curWh = q.data?.warehouseCode || wh;
   const targetName = mode === 'sku' ? `mã ${sku}` : `kho ${curWh} của ${target ? targetNode?.name ?? target : parentNode?.name ?? parent}${targetNode && isOff(targetNode) ? ' (ngừng)' : ''}`;
 
@@ -159,13 +147,7 @@ export function TonMaxPage() {
           {dirty > 0 && <button className="btn btn-sm" onClick={() => { setDrafts({}); setExtra([]); }}>Bỏ ({dirty})</button>}
           {tt.sua && <button className="btn btn-primary" disabled={!dirty || busy} onClick={() => void save()}>Lưu{dirty ? ` (${dirty})` : ''}</button>}
         </div>
-        <div className="tm-stats">
-          <KhoiSo label="Số mã" value={stats.all} active={filter === ''} onClick={() => setFilter('')} />
-          <KhoiSo label="Đã có max" value={stats.set} tone="green" active={filter === 'set'} onClick={() => setFilter('set')} />
-          <KhoiSo label="Đang dưới max" value={stats.below} tone="orange" active={filter === 'below'} onClick={() => setFilter('below')} hint="Tồn nhỏ hơn max — sẽ được chia thêm / đặt thêm" />
-          <KhoiSo label="Có bán, chưa có max" value={stats.nomax} tone="red" active={filter === 'nomax'} onClick={() => setFilter('nomax')} hint="Nên khai max (bấm Gợi ý cho mã chưa có max)" />
-          <KhoiSo label="Max lệch gợi ý > 30%" value={stats.diff} tone="purple" active={filter === 'diff'} onClick={() => setFilter('diff')} />
-        </div>
+        {/* [2026-11-25 kiennt] NT-MH-007 — bỏ dải ô đếm Số mã / Đã có max / Đang dưới max / Có bán, chưa có max / Max lệch gợi ý; lọc ở các cột của lưới (đóng góp) */}
         {q.data && <div className="muted" style={{ padding: '0 12px 6px', fontSize: 12 }}>
           Đang xem <b>{targetName}</b> · bán / ngày đo trong <b>{q.data.formula.windowDays}</b> ngày, max shop gợi ý = bán / ngày × <b>{q.data.formula.coverDays}</b> ngày; max kho gợi ý = tổng max shop + <b>{q.data.formula.warehouseBufferPct}%</b> (đổi ở <Link to="/mua-hang/cong-thuc">Công thức đặt hàng</Link>; riêng mã: nút ⚙ cuối dòng).
         </div>}
