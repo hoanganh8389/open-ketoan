@@ -1,6 +1,6 @@
 # Nợ chuẩn nền — Open Kế Toán (Bizcity Core)
 
-<!-- [2026-11-25 06:29 PM Johnny Chu - Chu Hoàng Anh] STD-5 — sinh bởi bizcity-platform tools/no-chuan.mjs (R-STD-9). Sửa nợ ở repo này; thêm / bớt mục "đã biết" thì sửa sổ docs/standard/no-chuan.json bên bizcity-platform rồi sinh lại. -->
+<!-- [2026-11-25 08:49 PM Johnny Chu - Chu Hoàng Anh] STD-5 — sinh bởi bizcity-platform tools/no-chuan.mjs (R-STD-9). Sửa nợ ở repo này; thêm / bớt mục "đã biết" thì sửa sổ docs/standard/no-chuan.json bên bizcity-platform rồi sinh lại. -->
 
 > Ngày đo: 2026-11-25 · Repo: `open-ketoan` · Chuẩn: [bản đồ chuẩn nền `bizcity_standard_map@1`](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/README.md) · Kiến trúc: [ARCHITECTURE](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/ARCHITECTURE.md)
 
@@ -14,7 +14,7 @@ Tệp này liệt kê chỗ repo **chưa theo khuôn chung** của hệ. Dev c�
 4. Đổi thứ dùng chung (hợp đồng, quyền, migration) có chữ chốt trước, có bằng chứng chạy máy trong PR.
 5. Mọi ứng dụng 0 đồng; chỉ 1API của Zalo Hub và dịch vụ theo liên hệ tính phí.
 
-## Nợ do bộ kiểm đo (66)
+## Nợ do bộ kiểm đo (68)
 
 | Mã | Mức | Ở đâu | Việc |
 |---|---|---|---|
@@ -61,6 +61,8 @@ Tệp này liệt kê chỗ repo **chưa theo khuôn chung** của hệ. Dev c�
 | SC-DLV-5 | cảnh báo | `docs/nghiem-thu/ban-hang/NT-BH-036-phieu-ban-cung-mau-phieu-mua.md` | README nghiệm thu chưa liệt kê NT-BH-036 |
 | SC-DLV-5 | cảnh báo | `docs/nghiem-thu/ban-hang/NT-BH-037-mau-phieu-mua-cho-module-ban.md` | README nghiệm thu chưa liệt kê NT-BH-037 |
 | SC-DLV-5 | cảnh báo | `docs/nghiem-thu/ban-hang/NT-BH-038-qua-tra-theo-khuyen-mai-core.md` | README nghiệm thu chưa liệt kê NT-BH-038 |
+| SC-DLV-5 | cảnh báo | `docs/nghiem-thu/ban-hang/NT-BH-039-tich-diem-khai-o-ke-toan.md` | README nghiệm thu chưa liệt kê NT-BH-039 |
+| SC-DLV-5 | cảnh báo | `docs/nghiem-thu/ban-hang/NT-BH-040-khuon-khuyen-mai-v2.md` | README nghiệm thu chưa liệt kê NT-BH-040 |
 | SC-DLV-3 | cảnh báo | `docs/nghiem-thu/danh-muc/NT-DM-001-bo-ten-tieng-anh-tai-khoan.md` | Chờ nghiệm thu nhưng §7 Kết quả chạy chưa ghi commit + tệp test |
 | SC-DLV-3 | cảnh báo | `docs/nghiem-thu/danh-muc/NT-DM-004-nhap-excel-don-vi-tinh.md` | Chờ nghiệm thu nhưng §7 Kết quả chạy chưa ghi commit + tệp test |
 | SC-DLV-4 | cảnh báo | `docs/nghiem-thu/danh-muc/NT-DM-004-nhap-excel-don-vi-tinh.md` | không test nào nhắc mã NT-DM-004 (describe phải mở đầu bằng mã phiếu) |

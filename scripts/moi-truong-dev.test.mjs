@@ -20,6 +20,12 @@ test('nhánh sửa bớt đỏ hoặc giữ nguyên thì không có đỏ mới'
   assert.deepEqual(newReds(main, sc(r('SC-X-1', 'debt', ['SC-X-1|a|b']))), []);
 });
 
+test('kiểm là nợ cũ (debt) trên main, nhánh thêm một phát hiện → chỉ phát hiện đó bị chặn', () => {
+  const main = sc(r('SC-UI-2', 'debt', ['SC-UI-2|a.tsx|a.tsx', 'SC-UI-2|b.tsx|b.tsx']));
+  const head = sc(r('SC-UI-2', 'fail', ['SC-UI-2|a.tsx|a.tsx', 'SC-UI-2|b.tsx|b.tsx', 'SC-UI-2|moi.tsx|moi.tsx']));
+  assert.deepEqual(newReds(main, head).map((x) => x.findings.map((f) => f.fp)), [['SC-UI-2|moi.tsx|moi.tsx']]);
+});
+
 test('kiểm lỗi khi chạy ở nhánh mà main không lỗi thì chặn', () => {
   assert.equal(newReds(sc(), sc({ id: 'SC-Y-1', title: 'y', status: 'error', findings: [] })).length, 1);
 });

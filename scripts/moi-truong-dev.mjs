@@ -44,14 +44,21 @@ export function redPrints(selfcheck) {
   return out;
 }
 
-/** Kiểm đỏ MỚI của nhánh so với main: kiểm đỏ ở nhánh mà main không đỏ, hoặc phát hiện có fp chưa có trên main. */
+/** Dấu vân tay của MỌI phát hiện (mọi trạng thái, kể cả nợ cũ ở baseline) — để không tính lại những gì main đã có. */
+const fpOf = (id, f) => f.fp ?? `${id}|${f.file ?? ''}|${f.key ?? f.message ?? ''}`;
+export function allPrints(selfcheck) {
+  const s = new Set();
+  for (const r of selfcheck?.results ?? []) for (const f of r.findings ?? []) s.add(fpOf(r.id, f));
+  return s;
+}
+
+/** Kiểm đỏ MỚI của nhánh so với main: phát hiện thuộc kiểm đỏ ở nhánh mà main chưa có (ở bất kỳ trạng thái nào), hoặc kiểm lỗi khi chạy. */
 export function newReds(mainSc, headSc) {
-  const main = redPrints(mainSc), head = redPrints(headSc);
+  const known = allPrints(mainSc), mainRed = redPrints(mainSc);
   const out = [];
-  for (const [id, h] of head) {
-    const m = main.get(id);
-    const fresh = h.findings.filter((f) => !m?.fps.has(f.fp ?? `${id}|${f.file ?? ''}|${f.key ?? f.message ?? ''}`));
-    if (!m && !h.findings.length) out.push({ id, title: h.title, findings: [{ message: 'kiểm lỗi khi chạy' }] });
+  for (const [id, h] of redPrints(headSc)) {
+    const fresh = h.findings.filter((f) => !known.has(fpOf(id, f)));
+    if (!h.findings.length && !mainRed.has(id)) out.push({ id, title: h.title, findings: [{ message: 'kiểm lỗi khi chạy' }] });
     else if (fresh.length) out.push({ id, title: h.title, findings: fresh });
   }
   return out;
@@ -183,7 +190,7 @@ function main() {
   if (args.includes('--truoc-khi-day')) {
     console.log('== trước khi đẩy (STD-12) ==');
     const k = run(process.execPath, ['scripts/nhan-viec.mjs', 'kiem'], { timeout: 120_000 });
-    console.log(k.out.split('\n').filter((l) => /✔|✘|▲/.test(l)).join('\n'));
+    console.log(k.out.split('\n').filter((l) => /✔|✘|▲/.test(l)).map((l) => (l.length > 160 ? `${l.slice(0, 159)}…` : l)).join('\n'));
     const cmp = compareWithMain();
     if (cmp.error) console.log(`✘ ${cmp.error}`);
     else {
