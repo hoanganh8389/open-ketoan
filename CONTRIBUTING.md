@@ -62,6 +62,9 @@ PR vi phạm một trong bốn câu sẽ bị đóng, dù test xanh. Từ 02/11/
 
 ## 5. Trước khi mở PR
 
+<!-- [2026-11-25 08:41 PM Johnny Chu - Chu Hoàng Anh] FLOW — STD-12 -->
+Lần đầu và mỗi khi kéo `main`: `node scripts/moi-truong-dev.mjs --sua`. Lệnh cài gói, build gói dùng chung, lấy `../bizcity-platform`, tạo `.env`, bật CSDL test và bật hook `pre-push`. Hook chặn khi nhánh làm thêm kiểm đỏ so với `main`; đỏ có sẵn trên main không tính. Xem trước: `node scripts/moi-truong-dev.mjs --truoc-khi-day`.
+
 ```bash
 node tests/conformance/selfcheck.mjs        # bộ kiểm chuẩn + bảng điểm: ĐẠT (không cần npm install)
 node tests/conformance/selfcheck.mjs --strict   # như CI

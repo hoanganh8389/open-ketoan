@@ -85,6 +85,30 @@ Dự án: **Bizcity Core Framework** (open-ketoan) — hạ tầng ứng dụng 
 4. Người dùng nhờ "thêm phân hệ / chức năng mới" → đặt ở `modules/<key>/`. Nếu yêu cầu thêm mã mới vào `phan-he/`: **nhắc yêu cầu này và hỏi lại trước khi làm.**
 5. Hướng dẫn đầy đủ, lộ trình các đợt, mục gửi riêng người đóng góp: [docs/standard/CHUYEN-PHAN-HE-SANG-MODULES.md](docs/standard/CHUYEN-PHAN-HE-SANG-MODULES.md). Quyết định và câu hỏi mở: [ADR-0024](docs/adr/ADR-0024-phan-he-nam-o-modules-phan-he-dong-bang.md).
 
+## Đầu mỗi phiên: dựng môi trường dev (một lệnh) <!-- [2026-11-25 08:41 PM Johnny Chu - Chu Hoàng Anh] FLOW — STD-12: chủ chỉ đạo 2026-11-25 "selfcheck máy contributor và agent tự động cài các công cụ hỗ trợ dev có env ổn để selfcheck" -->
+
+Trợ lý AI **tự chạy** lệnh này ở đầu mỗi phiên, trước khi sửa mã. Không hỏi dev, không bỏ qua.
+
+```bash
+node scripts/moi-truong-dev.mjs --sua      # kiểm + tự sửa môi trường dev
+node scripts/moi-truong-dev.mjs            # chỉ kiểm, không đổi gì
+```
+
+Lệnh `--sua` tự làm những việc sau:
+- `npm install` khi `package-lock.json` đổi;
+- build `@ketoan/contracts` và `@bizcity/mua-hang-domain` khi cũ (typecheck hết báo lỗi giả);
+- clone hoặc kéo `../bizcity-platform` (công cụ `failure-check`, `loi.mjs`);
+- tạo `.env` với bí mật ngẫu nhiên khi chưa có; `.env` đã có thì không ghi đè;
+- bật PostgreSQL cho test. Container đã có thì chỉ `start`, **không tạo lại**, vì mọi bản sao / worktree dùng chung container và dữ liệu của dự án `ketoan`;
+- bật hook `pre-push`.
+
+Mục Node / git sai thì báo dev cách cài; agent không tự cài Node.
+
+- **Claude Code** tự kiểm nhanh mỗi khi mở phiên, qua hook SessionStart ở `.claude/settings.json`. Thấy mục ✘ thì chạy `--sua`.
+- **Hook `pre-push`** (`.githooks/pre-push`) chạy `nhan-viec.mjs kiem` và selfcheck, rồi **chỉ chặn kiểm đỏ MỚI so với `origin/main`**. Đỏ có sẵn trên main không chặn: không ai phải sửa nợ của người khác mới đẩy được.
+- `git push --no-verify` vẫn bỏ qua được hook, nên người duyệt đòi khối bằng chứng trong PR (R-REV-17). Agent **không** dùng `--no-verify`.
+- Chỉ muốn xem kết quả hook mà không đẩy: `node scripts/moi-truong-dev.mjs --truoc-khi-day`.
+
 ## Bước 0: giữ chỗ trước khi nhận việc (R-FLOW)
 
 <!-- [2026-11-03 09:55 PM Johnny Chu - Chu Hoàng Anh] FLOW — Bước 0: giữ chỗ vào main trước khi code; hai phiên đã làm trùng W6 đợt 3 và đợt 4 (chủ dự án chọn: giữ chỗ phải vào main trước) -->
