@@ -14,7 +14,7 @@
 Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có max / tồn / bán; mã khác phải bấm "Thêm mã" từng mã, không có nhập Excel. Thêm:
 
 - Nút **Nhập Excel** trên phiếu shop đăng ký max (sau khi chọn shop, phiếu chưa duyệt / chưa huỷ).
-- **Tải file mẫu** có sẵn **mọi mặt hàng đang dùng** của danh mục, mỗi mã một dòng. Shop chỉ cần điền cột **Max đề nghị**.
+- **Tải file mẫu** có sẵn các **mặt hàng đang dùng chưa có max ở shop đang chọn** (bổ sung 25/11, kiennt chốt), mỗi mã một dòng. Shop chỉ cần điền cột **Max đề nghị**. Mã đã có max nằm sẵn trên phiếu (sửa trên phiếu, hoặc tự thêm dòng mã đó vào tệp — vẫn nhận). Mọi mã đã có max → báo, không tải tệp rỗng.
 
 | Cột | Bắt buộc | Ghi chú |
 |---|---|---|
@@ -25,6 +25,7 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 
 - Nhập: mã đã có trên phiếu → thay Max đề nghị (và ghi chú nếu có); mã chưa có → thêm dòng. Mã không có trong danh mục / max không phải số → dòng đỏ, không đưa vào. Trùng mã trong tệp → lấy dòng sau.
 - Lưu / Gửi duyệt / Duyệt: như cũ (chỉ ghi các dòng đổi max so với hiện tại).
+- **Bổ sung (25/11):** danh sách phiếu MH17 **bỏ dải ô đếm** (Tất cả / Chờ duyệt / Nháp / Đã duyệt / Hàng mới chờ gắn mã). Lọc theo trạng thái bằng ô lọc cột **Trạng thái**; phiếu hàng mới chưa gắn mã xem ở cột **Chưa có mã**.
 - Khung nhập Excel dùng chung của Mua hàng nhận thêm tuỳ chọn **mẫu có sẵn dòng** và **dòng trống bỏ qua** — các màn khác không đổi.
 
 ## 2. Phạm vi
@@ -35,11 +36,12 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 
 | # | Thao tác | Mong đợi |
 |---|---|---|
-| 1 | MH17 → Phiếu shop đăng ký max → chọn shop → Nhập Excel → Tải file mẫu | Tệp có mọi mặt hàng đang dùng; mã shop đã có max / tồn / bán có số Tồn, Bán / ngày, Max hiện tại, Max gợi ý; Max đề nghị trống |
+| 1 | MH17 → Phiếu shop đăng ký max → chọn shop → Nhập Excel → Tải file mẫu | Tệp có các mặt hàng đang dùng chưa có max ở shop này (mã có tồn / bán kèm Tồn, Bán / ngày, Max gợi ý); mã đã có max không có trong tệp; Max đề nghị trống |
 | 2 | Điền Max đề nghị vài dòng, nhập lại | Chỉ các dòng đã điền vào phiếu; dòng trống không hiện đỏ |
 | 3 | Dòng mã không có trong danh mục / max "abc" | Dòng đỏ, ghi lý do, không đưa vào |
 | 4 | Lưu & duyệt | Max ghi đúng các mã đã điền (MH16 thấy) |
 | 5 | Phiếu hàng mới, các màn nhập Excel khác của Mua hàng | Không đổi |
+| 6 | Mở MH17 | Không còn dải ô đếm; lọc cột Trạng thái vẫn dùng được |
 
 ## 4. Kết quả chạy
 | | |
@@ -56,3 +58,5 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 | Ngày | Thay đổi |
 |---|---|
 | 25/11/2026 | Tạo và chốt theo yêu cầu |
+| 25/11/2026 | Tệp mẫu chỉ gồm mặt hàng chưa có max ở shop |
+| 25/11/2026 | Bỏ dải ô đếm trạng thái ở danh sách MH17 |

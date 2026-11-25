@@ -18,7 +18,7 @@ import { monthStart, today } from '../du-lieu';
 import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
-import { ChonChiNhanhCha, ChuaPhanCap, KhoiSo, HaiCachMax } from './chung';
+import { ChonChiNhanhCha, ChuaPhanCap, HaiCachMax } from './chung';
 import { useThaoTac } from '@/lib/manHinh';
 
 const TONE: Record<MaxRequestStatus, string> = { draft: 'info', submitted: 'warn', approved: 'ok', cancelled: 'bad' };
@@ -29,11 +29,10 @@ export function DangKyMaxPage() {
   const [parent, setParent] = useState('');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
-  const [status, setStatus] = useState('');
   const [open, setOpen] = useState<{ id?: string; kind: MaxRequestKind; branchCode?: string } | null>(null);
   const q = useQuery({ queryKey: ['ton-max', 'max-requests', parent, from, to], enabled: Boolean(parent), queryFn: () => stockApi.maxRequests({ from, to, branchCode: parent }) });
   const all = q.data ?? [];
-  const rows = all.filter((r) => !status || r.status === status || (status === 'unlinked' && r.unlinked > 0));
+  const rows = all;
   const cols: Column<MaxRequest>[] = [
     { key: 'code', header: 'Số phiếu', type: 'code', width: 120 },
     { key: 'createdAt', header: 'Ngày lập', width: 130, value: (r) => r.createdAt, render: (r) => new Date(r.createdAt).toLocaleString('vi-VN') },
@@ -61,13 +60,7 @@ export function DangKyMaxPage() {
           {tt.them && <button className="btn btn-sm" disabled={!parent} onClick={() => setOpen({ kind: 'new_item', branchCode: parent })}><Plus size={14} /> Phiếu hàng mới</button>}
           {tt.them && <button className="btn btn-primary" disabled={!parent} onClick={() => setOpen({ kind: 'existing' })}><Plus size={14} /> Phiếu shop đăng ký max</button>}
         </div>
-        <div className="tm-stats">
-          <KhoiSo label="Tất cả" value={all.length} active={!status} onClick={() => setStatus('')} />
-          <KhoiSo label="Chờ duyệt" value={all.filter((r) => r.status === 'submitted').length} tone="orange" active={status === 'submitted'} onClick={() => setStatus('submitted')} />
-          <KhoiSo label="Nháp" value={all.filter((r) => r.status === 'draft').length} tone="grey" active={status === 'draft'} onClick={() => setStatus('draft')} />
-          <KhoiSo label="Đã duyệt" value={all.filter((r) => r.status === 'approved').length} tone="green" active={status === 'approved'} onClick={() => setStatus('approved')} />
-          <KhoiSo label="Hàng mới chờ gắn mã" value={all.filter((r) => r.unlinked > 0).length} tone="red" active={status === 'unlinked'} onClick={() => setStatus('unlinked')} />
-        </div>
+        {/* [2026-11-25 kiennt] NT-MH-006 — bỏ dải ô đếm Tất cả / Chờ duyệt / Nháp / Đã duyệt / Hàng mới chờ gắn mã; lọc trạng thái ở cột Trạng thái của lưới (đóng góp) */}
         <ErrorBox error={q.error ? errorText(q.error) : null} />
         {q.isLoading ? <Loading /> : <DataGrid rows={rows} columns={cols} rowKey={(r) => r.id} storageKey="dang-ky-max" onRowClick={(r) => setOpen({ id: r.id, kind: r.kind })} exportName={`phieu-dang-ky-max-${parent}`} emptyText="Chưa có phiếu nào trong khoảng ngày này." />}
       </div>
@@ -226,10 +219,11 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
         ],
         spec: [['sku', ['ma hang', 'ma sp']], ['name', ['ten hang']], ['max', ['max de nghi', 'max']], ['note', ['ghi chu']]],
         mau: async () => {
-          // Mọi mặt hàng đang dùng; mã shop có max / tồn / bán kèm số của shop. Max đề nghị để trống cho shop điền.
+          // Mặt hàng đang dùng CHƯA CÓ MAX ở shop này (mã đã có max nằm sẵn trên phiếu); mã có tồn / bán kèm số của shop. Max đề nghị để trống cho shop điền.
           const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 });
           const sugBy = new Map((sug.data ?? []).map((x) => [x.sku, x]));
-          const skus = [...new Set([...(sug.data ?? []).map((x) => x.sku), ...ds.map((p) => p.sku)])].sort((a, b) => a.localeCompare(b));
+          const skus = [...new Set([...(sug.data ?? []).map((x) => x.sku), ...ds.map((p) => p.sku)])].filter((k) => !((sugBy.get(k)?.currentMax ?? 0) > 0)).sort((a, b) => a.localeCompare(b));
+          if (!skus.length) throw new Error('Mọi mặt hàng đang dùng đã có max ở shop này — sửa max ngay trên phiếu');
           const pBy = new Map(ds.map((p) => [p.sku, p]));
           return skus.map((k) => {
             const x = sugBy.get(k); const p = pBy.get(k);
@@ -257,7 +251,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
           });
         },
         head: ['Mã hàng', 'Tên hàng', 'Max hiện tại', 'Max đề nghị', 'Ghi chú'], cells: (x) => [x.sku, x.name, qtyFmt(x.currentMax), qtyFmt(x.proposedMax), x.note ?? ''],
-        note: 'Tải file mẫu: có sẵn mọi mặt hàng đang dùng, kèm tồn / bán / max của shop này. Chỉ điền cột Max đề nghị; dòng để trống được bỏ qua. Trùng mã trong tệp: lấy dòng sau.',
+        note: 'Tải file mẫu: có sẵn các mặt hàng đang dùng CHƯA CÓ MAX ở shop này (kèm tồn / bán nếu có); mã đã có max nằm sẵn trên phiếu, sửa ngay trên phiếu hoặc thêm dòng vào tệp. Chỉ điền cột Max đề nghị; dòng để trống được bỏ qua. Trùng mã trong tệp: lấy dòng sau.',
       }} />}
       {imp && <NhapExcelChung<string, MaxRequestItem> onClose={() => setImp(false)} onAdd={(l) => { setImp(false); setItems([...rows, ...l]); }} s={{
         title: 'Nhập hàng mới từ Excel (mỗi shop một cột max)', file: `mau-dang-ky-max-hang-moi-${parent}.xlsx`, keyField: 'name',
