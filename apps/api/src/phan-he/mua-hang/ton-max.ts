@@ -725,8 +725,17 @@ export async function saveMaxRequest(trx: Db, tenantId: string, actor: string, b
   const b = branches.find((x) => x.code === body.branchCode);
   if (!b) throw Errors.validation(`Không có chi nhánh ${body.branchCode}`);
   const parentCode = b.level === 'shop' ? b.parentCode ?? '' : b.level === 'branch' ? b.code : '';
-  if (body.kind === 'new_item' && b.level !== 'branch') throw Errors.validation('Phiếu hàng mới lập ở chi nhánh cha (bảng mặt hàng × shop)');
   const items: StoredItem[] = body.items.map((i) => ({ ...i }));
+  // [2026-11-25 07:30 PM Võ Hoàng] NT-BH-035 — phiếu hàng mới lập từ một shop (máy bán): tự chuyển lên chi nhánh cha, chỉ được ghi max của chính shop đó (đóng góp, sửa tệp của Nguyễn Văn Thủy)
+  if (body.kind === 'new_item' && b.level === 'shop') {
+    if (!parentCode) throw Errors.validation(`${b.code} chưa xếp vào chi nhánh cha (MH15) — chưa lập được phiếu hàng mới`);
+    const noMax = items.find((i) => i.maxByShop?.[b.code] === undefined);
+    if (noMax) throw Errors.validation(`Dòng "${noMax.name || noMax.key}" chưa nhập max của shop ${b.code}`);
+    const other = items.find((i) => Object.keys(i.maxByShop ?? {}).some((s) => s !== b.code));
+    if (other) throw Errors.validation(`Phiếu hàng mới lập từ shop ${b.code} chỉ ghi max của chính shop đó (dòng "${other.name || other.key}")`);
+    return saveMaxRequest(trx, tenantId, actor, { ...body, branchCode: parentCode, items }, id);
+  }
+  if (body.kind === 'new_item' && b.level !== 'branch') throw Errors.validation('Phiếu hàng mới lập ở chi nhánh cha (bảng mặt hàng × shop)');
   if (body.kind === 'existing') {
     const missing = items.filter((i) => !i.sku);
     if (missing.length) throw Errors.validation(`Phiếu mã có sẵn: dòng "${missing[0]!.name || missing[0]!.key}" chưa có mã — hàng chưa có mã thì lập phiếu hàng mới`);
