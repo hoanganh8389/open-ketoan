@@ -7,21 +7,32 @@ import { ChevronDown, ChevronRight, FileDown } from 'lucide-react';
 
 export interface GuideColumn { name: string; required?: boolean; aliases?: string; example: string | number; note: string }
 
-export function ExcelGuide({ columns, file, sheet = 'Mau', defaultOpen = true }: { columns: GuideColumn[]; file: string; sheet?: string; defaultOpen?: boolean }) {
+// [2026-11-25 kiennt] NT-MH-006 — tuỳ chọn `mau`: tệp mẫu có sẵn dòng dữ liệu (vd mọi mặt hàng) thay dòng ví dụ (đóng góp)
+export function ExcelGuide({ columns, file, sheet = 'Mau', defaultOpen = true, mau }: { columns: GuideColumn[]; file: string; sheet?: string; defaultOpen?: boolean; mau?: () => Promise<(string | number)[][]> }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [busy, setBusy] = useState(false);
   const template = async () => {
-    const XLSX = await import('@/lib/excelChuan').then((m) => m.xlsxChuan()); // [2026-11-11 Nguyễn Văn Thủy] xuất Excel định dạng chuẩn (đóng góp)
-    const ws = XLSX.utils.aoa_to_sheet([columns.map((c) => c.name), columns.map((c) => c.example)]);
-    ws['!cols'] = columns.map((c) => ({ wch: Math.max(12, c.name.length + 4) }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheet);
-    XLSX.writeFile(wb, file);
+    setBusy(true);
+    try {
+      const XLSX = await import('@/lib/excelChuan').then((m) => m.xlsxChuan()); // [2026-11-11 Nguyễn Văn Thủy] xuất Excel định dạng chuẩn (đóng góp)
+      const body = mau ? await mau() : [columns.map((c) => c.example)];
+      const ws = XLSX.utils.aoa_to_sheet([columns.map((c) => c.name), ...body]);
+      // [2026-11-25 kiennt] NT-MH-006 — dòng 1 luôn là tiêu đề cột (không để bộ định dạng tự đoán: tiêu đề "08001" trông như số,
+      // dòng hàng toàn chữ bị nhận nhầm là tiêu đề); độ rộng cột theo nội dung (tên hàng dài không bị xuống dòng) (đóng góp)
+      ws.headerRows = [0];
+      ws['!cols'] = columns.map((c, i) => ({ wch: Math.min(60, Math.max(12, c.name.length + 4, ...body.map((r) => String(r[i] ?? '').length + 2))) }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, sheet);
+      XLSX.writeFile(wb, file);
+    } catch (e) {
+      window.alert(`Không tạo được tệp mẫu: ${e instanceof Error ? e.message : String(e)}`);
+    } finally { setBusy(false); }
   };
   return (
     <div className="mh-guide-box">
       <div className="row" style={{ gap: 8, alignItems: 'center' }}>
         <button type="button" className="btn btn-xs btn-ghost" onClick={() => setOpen((x) => !x)}>{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />} Hướng dẫn các cột ({columns.filter((c) => c.required).length} bắt buộc, {columns.length} cột)</button>
-        <button type="button" className="btn btn-xs" onClick={() => void template()}><FileDown size={13} /> Tải file mẫu</button>
+        <button type="button" className="btn btn-xs" disabled={busy} onClick={() => void template()}><FileDown size={13} /> {busy ? 'Đang tạo…' : 'Tải file mẫu'}</button>
         <span className="muted" style={{ fontSize: 12 }}>Phần mềm nhận cột theo tên tiêu đề (không phân biệt hoa thường, có dấu / không dấu), thứ tự cột tuỳ ý, cột khác bỏ qua.</span>
       </div>
       {open && (
