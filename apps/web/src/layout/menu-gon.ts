@@ -80,7 +80,8 @@ export const GON_DEFS: GonDef[] = [
       // [2026-11-21 kiennt] NT-MH-005 — nhóm Khai báo của Mua hàng đổi tên thành Danh mục (đóng góp)
       // [2026-11-21 kiennt] NT-MH-005 — Cài đặt mua hàng (MH12) chuyển sang Phần riêng → Cấu hình (đóng góp)
       // [2026-11-21 kiennt] NT-MH-005 — MH01 bỏ khỏi menu, thay bằng Nhà cung cấp của Danh mục (DM13); hồ sơ NCC mở từ mã NCC (đóng góp)
-      { label: 'Danh mục', paths: ['/danh-muc/nha-cung-cap', '/mua-hang/hop-dong', '/mua-hang/chinh-sach'] },
+      // [2026-11-25 Nguyễn Văn Thủy] #26 tab Test: khai báo đối tượng / mặt hàng dùng đúng màn của Danh mục tổng (DM13, DM10) — một nơi khai, cùng dữ liệu (đóng góp)
+      { label: 'Danh mục', paths: ['/danh-muc/nha-cung-cap', '/danh-muc/mat-hang', '/mua-hang/hop-dong', '/mua-hang/chinh-sach'] },
     ],
     reports: [
       { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/so-kho', '/mua-hang/ton-kho', '/mua-hang/nhat-ky'] },

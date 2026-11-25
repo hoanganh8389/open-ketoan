@@ -38,6 +38,23 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 /** Số dư bù trừ một bên. */
 const side = (net: number) => ({ dn: net > 0 ? r2(net) : 0, dc: net < 0 ? r2(-net) : 0 });
 
+// [2026-11-25 Nguyễn Văn Thủy] #52 tab Test: tuỳ chọn hiển thị — chi tiết từng bút toán / cộng gộp theo TK đối ứng / cộng dồn theo chứng từ (hoá đơn) (đóng góp)
+/** Cách hiện dòng phát sinh: 'ct' từng dòng bút toán; 'tk' gộp các dòng cùng chứng từ + cùng TK đối ứng; 'hd' một dòng cho mỗi chứng từ. */
+export type CachGop = 'ct' | 'tk' | 'hd';
+export const CACH_GOP: [CachGop, string][] = [['ct', 'Chi tiết từng bút toán'], ['tk', 'Cộng gộp theo tài khoản đối ứng'], ['hd', 'Cộng dồn theo chứng từ (hoá đơn)']];
+function gopDong<T extends Line>(lines: T[], cach: CachGop): T[] {
+  if (cach === 'ct') return lines;
+  const m = new Map<string, T & { _du: Set<string> }>();
+  for (const l of lines) {
+    const k = [l.partnerCode ?? '', l.docNo, l.docDate || l.postingDate, l.accountCode, cach === 'tk' ? l.counterAccounts : ''].join('|');
+    const x = m.get(k);
+    if (!x) { m.set(k, { ...l, _du: new Set(String(l.counterAccounts ?? '').split(/[,;\s]+/).filter(Boolean)) }); continue; }
+    x.debit = r2(x.debit + l.debit); x.credit = r2(x.credit + l.credit);
+    for (const c of String(l.counterAccounts ?? '').split(/[,;\s]+/).filter(Boolean)) x._du.add(c);
+  }
+  return [...m.values()].map(({ _du, ...x }) => ({ ...x, counterAccounts: [..._du].join(', ') }) as unknown as T);
+}
+
 function buildRows(balances: Balance[], lines: (Line & { unit?: string })[], who: string, groupNote?: (p: string) => string): Row[] {
   const byP = new Map<string, Line[]>();
   for (const l of lines) if (l.partnerCode) byP.set(l.partnerCode, [...(byP.get(l.partnerCode) ?? []), l]);
@@ -104,6 +121,7 @@ export function ChiTietCongNoPage({ preset }: { preset: ChiTietCongNoPreset }) {
   const [f, setF] = useState({
     from: params.get('from') ?? periodFrom(), to: params.get('to') ?? defaultTo(), account: params.get('account') ?? preset.account,
     partnerCode: params.get('partnerCode') ?? '', branchCodes: params.get('branchCodes') ?? '', gop: params.get('gop') === '1',
+    cach: (params.get('cach') as CachGop | null) ?? 'ct',
   });
   const [entryId, setEntryId] = useState<string | null>(null);
   const set = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
@@ -121,7 +139,7 @@ export function ChiTietCongNoPage({ preset }: { preset: ChiTietCongNoPreset }) {
   const balances = gop ? [...rawBal.reduce((m, b) => { const k = rootOf(b.partnerCode); const x = m.get(k) ?? { partnerCode: k, partnerName: fam.info(k)?.name ?? b.partnerName, openingDebit: 0, openingCredit: 0 }; x.openingDebit += b.openingDebit; x.openingCredit += b.openingCredit; m.set(k, x); return m; }, new Map<string, Balance>()).values()] : rawBal;
   const lines = gop ? rawLines.map((l) => ({ ...l, unit: l.partnerCode ?? '', partnerCode: l.partnerCode ? rootOf(l.partnerCode) : null, partnerName: l.partnerCode && fam.info(l.partnerCode) ? fam.info(l.partnerCode)!.rootName : l.partnerName })) : rawLines;
   const note = (p: string) => { const n = gop && fam.info(p) ? fam.familyOf(p).length : 0; return n > 1 ? ` — cả nhóm: đơn vị mẹ và ${n - 1} chi nhánh` : ''; };
-  const rows = loading ? [] : buildRows(balances, lines, preset.who, note);
+  const rows = loading ? [] : buildRows(balances, gopDong(lines, f.cach), preset.who, note);
   const money = (r: Row, v: number) => (r.kind === 'group' ? null : v);
   // [2026-11-23 khanhtd] Tổng cộng tách khỏi bảng → dòng tổng dính đáy của DataGrid, cộng lại theo các dòng đang hiện khi lọc
   //   (trước: dòng 'total' nằm trong bảng, lọc theo TK là mất). Số dư = số dư đầu kỳ của các đối tượng đang hiện + phát sinh đang hiện.
@@ -158,6 +176,8 @@ export function ChiTietCongNoPage({ preset }: { preset: ChiTietCongNoPreset }) {
             <div className="field"><label>Tài khoản</label><AccountPicker className="input w-md" value={f.account} onChange={(account) => set({ account })} placeholder={preset.account} /></div>
             <div className="field"><label>{preset.who[0]!.toUpperCase() + preset.who.slice(1)}</label><PartnerPicker value={f.partnerCode} onChange={(partnerCode) => set({ partnerCode })} placeholder="Tất cả" /></div>
             {multi && <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} />}
+            <div className="field"><label title="Một chứng từ (hoá đơn) hạch toán nhiều tài khoản đối ứng, vd 1561 + 1331, thì hiện nhiều dòng; gộp lại cho dễ đối chiếu">Hiển thị</label>
+              <select className="select input" value={f.cach} onChange={(e) => set({ cach: e.target.value as CachGop })}>{CACH_GOP.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
             {fam.count > 0 && <label className="checkbox" title="Mỗi nhóm mẹ – chi nhánh là một khối: số dư đầu kỳ cả nhóm, từng dòng có cột Đơn vị, cuối khối Cộng nhóm. Chọn đơn vị mẹ ở ô trên thì lấy luôn các chi nhánh."><input type="checkbox" checked={f.gop} onChange={(e) => set({ gop: e.target.checked })} /> Xem theo nhóm mẹ – chi nhánh ({fam.count} nhóm)</label>}
           </>
         }

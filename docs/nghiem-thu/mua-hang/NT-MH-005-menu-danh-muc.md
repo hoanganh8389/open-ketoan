@@ -37,5 +37,5 @@ Nhóm **Khai báo** (Nhà cung cấp mua hàng MH01, Hợp đồng mua hàng MH2
 | 4 | Menu Mua hàng › Danh mục; menu Bán hàng | Không còn Cài đặt mua hàng (MH12) / mục Cài đặt (BH17) |
 | 5 | Menu Phần riêng | Có mục **Cấu hình**: Cài đặt mua hàng (MH12), Cài đặt bán hàng (BH17); mở đúng màn |
 | 6 | Rê chuột vào nhóm Mua hàng / Bán hàng | Mục **Báo cáo** chỉ gồm báo cáo của nhóm (Mua hàng: MH23, MH23A, MH21, ACC77, MH14, MH24, MH25, MH10); không có công nợ, không có Tất cả báo cáo — đã chụp màn kiểm 21/11 (code nhánh, API ketoan-dev) |
-| 7 | Menu Mua hàng › Danh mục | Nhà cung cấp (DM13), Hợp đồng (MH29), Chính sách (MH04); không có MH01 |
+| 7 | Menu Mua hàng › Danh mục | Nhà cung cấp (DM13), Vật tư hàng hoá (DM10 — theo #26 tab Test, Thủy 25/11), Hợp đồng (MH29), Chính sách (MH04); không có MH01 |
 | 8 | Menu Danh mục › Đối tượng → Nhà cung cấp; bấm mã một NCC | Mở DM13; bấm mã mở Hồ sơ NCC mua hàng |
