@@ -10,10 +10,10 @@ import { useAuth } from '@/lib/auth';
 interface CongCu {
   wipePassword?: string; seedPassword?: string; costingPassword?: string;
   grafanaUrl?: string; grafanaUser?: string; grafanaPassword?: string;
-  prometheusUrl?: string; alertmanagerUrl?: string; note?: string; lokiUrl?: string; tempoUrl?: string;
+  prometheusUrl?: string; alertmanagerUrl?: string; note?: string; lokiUrl?: string; tempoUrl?: string; ketNoiKey?: string; tuSua?: boolean;
   envDefaults?: { grafanaUrl: string; wipeFromEnv: boolean; seedFromEnv: boolean };
 }
-type K = Exclude<keyof CongCu, 'envDefaults'>;
+type K = Exclude<keyof CongCu, 'envDefaults' | 'tuSua'>;
 
 const chep = (t: string) => { void navigator.clipboard?.writeText(t); };
 
@@ -26,7 +26,7 @@ export function CongCuGiamSat() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   useEffect(() => { if (q.data) setV(q.data); }, [q.data]);
   const luu = useMutation({
-    mutationFn: () => { const { envDefaults: _e, ...body } = v; return api.put('/api/v1/system/cong-cu', body); },
+    mutationFn: () => { const { envDefaults: _e, tuSua: _t, ...body } = v; return api.put('/api/v1/system/cong-cu', body); },
     onSuccess: () => { setMsg({ ok: true, text: 'Đã lưu — áp dụng ngay, không cần khởi động lại' }); void qc.invalidateQueries({ queryKey: ['cong-cu'] }); void qc.invalidateQueries({ queryKey: ['cong-cu-links'] }); },
     onError: (e) => setMsg({ ok: false, text: errorText(e) }),
   });
@@ -65,6 +65,14 @@ export function CongCuGiamSat() {
           {o('tempoUrl', 'Địa chỉ Tempo (máy chủ đọc vết)', 'Máy chủ API gọi tới để xem vết (trace) một yêu cầu. Cùng máy docker: http://tempo:3200', 'http://tempo:3200')}
           {o('prometheusUrl', 'Địa chỉ Prometheus', 'Số đo, luật cảnh báo', 'http://127.0.0.1:9090')}
           {o('alertmanagerUrl', 'Địa chỉ Alertmanager', 'Cảnh báo đang bật', 'http://127.0.0.1:9093')}
+        </div>
+        {/* [2026-11-25 Nguyễn Văn Thủy] khoá kết nối cho lịch tự sửa / cron dựng lại — docs/ops/TU-DONG-SUA-LOI.md (đóng góp) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 2fr) 1fr', gap: 8, marginTop: 8, alignItems: 'end' }}>
+          {o('ketNoiKey', 'Khoá kết nối (lịch tự sửa, cron dựng lại)', 'Máy local / lịch đám mây / cron aaPanel dùng khoá này để kéo lỗi (HT20), đánh dấu đã sửa, yêu cầu dựng lại. Không đọc / ghi chứng từ', 'chưa tạo — bấm Tạo khoá')}
+          <div className="row" style={{ gap: 6 }}>
+            <button type="button" className="btn btn-sm" onClick={() => { if (!v.ketNoiKey || window.confirm('Tạo khoá mới? Khoá cũ sẽ hết dùng được (máy local / cron phải đổi sang khoá mới).')) { const b = new Uint8Array(24); crypto.getRandomValues(b); setV({ ...v, ketNoiKey: `kn_${[...b].map((x) => x.toString(16).padStart(2, '0')).join('')}` }); setMsg({ ok: true, text: 'Đã tạo khoá — bấm Ghi để lưu' }); } }}>Tạo khoá</button>
+            <a className="btn btn-sm" href="/he-thong/loi">Lỗi hệ thống (HT20)</a>
+          </div>
         </div>
         <div className="field" style={{ marginTop: 8 }}><label>Ghi chú (tài khoản khác, cách mở cổng…)</label>
           <textarea className="input" rows={2} value={v.note ?? ''} onChange={(e) => { setV({ ...v, note: e.target.value }); setMsg(null); }} /></div>

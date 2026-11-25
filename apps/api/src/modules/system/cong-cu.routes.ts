@@ -24,7 +24,7 @@ const s = (n = 500) => z.string().trim().max(n).optional();
 const input = z.object({
   wipePassword: s(200), seedPassword: s(200), costingPassword: s(200),
   grafanaUrl: s(), grafanaUser: s(200), grafanaPassword: s(200),
-  prometheusUrl: s(), alertmanagerUrl: s(), note: s(2000), lokiUrl: s(), tempoUrl: s(),
+  prometheusUrl: s(), alertmanagerUrl: s(), note: s(2000), lokiUrl: s(), tempoUrl: s(), ketNoiKey: z.string().trim().max(200).regex(/^[A-Za-z0-9_-]*$/, 'Khoá chỉ gồm chữ, số, - _').optional(),
 });
 
 /** Nạp địa chỉ Loki / Tempo khai ở HT13 vào Bàn điều tra (đơn vị nào khai trước thì dùng — đây là địa chỉ hạ tầng chung của máy chủ). */
@@ -51,7 +51,8 @@ const luu = defineAction({
   handler: async (ctx, i) => {
     const tx = ctx.data.tx;
     const truoc = await congCuOf(tx, ctx.tenant.id);
-    const moi: CongCuConfig = Object.fromEntries(Object.entries(i).filter(([, v]) => v !== undefined && v !== '')) as CongCuConfig;
+    // Công tắc Tự sửa đổi ở HT20 — giữ nguyên khi ghi khối này.
+    const moi: CongCuConfig = { ...(truoc.tuSua !== undefined ? { tuSua: truoc.tuSua } : {}), ...(Object.fromEntries(Object.entries(i).filter(([, v]) => v !== undefined && v !== '')) as CongCuConfig) };
     await sql`UPDATE tenants SET settings = jsonb_set(COALESCE(settings, '{}'::jsonb), '{cong_cu}', ${JSON.stringify(moi)}::jsonb, true) WHERE id = ${ctx.tenant.id}`.execute(tx);
     // Nhật ký: ghi tên trường đã đổi (không ghi mật khẩu vào nhật ký).
     const doi = (Object.keys({ ...truoc, ...moi }) as (keyof CongCuConfig)[]).filter((k) => (truoc[k] ?? '') !== (moi[k] ?? ''));
