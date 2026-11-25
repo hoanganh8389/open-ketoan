@@ -3,7 +3,7 @@
   "id": "bizcity.pos",
   "key": "pos",
   "kind": "module",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "label": "Máy bán POS",
   "description": "Phía máy chủ của máy bán POS (hợp đồng /pos/*): khởi động màn bán, cấp số phiếu, nhận đơn bán tại quầy và nộp chứng từ sale vào sổ qua cửa nạp (kế hoạch module POS).",
   "owners": [
@@ -131,7 +131,10 @@
       "bizcity_read.branch_prices",
       "bizcity_read.stock_on_hand",
       "bizcity_read.warehouses",
-      "bizcity_read.item_kinds"
+      "bizcity_read.item_kinds",
+      "bizcity_read.item_groups",
+      "bizcity_read.document_lots",
+      "bizcity_read.monthly_unit_costs"
     ]
   },
   "actions": [
@@ -197,7 +200,12 @@
     "pos.channel.resume",
     "pos.report.channels",
     "pos.report.customers",
-    "pos.report.customer-detail"
+    "pos.report.customer-detail",
+    "pos.report.sales-lines",
+    "pos.report.sales-summary",
+    "pos.report.collections",
+    "pos.report.by-category",
+    "pos.report.daily"
   ],
   "ledger": {
     "submits": [

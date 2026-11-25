@@ -1,8 +1,8 @@
 {
   "contract": "bizcity_check_report@1",
   "module": "bizcity.pos",
-  "version": "0.4.1",
-  "sourceHash": "sha256:6daf554d0cd7278de31f471b51668e7ba32e4d3fce46c100210ef50bbc9307a9",
+  "version": "0.5.0",
+  "sourceHash": "sha256:8e01ae8ed4821f71ac396a0304c9e09a4c6ee379d3d1b9b67a6baa59cc0885dc",
   "core": {
     "standard": "1.0.0-draft"
   },
@@ -136,5 +136,5 @@
     }
   ],
   "note": "CONF-RUN, CONF-UPG (chạy trên Core thật) chưa có ở bộ kiểm tĩnh — Phase 4.",
-  "ranAt": "2026-11-19T07:45:51.478Z"
+  "ranAt": "2026-11-25T16:51:44.946Z"
 }

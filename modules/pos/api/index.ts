@@ -71,6 +71,12 @@ import orderLines from './actions/order-lines.js';
 // [2026-11-19 Võ Hoàng] NGHIEM-THU — NT-BH-034: báo cáo khách hàng (đóng góp)
 import reportCustomers from './actions/report-customers.js';
 import reportCustomerDetail from './actions/report-customer-detail.js';
+// [2026-11-25 11:55 PM Võ Hoàng] NGHIEM-THU — NT-BH-043: năm báo cáo bán hàng máy POS gom ở máy chủ (đóng góp)
+import reportSalesLines from './actions/report-sales-lines.js';
+import reportSalesSummary from './actions/report-sales-summary.js';
+import reportCollections from './actions/report-collections.js';
+import reportByCategory from './actions/report-by-category.js';
+import reportDaily from './actions/report-daily.js';
 
 export default defineModule({
   manifest,
@@ -86,6 +92,7 @@ export default defineModule({
     returnApprovalCreate, returnApprovalGet, returnApprovalApprove, returnApprovalReject, adminReturnApprovals,
     channelList, channelCreate, channelUpdate, channelStop, channelResume, reportChannels, orderLines,
     reportCustomers, reportCustomerDetail,
+    reportSalesLines, reportSalesSummary, reportCollections, reportByCategory, reportDaily,
   ],
   subscribers: [phieuBanPromoUse],
 });
