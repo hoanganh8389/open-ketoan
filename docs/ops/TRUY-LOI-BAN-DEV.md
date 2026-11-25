@@ -75,7 +75,7 @@ Bắt đầu từ mã tra cứu, không từ ảnh. Ba màn trong app (vai Nhà 
 
 - **Lỗi do form chặn ngay trên trình duyệt.** Yêu cầu chưa gửi lên máy chủ nên không có trace. Tra ở HT19.
 - **Yêu cầu thành công và nằm ngoài tỉ lệ lấy mẫu** (mặc định 10%). Lỗi 4xx / 5xx và yêu cầu chậm hơn 1 giây luôn được giữ.
-- **API không gửi trace.** Bản cài cập nhật bằng `scripts/cap-nhat.sh` / `scripts/cap-nhat-cpanel.sh` cũ (trước STD-12b) làm API mất cấu hình gửi trace. Bản mới tự giữ; chạy script ở mục 5 để kiểm. <!-- [2026-11-25 09:11 PM Johnny Chu - Chu Hoàng Anh] STD-12b -->
+- **API không gửi trace.** Bản cài cập nhật bằng `scripts/cap-nhat.sh` / `scripts/cap-nhat-cpanel.sh` cũ (trước STD-12b) làm API mất cấu hình gửi trace. Bản mới tự giữ; chạy script ở mục 5 để kiểm. <!-- [2026-11-25 09:11 PM Johnny Chu - Chu Hoàng Anh] STD-12b — cập nhật tự ghép tệp giám sát, api giữ cấu hình gửi trace -->
 - **Trace thuộc đơn vị khác, hoặc đã quá 7 ngày.** DEV02 chỉ hiện dữ liệu của đơn vị đang chọn.
 
 **Ở máy mình** (bản cài docker trên máy dev):
@@ -121,7 +121,7 @@ Chạy một script trong terminal của bảng điều khiển máy chủ, đ�
 
 Script **không** đụng db, web hay dữ liệu, và **không** chạy `docker compose up -d` trần, vì máy này hay kẹt Docker "overlay2 … busy" ([DEPLOY §5](DEPLOY.md)).
 
-**Từ bản có STD-12b, lệnh cập nhật tự giữ cấu hình giám sát** (`scripts/cap-nhat.sh` và `scripts/cap-nhat-cpanel.sh` ghép tệp giám sát khi bộ giám sát đang chạy). Sau lần cập nhật đầu tiên lên bản này, vẫn chạy bước 2 một lần để chắc. <!-- [2026-11-25 09:11 PM Johnny Chu - Chu Hoàng Anh] STD-12b -->
+**Từ bản có STD-12b, lệnh cập nhật tự giữ cấu hình giám sát** (`scripts/cap-nhat.sh` và `scripts/cap-nhat-cpanel.sh` ghép tệp giám sát khi bộ giám sát đang chạy). Sau lần cập nhật đầu tiên lên bản này, vẫn chạy bước 2 một lần để chắc. <!-- [2026-11-25 09:11 PM Johnny Chu - Chu Hoàng Anh] STD-12b — cập nhật tự ghép tệp giám sát, api giữ cấu hình gửi trace -->
 
 Grafana và Prometheus chỉ mở ở `127.0.0.1` của máy chủ. Grafana ở cổng 3000, đăng nhập `admin` với mật khẩu `GRAFANA_ADMIN_PASSWORD` trong `.env`. Xem từ máy mình qua đường hầm SSH: `ssh -L 3000:127.0.0.1:3000 <user>@<máy chủ>`. Hằng ngày, kế toán và dev chỉ cần màn Tra mã trong app, không cần Grafana.
 
