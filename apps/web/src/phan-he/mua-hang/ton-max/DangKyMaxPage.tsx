@@ -117,10 +117,25 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
   };
   const approve = async () => { setBusy(true); try { await stockApi.approveMaxRequest(req!.id); await qc.invalidateQueries({ queryKey: ['ton-max'] }); onClose(); } catch (e) { setErr(errorText(e)); } finally { setBusy(false); } };
   const cancel = async () => { if (!window.confirm('Huỷ phiếu này?')) return; try { await stockApi.cancelMaxRequest(req!.id); await qc.invalidateQueries({ queryKey: ['ton-max'] }); onClose(); } catch (e) { setErr(errorText(e)); } };
+  // [2026-11-25 kiennt] NT-MH-006 — mặt hàng đang dùng CHƯA CÓ MAX ở ít nhất một shop của chi nhánh (đóng góp)
+  /** Mỗi mã: max đang có theo shop (shop chưa có thì không có khoá). Chỉ lấy mã còn shop chưa có max. */
+  const chuaCoMax = async () => {
+    const codes = shops.map((x) => x.code);
+    const [ds, lv] = await Promise.all([api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 }), stockApi.levels({ branchCodes: codes })]);
+    const co = new Map<string, Record<string, number>>();
+    for (const l of lv) if (l.max > 0) { const m = co.get(l.sku) ?? {}; m[l.branchCode] = (m[l.branchCode] ?? 0) + l.max; co.set(l.sku, m); }
+    const out = ds.filter((p) => codes.some((c) => !(co.get(p.sku)?.[c]))).sort((a, b) => a.sku.localeCompare(b.sku)).map((p) => ({ sku: p.sku, name: p.name, unit: p.unit, co: co.get(p.sku) ?? {} }));
+    if (!out.length) throw new Error('Mọi mặt hàng đang dùng đã có max ở mọi shop — sửa max ở Tồn max (MH16) hoặc phiếu shop');
+    return out;
+  };
+  const daCo = (co: Record<string, number>) => Object.entries(co).map(([c, m]) => `${c}: ${m}`).join('; ');
   const template = async () => {
     const XLSX = await import('@/lib/excelChuan').then((m) => m.xlsxChuan()); // [2026-11-11 Nguyễn Văn Thủy] xuất Excel định dạng chuẩn (đóng góp)
     const head = ['Tên hàng', 'Mã bên NCC', 'Mã hàng', 'ĐVT', 'Quy cách', 'Ghi chú', ...shops.map((s) => s.code)];
-    const body = rows.length ? rows.map((r) => [r.name, r.nccSku ?? '', r.sku, r.unit ?? '', r.pack ?? '', r.note ?? '', ...shops.map((s) => r.maxByShop?.[s.code] ?? '')]) : [['Sữa bột mới 800g', 'NCC-001', '', 'Lon', 6, '', ...shops.map(() => '')]];
+    // Phiếu còn trống: tệp có sẵn mặt hàng chưa có max (cột Ghi chú ghi shop đã có max) — điền số vào cột shop là xong.
+    const body = rows.length ? rows.map((r) => [r.name, r.nccSku ?? '', r.sku, r.unit ?? '', r.pack ?? '', r.note ?? '', ...shops.map((s) => r.maxByShop?.[s.code] ?? '')])
+      : await chuaCoMax().then((ds) => ds.map((x) => [x.name, '', x.sku, x.unit, '', daCo(x.co) ? `Đã có max — ${daCo(x.co)}` : '', ...shops.map(() => '')]), (e: Error) => { window.alert(e.message); return null; });
+    if (!body) return;
     const ws = XLSX.utils.aoa_to_sheet([head, shops.length ? ['', '', '', '', '', 'Tên shop →', ...shops.map((s) => s.name)] : [], ...body]);
     ws['!cols'] = [{ wch: 36 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 9 }, { wch: 18 }, ...shops.map(() => ({ wch: 9 }))];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dang ky max'); XLSX.writeFile(wb, `dang-ky-max-hang-moi-${parent}.xlsx`);
@@ -269,15 +284,30 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
           { name: 'Mã hàng', aliases: 'Mã SP', example: '', note: 'Để trống nếu chưa có mã' },
           { name: 'ĐVT', example: 'Lon', note: 'ĐVT nhỏ nhất' },
           { name: 'Quy cách', example: 6, note: 'Số ĐVT / thùng' },
-          ...shops.map((s) => ({ name: s.code, example: '', note: `Max của shop ${s.name}` })),
+          { name: 'Đã có max ở', example: '', note: 'Chỉ để xem — shop đã có max (ô của shop đó để trống = giữ max cũ)' },
+          ...shops.map((s) => ({ name: s.code, example: '', note: `Max của shop ${s.name}. Trống = không đổi` })),
         ],
+        // Tải file mẫu: có sẵn mặt hàng đang dùng còn shop chưa có max; chỉ điền số vào cột từng shop.
+        mau: async () => (await chuaCoMax()).map((x) => [x.name, '', x.sku, x.unit, '', daCo(x.co), ...shops.map(() => '')]),
         spec: [['name', ['ten hang', 'ten san pham']], ['ncc', ['ma ben ncc', 'ma ncc']], ['sku', ['ma hang', 'ma sp']], ['unit', ['dvt']], ['pack', ['quy cach']], ...shops.map((s) => [s.code, [fold(s.code)]] as [string, string[]])],
         map: (r) => {
           const name = String(r.name ?? '').trim();
           if (!name || name === 'Tên shop →') return { error: 'thiếu tên hàng' };
           const maxByShop: Record<string, number> = {};
-          for (const s of shops) { const v = String(r[s.code] ?? '').trim(); if (v) maxByShop[s.code] = num(v); }
+          for (const s of shops) {
+            const v = String(r[s.code] ?? '').trim(); if (!v) continue;
+            const n = docSo(v); if (!Number.isFinite(n) || n < 0) return { error: `${name} — shop ${s.code}: max "${v}" không phải số ≥ 0` };
+            maxByShop[s.code] = n;
+          }
+          // Dòng có mã (từ tệp mẫu) mà chưa điền shop nào: bỏ qua, không đưa vào phiếu.
+          if (String(r.sku ?? '').trim() && !Object.keys(maxByShop).length) return { skip: true };
           return { value: { key: `n${Math.random().toString(36).slice(2, 8)}`, name, nccSku: String(r.ncc ?? '').trim() || undefined, sku: String(r.sku ?? '').trim(), unit: String(r.unit ?? '').trim() || undefined, pack: num(String(r.pack ?? '')) || undefined, maxByShop } };
+        },
+        check: async (list) => {
+          // Dòng ghi mã: mã phải có trong danh mục (không thì phiếu chờ gắn mã mãi).
+          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'all', pageSize: 1_000_000 });
+          const co = new Set(ds.map((p) => p.sku));
+          return list.map((x) => (x.sku && !co.has(x.sku) ? `Mã ${x.sku} chưa có trong danh mục mặt hàng (hàng chưa có mã thì để trống cột Mã hàng)` : undefined));
         },
         head: ['Tên hàng', 'Mã NCC', 'Mã hàng', 'Số shop có max', 'Tổng max'], cells: (x) => [x.name, x.nccSku ?? '', x.sku || '—', Object.keys(x.maxByShop ?? {}).length, qtyFmt(Object.values(x.maxByShop ?? {}).reduce((s, v) => s + v, 0))],
       }} />}
