@@ -1,0 +1,4 @@
+#!/bin/sh
+# [2026-11-25 08:41 PM Johnny Chu - Chu Hoàng Anh] FLOW — STD-12: trước khi đẩy — nhan-viec kiem + selfcheck, chỉ chặn kiểm đỏ MỚI so với origin/main.
+# Bật bằng: node scripts/moi-truong-dev.mjs --sua (đặt git config core.hooksPath .githooks).
+exec node scripts/moi-truong-dev.mjs --truoc-khi-day
