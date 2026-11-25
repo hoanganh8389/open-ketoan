@@ -77,7 +77,8 @@ export function CongThucPage() {
           <ChonChiNhanhCha value={parent} onChange={(v) => { setParent(v); setCfg(null); }} />
           {f.data && <span className="muted" style={{ fontSize: 12 }}>{f.data.saved ? `Lưu lần cuối bởi ${f.data.updatedBy} lúc ${new Date(f.data.updatedAt!).toLocaleString('vi-VN')}` : 'Chưa lưu riêng — đang dùng công thức chuẩn'}</span>}
           <span className="grow" />
-          <button className="btn btn-sm" onClick={() => setCfg({ ...DEFAULT_FORMULA, stockWarehouses: cfg?.stockWarehouses ?? [], maxWarehouses: cfg?.maxWarehouses ?? [], minWarehouses: cfg?.minWarehouses ?? [], shopWarehouses: cfg?.shopWarehouses ?? {} })}>Về công thức chuẩn</button>
+          {/* [2026-11-25 kiennt] NT-MH-013 — nút "Về công thức chuẩn" đổi tên "Về công thức gợi ý" (đóng góp) */}
+          <button className="btn btn-sm" onClick={() => setCfg({ ...DEFAULT_FORMULA, stockWarehouses: cfg?.stockWarehouses ?? [], maxWarehouses: cfg?.maxWarehouses ?? [], minWarehouses: cfg?.minWarehouses ?? [], shopWarehouses: cfg?.shopWarehouses ?? {} })}>Về công thức gợi ý</button>
           {dirty && <button className="btn btn-sm" onClick={() => setCfg(f.data!.config)}>Bỏ thay đổi</button>}
           <button className="btn btn-primary" disabled={!dirty} onClick={() => void save()}>Lưu công thức</button>
         </div>

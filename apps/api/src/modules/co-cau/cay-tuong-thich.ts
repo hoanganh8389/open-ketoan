@@ -7,8 +7,9 @@
  *   chi nhánh  = đơn vị có phân kho hoặc không có đơn vị con; thuộc nút = chính nó (nếu cũng là nút) hoặc đơn vị cha
  *   level      = cấp đơn vị - 1 (công ty = 0); path = đường dẫn mã nối bằng "\"
  *
- * Phân cấp mua hàng (syncBranchLevels): mỗi đơn vị cấp 3 (như "Chi nhánh Phú Thọ") tự lấy kho tổng = đơn vị mã xx000 nhiều phân kho
- * nhất trong nhánh (branches.purchase_branch_id); đơn vị trong nhánh là shop của kho tổng đó (branches.level / parent_id).
+ * Phân cấp mua hàng (syncBranchLevels): mỗi đơn vị cấp 3 (như "Chi nhánh Phú Thọ") tự lấy kho tổng = đơn vị mã xx000 (hoặc tên có chữ
+ * "Kho") nhiều phân kho nhất trong nhánh (branches.purchase_branch_id); đơn vị trong nhánh là shop của kho tổng đó (branches.level / parent_id).
+ * Cửa hàng chưa thuộc kho tổng nào thì gom theo đơn vị cha trực tiếp (NT-MH-012).
  */
 import { sql } from 'kysely';
 import type { Db } from '../../db/client.js';
@@ -110,19 +111,71 @@ export async function purchaseUnits(trx: Db, tenantId: string): Promise<Purchase
   });
 }
 
+// [2026-11-25 kiennt] NT-MH-012 — theo loại đơn vị (Chi nhánh / Cửa hàng / Kho tổng) trước; còn lại quy tắc lai: giữ cấp 3 (cả nhánh một kho tổng, vd Lào Cai lấy hàng 08000 Phú Thọ); kho tổng nhận thêm
+// đơn vị tên có chữ "Kho"; cửa hàng chưa thuộc kho tổng nào thì gom theo đơn vị cha trực tiếp (cây 2 cấp, nhánh cấp 3 thiếu kho tổng) (đóng góp)
+/** Mã kho tổng theo quy ước: 5 số, đuôi 000 (07000, 08000). */
+const MA_KHO_TONG = /^\d{2}000$/;
+/** Tên có chữ "Kho" đứng riêng (Kho tổng Phú Thọ) — không bắt "Khoa", "Khoái". */
+const TEN_KHO = /(^|[\s\-–(])kho($|[\s\-–)])/i;
+
 /**
  * Tính lại kho tổng của các đơn vị mua hàng và phân cấp shop (branches.purchase_branch_id, level, parent_id).
- * Đơn vị cấp 3 (cấp 2 tính từ công ty = 0, như "Chi nhánh Phú Thọ") tự lấy kho tổng = đơn vị mã xx000 nhiều phân kho nhất trong nhánh.
+ *   0. Theo loại đơn vị: đơn vị loại "Chi nhánh" có "Cửa hàng" bên dưới là đơn vị mua hàng; cửa hàng thuộc chi nhánh gần nhất phía
+ *      trên; kho tổng = chính chi nhánh nếu có phân kho, không thì đơn vị bên dưới (không phải cửa hàng) có phân kho: loại "Kho tổng" /
+ *      "Kho trung gian" → mã xx000 → tên có chữ "Kho" → nhiều phân kho. Đơn vị khác dưới chi nhánh (kho, văn phòng) không là shop.
+ *   1. (Phần còn lại) Đơn vị cấp 3 (cấp 2 tính từ công ty = 0, như "Chi nhánh Phú Thọ") lấy kho tổng trong cả nhánh: mã xx000 → tên có chữ "Kho"
+ *      (có phân kho) → nhiều phân kho nhất → mã nhỏ hơn. Mọi cửa hàng trong nhánh là shop của kho tổng đó.
+ *   2. Dự phòng: cửa hàng (đơn vị cuối cây không phải nhóm, có hay chưa có phân kho) chưa thuộc kho tổng nào sau bước 1 → gom theo đơn vị cha trực tiếp; cha thành đơn vị
+ *      mua hàng nếu chính nó có phân kho, hoặc có đơn vị con trực tiếp có phân kho mã xx000 / tên có chữ "Kho".
  * Chưa có đơn vị mua hàng nào thì không đổi phân cấp cũ.
  */
 export async function syncBranchLevels(trx: Db, tenantId: string): Promise<{ changed: number }> {
   let t = await load(trx, tenantId);
+  const soKho = (u: URow) => t.whOf.get(u.id)?.length ?? 0;
+  const laKhoTong = (u: URow) => u.is_active && ((MA_KHO_TONG.test(u.code) && t.isBranch(u)) || (TEN_KHO.test(u.name) && soKho(u) > 0));
+  /** Ưu tiên: xx000 → tên "Kho" → nhiều phân kho → mã nhỏ. */
+  const hang = (a: URow, b: URow) => Number(MA_KHO_TONG.test(b.code)) - Number(MA_KHO_TONG.test(a.code)) || Number(TEN_KHO.test(b.name)) - Number(TEN_KHO.test(a.name)) || soKho(b) - soKho(a) || a.code.localeCompare(b.code);
+  const hubOf = new Map<string, string | null>();
+  // Bước 0 — theo LOẠI đơn vị đã khai ở sơ đồ tổ chức: "Chi nhánh" có "Cửa hàng" bên dưới là đơn vị mua hàng; cửa hàng thuộc
+  // chi nhánh GẦN NHẤT phía trên; kho tổng = chính chi nhánh (có phân kho) hoặc đơn vị bên dưới không phải cửa hàng, có phân kho.
+  const loai = (u: URow) => (u.level_label ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').trim().toLowerCase();
+  const laCN = (u: URow) => loai(u) === 'chi nhanh';
+  const laCH = (u: URow) => loai(u) === 'cua hang';
+  const laLoaiKho = (u: URow) => loai(u) === 'kho tong' || loai(u) === 'kho trung gian';
+  const cha = (u: URow) => (u.unit_parent_id ? t.byId.get(u.unit_parent_id) : undefined);
+  /** Chi nhánh (đang dùng) gần nhất phía trên — không tính chính nó. */
+  const cnTren = (u: URow): URow | null => { for (let x = cha(u), n = 0; x && n < 40; x = cha(x), n++) if (laCN(x) && x.is_active) return x; return null; };
+  const cuaHang = new Map<string, number>();
+  for (const s of t.units) if (s.is_active && laCH(s)) { const cn = cnTren(s); if (cn) cuaHang.set(cn.id, (cuaHang.get(cn.id) ?? 0) + 1); }
+  for (const cnId of cuaHang.keys()) {
+    const cn = t.byId.get(cnId)!;
+    const kho = t.subtree(cnId).filter((u) => cnTren(u)?.id === cnId && u.is_active && !laCH(u) && !laCN(u) && soKho(u) > 0)
+      .sort((a, b) => Number(laLoaiKho(b)) - Number(laLoaiKho(a)) || hang(a, b));
+    // Không tìm được kho tổng: để các bước sau thử (cấp 3 / dự phòng); màn tồn max cảnh báo nếu vẫn không có.
+    const hub = soKho(cn) > 0 ? cn.id : kho[0]?.id ?? null;
+    if (hub) hubOf.set(cnId, hub);
+  }
+  /** Đơn vị nằm dưới (hoặc là) chi nhánh đã có kho tổng ở bước 0 — các bước sau không đụng. */
+  const cnCoKho = (u: URow) => { const cn = laCN(u) ? u : cnTren(u); return cn && hubOf.get(cn.id) ? cn : null; };
+  const theoLoai = new Set(t.units.filter((u) => cnCoKho(u)).map((u) => u.id));
+  // Bước 1 — cấp 3, như cũ.
   for (const n of t.units.filter(t.isNode)) {
-    let hub: string | null = null;
-    if (n.unit_level === 3 && n.is_active) {
-      const cands = t.subtree(n.id).filter((b) => b.is_active && t.isBranch(b) && /^\d{2}000$/.test(b.code));
-      hub = cands.sort((a, b) => (t.whOf.get(b.id)?.length ?? 0) - (t.whOf.get(a.id)?.length ?? 0) || a.code.localeCompare(b.code))[0]?.id ?? null;
-    }
+    if (hubOf.has(n.id) || theoLoai.has(n.id)) continue;
+    hubOf.set(n.id, n.unit_level === 3 && n.is_active ? t.subtree(n.id).filter(laKhoTong).sort(hang)[0]?.id ?? null : null);
+  }
+  // Bước 2 — dự phòng cho cửa hàng chưa thuộc kho tổng nào.
+  const coKhoTong = (u: URow | undefined): boolean => { for (let x = u, n = 0; x && n < 40; x = x.unit_parent_id ? t.byId.get(x.unit_parent_id) : undefined, n++) if (hubOf.get(x.id)) return true; return false; };
+  const choGom = new Set<string>();
+  // Cửa hàng = đơn vị cuối cây không phải nhóm, có hay chưa có phân kho (như bước 1: cửa hàng chưa có kho vẫn là shop).
+  for (const s of t.units) if (s.is_active && !t.kids.get(s.id)?.length && !t.isNode(s) && s.unit_parent_id && !coKhoTong(s)) choGom.add(s.unit_parent_id);
+  for (const pid of choGom) {
+    const p = t.byId.get(pid);
+    if (!p || !p.is_active || hubOf.get(pid)) continue;
+    const con = (t.kids.get(pid) ?? []).filter((c) => c.is_active && soKho(c) > 0 && (MA_KHO_TONG.test(c.code) || TEN_KHO.test(c.name))).sort(hang);
+    hubOf.set(pid, soKho(p) > 0 ? p.id : con[0]?.id ?? null);
+  }
+  for (const n of t.units) {
+    const hub = hubOf.get(n.id) ?? null;
     if (hub !== n.purchase_branch_id) await sql`UPDATE branches SET purchase_branch_id = ${hub} WHERE id = ${n.id}`.execute(trx);
   }
   t = await load(trx, tenantId);
@@ -132,7 +185,9 @@ export async function syncBranchLevels(trx: Db, tenantId: string): Promise<{ cha
   for (const b of t.units) {
     const hub = t.nearestPurchase(t.nodeOf(b))?.purchase_branch_id ?? null;
     // Đơn vị nhóm không có phân kho không phải shop.
-    const level = hubs.has(b.id) ? 'branch' : !t.isBranch(b) || (t.isNode(b) && !t.whOf.get(b.id)?.length) ? '' : hub ? 'shop' : '';
+    let level = hubs.has(b.id) ? 'branch' : !t.isBranch(b) || (t.isNode(b) && !t.whOf.get(b.id)?.length) ? '' : hub ? 'shop' : '';
+    // Dưới chi nhánh theo loại: chỉ "Cửa hàng" (hoặc đơn vị lá chưa khai loại) là shop — kho, văn phòng… không phải shop.
+    if (level === 'shop' && theoLoai.has(b.id) && !laCH(b) && !(loai(b) === '' && !t.kids.get(b.id)?.length)) level = '';
     const parent = level === 'shop' ? hub : null;
     if (level !== (b.level ?? '') || parent !== b.parent_id) { codes.push(b.code); levels.push(level); parents.push(parent); }
   }
