@@ -1,0 +1,197 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": {
+    "code": "BH20CK",
+    "label": "BH20 — Lập chuyển kho cho đơn đặt hàng thiếu hàng",
+    "file": "modules/phieu-ban/web/screens/LapChuyenKhoDialog.tsx",
+    "route": "/app/phieu-ban/don-dat-hang",
+    "entities": [
+      "phieu-ban/orders",
+      "kho/transfers"
+    ]
+  },
+  "actions": [
+    "them",
+    "x-giu-lai-hang"
+  ],
+  "questions": [
+    {
+      "id": "Q-CHUNG-01",
+      "ask": "Ai được thêm / sửa / xoá / duyệt ở màn này? Không đủ quyền thì màn ẩn nút hay báo gì?",
+      "answer": "Phải có cả phieu-ban:write và kho:chuyen-kho-lap. Thiếu quyền KHO01: nút Lập chuyển kho hiện MỜ kèm câu \"Cần quyền Lập phiếu chuyển kho (KHO01)\" (Q7 của phiếu — khác câu chung 'ẩn nút', anh Hoàng chốt 25/11); máy chủ module và KHO01 vẫn trả 403."
+    },
+    {
+      "id": "Q-CHUNG-02",
+      "ask": "Chứng từ đã ghi sổ / đã duyệt thì sửa, xoá ra sao: chặn, bỏ duyệt, hay lập chứng từ đảo?",
+      "answer": "Phiếu chuyển đã xuất sửa / huỷ ở KHO01 (điều chỉnh / huỷ như mọi phiếu chuyển); BH20 chỉ hiện trạng thái, không sửa (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-03",
+      "ask": "Hai người cùng mở và cùng sửa một chứng từ thì người lưu sau thấy gì?",
+      "answer": "Khoá theo đơn: người khác đang lập (đã kiểm, chưa xong) → CONFLICT PHIEU_BAN_ORDER_STATE (cause transfer_busy) \"đang được … lập chuyển kho — chờ xong rồi tải lại\"; danh sách thiếu trừ phần đang chuyển của phiếu chưa nhận và cảnh báo \"đã có phiếu CK… đang chuyển\"."
+    },
+    {
+      "id": "Q-CHUNG-04",
+      "ask": "Ngày chứng từ thuộc kỳ đã khoá, hoặc ngoài năm tài chính, thì màn báo trước hay chỉ báo khi ghi sổ?",
+      "answer": "Ngày phiếu = hôm nay. Bị KHO01 từ chối vì bất kỳ lý do nào: hộp thoại giữ nguyên dữ liệu, đơn bỏ chỗ đang lập (bước abort). Ghi chú: KHO01 hiện ghi sổ với force (kỳ khoá không chặn phiếu chuyển) — hành vi của phân hệ Kho, đã báo người chốt."
+    },
+    {
+      "id": "Q-CHUNG-05",
+      "ask": "Mạng chập chờn hoặc bấm Lưu hai lần thì có sinh hai chứng từ không?",
+      "answer": "Một phiếu: nút Lưu khoá khi đang gửi; người khác lập cùng lúc bị chặn (CONFLICT PHIEU_BAN_ORDER_STATE, cause transfer_busy); gửi lại bước nối cùng phiếu không nối hai lần."
+    },
+    {
+      "id": "Q-CHUNG-06",
+      "ask": "Ô nào bắt buộc? Bỏ trống hoặc sai kiểu thì báo ở ô nào, trước hay sau khi bấm?",
+      "answer": "Kho xuất, SL > 0 ít nhất một dòng, SL ≤ tồn kho xuất — báo tại ô trước khi gửi; máy chủ kiểm lại, trả mọi lỗi một lần (details.findings → error.fields)."
+    },
+    {
+      "id": "Q-CHUNG-07",
+      "ask": "Thoát form giữa chừng hoặc bị từ chối thì dữ liệu đã nhập còn không? Có lưu nháp không?",
+      "answer": "Bị từ chối không mất dữ liệu: hộp thoại giữ nguyên, tô ô lỗi theo error.fields. Không có nháp (phiếu lập một lần, xuất luôn)."
+    },
+    {
+      "id": "Q-CHUNG-08",
+      "ask": "Mỗi danh sách chọn chỉ nhận giá trị nào (đang dùng, cùng chi nhánh, đã duyệt)? Chưa có thì thêm tại chỗ được không, ai được thêm?",
+      "answer": "Kho đang dùng, có tồn > 0 ít nhất một mã thiếu, thuộc cùng cửa hàng (trừ kho bán, KCB, KHG) → chi nhánh cha → cửa hàng cùng cha; không thêm kho tại chỗ."
+    },
+    {
+      "id": "Q-KHO-01",
+      "ask": "Kho trên chứng từ có thuộc chi nhánh / bộ phận của chứng từ không? Kho ngừng dùng thì sao?",
+      "answer": "Kho nhập luôn là kho bán của đơn; kho xuất phải là kho ứng viên của chi nhánh đã chọn (module kiểm, KHO01 kiểm lại); kho ngừng dùng không vào danh sách."
+    },
+    {
+      "id": "Q-KHO-02",
+      "ask": "Xuất trước ngày nhập, xuất quá tồn theo lô / hạn dùng thì chặn hay cảnh báo, chỉ vào dòng nào?",
+      "answer": "Chặn SL > tồn kho xuất tại ô lines[i].qty; lô để trống → lõi tự chọn lô hạn sớm (như KHO01)."
+    },
+    {
+      "id": "Q-KHO-03",
+      "ask": "Chuyển kho: đã xuất ở kho đi mà chưa nhận ở kho đến thì hàng đang ở đâu, quá bao lâu thì nhắc, ai nhận?",
+      "answer": "Hàng đang chuyển (theo luật chuyển kho hiện có); thủ kho cửa hàng nhận ở KHO01; khung Giữ hàng hiện \"Đang chuyển\" để kế toán nhắc."
+    }
+  ],
+  "rows": [
+    {
+      "id": "BH20CK-01",
+      "action": "them",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Có phieu-ban:write nhưng không có quyền Lập phiếu chuyển kho (kho:chuyen-kho-lap)",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Cần quyền Lập phiếu chuyển kho (KHO01) — nhờ quản trị cho quyền kho:chuyen-kho-lap",
+      "test": "apps/api/test/nt-bh-041-chuyen-kho-don-dat-hang.test.ts#FORBIDDEN",
+      "basis": "Q7 (chốt 25/11)"
+    },
+    {
+      "id": "BH20CK-02",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Số lượng chuyển lớn hơn tồn của kho xuất (PHIEU_BAN_TRANSFER_OVER_STOCK)",
+      "target": {
+        "kind": "field",
+        "path": "lines.*.qty"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Kho xuất không đủ hàng — giảm số lượng (≤ tồn) hoặc chọn kho khác",
+      "test": "apps/api/test/nt-bh-041-chuyen-kho-don-dat-hang.test.ts#PHIEU_BAN_TRANSFER_OVER_STOCK",
+      "basis": "Q-KHO-02"
+    },
+    {
+      "id": "BH20CK-03",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Chưa chọn kho xuất hoặc kho không còn trong danh sách kho có hàng (PHIEU_BAN_TRANSFER_SOURCE)",
+      "target": {
+        "kind": "field",
+        "path": "fromWarehouse"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Chọn một kho trong danh sách kho có hàng (cùng cửa hàng, chi nhánh cha, cửa hàng cùng cha)",
+      "test": "apps/api/test/nt-bh-041-chuyen-kho-don-dat-hang.test.ts#PHIEU_BAN_TRANSFER_SOURCE",
+      "basis": "Q-CHUNG-08"
+    },
+    {
+      "id": "BH20CK-04",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Không dòng nào có số lượng chuyển > 0 (PHIEU_BAN_TRANSFER_EMPTY)",
+      "target": {
+        "kind": "field",
+        "path": "lines"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Nhập số lượng chuyển (> 0) ít nhất một dòng",
+      "test": "modules/phieu-ban/test/order.test.ts#checkTransferLines",
+      "basis": "Q-CHUNG-06"
+    },
+    {
+      "id": "BH20CK-05",
+      "action": "them",
+      "code": "CONFLICT",
+      "level": "block",
+      "when": "Người khác đang lập chuyển kho cho cùng đơn (CONFLICT PHIEU_BAN_ORDER_STATE, cause transfer_busy)",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Đơn đang được người khác lập chuyển kho — chờ xong rồi tải lại đơn",
+      "test": "apps/api/test/nt-bh-041-chuyen-kho-don-dat-hang.test.ts#transfer_busy",
+      "basis": "Q-CHUNG-03"
+    },
+    {
+      "id": "BH20CK-06",
+      "action": "them",
+      "code": "CONFLICT",
+      "level": "block",
+      "when": "Đơn không còn Đã gửi (Nháp, Đã đóng, Đã huỷ) khi lập chuyển kho / giữ lại hàng (PHIEU_BAN_ORDER_STATE)",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Chỉ đơn Đã gửi mới lập chuyển kho / giữ lại hàng — tải lại đơn để xem trạng thái",
+      "test": "apps/api/test/nt-bh-041-chuyen-kho-don-dat-hang.test.ts#PHIEU_BAN_ORDER_STATE",
+      "basis": "Ca 10"
+    },
+    {
+      "id": "BH20CK-08",
+      "action": "x-giu-lai-hang",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Bấm Giữ lại hàng khi không có quyền phieu-ban:write",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Cần quyền phieu-ban:write (kế toán) để giữ lại hàng cho đơn",
+      "test": "apps/api/test/nt-bh-041-chuyen-kho-don-dat-hang.test.ts#FORBIDDEN",
+      "basis": "Q-CHUNG-01"
+    }
+  ]
+}

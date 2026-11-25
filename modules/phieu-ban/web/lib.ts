@@ -37,7 +37,32 @@ export type Order = {
   shipping?: Shipping | null; copiedFrom?: string | null; shipments?: Shipment[];
   /** Bản chương trình khuyến mại đã áp (kèm băm) — căn cứ của các dòng có policyRef. */
   policyRefs?: { key: string; version: number; hash: string }[];
+  // [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: phiếu chuyển kho lập từ đơn, mã còn thiếu để giữ (đóng góp)
+  /** Phiếu chuyển kho KHO01 lập từ đơn (trạng thái lúc lập — trạng thái hiện tại đọc ở KHO01). */
+  transfers?: OrderTransfer[];
+  /** Mã còn thiếu để giữ (đơn Đã gửi; bỏ dòng dịch vụ) — máy chủ tính. */
+  holdShort?: ShortSku[];
 };
+export type ShortSku = { sku: string; name: string; unit: string; need: number };
+export type OrderTransfer = {
+  id: string; docNo: string; from: string; fromBranchCode: string; fromWarehouse: string; toWarehouse: string;
+  lines: { sku: string; qty: number }[]; qty: number; status: string; at: string; by: string;
+};
+/** Kho ứng viên cho Lập chuyển kho (NT-BH-041). */
+export type TransferSource = { group: 'same' | 'parent' | 'sibling'; branchCode: string; warehouseCode: string; name: string; stock: Record<string, number>; full: number };
+export type TransferSources = {
+  orderNo: string; branchCode: string; toWarehouse: string; holdWarehouse: string | null; short: ShortSku[]; sources: TransferSource[];
+  transfers: OrderTransfer[]; canCreate: boolean;
+};
+export const SOURCE_GROUP: Record<TransferSource['group'], string> = { same: 'Cùng cửa hàng', parent: 'Chi nhánh cha', sibling: 'Cửa hàng cùng cha' };
+/** Trạng thái phiếu chuyển kho KHO01 (đọc ở /api/v1/kho/transfers/:id). */
+export const KHO_STATUS: Record<string, { label: string; tone: string }> = {
+  draft: { label: 'Nháp', tone: 'gray' }, shipped: { label: 'Đã xuất', tone: 'info' }, received: { label: 'Đã nhận', tone: 'ok' },
+  rejected: { label: 'Từ chối', tone: 'bad' }, cancelled: { label: 'Huỷ', tone: 'bad' },
+};
+/** Đường mở màn KHO01 Phiếu chuyển kho. */
+export const KHO01_PATH = '/kho/chuyen-kho';
+export const KHO_TRANSFERS = '/api/v1/kho/transfers';
 export type Status = 'draft' | 'pending' | 'open' | 'closed' | 'cancelled';
 export type HistoryEvent = { id: string; at: string; actor: string; actorName: string | null; action: string; changes: { field: string; from: unknown; to: unknown }[]; note: string | null };
 
@@ -48,7 +73,7 @@ export const STATUS: Record<Status, { label: string; tone: string }> = {
 export const ACTION: Record<string, string> = {
   create: 'Lập đơn', update: 'Sửa', merge: 'Gộp đơn livestream', send: 'Gửi', approve: 'Duyệt', reject: 'Từ chối', hold: 'Giữ hàng', release: 'Trả hàng giữ',
   deliver: 'Giao tại quầy', update_delivery: 'Sửa phiếu giao', delivery_returned: 'Xoá phiếu giao', close: 'Đóng đơn', cancel: 'Huỷ đơn',
-  copy: 'Copy đơn', ship_create: 'Lập chuyến giao', ship_status: 'Cập nhật chuyến giao',
+  copy: 'Copy đơn', ship_create: 'Lập chuyến giao', ship_status: 'Cập nhật chuyến giao', transfer: 'Lập chuyển kho',
 };
 
 export const vnd = (n: number | null | undefined) => (n === null || n === undefined ? '' : new Intl.NumberFormat('vi-VN').format(n));

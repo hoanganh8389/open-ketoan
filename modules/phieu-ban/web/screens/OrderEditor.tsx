@@ -5,13 +5,17 @@
  * "Giao tại quầy" = Giao cũ (phiếu bán nháp xuất thẳng từ KCB); nút Copy đơn (đơn mới nháp, giá + khuyến mại tính lại).
  * NT-BH-037: khung phiếu `DocSheet` cùng mẫu phiếu mua — đầu phiếu, thẻ Hàng hoá / Giao hàng / Lịch sử, cột Trợ lý (Kiểm tra, Giữ hàng,
  * Tổng tiền). Chỉ đổi bố cục: nút, lời gọi API, dữ liệu gửi, quyền giữ nguyên.
+ * NT-BH-041: khung Giữ hàng — đơn Đã gửi thiếu hàng có nút "Lập chuyển kho" (hộp thoại chọn kho có hàng → phiếu KHO01 về kho bán) và
+ * "Giữ lại hàng" (cân giữ lại theo tồn kho bán hiện tại); danh sách phiếu chuyển của đơn với trạng thái đọc ở KHO01.
  */
 // [2026-11-17 Võ Hoàng] NGHIEM-THU — NT-BH-023: màn Đơn đặt hàng (đóng góp)
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-032: thông tin giao, chuyến giao, copy đơn (đóng góp)
 // [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: hộp Lập / sửa đơn dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: nút Lập chuyển kho + Giữ lại hàng ở khung Giữ hàng (đóng góp)
 import { useEffect, useState } from 'react';
 import { BranchPicker, DocSheet, DocSheetPanel, ErrorBox, Field, ItemPicker, Loading, Modal, errorText, useApi, useCan, useMutation, useQuery, useQueryClient } from '@bizcity/ui-kit';
-import { ACTION, M, SELF_CARRIER, SHIP_NEXT, SHIP_STATUS, STATUS, fmt, printQuote, remaining, time, today, vnd, type HistoryEvent, type Order, type PolicyRef, type ShipStatus } from '../lib';
+import { ACTION, KHO01_PATH, KHO_STATUS, KHO_TRANSFERS, M, SELF_CARRIER, SHIP_NEXT, SHIP_STATUS, STATUS, fmt, printQuote, remaining, time, today, vnd, type HistoryEvent, type Order, type PolicyRef, type ShipStatus } from '../lib';
+import { LapChuyenKhoDialog } from './LapChuyenKhoDialog';
 
 // [2026-11-24 Võ Hoàng] NGHIEM-THU — thử thật BH20 24/11: lý do đóng đơn (closeReason của máy chủ) bằng tiếng Việt (đóng góp)
 const CLOSE_REASON: Record<string, string> = { delivered: 'đã giao đủ', manual: 'đóng tay — thôi giữ phần chưa giao' };
@@ -110,6 +114,14 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
           : sh ? `Chuyến ${sh.seq}: ${SHIP_STATUS[sh.status].label}` : 'Xong' };
       }
       if (what.act === 'shipments') return { o: r, text: 'Đã lập chuyến giao (Chờ lấy hàng)' };
+      // NT-BH-041: Giữ lại hàng — không giữ thêm được thì nói kho bán chưa có hàng, kèm phiếu chuyển còn chưa nhận (trạng thái ở KHO01).
+      if (what.act === 'hold') {
+        const sum = (o: Order) => o.lines.reduce((a, l) => a + l.held, 0);
+        const more = Math.round((sum(r) - sum(cur!)) * 10_000) / 10_000;
+        const wait = (r.transfers ?? []).filter((t) => (live.data?.[t.id] ?? t.status) === 'shipped').map((t) => t.docNo);
+        return { o: r, text: more > 0 ? `Đã giữ thêm ${vnd(more)} (${r.warehouseCode} → ${r.holdWarehouseCode})`
+          : `Kho bán ${r.warehouseCode} chưa có thêm hàng${wait.length ? ` (phiếu ${wait.join(', ')} chưa nhận)` : ''}` };
+      }
       return { o: r, text: r.status === 'pending' ? `Chờ duyệt: ${r.pendingReasons.join(' · ')}` : 'Xong' };
     },
     onSuccess: (r) => { if (r) done(r.o, r.text); },
@@ -141,6 +153,16 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
   const lockedHead = status === 'open';
   const noWrite = write ? '' : 'Cần quyền phieu-ban:write (kế toán, kế toán trưởng, chủ đơn vị)';
   const noApprove = approver ? '' : 'Chỉ kế toán trưởng / chủ đơn vị duyệt (quyền phieu-ban:order-approve)';
+  // NT-BH-041 Q7: không có quyền KHO01 → nút mờ kèm câu nói quyền thiếu (máy chủ vẫn chặn 403).
+  const khoLap = can('kho:chuyen-kho-lap');
+  const noKhoLap = !write ? noWrite : khoLap ? '' : 'Cần quyền Lập phiếu chuyển kho (KHO01)';
+  const [lapCk, setLapCk] = useState(false);
+  const transfers = cur?.transfers ?? [];
+  // Trạng thái hiện tại của các phiếu chuyển (KHO01); không có quyền xem KHO01 / lỗi → dùng trạng thái lúc lập.
+  const live = useQuery({
+    queryKey: ['phieu-ban', 'order-transfers', cur?.id, transfers.map((t) => t.id).join(',')], enabled: transfers.length > 0 && can('kho:chuyen-kho-xem'), retry: false,
+    queryFn: async () => Object.fromEntries(await Promise.all(transfers.map(async (t) => [t.id, (await api.get<{ status: string }>(`${KHO_TRANSFERS}/${t.id}`)).status] as const))) as Record<string, string>,
+  });
 
   // Trợ lý — chỉ nhắc (máy chủ vẫn kiểm khi Ghi / Gửi; nút Ghi không khoá theo các dòng này, như trước).
   const filled = d.lines.filter((l) => l.sku);
@@ -152,7 +174,8 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
     ...(d.validUntil && d.orderDate && d.validUntil < d.orderDate ? ['Hiệu lực đến trước ngày đơn'] : []),
   ] : [];
   const giu = (cur?.lines ?? []).map((l) => ({ l, can: remaining(l), held: l.held }));
-  const thieu = status === 'open' ? giu.filter((x) => x.can > x.held) : [];
+  // NT-BH-041: máy chủ trả mã còn thiếu (bỏ dòng dịch vụ); bản cũ chưa có thì tính theo dòng như trước.
+  const thieu = status !== 'open' ? [] : cur?.holdShort ?? giu.filter((x) => x.can > x.held);
   const shipments = cur?.shipments ?? [];
   const tabs: ['hang' | 'giao' | 'history', string][] = [
     ['hang', `Hàng hoá (${filled.length})`],
@@ -223,6 +246,28 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
                 ])}
               </div>
               {thieu.length > 0 && <div className="mh-check warn" style={{ marginTop: 4 }}>⚠ {thieu.length} dòng giữ chưa đủ số còn phải giao (thiếu tồn lúc giữ)</div>}
+              {status === 'open' && thieu.length > 0 && (
+                <div className="row" style={{ gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                  <button className="btn btn-sm" disabled={Boolean(noKhoLap) || run.isPending} title={noKhoLap || 'Chọn kho có hàng → phiếu chuyển kho KHO01 về kho bán của đơn'}
+                    onClick={() => setLapCk(true)}>Lập chuyển kho</button>
+                  <button className="btn btn-sm" disabled={!write || run.isPending} title={noWrite || 'Kho bán đã có thêm hàng (phiếu chuyển đã nhận): giữ phần còn thiếu sang kho KCB'}
+                    onClick={() => act('hold')}>Giữ lại hàng</button>
+                </div>
+              )}
+              {transfers.length > 0 && (
+                <div style={{ marginTop: 6, fontSize: 12 }}>
+                  <div className="muted">Phiếu chuyển kho của đơn</div>
+                  {transfers.map((t) => {
+                    const st = live.data?.[t.id] ?? t.status;
+                    return (
+                      <div key={t.id}>
+                        <a href={KHO01_PATH} title={`Mở KHO01 Phiếu chuyển kho — tìm số ${t.docNo}`}>{t.docNo}</a> · {t.fromWarehouse} → {t.toWarehouse} · {t.lines.map((l) => `${l.sku} × ${vnd(l.qty)}`).join(', ')}{' '}
+                        <span className={`badge badge-${KHO_STATUS[st]?.tone ?? 'gray'}`} title={live.data?.[t.id] ? 'Trạng thái hiện tại ở KHO01' : 'Trạng thái lúc lập'}>{st === 'shipped' ? 'Đang chuyển' : KHO_STATUS[st]?.label ?? st}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </>)}
         </DocSheetPanel>
         <DocSheetPanel title="Tổng tiền">
@@ -362,6 +407,8 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
         )
       )}
           {hoi && <HoiGhiChu {...hoi} onClose={() => setHoi(null)} />}
+          {lapCk && cur && <LapChuyenKhoDialog order={cur} live={live.data ?? {}} onClose={() => setLapCk(false)}
+            onDone={(o, text) => { done(o, text); qc.invalidateQueries({ queryKey: ['phieu-ban', 'order-transfers'] }); }} />}
     </DocSheet>
   );
 }

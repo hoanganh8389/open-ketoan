@@ -35,7 +35,11 @@ import shipmentStatus from './actions/shipment-status.js';
 import orderCopy from './actions/order-copy.js';
 // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-035 §3.1: kiểm voucher cho BH10 (đóng góp)
 import voucherCheck from './actions/voucher-check.js';
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: Lập chuyển kho cho đơn thiếu hàng, Giữ lại hàng (đóng góp)
+import orderTransferSources from './actions/order-transfer-sources.js';
+import orderTransferCreate from './actions/order-transfer-create.js';
+import orderHold from './actions/order-hold.js';
 
 export default defineModule({ manifest, actions: [docList, docGet, docCreate, docUpdate, docDelete, docApprove, docUnapprove, docReturnable, quoteGet,
   orderList, orderGet, orderHistory, orderSettings, orderCreate, orderUpdate, orderImport, orderSend, orderApprove, orderReject, orderDeliver, orderClose, orderCancel, channelSummary, customerDocs,
-  shipmentCreate, shipmentStatus, orderCopy, voucherCheck], subscribers: [] });
+  shipmentCreate, shipmentStatus, orderCopy, voucherCheck, orderTransferSources, orderTransferCreate, orderHold], subscribers: [] });
