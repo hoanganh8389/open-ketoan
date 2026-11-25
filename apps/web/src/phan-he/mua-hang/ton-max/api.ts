@@ -129,3 +129,10 @@ export function stockSnapshot(rows: Map<string, AnalysisRow>, sku: string, ownDo
 }
 export const num = (s: string) => { const v = Number(String(s).replace(/\s/g, '').replace(/\./g, '').replace(',', '.')); return Number.isFinite(v) ? v : 0; };
 export const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+// [2026-11-25 kiennt] NT-MH-006 / NT-MH-008 — đọc số trong ô Excel: "1.500" / "1,500" = nghìn; "1.5" / "1,5" = thập phân; không phải số → NaN (đóng góp)
+export function docSo(raw: string): number {
+  const t = raw.replace(/\s/g, '');
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) return Number(t.replace(/\./g, '').replace(',', '.'));
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) return Number(t.replace(/,/g, ''));
+  return /^\d+([.,]\d+)?$/.test(t) ? Number(t.replace(',', '.')) : Number.NaN;
+}

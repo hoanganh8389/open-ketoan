@@ -17,17 +17,9 @@ import { api, errorText } from '@/lib/api';
 import { monthStart, today } from '../du-lieu';
 import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
-import { fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
+import { docSo, fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
 import { ChonChiNhanhCha, ChuaPhanCap } from './chung';
 import { useThaoTac } from '@/lib/manHinh';
-
-// [2026-11-25 kiennt] NT-MH-006 — đọc số trong ô Excel: "1.500" / "1,500" = nghìn; "1.5" / "1,5" = thập phân; không phải số → NaN (đóng góp)
-function docSo(raw: string): number {
-  const t = raw.replace(/\s/g, '');
-  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) return Number(t.replace(/\./g, '').replace(',', '.'));
-  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) return Number(t.replace(/,/g, ''));
-  return /^\d+([.,]\d+)?$/.test(t) ? Number(t.replace(',', '.')) : Number.NaN;
-}
 
 const TONE: Record<MaxRequestStatus, string> = { draft: 'info', submitted: 'warn', approved: 'ok', cancelled: 'bad' };
 
