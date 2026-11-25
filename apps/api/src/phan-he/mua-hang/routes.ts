@@ -183,13 +183,13 @@ export async function purchaseRoutes(app: FastifyInstance): Promise<void> {
     handler: async (req) => ok(await variantOverview(db, authOf(req).tenantId)) });
   // @bizcity-route: công cụ dữ liệu tình huống (cần mật khẩu) — dựng / xoá từng tình huống bằng service ghi sổ, mỗi tình huống một giao dịch, cố ý bỏ qua lỗi từng phần
   r.post('/api/v1/purchase/demo/seed', { preHandler: settings, schema: { tags, summary: 'Nạp dữ liệu tình huống (25 tình huống + ví dụ bổ sung) vào sổ thật — cần mật khẩu; reset = xoá bản cũ rồi nạp', body: seedBody },
-    handler: async (req) => { checkSeedPassword(req.body?.password); return ok(await seedDemo(authOf(req), { reset: req.body?.reset, mode: req.body?.mode })); } });
+    handler: async (req) => { await checkSeedPassword(authOf(req).tenantId, req.body?.password); return ok(await seedDemo(authOf(req), { reset: req.body?.reset, mode: req.body?.mode })); } });
   // @bizcity-route: công cụ dữ liệu tình huống (cần mật khẩu) — dựng / xoá từng tình huống bằng service ghi sổ, mỗi tình huống một giao dịch, cố ý bỏ qua lỗi từng phần
   r.post('/api/v1/purchase/demo/warehouses', { preHandler: settings, schema: { tags, summary: 'Thêm kho mặc định cho chi nhánh mẫu chưa có kho (CN-NA, CN-ND, CN-PT, CN-HCM) — không sửa phiếu; cần mật khẩu', body: seedBody },
-    handler: async (req) => { checkSeedPassword(req.body?.password); return ok(await ensureDemoWarehouses(authOf(req))); } });
+    handler: async (req) => { await checkSeedPassword(authOf(req).tenantId, req.body?.password); return ok(await ensureDemoWarehouses(authOf(req))); } });
   // @bizcity-route: công cụ dữ liệu tình huống (cần mật khẩu) — dựng / xoá từng tình huống bằng service ghi sổ, mỗi tình huống một giao dịch, cố ý bỏ qua lỗi từng phần
   r.post('/api/v1/purchase/demo/clear', { preHandler: settings, schema: { tags, summary: 'Xoá dữ liệu tình huống (đảo bút toán đã ghi) — cần mật khẩu', body: seedBody },
-    handler: async (req) => { checkSeedPassword(req.body?.password); return ok(await clearDemo(authOf(req))); } });
+    handler: async (req) => { await checkSeedPassword(authOf(req).tenantId, req.body?.password); return ok(await clearDemo(authOf(req))); } });
   mountActions(app, routesTsWriteActions);
   mountActions(app, routesWriteActions);
 }

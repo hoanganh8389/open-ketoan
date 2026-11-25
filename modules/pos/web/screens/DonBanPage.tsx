@@ -4,9 +4,9 @@
  */
 import { useState } from 'react';
 import { DataGrid, ErrorBox, KpiCards, Loading, PageHeader, errorText, useApi, useQuery, type GridColumn } from '@bizcity/ui-kit';
-import { Badge, DOC_STATUS, M, ORDER_STATUS, RangeLayout, SideInput, time, usePage, useRange, vnd } from '../lib';
+import { Badge, DOC_STATUS, GiftBadge, M, ORDER_STATUS, RangeLayout, SideInput, time, usePage, useRange, vnd } from '../lib';
 
-type Line = { lineId: string; sku: string; name: string; unitName: string; unitQty: number; unitPrice: number; amount: number; taxAmount: number; taxRate: number | null };
+type Line = { lineId: string; sku: string; name: string; isGift?: boolean; unitName: string; unitQty: number; unitPrice: number; amount: number; taxAmount: number; taxRate: number | null };
 type Row = {
   id: string; code: string; branchCode: string; businessDate: string; createdAt: string; status: string; total: number; taxTotal: number;
   docKey: string; docStatus: string; cashier: string; shiftId: string; customerName: string; customerPhone: string; saleSource: string; saleSourceName: string;
@@ -38,7 +38,9 @@ const cols: GridColumn<Row>[] = [
 
 const lineCols: GridColumn<Line>[] = [
   { key: 'sku', header: 'Mã hàng', type: 'code', width: 110 },
-  { key: 'name', header: 'Tên hàng', width: 260 },
+  // [2026-11-25 06:30 PM Võ Hoàng] NT-BH-034 — dòng quà có badge nổi bật (đóng góp)
+  { key: 'name', header: 'Tên hàng', width: 260, render: (l) => (l.isGift ? <>{l.name} <GiftBadge /></> : l.name) },
+  { key: 'isGift', header: 'Quà', width: 70, value: (l) => (l.isGift ? 'Quà' : ''), render: (l) => (l.isGift ? <GiftBadge /> : null) },
   { key: 'unitName', header: 'ĐVT', width: 70 },
   { key: 'unitQty', header: 'SL', type: 'qty', width: 60 },
   { key: 'unitPrice', header: 'Đơn giá', type: 'price', width: 100 },

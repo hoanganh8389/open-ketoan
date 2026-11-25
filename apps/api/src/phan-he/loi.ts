@@ -37,6 +37,7 @@ import { librariesRoutes } from '../modules/system/libraries.routes.js';
 import { catalogRulesRoutes } from '../modules/system/catalog-rules.routes.js';
 // [2026-11-01 10:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-019 — W2: CORE_ROUTES thêm devtoolsRoutes (Bàn điều tra — API trung gian chỉ đọc)
 import { devtoolsRoutes } from '../modules/system/devtools.routes.js';
+import { congCuRoutes } from '../modules/system/cong-cu.routes.js'; // [2026-11-25 Nguyễn Văn Thủy] HT13 Công cụ & giám sát (đóng góp)
 import { mcpRoutes } from '../modules/system/mcp.routes.js';
 import { metricsRoutes } from '../modules/system/metrics.routes.js';
 import { presenceRoutes } from '../modules/system/presence.js';
@@ -90,7 +91,7 @@ import { inventoryReportRoutes } from '../modules/inventory/inventory-report.rou
 import { syncRoutes } from '../modules/sync/sync.routes.js';
 
 export const CORE_ROUTES: Routes[] = [
-  authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, mcpRoutes, metricsRoutes, presenceRoutes, clientErrorsRoutes, accessRoutes, appsRoutes, provisioningRoutes,
+  authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, congCuRoutes, mcpRoutes, metricsRoutes, presenceRoutes, clientErrorsRoutes, accessRoutes, appsRoutes, provisioningRoutes,
   accountRoutes, branchRoutes, coCauRoutes, warehouseRoutes, warehouseTypeRoutes, catalogTrashRoutes, coCauHistoryRoutes, unitNameRoutes, helpRoutes, partnerRoutes, taxCodeRoutes, postingConfigRoutes, periodRoutes,
   documentRoutes, connectionRoutes, dimensionRoutes, contractScheduleRoutes, defaultDataRoutes, bankAccountRoutes,
   productRoutes, catalogRoutes, itemRoutes, saleProgramRoutes, lotRoutes, voucherTemplateRoutes, signatureRoutes, printTemplateRoutes, printProfileRoutes, taxInfoRoutes, referenceDocumentRoutes, docRefRoutes,

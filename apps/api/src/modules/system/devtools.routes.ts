@@ -22,6 +22,7 @@ import type { FastifyInstance } from 'fastify';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import { env } from '@bizcity/platform/config/env';
+import { grafanaUrlOf } from './cong-cu.routes.js';
 import { Errors } from '@bizcity/platform/core/errors';
 import { defineAction, mountActions, type ActionContext } from '@bizcity/platform/core/actions';
 import { currentRequest } from '@bizcity/platform/core/request-context';
@@ -82,7 +83,8 @@ async function loadTrace(ctx: ActionContext, traceId: string, ops: boolean): Pro
   if (!spans.length || !ownsTrace(spans, ctx.tenant.id)) throw Errors.notFound('trace (chưa có trong Tempo — chờ ~20 giây rồi thử lại — hoặc không thuộc đơn vị của bạn)');
   const view = viewTrace(spans);
   // [2026-11-02 02:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-019 — W5: link Explore khuôn `panes` của Grafana 11 (đã mở thử trên 11.4)
-  const grafana = ops && env.DEVTOOLS_GRAFANA_URL ? grafanaTraceLink(env.DEVTOOLS_GRAFANA_URL, traceId) : null;
+  const gUrl = ops ? await grafanaUrlOf(ctx.tenant.id) : null;
+  const grafana = gUrl ? grafanaTraceLink(gUrl, traceId) : null;
   return {
     traceId, startedAt: view.startedAt, durationMs: view.durationMs, summary: summarize(view.spans), spans: view.spans,
     links: { logs: `/dev/nhat-ky?traceId=${traceId}`, evidence: `/dev/tra-ma?tab=bang-chung&traceId=${traceId}`, grafana },
@@ -115,7 +117,7 @@ const statusAction = defineAction({
     return {
       mode: ops.on ? 'ops' as const : 'unit' as const, opsBlocked: ops.blocked,
       sources: { tempo, loki, prometheus, alertmanager },
-      grafanaUrl: ops.on && env.DEVTOOLS_GRAFANA_URL ? env.DEVTOOLS_GRAFANA_URL : null,
+      grafanaUrl: ops.on ? await grafanaUrlOf(ctx.tenant.id) : null,
       bugReportUrl: env.BUG_REPORT_URL || null,
       limits: { ...LIMITS },
     };
@@ -393,7 +395,8 @@ async function requireOps(ctx: ActionContext): Promise<void> {
   if (!ops.on) throw Errors.forbidden(ops.blocked ?? 'Chế độ Vận hành chưa bật (DEVTOOLS_OPS=true, bản cài một đơn vị, chủ đơn vị — Q019-2)');
 }
 
-const grafanaBase = () => (env.DEVTOOLS_GRAFANA_URL ? env.DEVTOOLS_GRAFANA_URL.replace(/\/+$/, '') : null);
+// [2026-11-25 Nguyễn Văn Thủy] đường dẫn Grafana khai ở HT13 (Công cụ & giám sát), chưa khai thì biến môi trường (đóng góp)
+const grafanaBase = (tenantId: string) => grafanaUrlOf(tenantId);
 
 const opsHealthAction = defineAction({
   id: 'core.devtools.ops.health', title: 'Bàn điều tra: sức khoẻ toàn hệ (Vận hành)', tags: ['Bàn điều tra'],
@@ -413,7 +416,7 @@ const opsHealthAction = defineAction({
   handler: async (ctx) => {
     await requireOps(ctx);
     takeQuota(ctx.actor.id);
-    const g = grafanaBase();
+    const g = await grafanaBase(ctx.tenant.id);
     const values = await Promise.all(PROMQL.map((p) => queryProm(p.expr)));
     const probes = PROMQL.map((p, i) => ({
       key: p.key, label: p.label, unit: p.unit, value: values[i]!, level: probeLevel(p, values[i]!), alert: p.alert, dashboard: g ? `${g}/d/${p.dashboard}` : null,
@@ -449,7 +452,7 @@ const opsAlertsAction = defineAction({
   handler: async (ctx) => {
     await requireOps(ctx);
     takeQuota(ctx.actor.id);
-    const g = grafanaBase();
+    const g = await grafanaBase(ctx.tenant.id);
     const alerts = (await listAlerts()).map((a) => ({ ...a, dashboard: a.dashboard && g ? g + a.dashboard : null, runbook: `docs/ops/RUNBOOK-CANH-BAO.md § ${a.name}` }));
     noteSize(alerts.length);
     return alerts;

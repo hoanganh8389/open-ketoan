@@ -24,7 +24,7 @@ import { authOf, requirePermission } from '../../core/auth.js';
 import { ok } from '../../core/http.js';
 import { Errors } from '../../core/errors.js';
 // [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b (S040-23): bỏ mật khẩu viết sẵn trong mã (SC-SEC-5) — khuôn CK-3
-import { checkEnvPassword } from '@bizcity/platform/core/security/tool-password';
+import { checkConfigPassword } from '@bizcity/platform/core/security/tool-password';
 import { writeAudit } from '../../core/audit.js';
 import { defineAction, mountActions, type AnyActionDef } from '../../core/actions.js';
 import { addTombstones } from '../catalog/catalog.service.js';
@@ -135,7 +135,7 @@ async function listTrash(trx: Db, tenantId: string, catalog: string) {
 
 async function trashRows(trx: Db, tenantId: string, actor: string, i: { catalog: string; keys?: string[]; all?: boolean; password?: string }) {
   const { cat, scope } = resolve(i.catalog);
-  if (i.all) checkEnvPassword(i.password, 'xoá hết', WIPE_ENVS);
+  if (i.all) await checkConfigPassword(trx, tenantId, i.password, 'xoá hết', 'wipePassword', WIPE_ENVS);
   if (!i.all && !i.keys?.length) throw Errors.validation('Chưa chọn dòng nào để xoá');
   const rows = (await sql<{ j: Row }>`SELECT to_jsonb(x) AS j FROM ${t(cat.table)} x WHERE x.tenant_id = ${tenantId}
     ${scope ? sql`AND x.${c(cat.scopeCol!)} = ${scope}` : sql``}
@@ -208,7 +208,7 @@ async function restoreRows(trx: Db, tenantId: string, actor: string, i: { catalo
 
 async function purgeRows(trx: Db, tenantId: string, actor: string, i: { catalog: string; ids?: string[]; all?: boolean; password?: string }) {
   const { cat } = resolve(i.catalog);
-  if (i.all) checkEnvPassword(i.password, 'xoá hết vĩnh viễn', WIPE_ENVS);
+  if (i.all) await checkConfigPassword(trx, tenantId, i.password, 'xoá hết', 'wipePassword', WIPE_ENVS);
   const rows = await pick(trx, tenantId, i.catalog, i.ids, i.all);
   let done = 0, keptItems = 0;
   for (const tr of rows) {

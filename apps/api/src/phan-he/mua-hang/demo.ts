@@ -19,7 +19,7 @@ import { voucherService, documentService } from '../../kernel/public.js';
 import { warehouseService } from '../../modules/warehouses/warehouse.routes.js';
 // [2026-11-03 12:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W5 (SC-MOD-2): danh mục mẫu qua catalogEnsure của lõi (không ghi thẳng bảng danh mục)
 import { catalogEnsure } from '@bizcity/platform/masterdata/catalog-ensure';
-import { checkToolPassword } from '@bizcity/platform/core/security/tool-password';
+import { checkConfigPassword } from '@bizcity/platform/core/security/tool-password';
 import { loadSettings, resolveAccounts, saveSettings } from './analysis.js';
 import { purchaseService } from './service.js';
 import { policyInputSchema, savePolicy } from './store.js';
@@ -37,8 +37,8 @@ interface GiftOut { id: string; date: string; branchCode: string; sku: string; q
 const RANK = (k: string) => ({ order: 1, prepayment: 2, payment: 3, rebate: 4 } as Record<string, number>)[k] ?? 0;
 
 /** Mật khẩu nạp / xoá dữ liệu tình huống: biến môi trường PURCHASE_SEED_PASSWORD, không có mặc định trong mã (chưa đặt thì công cụ tắt — SC-SEC-5). */
-export function checkSeedPassword(password: string | undefined) {
-  checkToolPassword(password, 'nạp dữ liệu');
+export async function checkSeedPassword(tenantId: string, password: string | undefined) {
+  await checkConfigPassword(db, tenantId, password, 'nạp dữ liệu', 'seedPassword', ['PURCHASE_SEED_PASSWORD']);
 }
 
 // [2026-11-21 Nguyễn Văn Thủy] mode: nạp cùng bộ tình huống theo hướng xuyên suốt — 'none' không hợp đồng; 'contract' mỗi NCC một hợp đồng,
