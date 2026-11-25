@@ -150,7 +150,8 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
   };
 
   return (
-    <Modal wide title={req ? `${req.code} · ${kind === 'new_item' ? 'Đăng ký max hàng mới' : 'Shop đăng ký tồn max'} — ${MAX_REQUEST_STATUS[req.status]}` : kind === 'new_item' ? 'Phiếu đăng ký max hàng mới (mặt hàng × shop)' : 'Phiếu shop đăng ký tồn max'} onClose={onClose}
+    // [2026-11-25 kiennt] NT-MH-007 — phiếu hàng mới: chi nhánh + số shop lên tiêu đề cửa sổ, bỏ nhãn vàng trong phiếu (đóng góp)
+    <Modal wide title={`${req ? `${req.code} · ` : ''}${kind === 'new_item' ? `Phiếu đăng ký max hàng mới — ${branches.find((b) => b.code === parent)?.name ?? parent} (${parent}) · ${shops.length} shop` : 'Phiếu shop đăng ký tồn max'}${req ? ` — ${MAX_REQUEST_STATUS[req.status]}` : ''}`} onClose={onClose}
       footer={<>
         {req && req.status !== 'cancelled' && !(req.status === 'approved' && kind === 'existing') && tt.huy && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => void cancel()}>Huỷ phiếu</button>}
         {!locked && <>
@@ -170,7 +171,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
             <label className="tm-parent"><span>Shop</span><select className="select input" disabled={Boolean(req)} value={br} onChange={(e) => { setBranch(e.target.value); setItems(null); }}>
               <option value="">— chọn shop —</option><option value={parent}>★ Kho chi nhánh {parent}</option>
               {shops.map((s) => <option key={s.code} value={s.code}>{s.code} · {s.name}</option>)}</select></label>
-          ) : <span className="tm-chip warn" style={{ whiteSpace: 'nowrap' }}>Chi nhánh {parent} · {shops.length} shop</span>}
+          ) : null}
           <label className="tm-parent" style={{ flex: 1 }}><span>Tiêu đề</span><input className="input" style={{ flex: 1 }} placeholder="vd Đăng ký max kỳ 2 tháng 10" value={title ?? req?.title ?? ''} disabled={locked} onChange={(e) => setTitle(e.target.value)} /></label>
         </div>
         <div className="full row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
