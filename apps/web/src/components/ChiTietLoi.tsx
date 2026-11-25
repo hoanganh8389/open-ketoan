@@ -15,9 +15,13 @@ export type DongLoi = {
 };
 type Rule = { code: string; preview: { why: string; howTo?: string } };
 
-/** Grafana Explore: log máy chủ (Loki, service api) chứa mã tra cứu. Đổi địa chỉ Grafana bằng VITE_GRAFANA_URL. */
-export function grafanaLink(requestId: string, at: string) {
-  const base = (import.meta.env.VITE_GRAFANA_URL as string | undefined) || `${window.location.protocol}//${window.location.hostname}:3000`;
+// [2026-11-25 Nguyễn Văn Thủy] địa chỉ Grafana khai ở HT13 → Công cụ & giám sát (không còn biến build VITE_GRAFANA_URL) (đóng góp)
+/** Đường dẫn giám sát khai ở HT13 (không có mật khẩu). */
+export const useLinksGiamSat = () => useQuery({ queryKey: ['cong-cu-links'], queryFn: () => api.get<{ grafanaUrl: string | null; prometheusUrl: string | null; alertmanagerUrl: string | null }>('/api/v1/system/cong-cu/links'), staleTime: 5 * 60_000, retry: false }).data;
+
+/** Grafana Explore: log máy chủ (Loki, service api) chứa mã tra cứu. */
+export function grafanaLink(requestId: string, at: string, grafanaUrl?: string | null) {
+  const base = (grafanaUrl || (import.meta.env.VITE_GRAFANA_URL as string | undefined) || `${window.location.protocol}//${window.location.hostname}:3000`).replace(/\/+$/, '');
   const t = Date.parse(at);
   const panes = { a: { datasource: 'loki', queries: [{ refId: 'A', expr: `{service="api"} |= "${requestId}"`, datasource: { type: 'loki', uid: 'loki' } }],
     range: { from: String(t - 10 * 60_000), to: String(t + 10 * 60_000) } } };
@@ -46,6 +50,7 @@ export function useMoiQuyTac() {
 export function ChiTietLoi({ r }: { r: DongLoi }) {
   const ruleOf = useMoiQuyTac();
   const [daChep, setDaChep] = useState(false);
+  const links = useLinksGiamSat();
   const d = r.data;
   const o = (label: string, v?: string | number | null) => (v === undefined || v === null || v === '' ? null : <><dt>{label}</dt><dd>{v}</dd></>);
   return (
@@ -70,7 +75,9 @@ export function ChiTietLoi({ r }: { r: DongLoi }) {
       </table>
       <div className="row" style={{ gap: 6, marginTop: 6 }}>
         <button type="button" className="btn btn-xs" onClick={() => { void navigator.clipboard?.writeText(vanBanLoi(r, ruleOf)); setDaChep(true); setTimeout(() => setDaChep(false), 1500); }}><Copy size={12} /> {daChep ? 'Đã chép' : 'Chép đủ thông tin'}</button>
-        {d.requestId && d.source !== 'form' && <a className="btn btn-xs" href={grafanaLink(d.requestId, r.at)} target="_blank" rel="noreferrer" title="Mở log máy chủ của lần lưu này trong Grafana (Loki) — cho dev"><ExternalLink size={12} /> Log máy chủ (Grafana)</a>}
+        {/* [2026-11-25 Nguyễn Văn Thủy] xem lỗi ở Loki: mở thẳng Tra mã (DEV02 — đọc Loki qua máy chủ, không cần mở cổng Grafana); Grafana là bảng biểu đồ, mở thêm nếu đã khai địa chỉ (đóng góp) */}
+        {d.requestId && d.source !== 'form' && <a className="btn btn-xs" href={`/dev/tra-ma?ma=${encodeURIComponent(d.requestId)}`} target="_blank" rel="noreferrer" title="Log máy chủ (Loki) của lần lưu này theo mã tra cứu — xem ngay trong phần mềm (Bàn điều tra → Tra mã DEV02: log, trace, bằng chứng)"><ExternalLink size={12} /> Log máy chủ (Loki)</a>}
+        {d.requestId && d.source !== 'form' && links?.grafanaUrl && <a className="btn btn-xs" href={grafanaLink(d.requestId, r.at, links.grafanaUrl)} target="_blank" rel="noreferrer" title="Mở cùng log trong Grafana Explore (nguồn Loki) — tài khoản đăng nhập xem ở HT13 → Công cụ & giám sát"><ExternalLink size={12} /> Mở trong Grafana</a>}
       </div>
     </div>
   );

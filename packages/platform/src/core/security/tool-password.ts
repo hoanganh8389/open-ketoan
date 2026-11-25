@@ -41,3 +41,27 @@ export function checkEnvPassword(given: string | undefined, what: string, envs: 
   const b = Buffer.from(expected, 'utf8');
   if (a.length !== b.length || !timingSafeEqual(a, b)) throw Errors.forbidden(`Sai mật khẩu ${what}`);
 }
+
+// [2026-11-25 Nguyễn Văn Thủy] mật khẩu công cụ + đường dẫn giám sát khai ở màn Cấu hình hệ thống (HT13 → Công cụ & giám sát), lưu ở
+// tenants.settings.cong_cu — không phải đặt biến môi trường rồi khởi động lại. Chưa khai thì dùng biến môi trường cũ (đóng góp)
+/** Cấu hình công cụ & giám sát của đơn vị (tenants.settings.cong_cu). */
+export interface CongCuConfig {
+  wipePassword?: string; seedPassword?: string; costingPassword?: string;
+  grafanaUrl?: string; grafanaUser?: string; grafanaPassword?: string;
+  prometheusUrl?: string; alertmanagerUrl?: string; note?: string;
+}
+type Q = { selectFrom: (t: 'tenants') => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+/** Đọc cấu hình công cụ của đơn vị (rỗng nếu chưa khai). */
+export async function congCuOf(trx: Q, tenantId: string): Promise<CongCuConfig> {
+  const r = await trx.selectFrom('tenants').select('settings').where('id', '=', tenantId).executeTakeFirst() as { settings?: { cong_cu?: CongCuConfig } } | undefined;
+  return r?.settings?.cong_cu ?? {};
+}
+/** Như checkEnvPassword nhưng ưu tiên mật khẩu khai ở HT13 (trường `field`), chưa khai thì biến môi trường `envs`. */
+export async function checkConfigPassword(trx: Q, tenantId: string, given: string | undefined, what: string, field: 'wipePassword' | 'seedPassword' | 'costingPassword', envs: readonly string[]): Promise<void> {
+  const c = await congCuOf(trx, tenantId);
+  const expected = (field === 'costingPassword' ? c.costingPassword || c.wipePassword : c[field]) || envPassword(envs);
+  if (!expected) throw Errors.forbidden(`Tính năng ${what} đang tắt: khai mật khẩu ${what} ở Cấu hình hệ thống (HT13) → Công cụ & giám sát`);
+  const a = Buffer.from(given ?? '', 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  if (a.length !== b.length || !timingSafeEqual(a, b)) throw Errors.forbidden(`Sai mật khẩu ${what}`);
+}

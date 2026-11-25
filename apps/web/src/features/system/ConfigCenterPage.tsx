@@ -15,6 +15,7 @@ import { Empty, ErrorBox, Loading } from '@/components/ui';
 import { api, errorText } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { ConfigChangeForm } from './ConfigChangeForm';
+import { CongCuGiamSat } from './CongCuGiamSat';
 
 type Group = 'duyet' | 'ketoan' | 'nhaplieu' | 'he-thong';
 type Filter = null | 'basis' | 'recent' | 'upcoming' | 'seal';
@@ -88,6 +89,8 @@ export function ConfigCenterPage() {
     <div>
       <PageHeader title="Cấu hình hệ thống" code="HT13" helpKey="cau-hinh-he-thong"
         subtitle="Mọi khoá cấu hình của đơn vị ở một chỗ: loại A / B / C, giá trị đang áp, phiên bản, thay đổi gần nhất, căn cứ. Chỉ xem — đổi ở màn của từng khoá. Khoá bí mật chỉ hiện trạng thái." />
+      {/* [2026-11-25 Nguyễn Văn Thủy] Công cụ & giám sát: mật khẩu công cụ, Grafana / Loki khai tại đây (đóng góp) */}
+      <CongCuGiamSat />
       {q.isLoading ? <Loading /> : q.error ? <ErrorBox error={errorText(q.error)} /> : !data || !h ? null : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 8, marginBottom: 12 }}>

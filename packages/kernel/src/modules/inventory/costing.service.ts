@@ -68,7 +68,7 @@ import { db, type Db } from '@bizcity/platform/db/client';
 import { env } from '@bizcity/platform/config/env';
 import { Errors } from '@bizcity/platform/core/errors';
 // [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b (S040-23): bỏ mật khẩu viết sẵn trong mã (SC-SEC-5) — khuôn CK-3
-import { checkEnvPassword } from '@bizcity/platform/core/security/tool-password';
+import { checkConfigPassword } from '@bizcity/platform/core/security/tool-password';
 import { writeAudit } from '@bizcity/platform/core/audit';
 import type { AuthContext } from '@bizcity/platform/core/auth';
 import { eventStore } from '../documents/event-store.js';
@@ -822,7 +822,7 @@ export const costingFormulas = {
    * Cần mật khẩu; không áp vào tháng đã khoá sổ (có khoá ở tháng đó hoặc sau). Cùng tháng áp dụng thì thay công thức cũ của tháng đó (đóng góp)
    */
   async saveIn(trx: Db, auth: AuthContext, i: { name: string; options: Partial<CostFormula>; applyFrom: string; password: string; note?: string }) {
-    checkEnvPassword(i.password, 'đổi công thức giá vốn', ['COSTING_FORMULA_PASSWORD', 'RESTORE_DEFAULT_PASSWORD', 'CATALOG_WIPE_PASSWORD']);
+    await checkConfigPassword(trx, auth.tenantId, i.password, 'đổi công thức giá vốn', 'costingPassword', ['COSTING_FORMULA_PASSWORD', 'RESTORE_DEFAULT_PASSWORD', 'CATALOG_WIPE_PASSWORD']);
     const y = Number(i.applyFrom.slice(0, 4)), m = Number(i.applyFrom.slice(5, 7));
     const locked = (await sql<{ y: number; m: number }>`
       SELECT p.year AS y, p.month AS m FROM period_locks l JOIN fiscal_periods p ON p.id = l.period_id
