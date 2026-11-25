@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# [2026-11-25 09:11 PM Johnny Chu - Chu Hoàng Anh] STD-12b — câu nhắc: cap-nhat*.sh đã tự ghép tệp giám sát.
 # [2026-11-25 09:03 PM Johnny Chu - Chu Hoàng Anh] STD-12 — kiểm + sửa bộ truy lỗi (OpenTelemetry → Tempo, Loki, nhật ký từ chối) trên máy dev cPanel/VPS.
 # =============================================================================
 #   bash scripts/kiem-giam-sat.sh                 CHỈ KIỂM, không đổi gì. In ra toàn mã / tên biến / số đếm — dán lại cho người hỗ trợ được, không lộ bí mật.
@@ -49,7 +50,7 @@ echo "   commit $(git rev-parse --short HEAD 2>/dev/null || echo '?') · dự á
 echo "== 1. Tệp cấu hình (.env — chỉ in TÊN biến; hai biến không bí mật in cả giá trị)"
 [ -f .env ] || { bad ".env không có"; exit 1; }
 EP="$(env_get OTEL_EXPORTER_OTLP_ENDPOINT)"; PCT="$(env_get TRACE_SAMPLE_PERCENT)"
-[ -n "$EP" ] && ok "OTEL_EXPORTER_OTLP_ENDPOINT=$EP" || warn "OTEL_EXPORTER_OTLP_ENDPOINT chưa ghi trong .env → lần cập nhật sau (scripts/cap-nhat-cpanel.sh dựng api không kèm tệp giám sát) api sẽ thôi gửi trace. Mục 3 cho biết hiện giờ api có gửi không"
+[ -n "$EP" ] && ok "OTEL_EXPORTER_OTLP_ENDPOINT=$EP" || warn "OTEL_EXPORTER_OTLP_ENDPOINT chưa ghi trong .env — api lấy từ tệp compose giám sát (scripts/cap-nhat*.sh tự ghép khi bộ giám sát chạy, từ STD-12b). Mục 3 cho biết api có gửi không"
 [ "${PCT:-10}" = "100" ] && ok "TRACE_SAMPLE_PERCENT=100 (máy dev giữ mọi trace)" || warn "TRACE_SAMPLE_PERCENT=${PCT:-10 (mặc định)} — yêu cầu THÀNH CÔNG chỉ giữ ${PCT:-10}% (lỗi 4xx/5xx, chậm >1s vẫn giữ hết). Máy dev nên 100"
 [ -n "$(env_get GRAFANA_ADMIN_PASSWORD)" ] && ok "GRAFANA_ADMIN_PASSWORD có" || bad "GRAFANA_ADMIN_PASSWORD chưa có (bộ giám sát cần)"
 [ "$(env_get OTEL_SDK_DISABLED)" = "true" ] && bad "OTEL_SDK_DISABLED=true — truy vết bị tắt hẳn"
@@ -68,7 +69,7 @@ if [ -n "$API" ]; then
   AEP="$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$API" | grep -E '^OTEL_EXPORTER_OTLP_ENDPOINT=' | cut -d= -f2-)"
   [ -n "$AEP" ] && ok "api đang gửi trace tới $AEP" || bad "api KHÔNG có OTEL_EXPORTER_OTLP_ENDPOINT → không trace nào tới Tempo"
   for k in DEVTOOLS_TEMPO_URL DEVTOOLS_LOKI_URL; do docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$API" | grep -q "^$k=." && ok "api có $k (màn Tra mã đọc được)" || bad "api thiếu $k → màn Tra mã không đọc được nguồn"; done
-  echo "    lưu ý: scripts/cap-nhat-cpanel.sh dựng api bằng compose gốc (không kèm tệp giám sát) → sau mỗi lần cập nhật api mất DEVTOOLS_* và endpoint trace. Chạy lại script này với --sua sau mỗi lần cập nhật cho tới khi cap-nhat-cpanel.sh được sửa."
+  echo "    lưu ý: bản scripts/cap-nhat*.sh cũ (trước STD-12b) dựng api không kèm tệp giám sát → api mất DEVTOOLS_* và endpoint trace sau cập nhật. Bản mới tự ghép khi bộ giám sát đang chạy."
 fi
 
 echo "== 4. Tempo, Loki nhận dữ liệu không"

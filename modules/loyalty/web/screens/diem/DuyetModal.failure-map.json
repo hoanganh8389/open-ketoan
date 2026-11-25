@@ -1,0 +1,157 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": {
+    "code": "BH19DY",
+    "label": "BH19 — Duyệt / từ chối chính sách và điều chỉnh điểm",
+    "file": "modules/loyalty/web/screens/diem/DuyetModal.tsx",
+    "route": "/app/loyalty/diem",
+    "entities": [
+      "loyalty/program-drafts"
+    ]
+  },
+  "actions": [
+    "duyet",
+    "x-tu-choi"
+  ],
+  "questions": [
+    {
+      "id": "Q-CHUNG-01",
+      "ask": "Ai được thêm / sửa / xoá / duyệt ở màn này? Không đủ quyền thì màn ẩn nút hay báo gì?",
+      "answer": "Tách quyền: loyalty:chinh-sach-lap / -sua / -duyet, loyalty:dieu-chinh-lap / -duyet (mặc định chỉ chủ đơn vị + kế toán trưởng; vai trò khác do quản trị Cho quyền ở HT12, màn BH19). Không quyền thì nút ẨN; máy chủ vẫn chặn 403. Người lập không tự duyệt (chốt 25/11 Võ Hoàng)."
+    },
+    {
+      "id": "Q-CHUNG-02",
+      "ask": "Chứng từ đã ghi sổ / đã duyệt thì sửa, xoá ra sao: chặn, bỏ duyệt, hay lập chứng từ đảo?",
+      "answer": "Bản đã phát hành không sửa: \"Sửa từ bản hiện hành\" lập nháp mới; duyệt = phiên bản mới, bản cũ giữ nguyên. Điều chỉnh đã duyệt không sửa — lập điều chỉnh ngược (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-03",
+      "ask": "Hai người cùng mở và cùng sửa một chứng từ thì người lưu sau thấy gì?",
+      "answer": "Người lưu sau bị chặn \"Nháp đã đổi lúc … bởi …, tải lại\" (so revision → CONFLICT LOYALTY_DRAFT_CHANGED), có nút Tải lại nháp (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-04",
+      "ask": "Ngày chứng từ thuộc kỳ đã khoá, hoặc ngoài năm tài chính, thì màn báo trước hay chỉ báo khi ghi sổ?",
+      "answer": "Không áp dụng: chính sách và sổ điểm không ghi sổ cái (điểm chỉ hạch toán lúc đổi, trên chứng từ bán) (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-05",
+      "ask": "Mạng chập chờn hoặc bấm Lưu hai lần thì có sinh hai chứng từ không?",
+      "answer": "Một kết quả: lệnh ghi có Idempotency-Key, nút khoá khi đang gửi; duyệt lại mục đã duyệt bị chặn theo trạng thái (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-06",
+      "ask": "Ô nào bắt buộc? Bỏ trống hoặc sai kiểu thì báo ở ô nào, trước hay sau khi bấm?",
+      "answer": "Báo tại ô; máy chủ trả mọi lỗi một lần (details.findings → error.fields), màn tô đỏ đúng ô (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-07",
+      "ask": "Thoát form giữa chừng hoặc bị từ chối thì dữ liệu đã nhập còn không? Có lưu nháp không?",
+      "answer": "Có nút \"Lưu nháp\"; rời trang / đổi cửa hàng khi còn thay đổi chưa lưu thì hỏi lại. Nháp bị từ chối giữ nguyên nội dung để sửa gửi lại (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-08",
+      "ask": "Mỗi danh sách chọn chỉ nhận giá trị nào (đang dùng, cùng chi nhánh, đã duyệt)? Chưa có thì thêm tại chỗ được không, ai được thêm?",
+      "answer": "Ô chọn mặt hàng / quà chỉ liệt kê mặt hàng đang dùng; không tạo mặt hàng tại chỗ (khai ở Danh mục). Máy chủ kiểm lại mã hàng quà (chốt 25/11)."
+    }
+  ],
+  "rows": [
+    {
+      "id": "BH19DY-01",
+      "action": "duyet",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Người lập tự duyệt / từ chối, hoặc không có quyền duyệt",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Người lập không tự duyệt — nhờ người có quyền duyệt khác duyệt",
+      "test": "apps/api/test/nt-bh-039-tich-diem.test.ts#FORBIDDEN",
+      "basis": "Q-CHUNG-01"
+    },
+    {
+      "id": "BH19DY-02",
+      "action": "duyet",
+      "code": "CONFLICT",
+      "level": "block",
+      "when": "Mục không còn chờ duyệt (đã duyệt / đã từ chối / bấm lại)",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Mục này đã được xử lý — tải lại danh sách",
+      "test": "apps/api/test/nt-bh-039-tich-diem.test.ts#LOYALTY_ADJUST_STATE",
+      "basis": "Q-CHUNG-05"
+    },
+    {
+      "id": "BH19DY-03",
+      "action": "duyet",
+      "code": "CONFLICT",
+      "level": "block",
+      "when": "Lúc duyệt điều chỉnh trừ, khách không còn đủ điểm",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Khách không còn đủ điểm để trừ — từ chối yêu cầu hoặc lập lại với số nhỏ hơn",
+      "test": "apps/api/test/nt-bh-039-tich-diem.test.ts#LOYALTY_ADJUST_OVER_BALANCE"
+    },
+    {
+      "id": "BH19DY-04",
+      "action": "duyet",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Nháp chính sách còn lỗi nội dung lúc duyệt (LOYALTY_FIELD_REQUIRED)",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Nháp còn ô chưa đúng — từ chối kèm lý do để người lập sửa",
+      "test": "apps/api/test/nt-bh-039-tich-diem.test.ts#LOYALTY_FIELD_REQUIRED"
+    },
+    {
+      "id": "BH19DY-05",
+      "action": "x-tu-choi",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Từ chối không ghi lý do",
+      "target": {
+        "kind": "field",
+        "path": "reason"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Ghi lý do từ chối",
+      "test": "apps/api/test/nt-bh-039-tich-diem.test.ts#VALIDATION_ERROR"
+    },
+    {
+      "id": "BH19DY-06",
+      "action": "duyet",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Chưa chọn mục nào",
+      "target": {
+        "kind": "field",
+        "path": "ids"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Chọn ít nhất một mục để duyệt",
+      "test": "apps/api/test/nt-bh-039-tich-diem.test.ts#VALIDATION_ERROR"
+    }
+  ]
+}
