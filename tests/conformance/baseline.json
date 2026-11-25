@@ -5862,6 +5862,92 @@
           "ref": "PHASE-040 · B10f (S040-26), 35-MAIN-SACH-SELFCHECK.md"
         }
       ]
+    },
+    "SC-UI-2": {
+      "title": "Form có ghi dữ liệu có bản đồ lỗi theo màn (<Tên>.failure-map.json cạnh form) — R-STD-FAIL-6",
+      "debts": [
+        {
+          "fp": "SC-UI-2|apps/web/src/components/phieu-hang/PhieuHangForm.tsx|apps/web/src/components/phieu-hang/PhieuHangForm.tsx",
+          "file": "apps/web/src/components/phieu-hang/PhieuHangForm.tsx",
+          "message": "form chưa có bản đồ lỗi PhieuHangForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/components/phieu-hang/PhieuHangForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/components/voucher/VoucherModal.tsx|apps/web/src/components/voucher/VoucherModal.tsx",
+          "file": "apps/web/src/components/voucher/VoucherModal.tsx",
+          "message": "form chưa có bản đồ lỗi VoucherModal.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/components/voucher/VoucherModal.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/features/access/ChangePasswordModal.tsx|apps/web/src/features/access/ChangePasswordModal.tsx",
+          "file": "apps/web/src/features/access/ChangePasswordModal.tsx",
+          "message": "form chưa có bản đồ lỗi ChangePasswordModal.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/features/access/ChangePasswordModal.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/features/catalog/ProductFullForm.tsx|apps/web/src/features/catalog/ProductFullForm.tsx",
+          "file": "apps/web/src/features/catalog/ProductFullForm.tsx",
+          "message": "form chưa có bản đồ lỗi ProductFullForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/features/catalog/ProductFullForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/features/documents/SaleDocumentForm.tsx|apps/web/src/features/documents/SaleDocumentForm.tsx",
+          "file": "apps/web/src/features/documents/SaleDocumentForm.tsx",
+          "message": "form chưa có bản đồ lỗi SaleDocumentForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/features/documents/SaleDocumentForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/features/system/ConfigChangeForm.tsx|apps/web/src/features/system/ConfigChangeForm.tsx",
+          "file": "apps/web/src/features/system/ConfigChangeForm.tsx",
+          "message": "form chưa có bản đồ lỗi ConfigChangeForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/features/system/ConfigChangeForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/features/vouchers/CashVoucherForm.tsx|apps/web/src/features/vouchers/CashVoucherForm.tsx",
+          "file": "apps/web/src/features/vouchers/CashVoucherForm.tsx",
+          "message": "form chưa có bản đồ lỗi CashVoucherForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/features/vouchers/CashVoucherForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/features/vouchers/ManualVoucherForm.tsx|apps/web/src/features/vouchers/ManualVoucherForm.tsx",
+          "file": "apps/web/src/features/vouchers/ManualVoucherForm.tsx",
+          "message": "form chưa có bản đồ lỗi ManualVoucherForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/features/vouchers/ManualVoucherForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/features/vouchers/VoucherForm.tsx|apps/web/src/features/vouchers/VoucherForm.tsx",
+          "file": "apps/web/src/features/vouchers/VoucherForm.tsx",
+          "message": "form chưa có bản đồ lỗi VoucherForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/features/vouchers/VoucherForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/phan-he/kho/chuyen-kho/NhanHangModal.tsx|apps/web/src/phan-he/kho/chuyen-kho/NhanHangModal.tsx",
+          "file": "apps/web/src/phan-he/kho/chuyen-kho/NhanHangModal.tsx",
+          "message": "form chưa có bản đồ lỗi NhanHangModal.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/phan-he/kho/chuyen-kho/NhanHangModal.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/phan-he/kho/chuyen-kho/PhieuChuyenKhoForm.tsx|apps/web/src/phan-he/kho/chuyen-kho/PhieuChuyenKhoForm.tsx",
+          "file": "apps/web/src/phan-he/kho/chuyen-kho/PhieuChuyenKhoForm.tsx",
+          "message": "form chưa có bản đồ lỗi PhieuChuyenKhoForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/phan-he/kho/chuyen-kho/PhieuChuyenKhoForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/phan-he/mua-hang/chinh-sach/PolicyForm.tsx|apps/web/src/phan-he/mua-hang/chinh-sach/PolicyForm.tsx",
+          "file": "apps/web/src/phan-he/mua-hang/chinh-sach/PolicyForm.tsx",
+          "message": "form chưa có bản đồ lỗi PolicyForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/phan-he/mua-hang/chinh-sach/PolicyForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx|apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "file": "apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx",
+          "message": "form chưa có bản đồ lỗi PhieuMuaForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/phan-he/mua-hang/chung-tu/PhieuMuaForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|apps/web/src/phan-he/mua-hang/hoa-don/HoaDonModal.tsx|apps/web/src/phan-he/mua-hang/hoa-don/HoaDonModal.tsx",
+          "file": "apps/web/src/phan-he/mua-hang/hoa-don/HoaDonModal.tsx",
+          "message": "form chưa có bản đồ lỗi HoaDonModal.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold apps/web/src/phan-he/mua-hang/hoa-don/HoaDonModal.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|modules/pos/web/screens/khuyen-mai/HanMucForm.tsx|modules/pos/web/screens/khuyen-mai/HanMucForm.tsx",
+          "file": "modules/pos/web/screens/khuyen-mai/HanMucForm.tsx",
+          "message": "form chưa có bản đồ lỗi HanMucForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold modules/pos/web/screens/khuyen-mai/HanMucForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        },
+        {
+          "fp": "SC-UI-2|modules/pos/web/screens/khuyen-mai/KmForm.tsx|modules/pos/web/screens/khuyen-mai/KmForm.tsx",
+          "file": "modules/pos/web/screens/khuyen-mai/KmForm.tsx",
+          "message": "form chưa có bản đồ lỗi KmForm.failure-map.json — dựng khung: node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold modules/pos/web/screens/khuyen-mai/KmForm.tsx --code <MÃ MÀN> --flow <luồng> --write (AGENTS.md \"Màn có ghi dữ liệu\")"
+        }
+      ],
+      "ref": "bizcity_failure_map@1 · R-STD-FAIL-6 · R-REV-17 (STD-11, #656) — 16 form có trước chuẩn; trả dần (NO-CHUAN-NEN.md), form mới không được vào đây"
     }
   }
 }

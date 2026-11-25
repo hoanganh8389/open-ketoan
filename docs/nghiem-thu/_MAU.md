@@ -44,6 +44,9 @@
 **Sai số làm tròn chấp nhận:** <vd 0đ / ≤ 1đ mỗi dòng>
 
 ## 6. Trường hợp lệch chuẩn
+<!-- [2026-11-25 06:22 PM Johnny Chu - Chu Hoàng Anh] FLOW — STD-11: lấy từ bản đồ lỗi của màn (R-REV-17) -->
+> Màn có ghi dữ liệu: lấy các dòng chặn / cảnh báo từ bản đồ lỗi của màn (`<Tên form>.failure-map.json`, R-REV-17). Bộ phận sử dụng thử từng dòng chặn: thấy đúng ô, đúng lời nhắc, sửa tại chỗ được.
+
 | # | Làm thế này | Phần mềm phải |
 |---|---|---|
 | 1 | <ngày chứng từ ngoài thời gian chương trình> | <không áp chương trình> |

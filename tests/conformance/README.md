@@ -136,6 +136,7 @@ export default {
 | Data (CONF-MIG) | SC-DATA-1..7 | kiểm số migration CI; thêm khoá băm, COMMENT, kiểu tiền, tenant_id, RLS; `db/types.ts` ↔ migration |
 | Module (CONF-STATIC, CONF-MAN) | SC-MOD-1..3, SC-CON-2 | `phan-he-ranh-gioi.test.ts` (giữ nguyên); thêm ghi bảng lõi, manifest |
 | Lớp (CONF-STATIC) | SC-LAYER-1 (nhãn `@bizcity-layer`), SC-LAYER-2 (chiều import giữa lớp, ratchet) | dependency-cruiser ở PHASES 1.4; bảng lớp [`lib/layers.mjs`](lib/layers.mjs), đồ thị [`lib/depgraph.mjs`](lib/depgraph.mjs), mốc `scripts/do-thi-phu-thuoc.mjs` |
+| Giao diện, bản đồ lỗi (CONF-STATIC) | SC-UI-1 (nút bị chặn nói lý do), SC-UI-2 (form có ghi dữ liệu có `<Tên>.failure-map.json`, ratchet), SC-UI-3 (bản đồ lỗi đúng khuôn tối thiểu: dòng chặn có mã + test, câu hỏi ngược đã trả lời, block) <!-- [2026-11-25 06:22 PM Johnny Chu - Chu Hoàng Anh] FLOW — STD-11: thêm SC-UI-2, SC-UI-3 --> | mới — R-REV-17; kiểm sâu bằng bizcity-platform `tools/failure-check.mjs`, lỗi thật bằng `tools/loi.mjs` |
 | Action / API / Event / Evidence | SC-API-1..3, SC-ACT-1, SC-EVT-1, SC-EVD-1..2 | grep tay trong review |
 | Bảo mật, phát hành | SC-SEC-1..4, SC-REL-1..2 | review tay theo RULE-SECURITY, RULE-RELEASE |
 | Gói định khoản | SC-TPL-1 (`--module <thư mục gói>` kiểm một gói) | mới — [bizcity_posting_template@1](../../docs/contracts/BIZCITY-POSTING-TEMPLATE-v1.md) |
