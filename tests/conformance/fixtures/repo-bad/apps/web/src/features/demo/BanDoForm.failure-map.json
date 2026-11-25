@@ -1,0 +1,12 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": { "code": "MH01", "label": "Mẫu sai (SC-UI-3)", "file": "apps/web/src/features/demo/BanDoForm.tsx" },
+  "actions": ["them"],
+  "questions": [ { "id": "Q-CHUNG-01", "ask": "Ai được thêm?", "answer": null } ],
+  "rows": [
+    { "id": "MH01-01", "action": "them", "code": null, "level": "block", "when": "Khung chưa gán mã", "target": { "kind": "field", "path": "docDate" }, "catchAt": ["ui"], "hint": "TODO" },
+    { "id": "MH01-02", "action": "them", "code": "MA_LA_KHONG_CO", "level": "block", "when": "Mã tự đặt trên màn", "target": { "kind": "field", "path": "docDate" }, "catchAt": ["ui"], "hint": "Sai ngày" },
+    { "id": "MH01-03", "action": "them", "code": "VALIDATION_ERROR", "level": "block", "when": "Test trỏ tệp không có", "target": { "kind": "field", "path": "docDate" }, "catchAt": ["ui"], "hint": "Sai ngày", "test": "apps/api/test/khong-co.test.ts" },
+    { "id": "MH01-04", "action": "them", "code": "VALIDATION_ERROR", "level": "warn", "when": "Dòng cảnh báo không bắt buộc test", "target": { "kind": "field", "path": "docDate" }, "catchAt": ["ui"], "hint": "Ngày lạ" }
+  ]
+}

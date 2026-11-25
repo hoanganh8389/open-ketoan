@@ -563,6 +563,22 @@
             "dangling:mau/DT-1:test:khong-co-tep",
             "dangling:mau/DC-1:check:SC-KHONG-9"
           ]
+        },
+        "SC-UI-2": {
+          "findings": 1,
+          "keys": [
+            "apps/web/src/features/demo/ThieuForm.tsx"
+          ]
+        },
+        "SC-UI-3": {
+          "findings": 5,
+          "keys": [
+            "MH01-01:code",
+            "MH01-02:catalog",
+            "MH01-02:test",
+            "MH01-03:test-file",
+            "questions"
+          ]
         }
       }
     },

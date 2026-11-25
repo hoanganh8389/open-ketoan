@@ -31,7 +31,7 @@ describe('thẻ Lịch sử mua', () => {
   it('dòng phẳng: mỗi dòng hàng một dòng, phiếu trả một dòng âm', () => {
     const rows = flatLines([sale('1', '2026-10-01', 325000), { ...sale('3', '2026-11-21', 0), kind: 'return', returns: 325000, originalCode: 'HD1', lines: [] }]);
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ refCode: 'HD1', source: 'Máy bán', amount: 325000 });
+    expect(rows[0]).toMatchObject({ refId: '1', refCode: 'HD1', source: 'Máy bán', amount: 325000 }); // refId: bấm dòng mở chi tiết đơn
     expect(rows[1]).toMatchObject({ name: 'Trả hàng', amount: -325000, source: 'Máy bán · trả hàng (HD1)' });
   });
 });

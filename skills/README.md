@@ -10,6 +10,7 @@ Tám skill giúp AI (Claude Code, Codex, Cursor, Copilot…) xây POS, bán hàn
 | Skill | Khi nào AI dùng | Lệnh nó chạy |
 |---|---|---|
 | [open-ketoan-standard](open-ketoan-standard/SKILL.md) | **luôn đọc trước**: sáu chuẩn C1…C6, việc của app, trạng thái thật của Kernel | — |
+| [tu-duy-nguoc](tu-duy-nguoc/SKILL.md) <!-- [2026-11-25 06:22 PM Johnny Chu - Chu Hoàng Anh] FLOW — STD-11 --> | **luôn dùng** khi làm / sửa màn có Thêm, Sửa, Xoá, Lưu, Ghi sổ, Duyệt; khi hỏi "sao không lưu được" | `failure-check --questions`, `--scaffold`, `--report`, `loi.mjs` (bizcity-platform) |
 | [build-business-app-with-open-ketoan](build-business-app-with-open-ketoan/SKILL.md) | CRM, MRP, kho vật tư, tài sản, bán online, ERP | theo bảng loại app |
 | [build-pos-with-open-ketoan](build-pos-with-open-ketoan/SKILL.md) | POS tại quầy, small win 4 bước | `pos-mini`, `bizcity event check` |
 | [validate-accounting-event](validate-accounting-event/SKILL.md) | một chứng từ: trước khi nộp, khi bị từ chối, trong CI | `bizcity event check <tệp>` |
