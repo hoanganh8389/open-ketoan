@@ -51,6 +51,8 @@ for (const mode of ['none', 'contract'] as const) describe(`Báo cáo hợp đ�
     expect(rows.every((x) => x.source.length > 0)).toBe(true);
     // Giá thực tế ghi rõ nguồn: hoá đơn NCC (chính thức) hoặc phiếu nhập (tạm).
     expect(rows.every((x) => x.actualFrom === 'hoa-don' || x.actualFrom === 'phieu-nhap')).toBe(true);
+    // Đủ các mức giá để đối chiếu: phiếu nhập luôn có; hoá đơn / đơn đặt có thể trống; có gợi ý nơi sửa (chuỗi).
+    expect(rows.every((x) => typeof (x as unknown as { receiptPrice: number }).receiptPrice === 'number' && typeof (x as unknown as { fixAt: string }).fixAt === 'string')).toBe(true);
     if (mode === 'contract') expect(rows.filter((x) => x.contractCode).length).toBeGreaterThan(0);
   });
 

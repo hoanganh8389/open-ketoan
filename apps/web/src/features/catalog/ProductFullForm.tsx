@@ -311,7 +311,7 @@ export function ProductFullForm({ sku, initial, classes, groupPath, onClose, sta
 
   // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định dùng chung mua / bán: mặt hàng một loại thuế (VAT ra = VAT vào) (đóng góp)
   const pickTax = (code: string) => set({ taxOutCode: code || null, taxInCode: code || null });
-  const taxLabel = (t: TaxCode) => (t.isLegacy ? `${t.code} — ${t.name} (mã cũ)` : `${nhanLoai(t)} — ${t.name}`);
+  const taxLabel = (t: TaxCode) => (t.isLegacy ? `${t.code} — ${t.name} (mã cũ)` : nhanLoai(t));
   const vatRate = (() => { const t = taxes.find((x) => x.code === v.taxOutCode); return t ? { label: taxLabel(t), rate: Number(t.rate ?? 0) || 0 } : v.taxOutCode ? { label: v.taxOutCode, rate: 0 } : undefined; })();
   // [2026-11-12 Nguyễn Văn Thủy] Thêm mặt hàng theo từng bước, kiểm bắt buộc ở mỗi bước (đóng góp)
   const STEPS = [

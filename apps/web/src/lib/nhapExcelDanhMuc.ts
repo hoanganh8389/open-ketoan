@@ -734,7 +734,7 @@ const KHO_CO_CAU = danhMuc<KhoDM16>({
 
 // [2026-11-18 03:30 PM kiennt] NT-DM-008 — DM14 nhập giá bán ở lưới giá bằng trình nhập chung (trước: hộp xem trước tự viết) (đóng góp)
 /* ------------------------------------------------------------------ DM14 giá bán theo một bảng giá (lưới giá) */
-interface DongGia { sku: string; name: string; unit: string; price: number | null }
+interface DongGia { sku: string; name: string; unit: string; price: number | null; groupCode?: string | null; ratio?: number; isActive?: boolean; isDefault?: boolean; companyPrice?: number | null }
 /** Ô đơn giá: "580000", "580.000", "580,000", "1.250.000" (nhóm 3 số = phân cách hàng nghìn, NT-DM-003); trống = undefined (giữ nguyên); sai = null. */
 function docDonGia(v: string | undefined): number | null | undefined {
   const s = (v ?? '').replace(/\s/g, '').replace(/đ$/i, '');
@@ -753,10 +753,18 @@ export function nhapGiaBan(code: string, ten: string): NhapLoai {
       { key: 'name', header: 'Tên hàng', aliases: ['ten', 'ten vthh'], note: 'Chỉ để đối chiếu, không ghi.' },
       { key: 'unit', header: 'ĐVT', required: true, aliases: ['don vi tinh', 'don vi'], example: 'Lon' },
       { key: 'price', header: 'Đơn giá', aliases: ['gia', 'gia ban', 'don gia ban'], example: '25000', note: 'Giá đã gồm thuế. "580000", "580.000", "580,000" đều được. Ô trống: giữ nguyên giá đang có.' },
+      // [2026-11-25 Nguyễn Văn Thủy] #40 tab Test: tệp mẫu / xem trước hiện đủ thông tin mã hàng theo danh mục Mặt hàng — chỉ để đối chiếu, không ghi (đóng góp)
+      { key: 'group', header: 'Nhóm hàng', aliases: ['nhom', 'ma nhom hang'], note: 'Theo danh mục Mặt hàng — chỉ để đối chiếu, không ghi.' },
+      { key: 'ratio', header: 'Tỉ lệ quy đổi', aliases: ['ti le', 'ty le', 'ty le quy doi'], note: 'Số ĐVT nhỏ nhất trong một ĐVT này — chỉ để đối chiếu.' },
+      { key: 'defaultUnit', header: 'ĐVT chính', aliases: ['dvt chinh'], note: '"x" = ĐVT chính của mặt hàng — chỉ để đối chiếu.' },
+      { key: 'companyPrice', header: 'Giá bảng giá công ty', aliases: ['gia cong ty'], note: 'Giá đang có ở bảng giá công ty để so — chỉ để đối chiếu, không ghi.' },
+      { key: 'status', header: 'Trạng thái', aliases: ['trang thai'], note: 'Đang dùng / Ngừng — chỉ để đối chiếu.' },
     ],
     // [2026-11-20 kiennt] NT-DM-017 — tệp mẫu liệt kê sẵn mọi mặt hàng / ĐVT của bảng giá (giá đang có điền sẵn, chưa có để trống) để điền luôn (đóng góp)
+    // Tệp mẫu: mặt hàng đang dùng (bỏ mã ngừng hoạt động) × ĐVT, đủ thông tin theo danh mục Mặt hàng.
     mau: async () => (await api.get<{ rows: DongGia[] }>(`/api/v1/catalog/price-lists/${encodeURIComponent(code)}/rows`)).rows
-      .map((r) => [r.sku, r.name, r.unit, r.price === null || r.price === undefined ? '' : String(r.price)]),
+      .filter((r) => r.isActive !== false)
+      .map((r) => [r.sku, r.name, r.unit, r.price === null || r.price === undefined ? '' : String(r.price), r.groupCode ?? '', r.ratio === undefined ? '' : String(r.ratio), r.isDefault ? 'x' : '', r.companyPrice === null || r.companyPrice === undefined ? '' : String(r.companyPrice), r.isActive === false ? 'Ngừng' : 'Đang dùng']),
     run: async (rows, { dryRun }) => {
       const ds = (await api.get<{ rows: DongGia[] }>(`/api/v1/catalog/price-lists/${encodeURIComponent(code)}/rows`)).rows;
       const have = new Map(ds.map((r) => [`${r.sku}|${r.unit}`.toLowerCase(), r]));
@@ -772,7 +780,9 @@ export function nhapGiaBan(code: string, ten: string): NhapLoai {
         const gia = docDonGia(r.price);
         if (gia === null) errors.push(`Đơn giá "${r.price}" không hợp lệ (số ≥ 0)`);
         const doi = !errors.length && gia !== undefined && gia !== before!.price;
-        return { row, k: `${sku} / ${unit}`, before, errors, gia, doi, values: { ...r, sku: before?.sku ?? sku, unit: before?.unit ?? unit, name: before?.name ?? r.name } as Record<string, string | undefined> };
+        return { row, k: `${sku} / ${unit}`, before, errors, gia, doi, values: { ...r, sku: before?.sku ?? sku, unit: before?.unit ?? unit, name: before?.name ?? r.name,
+          group: before?.groupCode ?? r.group, ratio: before?.ratio !== undefined ? String(before.ratio) : r.ratio, defaultUnit: before ? (before.isDefault ? 'x' : '') : r.defaultUnit,
+          companyPrice: before ? tienVN(before.companyPrice) : r.companyPrice, status: before ? (before.isActive === false ? 'Ngừng' : 'Đang dùng') : r.status } as Record<string, string | undefined> };
       });
       const ghi = pre.filter((p) => p.doi);
       const loiGhi = new Map<number, string>();

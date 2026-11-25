@@ -148,7 +148,8 @@ export function ChungTuPage({ embedPartner, embedGroup, command, report, formsOn
   // Nhúng: hồ sơ NCC đổi nhóm (menu "Xem danh sách …") → đổi thẻ loại phiếu; lệnh nhập Excel → mở hộp nhập.
   useEffect(() => { if (embedded && embedGroup) setGroup(GROUPS.find((g) => g[0] === embedGroup || g[2].includes(embedGroup as PDoc['kind']))?.[0] ?? 'all'); }, [embedded, embedGroup]);
   useEffect(() => { if (embedded && params.get('nhap-excel') === '1') setExcel(true); }, [embedded, params, navKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [status, setStatus] = useState(params.get('trang-thai') ?? (report === 'bao-cao' ? 'approved' : ''));
+  // [2026-11-25 Nguyễn Văn Thủy] #53 tab Test: MH23A mặc định mọi trạng thái (trừ huỷ) — phiếu nhập vừa lập chưa duyệt vẫn lên, chữ cam = chưa duyệt (đóng góp)
+  const [status, setStatus] = useState(params.get('trang-thai') ?? (report === 'bao-cao' && !theoMa ? 'approved' : ''));
   const [onlyErr, setOnlyErr] = useState(params.get('loi') === '1');
   // [2026-11-20 khanhtd] MUA-HANG — lọc đơn đặt theo tình trạng hoá đơn (?hoa-don=chua_co|mot_phan|du|chua_nhap|chua_du) và phiếu chi phí theo khoản mục (?khoan-muc=<mã>, "-" = chưa chọn) (đóng góp)
   const [hd, setHd] = useState(params.get('hoa-don') ?? '');

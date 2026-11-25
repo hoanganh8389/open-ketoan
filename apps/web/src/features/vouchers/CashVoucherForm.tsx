@@ -181,7 +181,9 @@ export function CashVoucherForm({ type, existing, initial, onClose, onSaved, the
   const [finding, setFinding] = useState(false);
   const signatures = useSignatures(existing && !cancelled ? existing.id : undefined).data;
   const setRow = (key: number, patch: Partial<Row>) => setRows((xs) => xs.map((x) => (x.key === key ? { ...x, ...patch } : x)));
-  const show = (k: ColKey) => cols.includes(k) || hasData(rows, k);
+  // [2026-11-25 Nguyễn Văn Thủy] #3 tab Test: dòng có tài khoản bắt buộc khoản mục CP / hợp đồng / đơn vị / nhân viên thì cột đó tự hiện — trước đây cột ẩn nên không lưu được phiếu (đóng góp)
+  const batBuoc = (k: ColKey) => rows.some((r) => { const a = accountMap.get(r.account); return Boolean(a) && ((k === 'costItem' && a!.trackCostItem) || (k === 'contract' && a!.trackContract) || (k === 'department' && a!.trackDepartment) || (k === 'employee' && a!.trackEmployee)); });
+  const show = (k: ColKey) => cols.includes(k) || hasData(rows, k) || batBuoc(k);
   const toggleCol = (k: ColKey) => { const next = cols.includes(k) ? cols.filter((x) => x !== k) : [...cols, k]; setCols(next); try { localStorage.setItem(colsKey(type), JSON.stringify(next)); } catch { /* bỏ qua */ } };
 
   /** Tài khoản tiền mặc định: theo loại phiếu, không có thì tài khoản tiền đầu tiên (1111, 1121…). */
