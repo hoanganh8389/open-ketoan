@@ -22,7 +22,7 @@ export type ReportKind = 'sale' | 'return' | 'all';
 /** Kiểm khoảng ngày (Q6) — VALIDATION_ERROR có `field` + `fields` để màn báo ở ô ngày. */
 export function checkRange(from: string, to: string): void {
   const p = rangeProblem(from, to);
-  if (p) throw Errors.validation(p.message, { reason: 'POS_REPORT_RANGE', field: p.field, fields: { [p.field]: p.message } });
+  if (p) throw Errors.validation(p.message, { field: p.field, fields: { [p.field]: p.message } });
 }
 
 /**
