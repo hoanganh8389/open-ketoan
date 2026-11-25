@@ -206,7 +206,8 @@ function main() {
     if (choDev) console.log('   chỉ đẩy vào dev (máy thử): miễn giữ chỗ R-FLOW-1 / 3 và R-FLOW-5 "đứng sau main"; selfcheck so với origin/dev');
     const k = run(process.execPath, ['scripts/nhan-viec.mjs', 'kiem'], { timeout: 120_000 });
     const kLines = k.out.split('\n').filter((l) => /✔|✘|▲/.test(l));
-    const mien = (l) => choDev && /✘\s+R-FLOW-(1|3)\b|✘\s+R-FLOW-5\s+nhánh đứng sau/.test(l);
+    // dòng tổng kết "✘ N chỗ chưa đạt" của nhan-viec đếm cả mục đã miễn → khi đẩy dev chỉ xét từng mục
+    const mien = (l) => choDev && /✘\s+R-FLOW-(1|3)\b|✘\s+R-FLOW-5\s+nhánh đứng sau|✘\s+\d+\s+chỗ chưa đạt/.test(l);
     console.log(kLines.map((l) => (mien(l) ? `${l.replace('✘', '·')} (miễn khi đẩy dev)` : l)).map((l) => (l.length > 160 ? `${l.slice(0, 159)}…` : l)).join('\n'));
     if (choDev) k.ok = !kLines.some((l) => /✘/.test(l) && !mien(l));
     const cmp = compareWithMain(choDev ? 'dev' : 'main');
