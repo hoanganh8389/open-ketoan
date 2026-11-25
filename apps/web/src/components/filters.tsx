@@ -13,6 +13,7 @@ import { PanelBranchList } from './ReportPanel';
 import { CayDonVi } from './CayDonVi';
 import { useOrgTree } from '@/lib/orgUnits';
 import { useCayDonVi } from '@/lib/cayDonVi';
+import { useDangKyLoc } from './locChuan';
 
 /**
  * Khoảng ngày kèm ô "Kỳ" chọn nhanh (tháng này, tháng trước, quý, năm…).
@@ -22,6 +23,8 @@ export function DateRange({ from, to, onChange, remember = true }: { from: strin
   const preset = presetOf(from, to);
   // remember={false}: màn nhập phiếu có khoảng ngày riêng, không lấy và không ghi đè kỳ của báo cáo.
   const change = (a: string, b: string) => { if (remember) rememberPeriod(a, b); onChange(a, b); };
+  // Trong bảng tham số: kỳ cũng hiện ở thanh lọc chuẩn ngoài màn (một nguồn).
+  useDangKyLoc('ky', useFilterPanel() ? { from, to, onChange } : null, `${from}|${to}`);
   return (
     <>
       <div className="field">
@@ -41,6 +44,12 @@ export function DateRange({ from, to, onChange, remember = true }: { from: strin
       </div>
     </>
   );
+}
+
+/** Ô "Đến ngày" của báo cáo số dư tại một ngày (công nợ, tồn…): hiện ở thanh lọc chuẩn như ô kỳ. */
+export function DenNgay({ value, onChange, label = 'Đến ngày' }: { value: string; onChange: (v: string) => void; label?: string }) {
+  useDangKyLoc('ky', useFilterPanel() ? { from: '', to: value, onChange: (_a: string, b: string) => { if (b) onChange(b); }, chiDen: true } : null, value);
+  return <div className="field"><label>{label}</label><input type="date" className="input" value={value} onChange={(e) => e.target.value && onChange(e.target.value)} /></div>;
 }
 
 export interface BranchOption { code: string; name: string; isActive: boolean }

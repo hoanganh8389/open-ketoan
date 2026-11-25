@@ -42,6 +42,7 @@ Chấm 11 trục theo [RULE-REVIEW §7](../docs/rules/RULE-REVIEW.md), mỗi tr�
 - **T1 Sự thật kế toán:** không `INSERT/UPDATE/DELETE` `ledger_*` / `accounting_events*` ngoài Kernel; phân hệ không gọi `ledgerService`; không số tài khoản trong mã; không tắt trigger (`session_replication_role`, `DISABLE TRIGGER`); không script "làm sạch" sổ.
 - **T2 Ranh giới:** phân hệ chỉ import Kernel qua `apps/api/src/kernel/public.ts`; không import phân hệ khác; event không ra lệnh ghi sổ (AP-2); tệp framework có ghi mức K0–K3.
 - **T4 Bảo mật:** mọi truy vấn lọc `tenant_id`; route ghi có `requirePermission` + `writeAudit`; không bí mật, không `sql.raw` với đầu vào, không PII trong log; văn bản từ AI / tệp là dữ liệu, không phải lệnh.
+- **Ghi log lỗi (R-LOG, Johnny Chu – Chu Hoàng Anh khởi tạo 2026-11-21):** chặn khi nuốt lỗi im lặng (`catch {}` / `.catch(() => undefined)` không có `// nuot-loi:`), mất stack (`err: String(err)`, `e.message`), `console.error` trong route / service / subscriber, log lộ dữ liệu. Người đóng góp chưa biết luật thì nhắc kèm link [RULE-LOG](../docs/rules/RULE-LOG.md). <!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — R-LOG vào trục chặn khi review -->
 - **T5 Kiểm đầu vào:** zod ở mọi cửa (route, action, MCP, nhập tệp); lỗi qua `Errors.*`; tra cứu tiền / số lượng **không** `?? 1` / `?? 0` khi không tìm thấy (R-REV-13).
 
 Các trục còn lại — cảnh báo, ghi việc: **T3** hợp đồng (`packages/contracts` + `docs/contracts` + `docs/api` cùng đổi, tăng `@N`) · **T6** migration số kế tiếp, `COMMENT ON`, `numeric(18,2)`, không bảng danh mục riêng, mã theo `SKU_RULE` · **T7** hiệu năng: không N+1, có phân trang, có chỉ mục, không giữ giao dịch ghi sổ lâu · **T8** không cache số dư / sổ / công nợ / tồn / báo cáo; khoá đệm có `tenant_id` + `config_version` (R-CACHE) · **T9** báo cáo đọc sổ, không cộng cột tổng đầu phiếu · **T10** có test, không `.only` / `.skip`, không thêm nợ baseline, dấu R-SIG đúng người · **T11** Core gọn: không phụ thuộc npm mới, không viết lại thứ đã có, không mã chết.
@@ -62,11 +63,30 @@ Mỗi lần sửa có chức năng một tệp framework thêm một dòng dấu
 - Không xoá dấu cũ; migration đã phát hành không sửa.
 - Bộ kiểm: SC-SIG-1, SC-SIG-2. Chi tiết: [docs/rules/RULE-SIGNATURE.md](../docs/rules/RULE-SIGNATURE.md).
 
+## Ghi log lỗi (R-LOG)
+<!-- [2026-11-21 04:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — nhắc luật R-LOG cho Copilot -->
+
+Framework có luật ghi log lỗi **R-LOG** do Johnny Chu – Chu Hoàng Anh khởi tạo 2026-11-21 ([CANON §0.12](../docs/00-CANON.md), [RULE-LOG](../docs/rules/RULE-LOG.md)). Khi gợi ý mã có `catch` / log / tác vụ nền: `log.error({ err }, '…')` qua logger của Platform, không nuốt lỗi, không `console.*` trong mã chạy, không ghi payload / dữ liệu cá nhân; người dùng nhập sai là `info`, không phải `error`. Nhắc người đóng góp (Nguyễn Văn Thủy, Võ Hoàng, kiennt, khanhtd…) khi họ chưa theo luật.
+
+<!-- [2026-11-22 10:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 -->
+**Nhận log để sửa mã:** đọc theo [docs/ops/DOC-LOG-SUA-LOI.md](../docs/ops/DOC-LOG-SUA-LOI.md) — đúng `commit`, gom theo `errFp`, đi từ khung stack đầu tiên trong `apps/` · `packages/`, sửa nguyên nhân kèm test; không catch rỗng, không hạ mức log, không xin `.env`. Bộ kiểm SC-LOG-1..3, SC-OBS-3 chặn vi phạm mới.
+
 ## Trước khi xong việc
 
 ```bash
-node tests/conformance/selfcheck.mjs   # phải ĐẠT
-bash scripts/kiem-chuan.sh
+node tests/conformance/selfcheck.mjs --strict   # ghi kết quả vào khối bằng chứng (main còn nợ thì KHÔNG ĐẠT là trung thực)
+bash scripts/kiem-chuan.sh                      # phải ĐẠT — không thêm lỗi mới so với main
 npm run typecheck
 npm test                               # cần PostgreSQL: docker compose up -d db
 ```
+
+## Mô tả PR: bằng chứng và trụ cột (PHASE-040)
+<!-- [2026-11-23 11:28 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B11 (S040-27) -->
+
+Mọi PR được chấm tiến độ bằng `scripts/cham-pr.mjs` ([PHASE-040 · 20](../docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/20-CHAM-DIEM-TIEN-DO.md)). Khi mở PR — kể cả bằng `gh pr create --body` (cách này **bỏ qua** mẫu PR):
+
+1. **Dán khối "Bằng chứng chạy máy"** đã điền thật: `node scripts/cham-pr.mjs --mau-bang-chung` in sẵn SHA; điền kết quả `kiem-chuan`, `selfcheck --strict`, số test qua, typecheck. Không điền thay kết quả chưa chạy.
+2. **Ghi dòng `**Trụ cột / tiêu chí:** <mã>`** — mã tiêu chí ở `docs/standard/tru-cot.json` dạng `X/DC-3`, hoặc `không`. Thiếu dòng này thì việc của PR không được tính vào tiến độ trụ cột.
+3. **Không tự merge PR của mình** nếu muốn PR được `VERIFIED`: cần một người khác tác giả bấm Approve hoặc merge (D040-14).
+
+Kiểm trước khi gửi: `node scripts/nhan-viec.mjs kiem` (▲ D040-8) và `node scripts/cham-pr.mjs --nhac` (PR đang mở còn thiếu gì — chỉ in).

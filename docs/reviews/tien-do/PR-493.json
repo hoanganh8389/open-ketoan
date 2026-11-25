@@ -1,0 +1,121 @@
+{
+  "contract": "bizcity_pr_progress@1",
+  "pr": 493,
+  "title": "fix(pos): SĐT khách rỗng khi mobile là chuỗi rỗng — lấy phone",
+  "mergedAt": "2026-11-20T08:05:02Z",
+  "base": "735d8bb6",
+  "merge": "aab28bf1",
+  "authors": [
+    {
+      "id": "H-Joyy",
+      "commits": 1
+    }
+  ],
+  "people": [
+    "H-Joyy"
+  ],
+  "reviews": 0,
+  "reviewers": [],
+  "approvedBy": [],
+  "mergedBy": "H-Joyy",
+  "declaredCriteria": {
+    "present": false,
+    "ids": [],
+    "none": false
+  },
+  "ci": {
+    "ran": false,
+    "reason": "billing-lock",
+    "jobs": 7
+  },
+  "evidenceBlock": {
+    "present": false
+  },
+  "files": 2,
+  "impact": {
+    "pillars": [
+      "X"
+    ],
+    "rules": [
+      "R-DOC-CONT"
+    ],
+    "axes": [
+      "T1",
+      "T5",
+      "T12"
+    ],
+    "docsOnly": false
+  },
+  "progress": {
+    "foundation": {
+      "before": 64,
+      "after": 64
+    },
+    "pillars": {
+      "before": 62,
+      "after": 62
+    },
+    "overall": {
+      "before": 63,
+      "after": 63
+    },
+    "docMatrix": {
+      "before": null,
+      "after": null
+    },
+    "compliance": {
+      "before": null,
+      "after": null,
+      "note": "không chạy selfcheck (thêm --selfcheck)"
+    },
+    "byPillar": {
+      "0": 53,
+      "I": 80,
+      "II": 61,
+      "III": 39,
+      "IV": 90,
+      "V": 46,
+      "VI": 70,
+      "VII": 50,
+      "VIII": 50,
+      "IX": 100
+    },
+    "criteriaChanged": []
+  },
+  "kind": "giữ nhịp",
+  "regressed": [],
+  "axes": {
+    "T1": 2,
+    "T2": "—",
+    "T3": "—",
+    "T4": "—",
+    "T5": 2,
+    "T6": "—",
+    "T7": "—",
+    "T8": "—",
+    "T9": "—",
+    "T10": "—",
+    "T11": "—",
+    "T12": 2
+  },
+  "axesBy": "máy",
+  "axesBasis": {
+    "T1": [
+      "không có phát hiện H-*"
+    ],
+    "T5": [
+      "không có phát hiện H-*"
+    ],
+    "T12": [
+      "không có phát hiện H-*"
+    ]
+  },
+  "score": 100,
+  "grade": null,
+  "verdict": "ĐẠT",
+  "release": "UNVERIFIED",
+  "findings": [],
+  "followUps": [
+    "chạm trụ cột X nhưng mô tả PR không có dòng \"Trụ cột / tiêu chí\" — khai tiêu chí đẩy, hoặc \"không\""
+  ]
+}

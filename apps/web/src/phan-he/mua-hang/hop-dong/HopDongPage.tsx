@@ -12,6 +12,7 @@ import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Copy, Plus, X } from 'lucide-react';
+import { NutTao } from '@/components/NutTao';
 import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Field, Loading, NumInput } from '@/components/ui';
@@ -23,6 +24,7 @@ import { CONTRACT_STATUS_LABEL, KIND_LABEL, STATUS_LABEL, purchaseApi, today, us
 import { BrandInput, dmy, statusBadge } from '../chung';
 import { TepDinhKem } from '../dinh-kem/TepDinhKem';
 import { GiaVaChinhSach } from './GiaVaChinhSach';
+import { CongNoDieuKhoan } from './CongNoDieuKhoan';
 import { LichSu } from '../thanh-phan/LichSu';
 import '../mua-hang.css';
 
@@ -62,12 +64,14 @@ export function HopDongMuaPage({ embedded, partner }: { embedded?: boolean; part
   const body = (
       <div className={embedded ? '' : 'card'}>
         <div className="row" style={{ gap: 8, padding: '8px 12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ width: 260 }}><PartnerPicker value={ncc} onChange={setNcc} kind="supplier" placeholder="Lọc theo nhà cung cấp" /></div>
-          <input className="input" style={{ width: 240 }} placeholder="Tìm số hợp đồng, tên, NCC…" value={find} onChange={(e) => setFind(e.target.value)} />
-          {tt.sua && <button className="btn btn-sm btn-primary" onClick={() => navigate(hopDongMoiPath(ncc || undefined))}><Plus size={14} /> Thêm hợp đồng</button>}
+          {/* [2026-11-25 Nguyễn Văn Thủy] nút tạo mới luôn đứng đầu, góc trái (quy ước NutTao); ô lọc / tìm dồn sang phải (đóng góp) */}
+          {tt.sua && <NutTao onClick={() => navigate(hopDongMoiPath(ncc || undefined))}>Thêm hợp đồng</NutTao>}
           {/* [2026-11-19 Nguyễn Văn Thủy] nhân bản hợp đồng đang chọn: chép thông tin, hàng hoá, điều khoản sang hợp đồng mới (đóng góp) */}
           {tt.sua && <button className="btn btn-sm" disabled={!sel} title={sel ? `Nhân bản hợp đồng ${sel.code}: chép thông tin, hàng hoá, điều khoản — nhập số hợp đồng mới rồi Ghi` : 'Chọn một hợp đồng để nhân bản'} onClick={() => sel && navigate(hopDongNhanBanPath(sel.code))}><Copy size={13} /> Nhân bản</button>}
           <span className="muted" style={{ fontSize: 12 }}>Bấm đúp một dòng để mở hợp đồng</span>
+          <span className="spacer" style={{ flex: 1 }} />
+          <div style={{ width: 260 }}><PartnerPicker value={ncc} onChange={setNcc} kind="supplier" placeholder="Lọc theo nhà cung cấp" /></div>
+          <input className="input" style={{ width: 240 }} placeholder="Tìm số hợp đồng, tên, NCC…" value={find} onChange={(e) => setFind(e.target.value)} />
         </div>
         <ErrorBox error={q.error ? errorText(q.error) : null} />
         {q.isLoading ? <Loading /> : (
@@ -199,6 +203,16 @@ function ChiTietHopDong() {
         <div className="card hd-body">
           {/* [2026-11-19 Nguyễn Văn Thủy] bước 5 = Tệp & nhật ký như hồ sơ NCC: tệp đã có thì hiện, kéo thả / chọn để tải thêm; thanh lý; nhật ký (đóng góp) */}
           {buoc === 'scan' && !isNew && <div style={{ marginBottom: 14 }}><h4 className="mh-h4">Tệp hợp đồng, phụ lục</h4><TepDinhKem ownerType="contract" ownerId={code} defaultKind="hop_dong" simple /></div>}
+          {/* [2026-11-23 Nguyễn Văn Thủy] bước 3: Công nợ & thanh toán lên đầu, giao nhận / đổi trả / phạt bên dưới; hợp đồng mới vẫn thấy khung (đóng góp) */}
+          {buoc === 'dieu-khoan' && (c && !isNew
+            ? <CongNoDieuKhoan partnerCode={c.partnerCode} contractCode={code} start={c.startDate ?? undefined} end={c.endDate ?? undefined} readOnly={c.status === 'liquidated'} />
+            : <section className="hd-box" style={{ marginBottom: 10 }}>
+                <h4 className="mh-h4">Công nợ &amp; điều khoản thanh toán</h4>
+                <table className="mh-mini" style={{ width: '100%' }}><tbody>
+                  {['Điều khoản thanh toán', 'Hạn mức công nợ'].map((t) => <tr key={t}><td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{t}</td><td className="muted" style={{ fontSize: 12.5 }}>Ghi hợp đồng xong thì khai tại đây</td></tr>)}
+                </tbody></table>
+              </section>)}
+          {buoc === 'dieu-khoan' && <h4 className="mh-h4" style={{ marginTop: 6 }}>Giao nhận, đổi trả, phạt</h4>}
           {form ? (
             <fieldset disabled={!editing} className={editing ? '' : 'view-plain'} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }} onDoubleClick={() => !editing && tt.sua && setEditing(true)}>
               {buoc === 'thong-tin' && <div className="hd-grid">
@@ -233,7 +247,7 @@ function ChiTietHopDong() {
                 <Field label="Phạt vi phạm (%)" tip="Tối đa 8% giá trị phần nghĩa vụ bị vi phạm (Điều 301 Luật Thương mại 2005)" error={phatLoi}><NumInput value={v.penaltyPct ?? 0} decimals={2} onChange={(n) => set({ penaltyPct: n || null })} /></Field>
                 <Field label="Lãi chậm thanh toán (%/năm)" tip="Lãi trên số tiền chậm trả (Điều 306 Luật Thương mại 2005)"><NumInput value={v.lateInterestPct ?? 0} decimals={2} onChange={(n) => set({ lateInterestPct: n || null })} /></Field>
                 <Field label="Đổi trả" full><input className="input" value={v.returnTerms} placeholder="vd Đổi hàng lỗi, móp; trả hàng còn hạn dưới 60 ngày" onChange={(e) => set({ returnTerms: e.target.value })} /></Field>
-                <div className="muted full" style={{ fontSize: 12 }}>Hạn thanh toán, hạn mức công nợ, chiết khấu, thưởng: khai ở bước 4 (Giá mua và chính sách) — phiếu tự áp.</div>
+                <div className="muted full" style={{ fontSize: 12 }}>Chiết khấu, khuyến mại, thưởng: khai ở bước 4 Giá mua và chính sách.</div>
               </div>}
               {buoc === 'scan' && <>
                 <h4 className="mh-h4">Thanh lý hợp đồng <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>(bấm Sửa để tích thanh lý)</span></h4>

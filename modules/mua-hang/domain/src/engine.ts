@@ -104,6 +104,10 @@ export interface PDoc {
   brandCode?: string;
   priceIncludesVat: boolean;
   invoice?: { no: string; serial?: string; date: string; total?: number };
+  /** [2026-11-21 Nguyễn Văn Thủy] Phiếu nhập NHIỀU hoá đơn (NCC tách hoá đơn, hoá đơn điều chỉnh). `invoice` = hoá đơn đầu (dữ liệu cũ, báo cáo cũ) (đóng góp). */
+  invoices?: DocInvoice[];
+  /** Đơn đặt: các kho giao (tham chiếu, chọn nhiều) — phân kho thật lưu ở từng dòng. */
+  deliveryWarehouses?: string[];
   orderDiscount?: { pct?: number; amount?: number };
   /** CK trên đơn chỉ chia vào các dòng này (lineKey) — chốt lúc duyệt khi có mã đang áp riêng chương trình khác. Trống = mọi dòng mua. */
   orderDiscountLines?: string[];
@@ -150,7 +154,7 @@ export interface PDoc {
   outsideOrder?: { reason: string; by?: string; at?: string; reviewedBy?: string; reviewedAt?: string; reviewNote?: string };
   /** Mã chính sách BỎ trên phiếu này (bỏ tích ở bảng khuyến mại: NCC hết quà, không cho CK lần này…) — mọi phép tính bỏ qua. */
   skipPolicies?: string[];
-  /** Ngày nhận đủ hàng và hồ sơ giao hàng hợp lệ — mốc tính hạn thanh toán theo hợp đồng (trống = ngày phiếu). */
+  /** Phiếu nhập: NGÀY NHẬN HOÁ ĐƠN (hàng nhận = ngày phiếu → có ngày này là đủ hàng + hồ sơ) — mốc tính hạn thanh toán "từ ngày nhận đủ hàng và hồ sơ" (trống = ngày phiếu). 21/11/2026 đổi tên trên giao diện. */
   receivedDate?: string;
   /** Hoá đơn sai phải điều chỉnh: hạn thanh toán lùi đúng số ngày từ lúc báo sai (from) đến lúc nhận hoá đơn đúng (to). */
   invoiceFix?: { from: string; to: string };
@@ -161,6 +165,8 @@ export interface PDoc {
   /** Đơn đặt: ngày giao, giao tại kho. */
   deliveryDate?: string;
   deliveryWarehouse?: string;
+  /** [2026-11-21 Nguyễn Văn Thủy] Đơn đặt: chi nhánh sở hữu "Giao tại kho" khi kho thuộc chi nhánh con (trống = chi nhánh của đơn) — phiếu nhập lập ở chi nhánh này (đóng góp). */
+  deliveryBranch?: string;
   /** Phân kho của phiếu hàng (nhập, trả, đổi, quà): mọi dòng đi theo kho này; trống → kho mặc định của chi nhánh (máy chủ điền khi lưu). */
   warehouseCode?: string;
 }
@@ -425,8 +431,21 @@ export const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b
 
 /* ------------------------------------------------------------------ chính sách */
 
-export function policyApplies(p: Policy, ctx: { date: string; partnerCode?: string; brandCode?: string; sku?: string; branchCode?: string }) {
+// [2026-11-21 Nguyễn Văn Thủy] hạn mức công nợ + điều khoản thanh toán là ĐIỀU KHOẢN HỢP ĐỒNG: gắn hợp đồng X thì chỉ áp phiếu của X (docs/nghiep-vu/28) (đóng góp)
+/** Loại "điều khoản" của hợp đồng (khai ở bước Điều khoản hợp đồng, không ở danh sách chính sách). */
+export const CONTRACT_BOUND_KINDS: PolicyKind[] = ['credit_limit', 'payment_term'];
+/**
+ * Hợp đồng xuyên suốt (docs/nghiep-vu/28): phiếu theo hợp đồng X chỉ dùng chính sách / điều khoản của X; phiếu KHÔNG theo hợp đồng chỉ dùng
+ * phần "Không theo hợp đồng" của NCC. Chính sách không gắn NCC (cấp nhãn, toàn công ty) áp cả hai.
+ */
+export function contractApplies(p: Pick<Policy, 'scope'>, docContract?: string | null): boolean {
+  if (p.scope.contractCode) return p.scope.contractCode === (docContract || undefined);
+  if (p.scope.partnerCode) return !docContract;
+  return true;
+}
+export function policyApplies(p: Policy, ctx: { date: string; partnerCode?: string; brandCode?: string; sku?: string; branchCode?: string; contractCode?: string }) {
   if (!p.isActive) return false;
+  if (!contractApplies(p, ctx.contractCode)) return false;
   if (p.validFrom && ctx.date < p.validFrom) return false;
   if (p.validTo && ctx.date > p.validTo) return false;
   const s = p.scope;
@@ -443,7 +462,7 @@ export function scopeRank(p: Pick<Policy, 'scope'>, partnerCode?: string): numbe
 }
 /** Chính sách khớp nhất (phạm vi hẹp hơn, ưu tiên cao hơn đứng trước). */
 export function findPolicy(policies: Policy[], kind: PolicyKind, ctx: Parameters<typeof policyApplies>[1]): Policy | undefined {
-  const spec = (p: Policy) => scopeRank(p, ctx.partnerCode);
+  const spec = (p: Policy) => scopeRank(p, ctx.partnerCode) + (p.scope.contractCode ? 2 : 0);
   return policies.filter((p) => p.kind === kind && policyApplies(p, ctx)).sort((a, b) => spec(b) - spec(a) || (b.priority ?? 0) - (a.priority ?? 0))[0];
 }
 /**
@@ -520,7 +539,7 @@ export function exclusiveBySku(doc: PDoc, policies: Policy[]): Map<string, Exclu
   for (const [sku, ls] of bySku) {
     const first = ls[0]!;
     const qty = ls.reduce((t, l) => t + l.qty, 0), gross = ls.reduce((t, l) => t + l.qty * l.price, 0), unitPrice = qty ? gross / qty : 0;
-    const ctx = { date: doc.docDate, partnerCode: doc.partnerCode, brandCode: first.brandCode ?? doc.brandCode, branchCode: doc.branchCode, sku };
+    const ctx = { date: doc.docDate, partnerCode: doc.partnerCode, brandCode: first.brandCode ?? doc.brandCode, branchCode: doc.branchCode, sku, contractCode: doc.contractCode || undefined };
     // priority: ưu tiên riêng của dòng (bảng CK theo mã) — trống thì dùng ưu tiên của chính sách.
     const cands: { p: Policy; value: number; row?: number; exclusive?: boolean; priority?: number }[] = [];
     for (const p of policies) {
@@ -612,7 +631,7 @@ export function allocate(total: number, weights: number[]): number[] {
 export function computeDoc(doc: PDoc, policies: Policy[], opts: { holidays?: string[]; units?: Record<string, ProductUnit[]> } = {}): DocCalc {
   policies = policiesFor(doc, policies);
   const trace: TraceItem[] = [];
-  const ctxBase = { date: doc.docDate, partnerCode: doc.partnerCode, brandCode: doc.brandCode, branchCode: doc.branchCode };
+  const ctxBase = { date: doc.docDate, partnerCode: doc.partnerCode, brandCode: doc.brandCode, branchCode: doc.branchCode, contractCode: doc.contractCode || undefined };
   // Chương trình áp riêng: mã hàng nhận nó thì các chương trình khác bị chặn cho mã đó.
   const ex = exclusiveBySku(doc, policies);
   const all = policies;
@@ -745,7 +764,7 @@ export function creditStatus(limitPolicy: Policy | undefined, current: number, o
   const after = current + openOrders + thisDoc;
   const warnPct = num(limitPolicy.rule.warnPct) || 90;
   return {
-    scope: branchCode && branches[branchCode] !== undefined ? `Chi nhánh ${branchCode}` : limitPolicy.scope.brandCode ? `Nhãn ${limitPolicy.scope.brandCode}` : `NCC ${limitPolicy.scope.partnerCode ?? ''}`,
+    scope: branchCode && branches[branchCode] !== undefined ? `Chi nhánh ${branchCode}` : limitPolicy.scope.brandCode ? `Nhãn ${limitPolicy.scope.brandCode}` : limitPolicy.scope.contractCode ? `Hợp đồng ${limitPolicy.scope.contractCode}` : `NCC ${limitPolicy.scope.partnerCode ?? ''}`,
     limit, current, openOrders, thisDoc, after, remaining: limit - after, exceeded: Math.max(0, after - limit), warn: after >= (limit * warnPct) / 100, policy: limitPolicy.code,
   };
 }
@@ -754,16 +773,25 @@ export function creditStatus(limitPolicy: Policy | undefined, current: number, o
 
 export type Level = 'info' | 'warn' | 'error';
 /** Kế hoạch hoá đơn đầu vào của đơn / phiếu nhập. */
-export interface InvoicePlan { mode: 'with_goods' | 'later' | 'none'; days?: number }
-/** Hạn nhận hoá đơn của phiếu nhập theo kế hoạch: '' = không có hạn (cùng hàng thì hạn = ngày nhận, không lấy thì không theo dõi). */
-export function invoiceDueDate(plan: InvoicePlan | undefined, receivedDate: string): string {
+export interface InvoicePlan { mode: 'with_goods' | 'later' | 'none'; days?: number; /** Gửi sau N ngày tính từ: ngày đặt đơn / ngày nhận hàng (mặc định). */ from?: 'order' | 'receipt' }
+/** Một hoá đơn của phiếu nhập. adjusts = số hoá đơn (ký hiệu-số) mà hoá đơn này điều chỉnh. */
+export interface DocInvoice { no: string; serial?: string; date: string; total?: number; supplierInvoiceId?: string; adjusts?: string; note?: string; by?: string; at?: string }
+/** Các hoá đơn của phiếu (dữ liệu cũ chỉ có `invoice`). */
+export const invoicesOf = (d: Pick<PDoc, 'invoice' | 'invoices'>): DocInvoice[] => (d.invoices?.length ? d.invoices : d.invoice?.no ? [d.invoice] : []);
+/** "ký hiệu-số" của hoá đơn. */
+export const invoiceKey = (i: { no: string; serial?: string }) => (i.serial ? `${i.serial}-${i.no}` : i.no);
+/** Hạn nhận hoá đơn của phiếu nhập theo kế hoạch: '' = không có hạn (giao kèm hàng thì hạn = ngày nhận, hàng không có hoá đơn thì không theo dõi).
+ *  Gửi sau N ngày: tính từ ngày nhận hàng, hoặc từ ngày đặt đơn khi kế hoạch chọn `from = 'order'` (truyền orderDate). */
+// receivedDate ở đây = ngày NHẬN HÀNG (ngày phiếu nhập), không phải PDoc.receivedDate (ngày nhận hoá đơn).
+export function invoiceDueDate(plan: InvoicePlan | undefined, receivedDate: string, orderDate?: string): string {
   if (plan?.mode === 'none') return '';
   if (plan?.mode !== 'later') return receivedDate;
-  const d = new Date(`${receivedDate}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + (plan.days ?? 0));
+  const goc = plan.from === 'order' && orderDate ? orderDate : receivedDate;
+  const d = new Date(`${goc}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + (plan.days ?? 0));
   return d.toISOString().slice(0, 10);
 }
 /** Chữ ngắn của kế hoạch hoá đơn. */
-export const invoicePlanText = (plan?: InvoicePlan) => (plan?.mode === 'none' ? 'Không lấy HĐ' : plan?.mode === 'later' ? `HĐ gửi sau ${plan.days ?? 0} ngày` : 'HĐ giao kèm hàng');
+export const invoicePlanText = (plan?: InvoicePlan) => (plan?.mode === 'none' ? 'Hàng không có hoá đơn' : plan?.mode === 'later' ? `HĐ gửi sau ${plan.days ?? 0} ngày (từ ngày ${plan.from === 'order' ? 'đặt đơn' : 'nhận hàng'})` : 'HĐ giao kèm hàng');
 
 export interface Check { level: Level; code: string; text: string; lineKey?: string; blocking?: boolean }
 export interface PriceRow { date: string; partnerCode: string; docNo: string; unitPrice: number; includesVat: boolean; unit?: string; qty?: number }
@@ -814,7 +842,7 @@ export function giftPlan(doc: PDoc, policies: Policy[]): GiftPlanRow[] {
   for (const l of doc.lines) if (l.lineType === 'buy' && l.sku) bySku.set(l.sku, [...(bySku.get(l.sku) ?? []), l]);
   for (const [sku, ls] of bySku) {
     const first = ls[0]!;
-    const ctx = { date: doc.docDate, partnerCode: doc.partnerCode, brandCode: first.brandCode ?? doc.brandCode, branchCode: doc.branchCode, sku };
+    const ctx = { date: doc.docDate, partnerCode: doc.partnerCode, brandCode: first.brandCode ?? doc.brandCode, branchCode: doc.branchCode, sku, contractCode: doc.contractCode || undefined };
     const hit = ex.get(sku);
     for (const p of policiesForSku(ex, all, sku).filter((x) => x.kind === 'promo_gift')) {
       if (!policyApplies(p, { ...ctx, sku })) continue;
@@ -874,7 +902,7 @@ export function taxPathChecks(doc: PDoc, c: Pick<CheckCtx, 'products' | 'noTaxFo
 
 export function checkDoc(doc: PDoc, calc: DocCalc, c: CheckCtx): Check[] {
   const out: Check[] = [];
-  const ctx = { date: doc.docDate, partnerCode: doc.partnerCode, brandCode: doc.brandCode, branchCode: doc.branchCode };
+  const ctx = { date: doc.docDate, partnerCode: doc.partnerCode, brandCode: doc.brandCode, branchCode: doc.branchCode, contractCode: doc.contractCode || undefined };
   // Dòng hàng mới chưa có mã: đơn đặt được (gắn mã khi hàng về); phiếu nhập / trả phải gắn mã trước khi duyệt.
   const noSku = doc.lines.filter((l) => !l.sku && l.qty > 0);
   if (noSku.length) out.push(doc.kind === 'order'
@@ -920,7 +948,7 @@ export function checkDoc(doc: PDoc, calc: DocCalc, c: CheckCtx): Check[] {
     const p = c.products.find((x) => x.sku === l.sku);
     // Theo nhãn của mặt hàng trong danh mục; hàng mua (không phải quà) xét thêm nhãn chính của phiếu — mã nhãn trong danh mục
     // có thể khác cách gọi nhãn ở chính sách (ví dụ danh mục ghi mã hãng, chính sách ghi ANLENE).
-    const lotCtx = { date: doc.docDate, partnerCode: doc.partnerCode, sku: l.sku, branchCode: doc.branchCode };
+    const lotCtx = { date: doc.docDate, partnerCode: doc.partnerCode, sku: l.sku, branchCode: doc.branchCode, contractCode: doc.contractCode || undefined };
     const lotPolicy = findPolicy(c.policies, 'lot_tracking', { ...lotCtx, brandCode: p?.brandCode })
       ?? (l.lineType !== 'gift_consumer' && !p?.isGiftItem ? findPolicy(c.policies, 'lot_tracking', { ...lotCtx, brandCode: doc.brandCode }) : undefined);
     const tracked = p?.trackLot || Boolean(lotPolicy && lotPolicy.rule.required !== false);

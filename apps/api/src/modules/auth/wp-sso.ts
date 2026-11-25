@@ -20,6 +20,10 @@ import { authRepository } from './auth.repository.js';
 import type { SessionUser } from './auth.schemas.js';
 
 interface Ticket {
+  /** [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — danh tính WordPress (bizcity_identity@1): wp:<id> hoặc biz:<id>. Thiếu = plugin phát vé chưa cập nhật (giai đoạn chuyển). */
+  sub?: string;
+  /** App đích của vé; có mà khác WP_SSO_AUD thì từ chối. */
+  aud?: string;
   email: string;
   name?: string;
   login?: string;
@@ -28,6 +32,9 @@ interface Ticket {
   iat: number;
   exp: number;
 }
+
+/** Khuôn sub của bizcity_identity@1 (cùng CHECK users_external_sub_format, migration 0183). */
+const SUB_RE = /^(wp:[0-9]+|biz:[A-Za-z0-9_-]{1,64})$/;
 
 function b64urlDecode(s: string): Buffer {
   return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
@@ -49,6 +56,10 @@ function verifyTicket(raw: string): Ticket {
   }
   const now = Math.floor(Date.now() / 1000);
   if (!t || typeof t.email !== 'string' || !t.email.includes('@') || !(t.exp > now) || t.exp - t.iat > 300 || t.iat > now + 60) throw bad;
+  // [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — bizcity_identity@1: aud sai ⇒ từ chối (không có giai đoạn chuyển); sub sai khuôn ⇒ từ chối; thiếu sub ⇒ từ chối chỉ khi bật WP_SSO_REQUIRE_SUB.
+  if (t.aud !== undefined && t.aud !== env.WP_SSO_AUD) throw bad;
+  if (t.sub !== undefined && !SUB_RE.test(String(t.sub))) throw bad;
+  if (t.sub === undefined && env.WP_SSO_REQUIRE_SUB === '1') throw bad;
   return t;
 }
 
@@ -67,12 +78,27 @@ export async function loginWithWpTicket(raw: string): Promise<{ token: string; u
   const email = t.email.trim().toLowerCase();
   const fullName = (t.name || t.login || email).trim().slice(0, 255);
 
-  let user = await db.selectFrom('users').select(['id', 'full_name', 'role', 'is_active', 'session_version']).where('tenant_id', '=', tenant.id).where('email', '=', email).executeTakeFirst();
+  // [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — bizcity_identity@1 (BIZCITY-API-v1 §5.2): khớp theo sub trước, email sau; email đã gắn sub khác ⇒ từ chối.
+  const cols = ['id', 'full_name', 'role', 'is_active', 'session_version', 'external_sub'] as const;
+  const sub = t.sub === undefined ? null : String(t.sub);
+  let user = sub
+    ? await db.selectFrom('users').select(cols).where('tenant_id', '=', tenant.id).where('external_sub', '=', sub).executeTakeFirst()
+    : undefined;
+  if (!user) {
+    const byEmail = await db.selectFrom('users').select(cols).where('tenant_id', '=', tenant.id).where('email', '=', email).executeTakeFirst();
+    if (byEmail && sub && byEmail.external_sub && byEmail.external_sub !== sub) {
+      throw Errors.unauthorized('Email này đã gắn với một tài khoản WordPress khác — nhờ quản trị viên kiểm tra');
+    }
+    user = byEmail;
+    if (user && sub && !user.external_sub) {
+      await db.updateTable('users').set({ external_sub: sub }).where('id', '=', user.id).execute(); // lần đầu nối: gắn sub vào người dùng cũ
+    }
+  }
   if (!user) {
     user = await db
       .insertInto('users')
-      .values({ tenant_id: tenant.id, email, full_name: fullName, role: 'viewer', password_hash: await hashPassword(randomBytes(24).toString('base64url')), is_active: true })
-      .returning(['id', 'full_name', 'role', 'is_active', 'session_version'])
+      .values({ tenant_id: tenant.id, email, full_name: fullName, role: 'viewer', password_hash: await hashPassword(randomBytes(24).toString('base64url')), is_active: true, external_sub: sub })
+      .returning(cols)
       .executeTakeFirstOrThrow();
   } else if (!user.is_active) {
     throw Errors.unauthorized('Tài khoản đã bị khoá ở phần mềm kế toán');

@@ -11,6 +11,7 @@ import { Plus } from 'lucide-react';
 import { api, errorText, newIdempotencyKey } from '@/lib/api';
 import { date, dateTime, money, today } from '@/lib/format';
 import { useAuth } from '@/lib/auth';
+import { NutTao } from '@/components/NutTao';
 import { PageHeader } from '@/components/PageHeader';
 import { useBranches, BranchPicker } from '@/components/filters';
 import { Empty, ErrorBox, Field, Loading, Modal, useViewAgain } from '@/components/ui';
@@ -54,8 +55,9 @@ export function PaymentRequestsPage() {
   return (
     <>
       <PageHeader title="Yêu cầu thanh toán" code="CN05" subtitle="Đề nghị chi tiền cho nhà cung cấp, chủ nhà…: lập, duyệt, rồi lập phiếu chi / chi tiền gửi từ yêu cầu đã duyệt" helpKey="yeu-cau-thanh-toan"
-        actions={can('documents:write') ? <button className="btn btn-primary" onClick={() => setEditing({ requestDate: today(), method: 'bank', items: [] })}><Plus size={16} /> Lập yêu cầu</button> : undefined} />
+/>
       <div className="card">
+        <div className="vf-toolbar">{/* [2026-11-25 Nguyễn Văn Thủy] nút tạo mới đứng đầu thanh nút, góc trái (quy ước NutTao) (đóng góp) */}{can('documents:write') && <NutTao onClick={() => setEditing({ requestDate: today(), method: 'bank', items: [] })}>Lập yêu cầu</NutTao>}</div>
         <div className="filters">
           <div className="field"><label>Trạng thái</label><select className="select input" value={status} onChange={(e) => setStatus(e.target.value)}>{STATUS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>
           <div className="field"><label>Đối tượng</label><PartnerPicker value={partnerCode} onChange={setPartnerCode} placeholder="Tất cả" /></div>

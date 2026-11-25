@@ -15,10 +15,12 @@ import { api, errorText } from '@/lib/api';
 import { defaultTo } from '@/lib/format';
 import { KIND_INFO, emptyDoc, tradeApi, type TradeDoc, type TradeKind } from '@/lib/tradeDocs';
 import { PageHeader } from '@/components/PageHeader';
+import { FilterLayout } from '@/components/ReportPanel';
+import { NutTao } from '@/components/NutTao';
 import { DateRange, BranchSelect } from '@/components/filters';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { khoLabel, useKho } from './ChonKho';
-import { ErrorBox, Loading, openNextInEdit } from '@/components/ui';
+import { ErrorBox, Loading } from '@/components/ui';
 import { PhieuHangForm } from './PhieuHangForm';
 import { TRADE_TEMPLATES } from './printTemplates';
 import { PrintButton } from '@/components/print';
@@ -49,7 +51,10 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
   const refresh = () => qc.invalidateQueries({ queryKey: ['trade', kind] });
   // Sửa phiếu đã có rồi Ghi: ở lại, mở lại form bằng bản vừa lưu ở chế độ xem (đổi key để form dựng lại).
   const [formKey, setFormKey] = useState(0);
-  const save = useMutation({ mutationFn: (d: TradeDoc) => svc.save(d), onSuccess: (saved, d) => { if (d.id) { setEditing(saved); setFormKey((k) => k + 1); } else setEditing(null); void refresh(); } });
+  // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-036: form có khung riêng (cùng mẫu phiếu mua) — nút Sửa của danh sách mở thẳng chế độ sửa
+  // bằng cờ startEdit (thay openNextInEdit của khung hộp thoại chung); ghi xong / bấm đúp thì mở ở chế độ xem như trước (đóng góp)
+  const [startEdit, setStartEdit] = useState(false);
+  const save = useMutation({ mutationFn: (d: TradeDoc) => svc.save(d), onSuccess: (saved, d) => { if (d.id) { setStartEdit(false); setEditing(saved); setFormKey((k) => k + 1); } else setEditing(null); void refresh(); } });
   const del = useMutation({ mutationFn: (id: string) => svc.remove(id), onSuccess: () => { setSel(null); void refresh(); } });
   // [2026-11-02 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-020 — S020-21b: duyệt phiếu (nguồn API: vào sổ) khi còn cảnh báo kiểm chuẩn của ngày phiếu ⇒ một dòng bằng chứng; dữ liệu giả lập thì không ghi.
   const gate = useDocumentGate(sel?.docDate);
@@ -90,34 +95,38 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
           Đổi nguồn ở <Link to="/tich-hop/nguon-du-lieu">API → Nguồn dữ liệu màn hình</Link>.
         </div>
       )}
-      <div className="card">
-        <div className="filters">
-          <DateRange from={f.from} to={f.to} onChange={(from, to) => setF((x) => ({ ...x, from, to }))} />
-          <BranchSelect value={f.branchCodes} onChange={(v) => setF((x) => ({ ...x, branchCodes: v }))} />
-          <select className="select input" style={{ height: 30, width: 130 }} value={f.status} onChange={(e) => setF((x) => ({ ...x, status: e.target.value }))}>
+      {/* [2026-11-25 Nguyễn Văn Thủy] bộ lọc theo khung chung: thanh lọc chuẩn ngoài màn + Tất cả bộ lọc (đóng góp) */}
+      <FilterLayout filters={<>
+        <DateRange from={f.from} to={f.to} onChange={(from, to) => setF((x) => ({ ...x, from, to }))} />
+        <BranchSelect value={f.branchCodes} onChange={(v) => setF((x) => ({ ...x, branchCodes: v }))} />
+        <div className="field"><label>Trạng thái</label>
+          <select className="select input" value={f.status} onChange={(e) => setF((x) => ({ ...x, status: e.target.value }))}>
             <option value="">Mọi trạng thái</option><option value="draft">Nháp</option><option value="approved">Đã duyệt</option>
-          </select>
-          <form className="row" style={{ gap: 4 }} onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>
-            <input className="input" style={{ width: 220, height: 30 }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm: số phiếu, đối tượng, hoá đơn" />
-            <button className="btn btn-sm" type="submit">Tìm</button>
-          </form>
-        </div>
-        <div className="row" style={{ gap: 6, padding: '6px 0', flexWrap: 'wrap' }}>
-          <button className="btn btn-sm btn-primary" onClick={() => setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? '')))}>+ Thêm</button>
-          <button className="btn btn-sm" disabled={!sel} onClick={() => { if (!sel) return; if (sel.status !== 'approved') openNextInEdit(); void open(sel); }}>{sel?.status === 'approved' ? 'Xem' : 'Sửa'}</button>
+          </select></div>
+      </>}>
+      <div className="card">
+        <div className="row" style={{ gap: 6, padding: '6px 0', flexWrap: 'wrap', alignItems: 'center' }}>
+          <NutTao onClick={() => setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? '')))}>Thêm</NutTao>
+          <button className="btn btn-sm" disabled={!sel} onClick={() => { if (!sel) return; setStartEdit(sel.status !== 'approved'); void open(sel); }}>{sel?.status === 'approved' ? 'Xem' : 'Sửa'}</button>
           <button className="btn btn-sm" disabled={!sel || status.isPending} onClick={() => { if (!sel) return; const s = sel.status === 'approved' ? 'draft' : 'approved'; if (s === 'approved' && gate.advisories.length && !window.confirm(`Duyệt phiếu ${sel.docNo || '(mới)'}?` + advisoryText(gate.advisories))) return; status.mutate({ id: sel.id, s }); }}>{sel?.status === 'approved' ? 'Bỏ duyệt' : 'Duyệt'}</button>
           {TRADE_TEMPLATES[kind] && <PrintButton small screen={code} templates={TRADE_TEMPLATES[kind]!} disabled={!sel} title="In phiếu đang chọn" getDocs={async () => (sel ? [await svc.get(sel.id)] : [])} />}
           <button className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
+          <span style={{ flex: 1 }} />
+          <form className="row" style={{ gap: 4 }} data-no-search onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>
+            <input className="input" style={{ width: 240, height: 28 }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm: số phiếu, đối tượng, hoá đơn" />
+            <button className="btn btn-sm" type="submit">Tìm</button>
+          </form>
         </div>
         <ErrorBox error={q.error ? errorText(q.error) : del.error ? errorText(del.error) : status.error ? errorText(status.error) : null} />
         {q.isLoading ? <Loading /> : (
           <DataGrid storageKey={`phieu-${kind}-v1`} exportName={`phieu-${kind}`} exportRef={exportRef} rows={q.data?.data ?? []} rowKey={(r) => r.id}
-            onSelect={setSel} onRowDoubleClick={(r) => void open(r)} rowClassName={(r) => dongChungTu(r.status)} footerLabel="Cộng"
+            onSelect={setSel} onRowDoubleClick={(r) => { setStartEdit(false); void open(r); }} rowClassName={(r) => dongChungTu(r.status)} footerLabel="Cộng"
             emptyText={`Chưa có ${info.label.toLowerCase()} trong khoảng này — bấm "+ Thêm"`} columns={columns} />
         )}
       </div>
-      {editing && <PhieuHangForm key={formKey} printScreen={code} value={editing} readOnly={editing.status === 'approved'} saving={save.isPending} error={save.error} onSave={(d) => save.mutate(d)} onClose={() => { setEditing(null); save.reset(); }} />}
+      </FilterLayout>
+      {editing && <PhieuHangForm key={formKey} printScreen={code} helpKey={helpKey} startEdit={startEdit} value={editing} readOnly={editing.status === 'approved'} saving={save.isPending} error={save.error} onSave={(d) => save.mutate(d)} onClose={() => { setEditing(null); save.reset(); }} />}
     </>
   );
 }

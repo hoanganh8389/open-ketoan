@@ -12,6 +12,197 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Đăng nhập WordPress có sub + aud (SPINE-5, C-9-13) <!-- [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — mục CHANGELOG; chủ duyệt bizcity_identity@1 1.0.0 ngày 2026-11-24 -->
+
+- **Thêm:** `POST /api/v1/auth/wp-sso` nhận `sub` (`wp:<id>` | `biz:<id>`) và `aud` trong vé, theo `bizcity_identity@1` (bizcity-platform). Khớp người dùng theo `sub` **trước**, email sau; người dùng cũ chưa có `sub` được gắn ở lần đăng nhập đầu có `sub`; **email đã gắn `sub` khác bị từ chối** (không để vé WordPress khác chiếm tài khoản qua email trùng). `aud` khác `WP_SSO_AUD` (mặc định `open-ketoan`) bị từ chối; `sub` sai khuôn bị từ chối. Cấu hình mới `WP_SSO_AUD`, `WP_SSO_REQUIRE_SUB` (mặc định 0: vé thiếu `sub` vẫn vào trong giai đoạn chuyển 90 ngày; bật 1 để bắt buộc). Test `apps/api/test/wp-sso-sub-aud.test.ts` (9 ca). Chữ chốt: BIZCITY-API-v1 §5.2.
+- **Đổi:** migration 0183 — `users.external_sub text NULL` (CHECK khuôn `wp:<số>` | `biz:<mã>`, chỉ mục duy nhất `(tenant_id, external_sub)` khi khác NULL). Không UPDATE dữ liệu sẵn có. Kiểu cột khai bằng khai báo gộp `UsersTable` ở cuối `packages/platform/src/db/types.ts` (chèn giữa tệp làm lệch số dòng của ba dấu cũ mà SC-SIG-2 chặn theo số dòng).
+- **Sửa:** —
+- **Thay đổi định khoản:** — (không chạm bảng sổ, không đổi quyền / vai)
+- **Nâng cấp cần làm:** chạy migration (`npm run db:migrate` / `scripts/cap-nhat.sh`). Plugin phát vé bên WordPress cần gửi thêm `sub` và `aud`; 90 ngày sau khi cập nhật thì đặt `WP_SSO_REQUIRE_SUB=1`.
+- **Bảo mật:** vé vẫn ký HMAC-SHA256, hạn ≤ 5 phút. Thêm: `aud` chặn dùng vé của app khác; `sub` ổn định thay email làm khoá danh tính; chặn chiếm tài khoản qua email trùng. `is_active = false` vẫn chặn.
+
+### Changefeed danh mục cho đồng bộ xuyên app (SPINE-3, Q-SPINE-3) <!-- [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — mục CHANGELOG; chủ duyệt chuẩn bizcity_spine@1 2026-11-24 -->
+
+- **Thêm:** `GET /api/v1/sync/:axis` (`items` kèm `codes` + `units` · `partners` · `branches`) và `GET /api/v1/sync/:axis/digest` theo `bizcity_sync@1` — chuẩn xương sống `bizcity_spine@1` ở bizcity-platform: app khác (bridge, cake) kéo bản sao theo con trỏ `(updated_at, id)` và đối chiếu bằng băm; dòng ngừng vẫn có mặt (`deleted`). Mã `apps/api/src/modules/sync/`; test `apps/api/test/spine-changefeed.test.ts` (4 ca); hợp đồng MASTER-DATA §3.1, ITEM-MASTER §5.
+- **Đổi:** migration 0182 — `branches.updated_at` có mặc định, dòng trống điền bằng `created_at`, NOT NULL; trigger BEFORE UPDATE giữ `updated_at` trên items / partners / branches khi câu UPDATE không tự đặt; trigger AFTER trên `item_codes`, `product_units` chạm `items.updated_at` (đổi mã / ĐVT làm mặt hàng xuất hiện lại trong feed); chỉ mục `(tenant_id, updated_at, id)`. Bảng lớp khai `modules/sync/` (M data/masterdata).
+- **Sửa:** <!-- [2026-11-24 08:40 PM Johnny Chu - Chu Hoàng Anh] SPINE-4 --> danh mục trống và chưa có con trỏ thì `meta.cursor` từng là chuỗi rỗng (trái `bizcity_sync@1`); nay trả `1970-01-01T00:00:00Z|` (con trỏ "từ đầu"). Do bộ kiểm hộp đen `spine-contract` (bizcity-platform, SC-SPINE-5) bắt được khi chạy vào bản thử.
+- **Thay đổi định khoản:** — (chỉ đọc, không chạm bảng sổ)
+- **Nâng cấp cần làm:** chạy migration (`npm run db:migrate` / `scripts/cap-nhat.sh`). open-ketoan-bridge (bộ kéo C8) và open-cake có thể chuyển sang kéo theo con trỏ thay vì kéo cả bảng.
+- **Bảo mật:** route chỉ đọc, quyền `catalog:read`, cô lập theo đơn vị như mọi route danh mục; `data` của partners / branches không gồm cột ngân hàng, hạn mức.
+
+### nginx chuyển Provisioning API `/_sites/` tới api (PHASE-039 B8b) <!-- [2026-11-23 01:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8b: mục CHANGELOG -->
+
+- **Thêm:** —
+- **Đổi:** —
+- **Sửa:** `docker/nginx.conf` thiếu `location /_sites/` → ở bản cài Docker, mọi lệnh Provisioning API (`/_sites/v1/…`) nhận về `index.html` của giao diện thay vì JSON; Site Manager không tạo được site. Gặp khi dựng `openketoan.com` (SITE_MODE=multi) trên VPS.
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** dựng lại ảnh `web` (`./scripts/cap-nhat.sh` tự làm).
+- **Bảo mật:** không đổi — Provisioning API vẫn chỉ trả lời trên `SITE_ADMIN_HOST` và cần khoá `prov_…`.
+
+### Mật khẩu tính năng nguy hiểm không còn viết sẵn trong mã (PHASE-040 B10b) <!-- [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b: mục CHANGELOG (S040-23) -->
+
+- **Bảo mật:**
+  - Hai thao tác *Xoá hết* (cả danh mục / cả thùng rác) và *Đổi công thức giá vốn* không còn mật khẩu mặc định viết trong mã. Mật khẩu cũ đã công bố trong repo công khai và không còn mở được.
+  - Chưa đặt biến `CATALOG_WIPE_PASSWORD` / `COSTING_FORMULA_PASSWORD` thì tính năng đó **tắt**. API trả 403 kèm câu chỉ rõ biến cần đặt.
+  - `POST /api/v1/validation-log/form` khai rõ chỉ người dùng đăng nhập mới gọi được; khoá API bị từ chối.
+- **Sửa:** kiểm cơ cấu tổ chức đọc sổ qua khung nhìn chỉ đọc `bizcity_read.ledger_entries`.
+- **Nâng cấp cần làm:** bản cài nào cần dùng *Xoá hết* hoặc *Đổi công thức giá vốn* thì đặt `CATALOG_WIPE_PASSWORD` và / hoặc `COSTING_FORMULA_PASSWORD` trong `.env` (xem `.env.example`), rồi khởi động lại API.
+- **Thêm:** —
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+
+### Chữ ký kiến trúc cho tệp framework do người đóng góp tạo (PHASE-040 B10f) <!-- [2026-11-23 09:02 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f: mục CHANGELOG (S040-26) -->
+
+- **Đổi:** 26 tệp framework do người đóng góp tạo được chủ dự án đóng dấu duyệt (R-SIG-1, R-SIG-7). Mỗi tệp chỉ thêm một dòng chú thích, không đổi mã.
+- **Không sửa:**
+  - Migration đã chạy ở các bản cài, kể cả chỉ để thêm dấu.
+  - Dấu cũ sai khuôn của người đóng góp (R-SIG-3).
+  - Hai loại này được ghi vào baseline kèm lý do. Dấu mới thì in bằng `node scripts/ky-dau.mjs`.
+- **Thêm:** —
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
+### Bộ kiểm hướng dẫn theo đúng nút Hướng dẫn của màn (PHASE-040 B10e) <!-- [2026-11-23 11:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10e: mục CHANGELOG (S040-25) -->
+
+- **Thêm:** trang hướng dẫn cho ba màn mà nút Hướng dẫn còn báo "Chưa có hướng dẫn": Thẻ hướng dẫn (HT17), Phiếu xuất điều chỉnh (BH06), Trợ lý (TI12).
+- **Sửa:**
+  - Bộ kiểm SC-DOC-6 kiểm đúng trang mà nút Hướng dẫn của màn sẽ mở (`helpKey`), không còn đòi trang theo khoá menu. Trước đây 26 màn bị báo thiếu nhầm, dù màn đã trỏ vào trang có sẵn.
+  - Bộ tự kiểm chấp nhận mã chẩn đoán có chữ số, giống khuôn mã lỗi đang dùng.
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
+### Hồ sơ in qua action; ngoại lệ nhật ký JSONL; công cụ đối chiếu định khoản là của Kernel (PHASE-040 B10c-2) <!-- [2026-11-23 02:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-2: mục CHANGELOG (S040-24) -->
+
+- **Đổi:**
+  - Ghi / bỏ hồ sơ in (`PUT` / `DELETE /api/v1/print-profile`) chạy qua action `core.print-profile.save` / `core.print-profile.delete`. Đường, đầu vào và kết quả giữ nguyên; mỗi lần ghi có thêm biên nhận bằng chứng.
+  - `cli/doi-chieu-dinh-khoan.ts` được xếp là công cụ của Kernel (lớp K), theo quyết định của chủ dự án.
+  - Nhật ký kiểm HT19 và nhật ký vận hành tiếp tục ghi ra tệp JSONL (`core/run-log.ts`), theo quyết định của chủ dự án. Đây là ngoại lệ hẹp của STD-EVD-4, ghi ở `BIZCITY-EVIDENCE-v1`. Bằng chứng nghiệp vụ vẫn nằm ở bảng.
+- **Thêm:** —
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
+### Ranh giới phần của Lõi (PHASE-040 B10c-lõi) <!-- [2026-11-23 01:30 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10c-lõi: mục CHANGELOG (S040-24) -->
+
+- **Sửa:**
+  - Phiên bản bộ bút toán kết chuyển mẫu ghi qua `documents.saveVersion`: một chỗ ghi lịch sử chứng từ, băm nội dung giống mọi chứng từ khác. Lưu lại y hệt thì không thêm phiên bản.
+  - Bốn route POST chỉ đọc hoặc tự phục vụ (xem trước gói hướng dẫn, kiểm tệp giá vốn, xem thử bút toán, ghi lỗi form) được khai rõ trong danh sách route giữ.
+  - Bảng lớp và nhãn lớp phủ đủ mọi tệp.
+- **Thêm:** —
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
+### Chú thích cột còn thiếu (PHASE-040 B10d-a) <!-- [2026-11-23 01:00 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10d-a: mục CHANGELOG (S040-25) -->
+
+- **Thêm:** migration `0181_chu_thich_cot_con_thieu.sql`. Migration chỉ thêm `COMMENT ON` tiếng Việt cho 102 cột còn thiếu chú thích: chứng từ mang định danh đơn vị / phân kho / bộ phận, phiên bản mã số thuế và cơ cấu, loại kho, mục đích xuất, thùng rác danh mục, lần tính và công thức giá vốn.
+- **Sửa:** bộ kiểm chuẩn đọc migration hiểu được `DROP TABLE` / `DROP COLUMN`, theo đúng thứ tự lệnh. Trước đây bảng và cột đã xoá vẫn bị đòi chú thích.
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có. Migration tự chạy khi nâng cấp: chỉ ghi chú thích, không đổi dữ liệu hay cấu trúc.
+- **Bảo mật:** —
+
+### Bộ kiểm chuẩn đọc đúng thư viện mã và bảng giữ chỗ (PHASE-040 B10a) <!-- [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a: mục CHANGELOG (S040-22) -->
+
+- **Sửa:**
+  - SC-FIND-1 báo nhầm 93 mã "thư viện không có". Nguyên nhân: `CATALOG_HINTS` nay là phép gộp các bộ luật nhắc (`BASE_HINTS`, `quy-tac/*.ts`) mà check chỉ đọc phần viết thẳng; thêm nữa, `FINDING_BASIS` ghi nhiều mục trên một dòng mà check chỉ đọc mục đầu. Nay check đọc đủ cả hai. Không có mã nào thật sự thiếu căn cứ.
+  - SC-FLOW-1 và `nhan-viec.mjs` đọc trọn bảng giữ chỗ `CLAIMS.md`. Trước đây, một dòng chú thích nằm giữa bảng làm cả hai dừng đọc, nên các dòng phía sau không được kiểm.
+  - So khớp phạm vi giữ chỗ:
+    - Mẫu tên tệp như `mua-hang-*.test.ts` không còn bị hiểu thành cả thư mục.
+    - Sổ dùng chung (`CHANGELOG.md`, bảng việc, `baseline.json`) ghi ở nhiều dòng không bị tính là chồng.
+  - Đường dẫn, route và màn trong tài liệu được cập nhật theo việc gộp màn *Quy tắc hạch toán* (04980b5e) và bỏ màn MH27 (e40481c1). Phương án khắc phục dẫn tới đúng màn đang có trong menu.
+- **Thêm:** —
+- **Đổi:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** —
+
+### Provisioning API cho trang dùng thử bizcity-web (PHASE-039 B8) <!-- [2026-11-22 08:45 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B8: mục CHANGELOG (S039-21, S039-22) -->
+
+- **Thêm:**
+  - Lệnh `POST /_sites/v1/sites/{siteId}/owner/reset-password` (việc `reset_owner_password`): mật khẩu ban đầu mới cho email chủ site ở mọi đơn vị của site, thu mọi phiên đang mở (`session_version + 1`). Mật khẩu trả một lần ở `GET /jobs/{jobId}` như lúc tạo site. Site phải đang chạy.
+  - Tạo site với `sample: true` có thêm Công ty mẫu (PHASE-036) trong site mới, cùng email và mật khẩu ban đầu với chủ site; bước `load_sample`.
+- **Đổi:** việc `provision` báo bước thật khi chạy (trước đây cả bốn bước cùng "đang chạy" rồi cùng "xong"), phía gọi hiện được tiến trình.
+- **Sửa:** `externalRef` của lệnh tạo site giờ được lưu vào site (trước đây nhận rồi bỏ, `GET /sites` trả `null`); `sample` trước đây nhận rồi bỏ.
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** migration điều khiển `0007_owner_reset.sql` tự chạy ở lần gọi Provisioning API đầu tiên (chỉ nới danh sách loại việc). Hợp đồng `bizcity_site_provisioning@1` chỉ thêm, không đổi cái cũ.
+- **Bảo mật:** mật khẩu mới chỉ ở `site_jobs.result_enc` (mã hoá) tới lần đọc đầu; không ghi nhật ký.
+
+### Khối bằng chứng trong mẫu PR, danh tính người đóng góp (PHASE-040 B3) <!-- [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B3: mục CHANGELOG (S040-8, 9) -->
+
+- **Thêm:**
+  - Mẫu PR có mục **Bằng chứng chạy máy**, cùng khuôn mà bộ chấm đọc. Lệnh `node scripts/cham-pr.mjs --mau-bang-chung` in sẵn khối này, đã điền SHA.
+  - `node scripts/nhan-viec.mjs kiem` nhắc (▲) khi PR của nhánh chưa có khối, hoặc khối còn để trống. Lệnh chỉ nhắc, không chặn.
+  - `docs/reviews/tien-do/danh-tinh.json` gộp các tên commit khác nhau của cùng một người về một tài khoản GitHub, không ghi email.
+  - `node scripts/cham-pr.mjs --nguoi` tính điểm theo người. Kết quả chỉ nằm trên máy, trong `.local/`, không commit.
+- **Đổi:** mục *Bằng chứng* cũ của mẫu PR được thay bằng mục *Bằng chứng chạy máy*. Bộ chấm vẫn đọc được khuôn cũ `== BẰNG CHỨNG ==`.
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có.
+- **Bảo mật:** gộp danh tính bằng tài khoản GitHub thay cho `.mailmap`, để không công khai thêm email của người đóng góp.
+
+### Bộ chấm tiến độ theo PR (PHASE-040 B2) <!-- [2026-11-22 08:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B2: mục CHANGELOG (S040-6, 7) -->
+
+- **Thêm:**
+  - `node scripts/cham-pr.mjs`: chấm một PR đã merge, hoặc chạy lùi bằng `--last` / `--since`. Lệnh chỉ đọc repo và GitHub. Mỗi PR được chấm:
+    - Ba mặt tiến độ trước và sau merge: nền móng, trụ cột, ma trận chứng từ. Thêm `--selfcheck` thì có cả ma trận tuân thủ C-*.
+    - Các tiêu chí đổi mức, kèm cảnh báo khi một tiêu chí bị hạ mức.
+    - Mười hai trục gợi ý, lấy từ luật dò H-* của `ra-soat-dong-gop.mjs`.
+    - CI, người duyệt và khối *Bằng chứng chạy máy*, từ đó ra trạng thái phát hành `VERIFIED` / `UNVERIFIED` / `BLOCKED`.
+  - Kết quả ghi ở `docs/reviews/tien-do/PR-<n>.json` (`bizcity_pr_progress@1`). Bảng tổng hợp sinh ra ở `docs/reviews/TIEN-DO-PR.md`, kèm đường tiến độ theo tuần của từng trụ cột.
+  - `ra-soat-dong-gop.mjs --json`. Luật dò không đổi.
+- **Đổi:** —
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có. Lệnh này là công cụ cho người làm dự án, không chạy trong bản cài.
+- **Bảo mật:** điểm theo người không commit vào repo, vì repo công khai (Q040-5). Thư mục `docs/reviews/tien-do/.local/` được bỏ qua khi commit.
+
+### Liên tục chứng từ — trụ cột X (PHASE-040 B1, luật R-DOC-CONT) <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B1: mục CHANGELOG (S040-3..5) -->
+
+- **Thêm:**
+  - Trụ cột X *Liên tục chứng từ* ở màn **HT10 Trụ cột & mức đạt**, gồm 11 tiêu chí DC-1..DC-11. Mức đạt đi theo bằng chứng: 1 đạt, 6 một phần, 2 mới có tài liệu, 2 chưa có — 41 %.
+  - Luật R-DOC-CONT-0..9 ([docs/rules/RULE-DOCUMENT-CONTINUITY.md](docs/rules/RULE-DOCUMENT-CONTINUITY.md)), ADR-0038, CANON §0.14.
+- **Đổi:**
+  - `bizcity_document@1` lên 1.5.0-draft: chuẩn có **sáu** nhóm trạng thái, khớp với mã đang chạy; bước trình duyệt bỏ qua được; thêm phần *ba chiều trạng thái* (hoàn tất không có nghĩa là đã ghi sổ); thêm STD-DOC-9 *hợp đồng xuyên suốt chuỗi mua* (thiếu số hợp đồng thì mặc định nhắc).
+  - Trụ cột IX: mã tiêu chí đổi `L-1..L-8` thành `TV-1..TV-8`, để không trùng mã tiêu chí của trụ cột I.
+- **Sửa:** —
+- **Thay đổi định khoản:** —
+- **Nâng cấp cần làm:** không có. Bản này không có migration và không đổi mã chạy.
+- **Bảo mật:** —
+
+### Nhật ký lỗi cố định của bản cài (PHASE-038, luật R-LOG) <!-- [2026-11-22 10:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5: mục CHANGELOG của cả phase (S038-10) -->
+
+- **Thêm:**
+  - Thư mục `logs/` trong thư mục cài: `logs/api/`, `logs/db-migrate/`, `logs/web/`, `logs/web-client/`, mỗi ngày một tệp `<YYYY-MM-DD>.log` (giờ Việt Nam), giữ 30 ngày, cả thư mục ≤ 200 MB.
+  - Lỗi khởi động ghi một dòng có `reason` (`MIGRATION_PENDING`, `DB_UNREACHABLE`, …) và cách sửa.
+  - `./scripts/lay-log.sh` gom một gói gửi người sửa (che giá trị bí mật của `.env`).
+  - Cổng vào trả JSON `GATEWAY_UNAVAILABLE` khi api không trả lời; giao diện hiện một khay "Không kết nối được máy chủ phần mềm" và tự thử lại.
+  - Màn gặp lỗi lập trình hiện khung báo lỗi có mã tra cứu thay màn trắng; lỗi giao diện gửi về `logs/web-client/`.
+  - Bộ kiểm SC-LOG-1..3, SC-OBS-3.
+- **Đổi:**
+  - Log có `version` / `commit`, dấu vân lỗi `errFp`, che 19 loại trường nhạy cảm.
+  - Lỗi subscriber vào log có stack và `traceId`.
+  - nginx phân giải tên api lúc chạy.
+- **Sửa:** api chết sau cổng vào không còn để lại "INTERNAL_ERROR không mã" và không còn trống log (sự cố go-live 2026-11-21).
+- **Thay đổi định khoản:** không.
+- **Nâng cấp cần làm:** không bắt buộc — `./scripts/cap-nhat.sh` dựng lại là có (tự đặt `BIZCITY_GIT_SHA`). Muốn để log chỗ khác: đặt `LOG_HOST_DIR` trong `.env`. Tệp kiểu cũ ở gốc `logs/` (nếu có) tự xoá sau 30 ngày.
+- **Bảo mật:** log không chứa mật khẩu, token, thân yêu cầu, MST / SĐT / email cá nhân, số tài khoản (R-LOG-4); gói `lay-log.sh` không chứa giá trị `.env`; route lỗi giao diện công khai nhưng khuôn chặt, che dữ liệu, giới hạn nhịp.
+
+### Vận hành: cập nhật trên máy hay lỗi Docker overlay2 busy (DEPLOY) <!-- [2026-11-21 01:55 PM Johnny Chu - Chu Hoàng Anh] DEPLOY — scripts/cap-nhat-cpanel.sh + docs/ops/DEPLOY.md mục 5 -->
+
+- **Thêm:** `scripts/cap-nhat-cpanel.sh`: cập nhật không để Compose xoá/tạo lại `web` (container web chạy ngoài Compose, tên theo thời điểm; gỡ bản cũ theo kiểu cố gắng). `docs/ops/DEPLOY.md` mục 5: triệu chứng, nguyên nhân, cách dùng.
+- **Đổi:** không.
+- **Sửa:** không.
+- **Thay đổi định khoản:** không.
+- **Nâng cấp cần làm:** không. Chỉ dùng trên máy từng gặp lỗi `overlay2 ... device or resource busy`; máy khác vẫn dùng `scripts/cap-nhat.sh`.
+- **Bảo mật:** không.
+
 ### Chính sách: ngưỡng duyệt vào sổ đăng ký (`approval.levels@1`, `store = settings`) + DG-POLICY-6 (PHASE-031 S031-7, S031-32 phần đo) <!-- [2026-11-21 06:15 PM Võ Hoàng] PHASE-031 — S031-7 / S031-32 -->
 
 - **Thêm:** Rule Contract `approval.levels@1` (`apps/api/src/modules/system/rule-contracts/approval-levels.ts`, miền `approval`): dải tiền nửa mở → các cấp duyệt (quyền); `thresholdToBands` chuyển khoá `bizcity.payment.approval_thresholds` thành dải, cùng số cấp với luồng yêu cầu thanh toán.
@@ -1823,7 +2014,7 @@ Theo quy trình mua hàng của kế toán: khai báo → **ký hợp đồng** 
 
 ### Thay đổi định khoản
 <!-- [2026-11-04 02:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-024 — S024-8 (R-ITEM-7), PHASE-026 T026-G2 -->
-- **Định khoản theo phân loại hạch toán CỦA NGÀY chứng từ (mức K3, R-ITEM-7, PHASE-024 S024-8):** nhóm hạch toán và thuế bán ra của mặt hàng nay lấy từ bản phân loại có hiệu lực **tại ngày hạch toán** của chứng từ (qua định danh, nên mã cũ đã đổi vẫn tra ra), không còn lấy giá trị hiện tại ở danh mục. Trước đây đổi nhóm hạch toán của một mặt hàng rồi **định khoản lại** chứng từ cũ thì chứng từ cũ ra theo nhóm MỚI (tài khoản doanh thu, giá vốn đổi theo). Nay: chứng từ trước ngày đổi định khoản — kể cả định khoản lại — theo nhóm cũ, từ ngày đổi theo nhóm mới; sổ đã ghi vẫn không đổi (chỉ thêm). Mặt hàng chưa từng đổi nhóm, mặt hàng nháp và mã chưa có định danh: như cũ. Áp cả ở tính giá vốn (theo ngày cuối tháng). Ca chứng minh T026-G2: [dinh-khoan-phan-loai-theo-ngay.test.ts](apps/api/test/dinh-khoan-phan-loai-theo-ngay.test.ts) (bỏ bản sửa thì ca đỏ: chứng từ cũ ra 51112 thay vì 51111).
+- **Định khoản theo phân loại hạch toán CỦA NGÀY chứng từ (mức K3, R-ITEM-7, PHASE-024 S024-8):** nhóm hạch toán và thuế bán ra của mặt hàng nay lấy từ bản phân loại có hiệu lực **tại ngày hạch toán** của chứng từ (qua định danh, nên mã cũ đã đổi vẫn tra ra), không còn lấy giá trị hiện tại ở danh mục. Trước đây đổi nhóm hạch toán của một mặt hàng rồi **định khoản lại** chứng từ cũ thì chứng từ cũ ra theo nhóm MỚI (tài khoản doanh thu, giá vốn đổi theo). Nay: chứng từ trước ngày đổi định khoản — kể cả định khoản lại — theo nhóm cũ, từ ngày đổi theo nhóm mới; sổ đã ghi vẫn không đổi (chỉ thêm). Mặt hàng chưa từng đổi nhóm, mặt hàng nháp và mã chưa có định danh: như cũ. Áp cả ở tính giá vốn (theo ngày cuối tháng). Ca chứng minh T026-G2: `dinh-khoan-phan-loai-theo-ngay.test.ts` (đã bỏ ở 04980b5e cùng bộ định khoản cũ) (bỏ bản sửa thì ca đỏ: chứng từ cũ ra 51112 thay vì 51111).
 - **Luật định khoản mới `manual_journal` (mức K2, PHASES 3.15; đặc tả [50-DAC-TA-MANUAL-JOURNAL](docs/phases/PHASE-011-MODULE-SDK/50-DAC-TA-MANUAL-JOURNAL.md) phương án A, chủ dự án duyệt K1 / K3 / K4 theo ý kiến kế toán trưởng 02/11/2026):** mỗi dòng Nợ `debit_account` / Có `credit_account` của lý do journal, cả phiếu một bút toán; đối tượng theo dòng hoặc theo phiếu, tài khoản theo dõi đối tượng thiếu đối tượng → chặn; chế độ mặc định **chờ duyệt** ở ACC14. Chỉ áp cho loại chứng từ mới này — sổ và chứng từ đã có không đổi.
 - **Định khoản theo chính sách của ngày hạch toán (mức K3, ADR-0009):** chứng từ (cả khi định khoản lại) dùng phiên bản cấu hình định khoản có hiệu lực ở ngày hạch toán của nó.
   - Sửa cấu hình như trước vẫn có tác dụng ngay (hệ thống tự chụp bản bổ sung của chế độ đang áp).

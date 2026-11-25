@@ -14,7 +14,7 @@ import { api, errorText } from '@/lib/api';
 import { date, defaultTo, kyText, periodFrom } from '@/lib/format';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
-import { BranchSelect, DateRange, useBranches, type BranchOption } from '@/components/filters';
+import { BranchSelect, DateRange, DenNgay, useBranches, type BranchOption } from '@/components/filters';
 import { Empty, ErrorBox, Loading } from '@/components/ui';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { AccountPicker } from '@/components/pickers';
@@ -186,7 +186,7 @@ export function TonNhieuKhoPage() {
       <FilterLayout boThamSo={{ value: f, onApply: setF }}
         filters={
           <>
-            <div className="field"><label>Đến ngày</label><input type="date" className="input" value={f.to} onChange={(e) => set({ to: e.target.value })} /></div>
+            <DenNgay value={f.to} onChange={(v) => set({ to: v })} />
             <div className="field"><label>Mã / tên hàng</label><input className="input w-md" defaultValue={f.search} onBlur={(e) => set({ search: e.target.value.trim() })} /></div>
             <label className="checkbox"><input type="checkbox" checked={f.value} onChange={(e) => set({ value: e.target.checked })} /> Xem giá trị (thay cho số lượng)</label>
             <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} />

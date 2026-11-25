@@ -1,4 +1,5 @@
 // @bizcity-layer K kernel/config
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-15 Nguyễn Văn Thủy] API Quy tắc hạch toán: đọc khung + tài khoản, đổi tài khoản trong phạm vi, mục đích xuất, xem thử bút toán (đóng góp)
 /**
  * QUY TẮC HẠCH TOÁN (màn ACC41, docs/nghiep-vu/24-quy-tac-hach-toan.md, docs/api/17-quy-tac-hach-toan.md)
@@ -152,6 +153,7 @@ export async function schemeRoutes(app: FastifyInstance): Promise<void> {
     },
   });
 
+  // @bizcity-route: chỉ đọc — dựng thử bút toán theo quy tắc hiện tại, không lưu; quyền documents:write vì xem thử bút toán của chứng từ sắp lập
   r.post('/api/v1/posting/scheme/preview', {
     preHandler: requirePermission('documents:write'),
     schema: { tags, summary: 'Xem thử bút toán của một chứng từ theo quy tắc hiện tại (không lưu gì)', body: z.object({ document: ingestDocumentSchema }) },

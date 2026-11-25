@@ -75,6 +75,7 @@ import { apiRoutes } from './phan-he/api/routes';
 import { devRoutes } from './phan-he/dev/routes';
 import { ADDIN_ROUTES } from './addins/registry';
 import { BaoCaoChungPage } from './features/launcher/BaoCaoChungPage';
+import { DangPhatTrienPage } from './features/launcher/DangPhatTrienPage';
 import { UngDungPage } from './features/ung-dung/UngDungPage';
 import { AppFramePage } from './features/ung-dung/AppFramePage';
 // [2026-11-02 09:33 PM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W2: route của module SDK (/app/<key>/…)
@@ -85,6 +86,7 @@ export const pageRoutes = (
     <Route path="/" element={<TongQuanPage />} />
     <Route path="/app/:key" element={<ModuleHomePage />} />
     <Route path="/bao-cao" element={<BaoCaoChungPage />} />
+    <Route path="/dang-phat-trien" element={<DangPhatTrienPage />} />
     <Route path="/nhom/:key" element={<GroupHomePage />} />
     <Route path="chung-tu" element={<DocumentsPage />} />
     <Route path="chung-tu/bang-diem" element={<IntakeScorePage />} />

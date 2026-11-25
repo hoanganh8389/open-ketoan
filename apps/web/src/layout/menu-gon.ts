@@ -43,6 +43,10 @@ export const groupHome = (key: string) => `/nhom/${key}`;
 /** Nhóm Thiết lập: không ở menu trái, mở bằng nút bánh răng; màn chưa xếp nhóm nào cũng vào đây. */
 export const THIET_LAP = 'he-thong';
 export const DANG_PHAT_TRIEN = 'đang phát triển';
+// [2026-11-25 Nguyễn Văn Thủy] việc chưa có màn (`soon`) không hiện ở menu / trang nhóm nữa — gom ở trang /dang-phat-trien (đóng góp)
+/** true: ẩn mọi mục "đang phát triển" khỏi menu, trang nhóm, sơ đồ; xem đủ ở trang DANG_PHAT_TRIEN_PAGE. */
+export const AN_DANG_PHAT_TRIEN = true;
+export const DANG_PHAT_TRIEN_PAGE = '/dang-phat-trien';
 
 
 export const GON_DEFS: GonDef[] = [
@@ -79,7 +83,9 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Danh mục', paths: ['/danh-muc/nha-cung-cap', '/mua-hang/hop-dong', '/mua-hang/chinh-sach'] },
     ],
     reports: [
-      { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/chi-tiet-chinh-sach', '/mua-hang/so-kho', '/mua-hang/ton-kho', '/mua-hang/nhat-ky'] },
+      { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/so-kho', '/mua-hang/ton-kho', '/mua-hang/nhat-ky'] },
+      // [2026-11-21 Nguyễn Văn Thủy] nhóm báo cáo theo hợp đồng / chính sách (đóng góp)
+      { label: 'Hợp đồng & chính sách', paths: ['/mua-hang/thuc-hien-chinh-sach', '/mua-hang/thuc-hien-hop-dong', '/mua-hang/chinh-sach-theo-hop-dong', '/mua-hang/chi-tiet-chinh-sach', '/mua-hang/doi-chieu-gia-hop-dong'] },
       { label: 'Công nợ phải trả', paths: ['/bao-cao/cong-no-phai-tra', '/bao-cao/chi-tiet-thanh-toan', '/mua-hang/cong-no-hop-dong', '/cong-no/doi-chieu', '/bao-cao/tuoi-no'] },
     ],
   },
@@ -221,7 +227,7 @@ export function buildGon(menu: MenuItem[], phanRieng = true): GonGroup[] {
   const flat = flatten(menu);
   const placed = new Set<string>();
   const pick = (paths: string[]) => paths.flatMap((p) => { placed.add(p); const it = flat.get(p); return it ? [it] : []; });
-  const resolve = (list: GonSection[] = []) => list.map((s) => ({ label: s.label, items: pick(s.paths), soon: s.soon })).filter((s) => s.items.length || s.soon?.length);
+  const resolve = (list: GonSection[] = []) => list.map((s) => ({ label: s.label, items: pick(s.paths), soon: AN_DANG_PHAT_TRIEN ? undefined : s.soon })).filter((s) => s.items.length || s.soon?.length);
   const groups: GonGroup[] = GON_DEFS.map(({ the, sections, reports, ...d }) => ({
     ...d,
     home: groupHome(d.key),

@@ -1,4 +1,5 @@
 // @bizcity-layer K kernel/tax
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-19 kiennt] NT-DM-012 — danh mục loại thuế GTGT cố định theo quy định nhà nước + quy đổi mã cũ (đóng góp)
 /**
  * LOẠI THUẾ GTGT CỐ ĐỊNH (NT-DM-012). Thuế suất / loại chịu thuế do nhà nước quy định → phần mềm cấu hình sẵn, người dùng chỉ xem.

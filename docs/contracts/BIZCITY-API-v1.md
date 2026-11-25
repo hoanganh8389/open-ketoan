@@ -43,6 +43,7 @@
 | `MODULE_DISABLED` | 403 | Module chưa bật cho đơn vị | Bật module |
 | `RATE_LIMITED` | 429 | Quá hạn mức gọi (khoá API, AI) | Chờ rồi gửi lại, giãn nhịp |
 | `NOT_READY` | 503 | Bản cài chưa sẵn sàng: còn migration chưa áp, mất trigger bảo vệ sổ, CSDL chỉ đọc (`GET /system/health/ready`, L1) | Bộ cân bằng tải ngừng gửi việc; vận hành chạy `db-migrate` |
+| `GATEWAY_UNAVAILABLE` | 503 | Cổng vào (nginx, container `web`) không gọi được api: api dừng, đang khởi động lại hoặc quá giờ — **cổng vào trả, không phải api** <!-- [2026-11-22 12:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B2 (S038-6) --> | Thử lại có giãn nhịp (`Retry-After`); vận hành chạy `./scripts/lay-log.sh`, xem `logs/web/<ngày>.log` |
 
 Thêm mã = thay đổi tương thích; đổi nghĩa mã = phá vỡ.
 
@@ -66,6 +67,7 @@ Thêm mã = thay đổi tương thích; đổi nghĩa mã = phá vỡ.
 | Danh mục ghi | `POST /branches`, `PUT /partners/:code`, `PUT /products/:sku` | `catalog:write` |
 | Đối chiếu | `GET /reports/sales-invoices`, `GET /reports/trial-balance` | `reports:read` |
 | Hệ thống | `GET /system/health`, `GET /system/health/ready` (L1; 503 `NOT_READY` khi chưa sẵn sàng) | công khai |
+| Hệ thống | `POST /system/client-errors` <!-- [2026-11-22 05:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b --> — giao diện báo lỗi lập trình (loại, khung stack của mã web, màn; **không** dữ liệu nhập) → `logs/web-client/<ngày>.log`; 10 lỗi / phút / phiên, 429 `RATE_LIMITED` khi quá | công khai |
 | Tự chẩn đoán | `GET /system/diagnostics` (L3 toàn vẹn sổ, [DIAGNOSTICS.md §2](../ops/DIAGNOSTICS.md)) | `reports:read` |
 | Năng lực | `GET /system/capabilities` (bảng năng lực Standard của bản đang chạy) | mọi khoá / phiên đăng nhập |
 | MCP | `POST /mcp` (JSON-RPC 2.0 — [bizcity_mcp@1](BIZCITY-MCP-v1.md)); đi qua nginx của container `web` | phiên / khoá API; công cụ lọc theo quyền |
@@ -78,7 +80,28 @@ Chạy được từ PHASE-031 W3a, đặc tả ở [bizcity_policy@1](BIZCITY-P
 
 Mọi endpoint khác phục vụ giao diện nội bộ và **có thể đổi không báo** (R-API-8).
 
-## 6. Giới hạn
+### 5.2 Đăng nhập một lần từ WordPress (`bizcity_identity@1`) <!-- [2026-11-24 09:50 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 -->
+
+<!-- [2026-11-24 09:50 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — chủ duyệt chuẩn bizcity_identity@1 1.0.0 ngày 2026-11-24 (bizcity-platform/docs/standard/BIZCITY-IDENTITY-v1.md). Đoạn này là chữ chốt phía open-ketoan trước PR mã (R-FLOW §3: migration mới). -->
+
+`POST /api/v1/auth/wp-sso { ticket }` (đã có) nhận thêm hai trường trong vé và nhớ danh tính WordPress của người dùng:
+
+| Trường vé | Việc |
+|---|---|
+| `sub` (`wp:<id>` hoặc `biz:<id>`) | **khoá danh tính xuyên app.** Lưu ở `users.external_sub`. Khớp người dùng theo `sub` **trước**, theo email sau |
+| `aud` | phải bằng `WP_SSO_AUD` (mặc định `open-ketoan`); có `aud` mà sai ⇒ `UNAUTHORIZED`, không có giai đoạn chuyển |
+
+Luật khớp người dùng (thay cho "khớp theo email" hiện nay):
+
+1. Vé **có** `sub`, đã có người dùng mang `external_sub = sub` trong đơn vị ⇒ đăng nhập người đó; email trong vé đổi thì **không** đổi email cục bộ (email là khoá đăng nhập mật khẩu, đổi ở đó là việc của người dùng).
+2. Vé **có** `sub`, chưa ai mang `sub`: tìm theo email. Gặp người dùng **chưa có** `external_sub` ⇒ gắn `sub` vào người đó (lần đầu nối). Gặp người dùng **đã mang `sub` khác** ⇒ `UNAUTHORIZED` (không để vé WordPress khác chiếm tài khoản qua email trùng). Không có ai ⇒ tạo người dùng mới (vai `viewer`, như hiện nay) mang `sub`.
+3. Vé **không** có `sub` (plugin phát vé chưa cập nhật): hành vi cũ — khớp theo email. Khi `WP_SSO_REQUIRE_SUB=1` (mặc định **0**, bật sau 90 ngày kể từ khi plugin phát vé cập nhật — Q-IDENT-2) ⇒ `UNAUTHORIZED`.
+4. `is_active = false` ở open-ketoan vẫn chặn dù vé hợp lệ (app là người gác cuối). Quyền trong phiên vẫn là `perms` của vé lọc về quyền đã khai (Q-IDENT-1) — không đổi.
+
+Dữ liệu: **migration 0183** (đã có, PR #626): `users.external_sub text NULL` có CHECK khuôn `^(wp:[0-9]+|biz:[A-Za-z0-9_-]{1,64})$`, chỉ mục duy nhất `(tenant_id, external_sub)` khi khác NULL, `COMMENT ON COLUMN`. Không UPDATE dữ liệu sẵn có (người dùng cũ được gắn `sub` ở lần đăng nhập SSO kế tiếp, luật 2). Cấu hình mới: `WP_SSO_AUD`, `WP_SSO_REQUIRE_SUB` (`.env.example`, `docker-compose.yml`, `packages/platform/src/config/env.ts`). <!-- [2026-11-24 11:27 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — C-9-16: migration 0183 + WP_SSO_AUD / WP_SSO_REQUIRE_SUB đã vào mã (#626), bỏ chữ (đề xuất) -->
+
+Bằng chứng (`audit_logs`) ghi người dùng theo `user:<id>` như cũ; ánh xạ `sub` → `users.external_sub` để truy ra. Không đổi quyền, không đổi vai, không chạm bảng sổ.
+
 
 | | |
 |---|---|

@@ -15,6 +15,8 @@ import { authOf, requirePermission } from '../../core/auth.js';
 import { ok } from '../../core/http.js';
 import { connectionService } from './connection.service.js';
 import { defineAction, mountActions, type AnyActionDef } from '@bizcity/platform/core/actions';
+// [2026-11-23 09:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037 §4: route khoá cài đặt open-pos gắn qua module Kết nối (không đụng app.ts)
+import { posInstallationRoutes } from './pos-installation.routes.js';
 
 const tags = ['Kết nối hệ thống khác'];
 const codeParam = z.object({ code: z.string().regex(/^[a-z0-9][a-z0-9_-]{1,31}$/) });
@@ -36,6 +38,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     handler: async (req) => ok(await connectionService.pull(authOf(req), req.params.code, req.body)),
   });
   mountActions(app, connectionWriteActions);
+  await posInstallationRoutes(app);
 }
 
 // [2026-11-03 08:00 AM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W6 đợt 5 (SC-ACT-1): route ghi qua defineAction — quyền, kiểm input, idempotency, giao dịch, bằng chứng do runtime; đường dẫn / thân yêu cầu / mã 201 như cũ.

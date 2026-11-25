@@ -40,8 +40,11 @@ import { devtoolsRoutes } from '../modules/system/devtools.routes.js';
 import { mcpRoutes } from '../modules/system/mcp.routes.js';
 import { metricsRoutes } from '../modules/system/metrics.routes.js';
 import { presenceRoutes } from '../modules/system/presence.js';
+import { clientErrorsRoutes } from '../modules/system/client-errors.routes.js'; // [2026-11-22 04:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b: lỗi giao diện về logs/web-client.log
 import { accessRoutes } from '../modules/access/access.routes.js';
 import { appsRoutes } from '../modules/apps/apps.routes.js';
+// [2026-11-22 10:48 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5a: CORE_ROUTES thêm provisioningRoutes (Provisioning API /_sites/v1, chỉ chế độ multi + tên miền điều hành)
+import { provisioningRoutes } from '../modules/sites/provisioning.routes.js';
 // [2026-11-02 03:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-020 — gắn route Kiểm chuẩn (conformanceRoutes) vào nhóm Core
 import { accountRoutes, taxCodeRoutes, postingConfigRoutes, periodRoutes, documentRoutes, defaultDataRoutes, taxInfoRoutes, ledgerRoutes, debtRoutes, inventoryRoutes, conformanceRoutes, intakeRoutes, lineageRoutes, reviewRoutes } from '../kernel/public.js';
 import { branchRoutes } from '../modules/branches/branch.routes.js';
@@ -83,9 +86,11 @@ import { transferDocRoutes } from './kho/phieu-chuyen-kho.js';
 // [2026-11-12 03:30 PM kiennt] NT-KHO-002 — biên bản kiểm kê kho (KHO02)
 import { stockCountRoutes } from './kho/kiem-ke.js';
 import { inventoryReportRoutes } from '../modules/inventory/inventory-report.routes.js';
+// [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — Q-SPINE-3: changefeed + digest danh mục (bizcity_sync@1)
+import { syncRoutes } from '../modules/sync/sync.routes.js';
 
 export const CORE_ROUTES: Routes[] = [
-  authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, mcpRoutes, metricsRoutes, presenceRoutes, accessRoutes, appsRoutes,
+  authRoutes, systemRoutes, evidenceRoutes, eventRoutes, findingsRoutes, gatesRoutes, enginesRoutes, devToolsBoardRoutes, librariesRoutes, catalogRulesRoutes, devtoolsRoutes, mcpRoutes, metricsRoutes, presenceRoutes, clientErrorsRoutes, accessRoutes, appsRoutes, provisioningRoutes,
   accountRoutes, branchRoutes, coCauRoutes, warehouseRoutes, warehouseTypeRoutes, catalogTrashRoutes, coCauHistoryRoutes, unitNameRoutes, helpRoutes, partnerRoutes, taxCodeRoutes, postingConfigRoutes, periodRoutes,
   documentRoutes, connectionRoutes, dimensionRoutes, contractScheduleRoutes, defaultDataRoutes, bankAccountRoutes,
   productRoutes, catalogRoutes, itemRoutes, saleProgramRoutes, lotRoutes, voucherTemplateRoutes, signatureRoutes, printTemplateRoutes, printProfileRoutes, taxInfoRoutes, referenceDocumentRoutes, docRefRoutes,
@@ -93,6 +98,8 @@ export const CORE_ROUTES: Routes[] = [
   intakeRoutes,
   // [2026-11-03 09:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-025 — W1: CORE_ROUTES thêm lineageRoutes (truy vết vòng đời mặt hàng, ADR-0021)
   lineageRoutes,
+  // [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — Q-SPINE-3: GET /api/v1/sync/:axis, /digest
+  syncRoutes,
   // [2026-11-02 10:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-022 — W4: Bàn đánh giá (HT08)
   reviewRoutes,
 ];

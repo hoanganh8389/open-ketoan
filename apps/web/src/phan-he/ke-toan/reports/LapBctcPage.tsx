@@ -236,10 +236,10 @@ function ThamSo({ onClose, onOk }: { onClose: () => void; onOk: (s: Saved) => vo
       <div style={{ fontWeight: 600, margin: '8px 0' }}>Chọn báo cáo tài chính</div>
       <table className="table">
         <thead><tr><th style={{ width: 36 }} /><th style={{ width: 120 }}>Mã báo cáo</th><th>Tên báo cáo</th></tr></thead>
-        <tbody>{REPS.map((r) => (
+        <tbody>{REPS.filter((r) => !r.soon).map((r) => (
           <tr key={r.code} style={r.soon ? { opacity: 0.55 } : undefined} title={r.soon ? 'Đang phát triển' : undefined}>
             <td><input type="checkbox" disabled={r.soon} checked={pick.includes(r.code as Rep)} onChange={() => toggle(r.code as Rep)} /></td>
-            <td className="mono">{r.code}</td><td>{r.name}{r.soon && <i className="muted"> (đang phát triển)</i>}</td>
+            <td className="mono">{r.code}</td><td>{r.name}</td>
           </tr>
         ))}</tbody>
       </table>

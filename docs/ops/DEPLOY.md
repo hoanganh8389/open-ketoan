@@ -46,7 +46,7 @@ Image API chép `db/migrations`, `db/seeds`, `db/packs` vào `/app/db` (`apps/ap
 | `SAMPLE_TENANT_CODE` | `mau` | mã đơn vị của Công ty Mẫu (`tenants.is_sample`, cùng tài khoản quản trị; không gửi được ra ngoài) |
 | `BIZCITY_SAMPLE_ON_DEMAND` | trống (tắt); `scripts/cai-nhanh.sh` đặt `1` | API: chủ đơn vị tạo Công ty Mẫu ở Thiết lập nhanh (TI15) khi bản cài chưa có (`POST /api/v1/setup/sample-tenant`, PHASE-036 · 00 §15) — bản cài nhiều công ty để trống. Xoá: `scripts/xoa-cong-ty-mau.sh` (ADR-0034) <!-- [2026-11-17 09:15 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-7 B5b --> |
 | `VN_RULEPACKS_DIR` <!-- [2026-11-02 03:50 AM Johnny Chu - Chu Hoàng Anh] PHASE-020 — Conformance Engine: gói @bizcity/vn-rulepacks trong image. --> | gói `packages/vn-rulepacks` (image chép nguyên thư mục) | kho rulepack + nguồn pháp lý cho Kiểm chuẩn (ADR-0012); chỉ đặt khi dùng kho khác |
-| `BIZCITY_GIT_SHA` | trống | mã commit ghi vào báo cáo Kiểm chuẩn; đặt lúc build image (`--build-arg` → `ENV`) |
+| `BIZCITY_GIT_SHA` <!-- [2026-11-21 08:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): đặt bởi cap-nhat.sh, không phải build-arg --> | trống | mã commit ghi vào mọi dòng log (`commit`, R-LOG-5) và báo cáo Kiểm chuẩn. `scripts/cap-nhat.sh` tự đặt từ `git rev-parse HEAD`; chạy `docker compose up` tay thì đặt trước: `BIZCITY_GIT_SHA=$(git rev-parse HEAD) docker compose up -d --build` |
 
 ## 3. Luật triển khai
 
@@ -72,4 +72,35 @@ curl -s http://127.0.0.1:${WEB_PORT:-8088}/api/v1/system/health/ready           
 curl -s -H "X-Api-Key: $KEY" http://127.0.0.1:${WEB_PORT:-8088}/api/v1/system/diagnostics   # L3, khoá reports:read: summary.error = 0
 ```
 
+<!-- [2026-11-21 08:50 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B3 (S038-8): §4 nhật ký lỗi cố định -->
+Có dòng nào hỏng: **chưa khởi động lại**, chạy `./scripts/lay-log.sh` và gửi gói `logs/goi-bao-loi-*.tar.gz`. Đọc nhanh: `tail logs/db-migrate/<ngày>.log` (job cơ sở dữ liệu), `tail logs/api/<ngày>.log` (dòng `evt: bizcity.system.start_failed` có `reason` và `hint`). Thư mục `logs/` phải có và ghi được ([PHASE-038](../phases/PHASE-038-NHAT-KY-LOI-CO-DINH/README.md), R-LOG-9).
+
 Ghi kết quả vào phần "Bằng chứng" của phiếu phát hành theo [DIAGNOSTICS.md](DIAGNOSTICS.md) §4.
+
+## 5. Máy hay lỗi Docker "overlay2 … device or resource busy" (cPanel/VPS có dịch vụ giữ mount)
+<!-- [2026-11-21 01:40 PM Johnny Chu - Chu Hoàng Anh] DEPLOY — ghi nhận khi cài demo lên VPS cPanel; kèm scripts/cap-nhat-cpanel.sh -->
+
+**Triệu chứng.** `docker compose up -d` (hoặc `--build`, `--force-recreate`) dừng ở bước tạo lại container `web` với
+`driver "overlay2" failed to remove root filesystem … unlinkat …/merged: device or resource busy`. Sau lỗi, `web` biến mất khỏi `docker compose ps`
+(Compose đã đổi tên container cũ, nhưng không xoá được và không tạo được bản mới) → trang trả 503 qua reverse proxy. `docker rm -f` lặp lại,
+`systemctl restart docker` đều không gỡ được. Dữ liệu **không** mất (nằm ở volume `pgdata` / `appdata`).
+
+**Nguyên nhân.** Một dịch vụ khác trên máy (thường là máy có panel quản trị, web server hoặc công cụ bảo mật chạy với mount namespace riêng) giữ bản sao mount của
+container. Không do phần mềm kế toán. Chỉ **khởi động lại máy** mới nhả hẳn.
+
+**Cách tránh: dùng `scripts/cap-nhat-cpanel.sh` thay `scripts/cap-nhat.sh`** trên máy đã từng gặp lỗi này.
+Script không bao giờ để Compose xoá/tạo lại `web`:
+
+1. sao lưu → `git pull` → `docker compose build api web` (chưa đụng bản đang chạy);
+2. `docker compose up -d db api` (db-migrate chạy qua `depends_on`; **không** gọi `up -d` cho cả bộ);
+3. dừng mọi container web cũ, tạo container mới **tên khác** (`ketoan-web-<ngày-giờ>`, nhãn `ketoan.role=web`) trong cùng mạng Compose, cùng cổng `WEB_BIND:WEB_PORT`;
+4. gỡ container cũ theo kiểu "cố gắng": lỗi busy chỉ cảnh báo vì bản cũ đã dừng;
+5. kiểm web và `/api/v1/system/health/ready`.
+
+Hậu quả cần biết:
+- `docker compose ps` không còn hiện `web` (nó chạy ngoài Compose); dùng `docker ps --filter name=ketoan`.
+- Không chạy `docker compose up -d` trần trên máy này cho đến khi container `web` cũ bị xoá hẳn (thường sau một lần khởi động lại máy); chạy thì Compose sẽ lại cố xoá và kẹt. Cần khởi động riêng một dịch vụ thì gọi đích danh (`docker compose up -d db api`).
+- Container `web` không có biến môi trường nào; script dùng đúng ảnh Compose vừa build (`docker compose config --images`) nên giữ nguyên hành vi.
+- Sau khi máy khởi động lại và `docker ps -a` không còn container web cũ ở trạng thái `Dead`, quay về `scripts/cap-nhat.sh` bình thường: `docker stop` mọi `ketoan-web-*` rồi `docker rm` chúng trước, để Compose tự tạo `web` của nó.
+
+**Đừng làm:** lặp `docker rm -f`/`up`, xoá tay trong `/var/lib/docker/overlay2`, dừng cả dịch vụ Docker khi máy còn chạy dịch vụ khác dùng Docker.

@@ -50,7 +50,10 @@ export function parseClaims(md) {
   const width = legacy ? LEGACY_HEADER.length : HEADER.length;
   if (head.join('|') !== HEADER.join('|')) problems.push({ line: i + 1, message: `cột bảng phải là: ${HEADER.join(' | ')}${legacy ? ' (bảng đang theo khuôn cũ, thiếu cột Việc)' : ''}`, key: 'header' });
   i += 2; // bỏ dòng ngăn |---|
-  for (; i < L.length && L[i].trim().startsWith('|'); i++) {
+  // [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a: dòng chỉ có chú thích <!-- … --> giữa bảng bị bỏ qua, không làm bảng dừng (trước đây mọi dòng sau chú thích không được kiểm)
+  const isComment = (s) => /^<!--.*-->$/.test(s.trim());
+  for (; i < L.length && (L[i].trim().startsWith('|') || isComment(L[i])); i++) {
+    if (isComment(L[i])) continue;
     const c0 = cellsOf(L[i]);
     const line = i + 1;
     if (c0.length !== width) { problems.push({ line, message: `dòng phải có ${width} ô, đang có ${c0.length}`, key: `cols:${line}` }); continue; }
@@ -89,9 +92,45 @@ export function normPath(p) {
 /** Hai đường dẫn đã chuẩn hoá chồng nhau: trùng, hoặc cái này chứa cái kia. */
 export const overlaps = (a, b) => a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
 
+// [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a (S040-22): mẫu tên tệp (`mua-hang-*.test.ts`) so khớp đúng mẫu, không cắt thành cả thư mục (15 / 18 chồng giả ở SC-FLOW-1)
+/** Mẫu có `*` thành biểu thức: `**` = mọi tầng, `*` = trong một tầng. */
+export function globRe(p) {
+  const s = String(p).replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+  let re = '';
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (ch === '*' && s[i + 1] === '*') { re += '.*'; i++; if (s[i + 1] === '/') i++; }
+    else if (ch === '*') re += '[^/]*';
+    else re += ch.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+  }
+  return new RegExp(`^${re}$`);
+}
+
+const hasStar = (p) => String(p).includes('*');
+
+/** Tệp khớp một phạm vi: phạm vi không có `*` = tệp đó hoặc cả thư mục đó; có `*` = khớp mẫu. */
+export function matchScope(file, pattern) {
+  if (!hasStar(pattern)) { const n = normPath(pattern); return Boolean(n) && (file === n || file.startsWith(`${n}/`)); }
+  return globRe(pattern).test(file);
+}
+
+/** Hai phạm vi (đường dẫn hoặc mẫu) có thể cùng chứa một tệp không. Thận trọng: nghi ngờ thì coi là chồng. */
+export function scopesOverlap(a, b) {
+  const na = normPath(a);
+  const nb = normPath(b);
+  if (!na || !nb || !overlaps(na, nb)) return false;
+  if (!hasStar(a) && !hasStar(b)) return true;
+  // một bên là đường dẫn thường (tệp, hoặc cả thư mục): chồng khi mẫu nằm trong thư mục đó, hoặc mẫu khớp chính đường dẫn đó
+  if (!hasStar(a)) return nb === na || nb.startsWith(`${na}/`) || globRe(b).test(na);
+  if (!hasStar(b)) return na === nb || na.startsWith(`${nb}/`) || globRe(a).test(nb);
+  if (/\*\*/.test(a) || /\*\*/.test(b)) return true;
+  const sample = (p) => String(p).replace(/\*/g, 'x');
+  return globRe(a).test(sample(b)) || globRe(b).test(sample(a));
+}
+
 /** Tệp có nằm trong một trong các phạm vi không. */
 export function inScope(file, phamvi) {
-  return phamvi.map(normPath).some((n) => n && (file === n || file.startsWith(`${n}/`)));
+  return phamvi.some((p) => matchScope(file, p));
 }
 
 /** R-FLOW-3: hai dòng không được chồng phạm vi; một nhánh một dòng. Trả danh sách vấn đề. */
@@ -106,7 +145,9 @@ export function findOverlaps(rows) {
         for (const pb of B.phamvi) {
           const na = normPath(pa);
           const nb = normPath(pb);
-          if (na && nb && overlaps(na, nb)) out.push({ line: B.line, message: `"${A.dot.slice(0, 30)}" và "${B.dot.slice(0, 30)}" chồng phạm vi: ${pa} ~ ${pb} (R-FLOW-3: một phạm vi một người)`, key: `chong:${A.nhanh}:${B.nhanh}:${na}:${nb}` });
+          // B10a: sổ dùng chung (ALWAYS_OK — mọi nhánh được sửa) ghi trong nhiều dòng không phải chồng phạm vi
+          if (ALWAYS_OK.some((re) => re.test(na)) && ALWAYS_OK.some((re) => re.test(nb))) continue;
+          if (scopesOverlap(pa, pb)) out.push({ line: B.line, message: `"${A.dot.slice(0, 30)}" và "${B.dot.slice(0, 30)}" chồng phạm vi: ${pa} ~ ${pb} (R-FLOW-3: một phạm vi một người)`, key: `chong:${A.nhanh}:${B.nhanh}:${na}:${nb}` });
         }
       }
     }

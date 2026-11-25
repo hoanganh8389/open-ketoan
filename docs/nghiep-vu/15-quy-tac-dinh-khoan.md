@@ -7,7 +7,7 @@
 
 > Trạng thái (11/11/2026): tài khoản khai **một nơi** là **Tài khoản ngầm định (ACC41)**. Màn Thiết kế hạch toán (ACC92: đề xuất / duyệt quy tắc, chạy thử, sơ đồ, lịch sử) **đã bỏ** vì hai nơi khai báo gây rối.
 >
-> Mã: lõi `packages/kernel/src/modules/posting/rule-table.ts` (chọn dòng khớp, áp lên bút toán); API `apps/api/src/modules/posting-flow/posting-rules.*`; màn `apps/web/src/features/posting/DefaultsPage.tsx`; chương trình bán `apps/api/src/modules/sale-programs/`, `apps/web/src/features/sale-programs/ChuongTrinhBanPage.tsx`; test `apps/api/test/tai-khoan-ngam-dinh.test.ts`, `apps/api/test/chuong-trinh-ban.test.ts`.
+> Mã <!-- [2026-11-22 11:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10a: SC-DOC-4 — bảng luật cũ, posting-flow, DefaultsPage bỏ ở 04980b5e (Quy tắc hạch toán một màn) -->: lõi `packages/kernel/src/modules/posting-config/scheme.ts` (khung Nợ / Có từng nghiệp vụ, năm nguồn tài khoản); API `packages/kernel/src/modules/posting-config/scheme.routes.ts`; màn `apps/web/src/features/posting/QuyTacHachToanPage.tsx` (ACC41); chương trình bán `apps/api/src/modules/sale-programs/`, `apps/web/src/features/sale-programs/ChuongTrinhBanPage.tsx`; test `apps/api/test/quy-tac-hach-toan.test.ts`, `apps/api/test/chuong-trinh-ban.test.ts`.
 
 ## 1. Mục tiêu
 

@@ -15,6 +15,7 @@ import { Routes, useLocation, useNavigate, useNavigationType } from 'react-route
 import { X } from 'lucide-react';
 import type { MenuItem } from '@ketoan/contracts';
 import { pageRoutes } from '../pages';
+import { LoiManHinh } from '../components/LoiManHinh'; // [2026-11-22 05:05 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b: khung lỗi theo màn
 import { inFrame } from '@/lib/auth';
 import { MODULES } from './menu';
 import { GON_DEFS, groupHome, OLD_HOME_ALIASES } from './menu-gon';
@@ -64,7 +65,7 @@ export function TabWorkspace({ menu, strip }: { menu: MenuItem[]; strip?: ReactN
 
   // Tên thẻ: tên chức năng trên menu, kèm mã.
   const titles = useMemo(() => {
-    const m = new Map<string, { label: string; code?: string }>([['/', { label: 'Tổng quan' }], ['/bao-cao', { label: 'Báo cáo' }], ...GON_DEFS.map((g) => [groupHome(g.key), { label: g.label }] as [string, { label: string }]), ...MODULES.map((x) => [`/app/${x.key}`, { label: x.label }] as [string, { label: string }])]);
+    const m = new Map<string, { label: string; code?: string }>([['/', { label: 'Tổng quan' }], ['/bao-cao', { label: 'Báo cáo' }], ['/dang-phat-trien', { label: 'Đang phát triển' }], ...GON_DEFS.map((g) => [groupHome(g.key), { label: g.label }] as [string, { label: string }]), ...MODULES.map((x) => [`/app/${x.key}`, { label: x.label }] as [string, { label: string }])]);
     for (const g of menu) for (const c of [g, ...(g.children ?? [])]) if (c.path && !m.has(c.path)) m.set(c.path, { label: c.label, code: c.code });
     return m;
   }, [menu]);
@@ -176,7 +177,10 @@ export function TabWorkspace({ menu, strip }: { menu: MenuItem[]; strip?: ReactN
       {strip}
       {tabs.map((t) => (
         <div key={t.key} className="ws-panel" hidden={t.pathname !== location.pathname}>
-          <Routes location={{ pathname: t.pathname, search: t.search, hash: '', state: null, key: String(t.key) }}>{pageRoutes}</Routes>
+          {/* PHASE-038 B4b: một màn lỗi lập trình chỉ làm hỏng thẻ đó (khung báo lỗi có mã tra cứu), không trắng cả ứng dụng */}
+          <LoiManHinh man={t.pathname}>
+            <Routes location={{ pathname: t.pathname, search: t.search, hash: '', state: null, key: String(t.key) }}>{pageRoutes}</Routes>
+          </LoiManHinh>
         </div>
       ))}
       {menuAt && (

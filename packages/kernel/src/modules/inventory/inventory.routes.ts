@@ -51,6 +51,7 @@ export async function inventoryRoutes(app: FastifyInstance): Promise<void> {
     handler: async (req) => ok(await costingFormulas.list(authOf(req))),
   });
   // [2026-11-17 Nguyễn Văn Thủy] kiểm tra tệp giá vốn bình quân đầu kỳ trước khi nhập (không ghi) (đóng góp)
+  // @bizcity-route: chỉ đọc — kiểm tệp giá vốn bình quân đầu kỳ trước khi nhập, không ghi; quyền reports:read
   r.post('/api/v1/inventory/costing/import-check', {
     preHandler: requirePermission('reports:read'),
     schema: { tags, summary: 'Kiểm tra tệp giá vốn bình quân đầu kỳ (không ghi)', body: z.object({ period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/), rows: z.array(z.object({ row: z.number().int(), sku: z.string().max(200).optional(), name: z.string().max(500).optional(), unitCost: z.union([z.string().max(60), z.number()]).nullable().optional() })).max(100000) }) },

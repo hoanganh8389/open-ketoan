@@ -5,7 +5,7 @@
     {
       "key": "doing",
       "label": "Đang làm",
-      "count": 7
+      "count": 4
     },
     {
       "key": "merging",
@@ -15,17 +15,17 @@
     {
       "key": "blocked",
       "label": "Bị chặn",
-      "count": 30
+      "count": 31
     },
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 189
+      "count": 204
     },
     {
       "key": "partial",
       "label": "Chờ đủ tín hiệu",
-      "count": 70
+      "count": 81
     },
     {
       "key": "paused",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 326
+      "count": 370
     }
   ],
   "items": [
@@ -2720,14 +2720,8 @@
       "title": "Giám sát (Loki, Tempo, Prometheus, Grafana) BẬT MẶC ĐỊNH ở bản cài Docker: include: trong docker-compose.yml, khối api chuyển lên gốc, cai-nhanh.sh sinh mật kh…",
       "priority": "P1",
       "status": "todo",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, PHASE-026 MDG)",
-        "branch": "feat/phase-018-giam-sat-mac-dinh",
-        "state": "đang làm",
-        "since": "2026-11-04",
-        "dot": "PHASE-018 · W6 — giám sát (Loki, Tempo, Prometheus, Grafana) BẬT MẶC ĐỊNH khi cài Docker; Bàn điều …"
-      },
+      "column": "todo",
+      "claim": null,
       "modules": [
         "he-thong"
       ],
@@ -4709,14 +4703,8 @@
       "title": "SC-ITEM-1..3 + ca tự kiểm fixtures/repo-bad",
       "priority": "P0",
       "status": "partial",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, core-ke-toan)",
-        "branch": "feat/phase-024-s024-16-sc-item",
-        "state": "đang làm",
-        "since": "2026-11-03",
-        "dot": "PHASE-024 · S024-16 — SC-ITEM-1..3 (sổ khoá theo itemid, không theo mã; luật định khoản không đọc s…"
-      },
+      "column": "partial",
+      "claim": null,
       "modules": [
         "danh-muc",
         "kho"
@@ -5912,14 +5900,8 @@
       "title": "W5: đợt 1 — quyền theo chi nhánh ở cửa nạp + luồng mẫu chuyển kho hai chiều (chữ chốt ADR-0027 Phụ lục A, W5 đợt 1); đợt 2 — thư viện phân quyền mẫu TGS (349 m…",
       "priority": "P1",
       "status": "partial",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, PHASE-028 authz)",
-        "branch": "feat/phase-028-w5-thu-vien-tgs",
-        "state": "đang làm",
-        "since": "2026-11-07",
-        "dot": "PHASE-028 · W5 đợt 2 — thư viện phân quyền mẫu từ bảng TGS: docs/standard/phan-quyen/ (349 mã, 28 n…"
-      },
+      "column": "partial",
+      "claim": null,
       "modules": [
         "he-thong"
       ],
@@ -8535,14 +8517,8 @@
       "title": "Bảng điểm tuần: mỗi (tuần, kỳ, phạm vi) một bản chụp chỉ thêm từ diagnosticruns + đối chiếu (chỉ số §9 của 60), sourceDigest; tuần vắt hai tháng tách hai dòng …",
       "priority": "P0",
       "status": "partial",
-      "column": "doing",
-      "claim": {
-        "who": "hoanganh8389 (phiên Claude, PHASE-032)",
-        "branch": "feat/phase-032-b4a-ket-qua-tuan",
-        "state": "đang làm",
-        "since": "2026-11-11",
-        "dot": "PHASE-032 · B4a — thẻ Kết quả từng tuần (Bàn làm việc kế toán): GET /api/v1/system/diagnostics/week…"
-      },
+      "column": "partial",
+      "claim": null,
       "modules": [
         "kho"
       ],
@@ -9710,6 +9686,1017 @@
       "facet": "F8",
       "file": "docs/phases/PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md",
       "line": 42
+    },
+    {
+      "id": "S038-1",
+      "phase": "PHASE-038",
+      "title": "Phase, quyết định D038-1..4",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 11
+    },
+    {
+      "id": "S038-2",
+      "phase": "PHASE-038",
+      "title": "logging: json-file có trần cho mọi dịch vụ; bind mount ${LOGHOSTDIR:-./logs} → /app/logs cho api, db-migrate; LOGDIR, LOGFILELEVEL vào env.ts; .gitignore logs/",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 12
+    },
+    {
+      "id": "S038-3",
+      "phase": "PHASE-038",
+      "title": "Logger multistream → logs/api-loi.log (≥ warn, xoay vòng, cùng redact)",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 13
+    },
+    {
+      "id": "S038-4",
+      "phase": "PHASE-038",
+      "title": "Lỗi khởi động ghi fatal đồng bộ vào api-loi.log với evt: bizcity.system.startfailed + reason",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 14
+    },
+    {
+      "id": "S038-5",
+      "phase": "PHASE-038",
+      "title": "Job db-migrate ghi logs/db-migrate.log (commit, migration áp, lỗi đầy đủ)",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 15
+    },
+    {
+      "id": "S038-6",
+      "phase": "PHASE-038",
+      "title": "nginx web: web-loi.log (errorlog + truy cập ≥ 500); errorpage 502 503 trả JSON (không 504 — báo cáo chạy lâu) GATEWAYUNAVAILABLE",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F4",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 16
+    },
+    {
+      "id": "S038-7",
+      "phase": "PHASE-038",
+      "title": "scripts/lay-log.sh theo README §4.4",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 17
+    },
+    {
+      "id": "S038-8",
+      "phase": "PHASE-038",
+      "title": "Sổ tay: mục \"Lấy log gửi về\" trong runbook aaPanel + DEPLOY §4; OBSERVABILITY §2 thêm logs/; log aaPanel /www/wwwlogs/",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 18
+    },
+    {
+      "id": "S038-9",
+      "phase": "PHASE-038",
+      "title": "Giao diện: một khay \"Không kết nối được máy chủ phần mềm\" cho GATEWAYUNAVAILABLE / 5xx không JSON; lùi dần lời gọi lặp",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 19
+    },
+    {
+      "id": "S038-10",
+      "phase": "PHASE-038",
+      "title": "Thi hành R-LOG-9 (bản cài có logs/ cố định, có trần; luật đã khai ở RULE-LOG) + check SC-OBS-3 (compose khai logging: và mount LOGHOSTDIR) + CHANGELOG \"Nâng cấ…",
+      "priority": null,
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 20
+    },
+    {
+      "id": "S038-11",
+      "phase": "PHASE-038",
+      "title": "Bộ bắt uncaughtException / unhandledRejection ghi fatal đồng bộ (R-LOG-3); version, commit trong mọi dòng (R-LOG-5); Node --enable-source-maps + giữ .map trong…",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 25
+    },
+    {
+      "id": "S038-12",
+      "phase": "PHASE-038",
+      "title": "logError chung: err chuẩn (type, stack, cause lồng, pgCode), errFp, evt; redact một danh sách dùng chung; sửa events.ts bỏ String(err)",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 26
+    },
+    {
+      "id": "S038-13",
+      "phase": "PHASE-038",
+      "title": "(D038-5 đã duyệt) ErrorBoundary theo màn, window.onerror, unhandledrejection → POST /api/v1/system/client-errors → logs/web-client.log",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 27
+    },
+    {
+      "id": "S038-14",
+      "phase": "PHASE-038",
+      "title": "Luật R-LOG-1..11 + SC-LOG-1..3; rà 16 chỗ nuốt lỗi (ghi warn hoặc chú thích nuot-loi:)",
+      "priority": null,
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 28
+    },
+    {
+      "id": "S038-15",
+      "phase": "PHASE-038",
+      "title": "Promtail (hết hỗ trợ 2026-03-02) → Grafana Alloy; sửa cảnh báo / dashboard dùng số đo Promtail",
+      "priority": null,
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [],
+      "facet": "F6",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 29
+    },
+    {
+      "id": "S038-16",
+      "phase": "PHASE-038",
+      "title": "(D038-7) Nhật ký lỗi chia theo ngày, mỗi dịch vụ một thư mục: logs/{api,db-migrate,web,web-client}/<YYYY-MM-DD>.log; giữ 30 ngày, trần từng thư mục (10 §7.3); …",
+      "priority": null,
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-038-NHAT-KY-LOI-CO-DINH/40-MASTER-CHECKLIST.md",
+      "line": 30
+    },
+    {
+      "id": "S039-1",
+      "phase": "PHASE-039",
+      "title": "README, 00, 30 hợp đồng nháp, checklist",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 10
+    },
+    {
+      "id": "S039-2",
+      "phase": "PHASE-039",
+      "title": "Chủ dự án duyệt D039-1..19, trả Q039-1..5; ADR-0036 \"một bản mã, mỗi site một database\"; luật R-SITE",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 11
+    },
+    {
+      "id": "S039-3",
+      "phase": "PHASE-039",
+      "title": "B1 — kiểm kê: chỗ gọi thẳng pool (apps/api/src/db/setup.ts), bộ đệm trong bộ nhớ có khoá theo đơn vị, script tự mở pool, số đo có nhãn đơn vị; ghi bảng kết quả…",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 12
+    },
+    {
+      "id": "S039-4",
+      "phase": "PHASE-039",
+      "title": "B1 — siteId trong ngữ cảnh yêu cầu; poolOf(site); db uỷ quyền theo site; chế độ single với site default; hành vi không đổi",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F2",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 13
+    },
+    {
+      "id": "S039-5",
+      "phase": "PHASE-039",
+      "title": "B2a — database điều khiển (CONTROLDATABASEURL, db/control-migrations/), bảng sites, sitedomains; Site Resolver theo Host; SITEMODE=multi; SITENOTFOUND, SITECON…",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 14
+    },
+    {
+      "id": "S039-6",
+      "phase": "PHASE-039",
+      "title": "B2b — claim sid trong vé đăng nhập và vé ứng dụng; vé lệch site bị từ chối; vé cũ không sid chỉ nhận ở chế độ single",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F2",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 15
+    },
+    {
+      "id": "S039-7",
+      "phase": "PHASE-039",
+      "title": "B2 — tiến trình nền forEachSite (dispatcher sự kiện, đồng hồ); pool theo site có trần và tự đóng khi rảnh",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 16
+    },
+    {
+      "id": "S039-8",
+      "phase": "PHASE-039",
+      "title": "B2 — bộ đệm trong bộ nhớ thêm khoá site (theo kết quả S039-3) + phép kiểm tĩnh chặn bộ đệm theo đơn vị thiếu site",
+      "priority": "P0",
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 17
+    },
+    {
+      "id": "S039-9",
+      "phase": "PHASE-039",
+      "title": "B3 — runMigrations(connectionString) cho lõi và module; schemaversion trong registry; cổng lược đồ SITEUPGRADING / SITEMIGRATIONFAILED",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 18
+    },
+    {
+      "id": "S039-10",
+      "phase": "PHASE-039",
+      "title": "B3 — lệnh site migrate <slug> / --all: sao lưu trước, site lỗi dừng riêng, bảng tổng kết, chạy lại được",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 19
+    },
+    {
+      "id": "S039-11",
+      "phase": "PHASE-039",
+      "title": "B4 — Site Provisioner: kttemplate, vai trò riêng kt<slug>owner / app (D039-19), CREATE DATABASE … TEMPLATE, đơn vị đầu + tài khoản quản trị, sitejobs, dọn khi …",
+      "priority": "P0",
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F2",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 20
+    },
+    {
+      "id": "S039-12",
+      "phase": "PHASE-039",
+      "title": "B4 — CLI bizcity site create / list / suspend / resume / drop / adopt (adopt: đưa bản cài một công ty vào cụm, Q039-4)",
+      "priority": "P1",
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 21
+    },
+    {
+      "id": "S039-13",
+      "phase": "PHASE-039",
+      "title": "B5 — Provisioning API /sites/v1 theo hợp đồng: SITEADMINHOST, khoá prov…, Idempotency-Key, mã lỗi; chuyển hợp đồng sang docs/contracts/",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 22
+    },
+    {
+      "id": "S039-14",
+      "phase": "PHASE-039",
+      "title": "B5 — khoá bản quyền biz-… (D039-17): gắn khoá cho site, hỏi trạng thái ở bizcity-llm-router (bộ đệm 1 giờ), dải đỏ khi hết hạn / thiếu khoá, không chặn; phía p…",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 23
+    },
+    {
+      "id": "S039-15",
+      "phase": "PHASE-039",
+      "title": "B6 — Backup Manager: site backup, tự kiểm, sitebackups, lịch đêm, chính sách giữ",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 24
+    },
+    {
+      "id": "S039-16",
+      "phase": "PHASE-039",
+      "title": "B6 — site restore vào database tạm → kiểm → đổi tên; sổ tay docs/ops/ (kể cả lấy một site từ PITR)",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 25
+    },
+    {
+      "id": "S039-17",
+      "phase": "PHASE-039",
+      "title": "B6 — khoá site (chỉ đọc, Q039-1) và xoá mềm (D039-15)",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 26
+    },
+    {
+      "id": "S039-18",
+      "phase": "PHASE-039",
+      "title": "B7 — cap-nhat.sh nhiều site theo 00 §6; docker-compose.yml không ghi cứng tên database ở chế độ multi",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F2",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 27
+    },
+    {
+      "id": "S039-19",
+      "phase": "PHASE-039",
+      "title": "B7 — nhật ký và số đo có site (trần số nhãn); màn chẩn đoán báo site đang phục vụ",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 28
+    },
+    {
+      "id": "S039-20",
+      "phase": "PHASE-039",
+      "title": "B7 — nghiệm thu T039-1..14 trên máy sạch; phối hợp Site Manager (repo bizcity-open-setup) tạo site thật",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 29
+    },
+    {
+      "id": "S039-21",
+      "phase": "PHASE-039",
+      "title": "B8 — trang dùng thử bizcity-web (PHASE-02 của bizcity-web): createSiteWithOwner lưu externalRef; sample: true → tạo Công ty mẫu (PHASE-036 createSampleTenant, …",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 30
+    },
+    {
+      "id": "S039-22",
+      "phase": "PHASE-039",
+      "title": "B8 — lệnh POST /sites/v1/sites/{siteId}/owner/reset-password (việc resetownerpassword): mật khẩu ban đầu mới cho email chủ site ở mọi đơn vị của site, sessionv…",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-039-NHIEU-CSDL-SITE-REGISTRY/40-MASTER-CHECKLIST.md",
+      "line": 31
+    },
+    {
+      "id": "S040-1",
+      "phase": "PHASE-040",
+      "title": "README, 00, 10, 20, checklist; đo trên main 3a551921: số bảng, CI, bảo vệ nhánh, selfcheck, mốc trụ cột",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 10
+    },
+    {
+      "id": "S040-2",
+      "phase": "PHASE-040",
+      "title": "Chủ dự án duyệt D040-1..12, trả Q040-1..6",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 11
+    },
+    {
+      "id": "S040-3",
+      "phase": "PHASE-040",
+      "title": "B1 — bizcitydocument@1 1.5.0-draft: STD-DOC-4 sáu nhóm, §5 ghi \"Trình\" là pending bỏ qua được; CONF-MAN-4; CANON §4",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 12
+    },
+    {
+      "id": "S040-4",
+      "phase": "PHASE-040",
+      "title": "B1 — ADR-0038 Document Continuity; docs/rules/RULE-DOCUMENT-CONTINUITY.md (R-DOC-CONT-0..9); CANON §0.14 + danh mục luật",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 13
+    },
+    {
+      "id": "S040-5",
+      "phase": "PHASE-040",
+      "title": "B1 — trụ cột X vào tru-cot.json (DC-1..11, 00 §2.2); mã IX → TV-; xác minh T040-24..27",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 14
+    },
+    {
+      "id": "S040-6",
+      "phase": "PHASE-040",
+      "title": "B2 — scripts/cham-pr.mjs chỉ đọc theo 20 §5; ma trận DOC sang dạng máy đọc",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 15
+    },
+    {
+      "id": "S040-7",
+      "phase": "PHASE-040",
+      "title": "B2 — docs/reviews/tien-do/PR-.json + docs/reviews/TIEN-DO-PR.md; chạy lùi 10 PR gần nhất; T040-35",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 16
+    },
+    {
+      "id": "S040-8",
+      "phase": "PHASE-040",
+      "title": "B3 — .github/pullrequesttemplate.md khối Bằng chứng chạy máy; nhan-viec.mjs kiem nhắc khi thiếu",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 17
+    },
+    {
+      "id": "S040-9",
+      "phase": "PHASE-040",
+      "title": "B3 — gộp danh tính người đóng góp",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 18
+    },
+    {
+      "id": "S040-10",
+      "phase": "PHASE-040",
+      "title": "B9 — đếm bảng hai chế độ trong kiem-nang-cap.sh; sửa báo cáo 135 → 134; T040-34",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F4",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 19
+    },
+    {
+      "id": "S040-11",
+      "phase": "PHASE-040",
+      "title": "B4 — họ IN-DOC- (00 §6) vào intake-findings.ts, kiểm trùng, có căn cứ; trang tra mã",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 20
+    },
+    {
+      "id": "S040-12",
+      "phase": "PHASE-040",
+      "title": "B4 — thống kê HT19: gom theo mã · loại chứng từ · phân hệ · bước · tuần; thẻ \"Lỗi hay gặp\"; T040-29..31",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 21
+    },
+    {
+      "id": "S040-13",
+      "phase": "PHASE-040",
+      "title": "B5 — số HĐ + applies trên mọi phiếu chuỗi mua (00 §4.1); nhắc thiếu HĐ — @Thuy2k",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "mua-hang"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 22
+    },
+    {
+      "id": "S040-14",
+      "phase": "PHASE-040",
+      "title": "B5 — dải chuỗi trên đầu phiếu mua (HĐ · PO · NCC · bước trước / sau), ghi đè có căn cứ — @Thuy2k",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "mua-hang"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 23
+    },
+    {
+      "id": "S040-15",
+      "phase": "PHASE-040",
+      "title": "B6 — màn hợp đồng từng bước A → K, lập chứng từ kế tiếp từ chứng từ trước; T040-2 — @Thuy2k",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "mua-hang"
+      ],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 24
+    },
+    {
+      "id": "S040-16",
+      "phase": "PHASE-040",
+      "title": "B6 — bảng sẵn sàng thanh lý theo hợp đồng; IN-DOC-CLOSE-OPEN-ITEMS; T040-14 — @Thuy2k",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "mua-hang"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 25
+    },
+    {
+      "id": "S040-17",
+      "phase": "PHASE-040",
+      "title": "B7 — saleprograms → pricing.saleprogram; applies từ đơn / phiếu bán / đơn POS; Doc 26 §3, §6; T040-15; chạy lại NT-BH-033 — @H-Joyy",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "ban-hang"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 26
+    },
+    {
+      "id": "S040-18",
+      "phase": "PHASE-040",
+      "title": "B8 — trạng thái kế toán suy ra trên HT18; chẩn đoán mồ côi nguồn, hoàn tất thiếu sổ, tệp đổi băm, docref ≠ dockey; T040-28",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "chung-tu"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 27
+    },
+    {
+      "id": "S040-19",
+      "phase": "PHASE-040",
+      "title": "B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản docs/reviews/REVIEW-R2-.md",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 28
+    },
+    {
+      "id": "S040-20",
+      "phase": "PHASE-040",
+      "title": "Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ main — PR + 1 người duyệt, check bắt buộc sau khi CI chạy được (Q040-4)",
+      "priority": "P0",
+      "status": "blocked",
+      "column": "blocked",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F2",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 29
+    },
+    {
+      "id": "S040-21",
+      "phase": "PHASE-040",
+      "title": "Sau phase — đưa vào sổ các dòng ☐ \"sau phase\" ở 10 §2",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "kho",
+        "quy",
+        "ban-hang"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 30
+    },
+    {
+      "id": "S040-22",
+      "phase": "PHASE-040",
+      "title": "B10a — SC-FIND-1 đọc quy-tac/.ts; SC-FLOW-1 so khớp mẫu tên tệp; SC-DOC-1, -2, -4, -5; SC-FIX-1 (35)",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 31
+    },
+    {
+      "id": "S040-23",
+      "phase": "PHASE-040",
+      "title": "B10b — tầng 0: SC-SEC-5 + SC-CON-7, SC-API-3, SC-KERNEL-7, SC-SEC-2, SC-AUTH-03",
+      "priority": "P0",
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 32
+    },
+    {
+      "id": "S040-24",
+      "phase": "PHASE-040",
+      "title": "B10c — ranh giới: SC-DOC-7, SC-MOD-2, SC-ACT-1, -2, SC-API-2, SC-EVD-1, SC-LAYER-1, -2, DG-POLICY-1 tự kiểm — @Thuy2k",
+      "priority": "P1",
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 33
+    },
+    {
+      "id": "S040-25",
+      "phase": "PHASE-040",
+      "title": "B10d — SC-DATA-3, SC-SIG-1, -2, SC-UI-1, SC-DOC-6, SC-DATA-1; đóng B10 khi main ĐẠT",
+      "priority": "P1",
+      "status": "partial",
+      "column": "partial",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 34
+    },
+    {
+      "id": "S040-26",
+      "phase": "PHASE-040",
+      "title": "B10f — chữ ký R-SIG: chữ ký kiến trúc cho tệp framework do người đóng góp tạo (R-SIG-1, R-SIG-7); dấu cũ sai khuôn và migration đã chạy vào baseline",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 35
+    },
+    {
+      "id": "S040-27",
+      "phase": "PHASE-040",
+      "title": "B11 — chấm được tiến độ người đóng góp: VERIFIED theo chặn lỗi mới (kiem-chuan ĐẠT + dòng selfcheck đã điền), merge bởi người khác tác giả tính là duyệt; dòng …",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 36
+    },
+    {
+      "id": "S040-28",
+      "phase": "PHASE-040",
+      "title": "B12 — phiếu nghiệm thu bắt đầu từ tiêu chí trụ cột: ô \"Trụ cột / tiêu chí\" ở MAU.md, mục \"Phiếu và trụ cột\" ở README nghiệm thu, câu giao việc §10 mang tiêu ch…",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 37
+    },
+    {
+      "id": "S040-29",
+      "phase": "PHASE-040",
+      "title": "B13 — người giữ tiêu chí trụ cột: trường owner cho 79 tiêu chí ở tru-cot.json theo cách chủ dự án chia 2026-11-23",
+      "priority": "P1",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 38
+    },
+    {
+      "id": "S040-30",
+      "phase": "PHASE-040",
+      "title": "B14 — nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR (theo check, phần mã, người; sửa bộ kiểm = đổi thước), nhắc nợ của tệp đang sửa ở nhan-viec.mjs kiem {…",
+      "priority": "P1",
+      "status": "partial",
+      "column": "doing",
+      "claim": {
+        "who": "hoanganh8389 (phiên Claude, PHASE-040)",
+        "branch": "feat/phase-040-b14-no-chuan",
+        "state": "đang làm",
+        "since": "2026-11-23",
+        "dot": "PHASE-040 · S040-30 — B14 nợ chuẩn: đo chỗ nợ baseline.json được trả theo PR / phần mã / người, nhắ…"
+      },
+      "modules": [
+        "chung-tu",
+        "mua-hang",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F5",
+      "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
+      "line": 39
     }
   ]
 }

@@ -20,7 +20,7 @@ import {
   CATALOG_HINTS, CATALOG_HINT_EXAMPLES, WARN_ACK_MIN_REASON, applyRuleReview, basisOf, catalogFinding, hintHash, hintVars, type CatalogFinding,
 } from '@ketoan/contracts';
 import { db } from '../../db/client.js';
-import { authOf, requirePermission } from '../../core/auth.js';
+import { authOf, requirePermission, requireUser } from '../../core/auth.js';
 import { Errors } from '../../core/errors.js';
 import { ok } from '../../core/http.js';
 import { writeAudit } from '../../core/audit.js';
@@ -168,7 +168,10 @@ export async function catalogRulesRoutes(app: FastifyInstance): Promise<void> {
   await settingsValuesRoutes(app);
   await settingsOverviewRoutes(app);
   // [2026-11-19 Nguyễn Văn Thủy] lỗi form tự chặn (chưa gửi máy chủ) cũng vào nhật ký kiểm — đếm lỗi hay gặp (đóng góp)
+  // [2026-11-22 11:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10b (S040-23): SC-API-3 — khai tường minh chỉ người dùng đăng nhập (R-API-6); khoá API không ghi lỗi form
+  // @bizcity-route: tự phục vụ — người dùng đăng nhập ghi lần form của chính mình tự chặn vào nhật ký kiểm (requireUser), không ghi dữ liệu nghiệp vụ
   app.post('/api/v1/validation-log/form', {
+    preHandler: requireUser(),
     schema: { tags, summary: 'Ghi một lần form tự chặn (thiếu ô, sai dữ liệu) vào nhật ký kiểm khai báo — người đã đăng nhập',
       body: z.object({ entity: z.string().trim().min(1).max(200), key: z.string().max(200).default(''), screen: z.string().max(300).optional(),
         failed: z.array(z.object({ code: z.string().max(40).default('FORM-CHAN'), title: z.string().max(500) })).min(1).max(20) }) },

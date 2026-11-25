@@ -19,23 +19,36 @@ export function parseMigrations(repo, dir = 'db/migrations') {
     const text = repo.read(file) ?? '';
     const lineAt = (idx) => text.slice(0, idx).split('\n').length;
 
-    for (const m of text.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w."]+)\s*\(/gi)) {
-      const name = ident(m[1]);
-      const body = sliceParens(text, m.index + m[0].length - 1);
-      const columns = new Map();
-      for (const part of splitTopLevel(body)) {
-        const p = part.trim();
-        if (!p || NOT_COLUMN.test(p)) continue;
-        const cm = /^("?[\w]+"?)\s+(.+)$/s.exec(p);
-        if (cm) columns.set(ident(cm[1]), cm[2].replace(/\s+/g, ' ').trim());
+    // [2026-11-23 12:45 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10d-a (S040-25): đọc lệnh theo đúng thứ tự trong tệp và hiểu DROP TABLE / DROP COLUMN —
+    // trước đây bảng / cột đã xoá ở migration sau vẫn bị đòi COMMENT ON (18 / 117 mục SC-DATA-3), vì bộ đọc chỉ biết tạo, không biết xoá.
+    const stmts = [];
+    for (const m of text.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([\w."]+)\s*\(/gi)) stmts.push({ at: m.index, kind: 'create', m });
+    for (const m of text.matchAll(/ALTER\s+TABLE\s+(?:ONLY\s+)?(?:IF\s+EXISTS\s+)?([\w."]+)\s+([^;]+);/gi)) stmts.push({ at: m.index, kind: 'alter', m });
+    for (const m of text.matchAll(/DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?([\w.", \t\r\n]+?)\s*(?:CASCADE|RESTRICT)?\s*;/gi)) stmts.push({ at: m.index, kind: 'drop', m });
+    stmts.sort((a, b) => a.at - b.at);
+    for (const { kind, m } of stmts) {
+      if (kind === 'create') {
+        const name = ident(m[1]);
+        const body = sliceParens(text, m.index + m[0].length - 1);
+        const columns = new Map();
+        for (const part of splitTopLevel(body)) {
+          const p = part.trim();
+          if (!p || NOT_COLUMN.test(p)) continue;
+          const cm = /^("?[\w]+"?)\s+(.+)$/s.exec(p);
+          if (cm) columns.set(ident(cm[1]), cm[2].replace(/\s+/g, ' ').trim());
+        }
+        if (!tables.has(name)) tables.set(name, { name, file, line: lineAt(m.index), columns });
+        else for (const [c, t] of columns) tables.get(name).columns.set(c, t);
+      } else if (kind === 'alter') {
+        const t = tables.get(ident(m[1]));
+        if (t) {
+          for (const a of m[2].matchAll(/ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?("?\w+"?)\s+([^,]+)/gi)) t.columns.set(ident(a[1]), a[2].trim());
+          for (const d of m[2].matchAll(/DROP\s+COLUMN\s+(?:IF\s+EXISTS\s+)?("?\w+"?)/gi)) t.columns.delete(ident(d[1]));
+        }
+        if (/ENABLE\s+ROW\s+LEVEL\s+SECURITY/i.test(m[2])) rls.add(ident(m[1]));
+      } else {
+        for (const n of m[1].split(',').map((s) => s.trim()).filter(Boolean)) tables.delete(ident(n));
       }
-      if (!tables.has(name)) tables.set(name, { name, file, line: lineAt(m.index), columns });
-      else for (const [c, t] of columns) tables.get(name).columns.set(c, t);
-    }
-    for (const m of text.matchAll(/ALTER\s+TABLE\s+(?:ONLY\s+)?(?:IF\s+EXISTS\s+)?([\w."]+)\s+([^;]+);/gi)) {
-      const t = tables.get(ident(m[1]));
-      if (t) for (const a of m[2].matchAll(/ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?("?\w+"?)\s+([^,]+)/gi)) t.columns.set(ident(a[1]), a[2].trim());
-      if (/ENABLE\s+ROW\s+LEVEL\s+SECURITY/i.test(m[2])) rls.add(ident(m[1]));
     }
     for (const m of text.matchAll(/COMMENT\s+ON\s+TABLE\s+([\w."]+)\s+IS/gi)) tableComments.add(ident(m[1]));
     for (const m of text.matchAll(/COMMENT\s+ON\s+COLUMN\s+([\w."]+)\s+IS/gi)) {

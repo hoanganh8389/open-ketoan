@@ -1,5 +1,7 @@
 // @bizcity-layer P module-sdk
 // [2026-11-02 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-011 — 3.13 (ADR-0011 D1, D2): registry module — hash thư mục module, quyết định nạp (active + hash khớp), ghi kết quả nạp, bật / tắt theo đơn vị (bộ đệm ngắn), cổng MODULE_DISABLED cho route
+// [2026-11-22 10:16 AM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B2d (R-SITE-6): đệm module tắt theo (site, đơn vị)
+// [2026-11-22 09:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B5 (R-LOG-2): chú thích lý do cho chỗ bỏ qua lỗi có chủ ý
 /**
  * REGISTRY MODULE (ADR-0011 D1, D2; PHASES 3.13). Hai mức bật:
  *
@@ -18,6 +20,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { db, type Db } from '../db/client.js';
+import { siteScopedKey } from '../db/site.js';
 import { Errors } from './errors.js';
 
 /** sha256 của thư mục: mỗi tệp `đường-dẫn-tương-đối \0 kích-thước \0 nội-dung`, sắp theo đường dẫn (dấu `/`). */
@@ -90,7 +93,7 @@ export async function recordLoad(decisions: LoadDecision[], missingInCode: strin
       await db.updateTable('module_registry').set({ last_load_at: now, last_load_result: 'skipped_missing', last_load_hash: null }).where('key', 'in', missingInCode).execute();
     }
   } catch {
-    /* registry chưa có (bản cài cũ) */
+    /* nuot-loi: registry chưa có (bản cài cũ) */
   }
 }
 
@@ -100,16 +103,17 @@ const cache = new Map<string, { at: number; off: Set<string> }>();
 
 /** Module đang TẮT ở đơn vị (dòng enabled = false). Đọc trong `trx` khi có (giao sự kiện), không thì qua pool. */
 export async function disabledModules(tenantId: string, trx: Db = db): Promise<Set<string>> {
-  const c = cache.get(tenantId);
+  const key = siteScopedKey(tenantId);
+  const c = cache.get(key);
   if (c && Date.now() - c.at < TTL_MS) return c.off;
   const rows = await trx.selectFrom('tenant_modules').select('module_key').where('tenant_id', '=', tenantId).where('enabled', '=', false).execute();
   const off = new Set(rows.map((r) => r.module_key));
-  cache.set(tenantId, { at: Date.now(), off });
+  cache.set(key, { at: Date.now(), off });
   return off;
 }
 
 export function forgetTenantModules(tenantId?: string): void {
-  if (tenantId) cache.delete(tenantId);
+  if (tenantId) cache.delete(siteScopedKey(tenantId));
   else cache.clear();
 }
 

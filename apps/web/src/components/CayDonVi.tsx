@@ -11,6 +11,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { Modal } from './ui';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { useOrgTree } from '@/lib/orgUnits';
 import { ChevronDown, ChevronRight, Building2, MapPin, Store, Warehouse } from 'lucide-react';
 import { branchOff, indexOrg, levelName, matchText, type OrgBranch, type OrgNode, type OrgTree } from '@/lib/orgUnits';
@@ -57,6 +59,9 @@ export function CayDonVi({
   const pickedSet = useMemo(() => new Set(picked), [picked]);
   const branchByCode = useMemo(() => new Map((tree?.branches ?? []).map((b) => [b.code, b])), [tree]);
   const whSet = useMemo(() => new Set(pickedWarehouses), [pickedWarehouses]);
+  // [2026-11-25 Nguyễn Văn Thủy] tên kho kèm (loại kho) cho dễ chọn (đóng góp)
+  const khoDs = useQuery({ queryKey: ['warehouses'], queryFn: () => api.get<{ code: string; typeName?: string }[]>('/api/v1/warehouses'), staleTime: 60_000, enabled: showWarehouses });
+  const loaiKho = useMemo(() => new Map((khoDs.data ?? []).map((k) => [k.code, k.typeName ?? ''])), [khoDs.data]);
   const visibleBranch = (b: OrgBranch) => !onlyActive || !branchOff(b) || pickedSet.has(b.code);
 
   // Tìm: nút khớp → hiện cả nhánh; chi nhánh / kho khớp → hiện chi nhánh + đường cha.
@@ -132,7 +137,7 @@ export function CayDonVi({
               <span className="cdv-tog" />
               {checkable && <Check state={on ? 'on' : 'off'} onClick={() => toggleWarehouse(b, w.code)} title="Tích / bỏ kho" />}
               <Warehouse size={12} className="cdv-ic" />
-              <span className="mono cdv-code">{w.code}</span><span className="cdv-name">{w.name}{w.isDefault ? ' *' : ''}</span>
+              <span className="mono cdv-code">{w.code}</span><span className="cdv-name">{w.name}{loaiKho.get(w.code) ? <span className="muted"> ({loaiKho.get(w.code)})</span> : null}{w.isDefault ? ' *' : ''}</span>
             </div>
           );
         })}

@@ -1,4 +1,5 @@
 # Đăng ký quyền cho màn và nghiệp vụ (Xem · Thêm · Sửa · Xoá · Duyệt · Xuất)
+<!-- [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo -->
 <!-- [2026-11-17 02:25 PM khanhtd] NT-HT-003 — chuẩn hoá đăng ký quyền theo màn × thao tác (bảng hook, luật CRUD, phạm vi chi nhánh, bộ kiểm) theo chỉ đạo "chuẩn hoá theo hướng register từng màn, có bảng danh sách hooks để AI code menu mới tự register" -->
 <!-- [2026-11-17 03:30 PM khanhtd] NT-HT-003 — GĐ4 (H13, H14 module mới), GĐ5 (gán tại nút sơ đồ tổ chức): đề xuất, chờ chốt mục 16 -->
 

@@ -33,3 +33,32 @@ Không còn việc nào thì trang báo **"Không có việc tồn đọng"**.
 | 7. Đối chiếu & báo cáo (BH02) | doanh số, trả lại, thuần; đơn POS khớp chứng từ; lãi gộp sau giá vốn cuối tháng | Tài khoản ngầm định (ACC41), Định khoản bán hàng (khối ④ của BH17) | Tổng quan bán lẻ (BH16), Lãi gộp (BH04), Sổ nhật ký bán hàng |
 
 Đơn vị không dùng máy bán POS: các ô máy POS không hiện.
+
+<!-- [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-035: kênh + voucher BH10, quà trả về kho KKM, mặt hàng dịch vụ không ghi kho (đóng góp) -->
+## Ghi nhớ (NT-BH-035)
+
+- **Phiếu bán BH10**: chọn **Kênh bán** (danh mục Kênh bán hàng; trống = Gần shop). Ô **Mã voucher**: bấm *Kiểm voucher* để xem số được giảm trước khi ghi (mã sai / hết hạn / đã dùng báo ngay); voucher thật sự trừ lúc **Duyệt**.
+- **Quà khách trả lại** (nguyên vẹn) — ở máy bán và phiếu trả BH11 — tự nhập về **kho quà (KKM)** của cửa hàng nhận trả (kho khai ở BH17). Cửa hàng chưa khai kho quà: về kho bán như cũ. Quà lỗi / hết hạn vẫn vào kho hàng trả lại (KTL).
+- **Mặt hàng dịch vụ** (phân loại *Dịch vụ*, vd phí ship): có doanh thu, thuế như thường nhưng **không** ghi thẻ kho, không tồn, không giá vốn; không bị chặn bán quá tồn. BH17 nhắc nếu mã phí ship chưa phân loại là dịch vụ (màn khai loại mặt hàng chưa có — nhờ quản trị đặt loại *Dịch vụ* cho mã đó).
+
+
+<!-- [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-036: bố cục phiếu bán / trả bán cùng mẫu phiếu mua (đóng góp) -->
+## Bố cục phiếu bán BH10 / trả bán BH11 (NT-BH-036)
+
+Hộp phiếu bán và phiếu trả bán dùng cùng mẫu với phiếu *Nhập mua*:
+
+- **Tiêu đề**: tên phiếu + số phiếu, nhãn *Nháp* / *Đã duyệt*; bên phải tổng tiền chữ lớn (*Phải thu khách*, BH11: *Phải trả khách*), **một** nút *? Hướng dẫn*, thu nhỏ xuống thanh dưới, đóng.
+- **Đầu phiếu** (khung viền): Số phiếu, Ngày, Chi nhánh lập chứng từ, Kho, Khách hàng, Kênh bán (BH10) / Phiếu gốc (BH11), Thu tiền (chưa thu / thu ngay), Ghi chú. Nút *Thu gọn đầu phiếu* thu lại thành một dòng tóm tắt (bấm để mở).
+- **Thẻ**: *Hàng hoá (n)* — nút *+ Thêm dòng* và bảng hàng; *Thu tiền* (BH11: *Trả tiền khách*) — các khoản theo hình thức; *Hoá đơn* — số, ký hiệu, ngày hoá đơn.
+- **Cột phải "Trợ lý bán hàng"** (nút *Thu gọn ›*): *Kiểm tra* — các lý do chưa ghi được và các bước; *Khuyến mại & voucher* (BH10) — *Áp khuyến mại*, mã giảm giá, mã voucher + *Kiểm voucher*; *Tổng tiền* — tiền hàng, chiết khấu, trước thuế, thuế GTGT, phải thu / phải trả, giảm voucher (nếu đã kiểm), đã thu, còn công nợ.
+- **Chân**: bên trái dòng *Chưa ghi được: …*; bên phải *In* (phiếu đã ghi), *Ghi*, *Thoát*. Duyệt / bỏ duyệt vẫn ở thanh nút của danh sách.
+- Phiếu đã ghi mở ở chế độ **xem** (nhãn *Đang xem*): bấm *Sửa*, F2, Enter hoặc bấm đúp thân phiếu để sửa; nút *Sửa* ở danh sách mở thẳng chế độ sửa. Phiếu đã duyệt chỉ xem. Phím tắt: F9 thêm nhanh (ở ô chọn), Ctrl + S ghi, Esc thoát.
+
+<!-- [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: đơn đặt hàng, form khuyến mại, đợt voucher cùng mẫu phiếu mua (đóng góp) -->
+## Đơn đặt hàng BH20, form khuyến mại BH18, đợt voucher cùng mẫu phiếu (NT-BH-037)
+
+Ba hộp này dùng cùng khung với phiếu bán / phiếu mua: tiêu đề có **một** nút *? Hướng dẫn*, đầu phiếu trong khung viền, cột phải **Trợ lý** (nút *Thu gọn ›*), chân có dòng *Chưa lưu được: …* bên trái và nút bên phải; Ctrl + S bấm nút chính, Esc đóng, nút thu nhỏ xuống thanh dưới. Nghiệp vụ, nút và quyền không đổi.
+
+- **BH20 Lập / sửa đơn**: tiêu đề *Đơn đặt hàng (mới)* hoặc số đơn + trạng thái, tổng *Giá trị đơn*. Đầu phiếu: cửa hàng, kho bán, ngày đơn, hiệu lực đến, nguồn, mã khách, tên người đặt, SĐT, ghi chú. Thẻ *Hàng hoá* (bảng dòng, *+ Thêm dòng*, ô *Giao lần này* khi đơn Đã gửi), *Giao hàng* (thông tin giao + chuyến giao), *Lịch sử*. Trợ lý: *Kiểm tra* (thiếu cửa hàng / dòng hàng / khách, lý do chờ duyệt, bị từ chối), *Giữ hàng* (kho giữ, số đang giữ so với còn phải giao — dòng thiếu tô màu), *Tổng tiền* (máy chủ tính lại khi Ghi).
+- **BH18 Thêm / sửa khuyến mại**: đầu phiếu mã, loại, ngày áp, thời gian chiến dịch, tên / ghi chú, cửa hàng; thân theo loại như cũ. Trợ lý: *Kiểm tra*, *Tóm tắt* (áp cho, hạn mức lượt, mức thưởng), *Trùng chương trình* (bản nháp đã lưu: danh sách trùng; bản mới: báo sau khi Lưu). Chương trình có hạn mức mở ở chế độ xem (Sửa / F2 / bấm đúp).
+- **Đợt voucher (BH21)**: đầu phiếu mã đợt, tên, loại, trạng thái, hiệu lực, hạn mỗi mã, cửa hàng tự phát, ghi chú; Trợ lý *Kiểm tra*, *Tóm tắt* (giá trị, điều kiện, số lượng). Hộp chi tiết đợt (phát mã, danh sách mã) giữ như cũ.

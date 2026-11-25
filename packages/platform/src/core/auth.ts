@@ -22,9 +22,9 @@
  */
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
-import type { Role } from '@ketoan/contracts';
+import { ERROR_CODES, type Role } from '@ketoan/contracts';
 import { db } from '../db/client.js';
-import { Errors } from './errors.js';
+import { AppError, Errors } from './errors.js';
 import { hashApiKey } from './security/password.js';
 import { getAppManifest } from './apps.js';
 import { verifySession } from './security/tokens.js';
@@ -250,6 +250,12 @@ export interface AuthContext {
    * nhánh, công tắc tắt). Do lớp phân quyền theo chi nhánh đặt sau khi xác thực; code nghiệp vụ chỉ đọc để lọc / so, không tự đặt.
    */
   branchScope?: readonly string[] | null;
+  // [2026-11-23 09:10 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037: khoá cài đặt open-pos (okti_) — (khoá, X-OKT-Blog đã nối) → đúng một tenant; không có blog → chỉ route của bản cài
+  /**
+   * Khoá cài đặt open-pos (ADR-0037, kind 'apikey'): `blogId` = blog đã nối (yêu cầu chạy trong tenant của blog, quyền theo scopes);
+   * `blogId` null = yêu cầu của cả bản cài (chạy trong tenant chủ, không quyền nghiệp vụ, chỉ INSTALLATION_ROUTES).
+   */
+  installation?: { id: string; code: string; blogId: number | null };
 }
 
 declare module 'fastify' {
@@ -265,6 +271,8 @@ declare module 'fastify' {
 async function resolveAuth(req: FastifyRequest): Promise<AuthContext | null> {
   const apiKey = req.headers['x-api-key'];
   if (typeof apiKey === 'string' && apiKey.length > 10) {
+    // [2026-11-23 09:10 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037: khoá cài đặt open-pos (okti_) — (khoá, X-OKT-Blog đã nối) → đúng một tenant; không có blog → chỉ route của bản cài
+    if (apiKey.startsWith(INSTALLATION_KEY_PREFIX)) return resolveInstallation(req, apiKey);
     const row = await db
       .selectFrom('api_keys as k')
       .leftJoin('app_installations as i', (j) => j.onRef('i.tenant_id', '=', 'k.tenant_id').onRef('i.app_key', '=', 'k.app_key'))
@@ -338,6 +346,61 @@ export function assertAppRoute(method: string, routeUrl: string | undefined): vo
   throw Errors.forbidden('Khoá app chỉ ghi qua cửa nạp chứng từ (ADR-0011 mức 2): route này không mở cho app');
 }
 
+// [2026-11-23 09:10 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — ADR-0037: khoá cài đặt open-pos (okti_) — (khoá, X-OKT-Blog đã nối) → đúng một tenant; không có blog → chỉ route của bản cài
+/** Tiền tố khoá cài đặt open-pos (ADR-0037). Khoá API thường bắt đầu `kt_`. */
+export const INSTALLATION_KEY_PREFIX = 'okti_';
+/** Route khoá cài đặt gọi được khi KHÔNG mang X-OKT-Blog (chạy trong tenant chủ). Đóng: route khác → FORBIDDEN. */
+export const INSTALLATION_ROUTES: ReadonlySet<string> = new Set([
+  'GET /api/v1/pos-installation/blogs',
+  'POST /api/v1/pos-installation/blogs',
+  'POST /api/v1/pos-installation/ping',
+]);
+const BLOG_RE = /^[1-9][0-9]{0,8}$/;
+
+/** Khoá cài đặt → AuthContext. Blog chờ / thu hồi / lạ → 403 có `details.reason` (bridge xếp hàng, không mất đơn — R-OKT-CONN-11). */
+async function resolveInstallation(req: FastifyRequest, apiKey: string): Promise<AuthContext | null> {
+  const inst = await db.selectFrom('pos_installations')
+    .select(['id', 'code', 'name', 'tenant_id', 'scopes'])
+    .where('key_hash', '=', hashApiKey(apiKey)).where('status', '=', 'active')
+    .executeTakeFirst();
+  if (!inst) return null;
+  const claimed = req.headers['x-okt-install'];
+  if (typeof claimed === 'string' && claimed !== '' && claimed !== inst.code) return null;
+  void db.updateTable('pos_installations').set({ last_seen_at: new Date() }).where('id', '=', inst.id).execute();
+  const rawBlog = req.headers['x-okt-blog'];
+  if (rawBlog === undefined || rawBlog === '') {
+    return { tenantId: inst.tenant_id, actor: `install:${inst.code}`, actorName: inst.name, kind: 'apikey', role: null, permissions: new Set<Permission>(),
+      installation: { id: String(inst.id), code: inst.code, blogId: null } };
+  }
+  if (typeof rawBlog !== 'string' || !BLOG_RE.test(rawBlog)) throw Errors.validation('X-OKT-Blog phải là số blog WordPress (số nguyên dương)');
+  const blogId = Number(rawBlog);
+  const blog = await db.selectFrom('pos_installation_blogs').select(['status', 'tenant_id'])
+    .where('installation_id', '=', inst.id).where('blog_id', '=', blogId).executeTakeFirst();
+  if (!blog) throw new AppError(ERROR_CODES.FORBIDDEN, `Blog ${blogId} chưa đăng ký với khoá cài đặt này — gọi POST /api/v1/pos-installation/blogs trước`, 403, { reason: 'BLOG_UNKNOWN', blogId });
+  if (blog.status !== 'active' || blog.tenant_id === null) {
+    throw new AppError(ERROR_CODES.FORBIDDEN, `Blog ${blogId} chưa được nối vào sổ nào — kế toán nhập mã nối ở Hệ thống → Kết nối open-pos`, 403, { reason: 'BLOG_NOT_LINKED', blogId, status: blog.status });
+  }
+  return {
+    tenantId: blog.tenant_id, actor: `install:${inst.code}:blog:${blogId}`, actorName: `${inst.name} · blog ${blogId}`, kind: 'apikey', role: null,
+    permissions: scopePermissions(inst.scopes), installation: { id: String(inst.id), code: inst.code, blogId },
+  };
+}
+
+/** Khoá cài đặt không mang blog chỉ gọi INSTALLATION_ROUTES (không lộ route có hay không). */
+export function assertInstallationRoute(method: string, routeUrl: string | undefined): void {
+  if (routeUrl && INSTALLATION_ROUTES.has(`${method} ${routeUrl}`)) return;
+  throw new AppError(ERROR_CODES.FORBIDDEN, 'Khoá cài đặt không mang X-OKT-Blog chỉ gọi được route của bản cài (ADR-0037 §4)', 403, { reason: 'BLOG_REQUIRED' });
+}
+
+/** preHandler cho route của bản cài: chỉ khoá cài đặt, không mang X-OKT-Blog. */
+export function requireInstallation() {
+  return async (req: FastifyRequest, _reply: FastifyReply) => {
+    const auth = req.auth;
+    if (!auth) throw Errors.unauthorized();
+    if (!auth.installation || auth.installation.blogId !== null) throw Errors.forbidden('Chỉ dùng bằng khoá cài đặt open-pos, không mang X-OKT-Blog (ADR-0037 §4)');
+  };
+}
+
 /** Plugin: mọi route (trừ route khai config.public) bắt buộc xác thực. */
 export const authPlugin = fp(async (app: FastifyInstance) => {
   app.decorateRequest('auth', undefined);
@@ -348,6 +411,7 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
     const auth = await resolveAuth(req);
     if (!auth) throw Errors.unauthorized();
     if (auth.app) assertAppRoute(req.method, req.routeOptions.url);
+    if (auth.installation && auth.installation.blogId === null) assertInstallationRoute(req.method, req.routeOptions.url);
     req.auth = auth;
     // Cô lập đơn vị ở tầng CSDL (RLS, PHASE-007): từ đây mọi kết nối của yêu cầu mang bizcity.tenant_id = đơn vị này.
     const rc = currentRequest();

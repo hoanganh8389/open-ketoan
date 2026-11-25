@@ -2,7 +2,7 @@
 // [2026-11-06 10:20 PM Nguyễn Văn Thủy] MH22 — nhận hoá đơn điện tử XML kèm PDF / gói tải về, tự tìm hoặc tạo NCC theo MST, chặn hoá đơn bị thay thế / huỷ (đóng góp)
 /**
  * NHẬN HOÁ ĐƠN ĐIỆN TỬ XML: một tệp XML (tải tay trên màn MH22 hoặc cầu nối gửi lên) thành một hoá đơn NCC, kèm mọi tệp gốc để mở xem lại.
- *   Kiểm     đúng khuôn, đúng người mua (cùng MST gốc với đơn vị)
+ *   Kiểm     đúng khuôn, đúng người mua (MST thuộc danh sách MST nhận hoá đơn — mst-nhan-hoa-don.ts)
  *   NCC      tìm theo MST người bán; chưa có thì tự tạo, mã = MST
  *   Trạng thái cơ quan thuế: bị thay thế / bị huỷ không nhập, tránh tính tiền hai lần
  *   Trùng    không tạo lại, chỉ đính thêm tệp mới (PDF thường có sau XML)
@@ -11,13 +11,14 @@
 import { sql } from 'kysely';
 import { XMLParser } from 'fast-xml-parser';
 import { z } from 'zod';
-import { gdtInvoiceFromHeader, invoiceLabel, normalizeParsed, readGdtInvoice, sameTaxRoot, type GdtInvoice, type XmlNode } from '@bizcity/mua-hang-domain';
+import { gdtInvoiceFromHeader, invoiceLabel, normalizeParsed, readGdtInvoice, type GdtInvoice, type XmlNode } from '@bizcity/mua-hang-domain';
 import type { Db } from '../../db/client.js';
 import { writeAudit } from '../../core/audit.js';
 import { Errors } from '../../core/errors.js';
 import { partnerRepository } from '../../modules/partners/partner.repository.js';
 import { findDuplicate, invoiceInputSchema, matchLines, matchSources, saveInvoice } from './hoa-don.js';
 import { logEvents } from './log.js';
+import { kiemNguoiMua } from './mst-nhan-hoa-don.js';
 import { addAttachment } from './ncc.js';
 
 const GIOI_HAN_XML = 5 * 1024 * 1024;
@@ -108,10 +109,9 @@ export async function ingestInvoiceXml(trx: Db, tenantId: string, actor: string,
   const tthai = input.gdt.tthai;
   const base = { label, attached: 0, warnings: inv.warnings };
 
-  const tenant = await trx.selectFrom('tenants').select(['tax_code']).where('id', '=', tenantId).executeTakeFirst();
-  if (tenant?.tax_code && p.buyerTaxCode && !sameTaxRoot(tenant.tax_code, p.buyerTaxCode)) {
-    return { ...base, status: 'wrong_buyer', message: `Người mua trên hoá đơn có MST ${p.buyerTaxCode}, khác đơn vị (${tenant.tax_code})` };
-  }
+  // [2026-11-23 Nguyễn Văn Thủy] MH22 — người mua phải thuộc danh sách MST nhận hoá đơn (trống = cùng MST gốc với đơn vị như trước) (đóng góp)
+  const sai = await kiemNguoiMua(trx, tenantId, p.buyerTaxCode);
+  if (sai) return { ...base, status: 'wrong_buyer', message: sai };
 
   const partner = await resolvePartner(trx, tenantId, actor, inv);
   if ('ambiguous' in partner) return { ...base, status: 'partner_ambiguous', message: `MST ${p.sellerTaxCode} trùng với đối tượng ${partner.ambiguous.join(', ')}: chưa biết dùng NCC nào` };

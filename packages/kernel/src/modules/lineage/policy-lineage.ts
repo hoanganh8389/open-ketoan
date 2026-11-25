@@ -1,4 +1,5 @@
 // @bizcity-layer K kernel/lineage
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-21 09:05 AM Võ Hoàng] PHASE-031 — S031-23 (bizcity_lineage@1 0.4.0-draft): làn `policy` — truy ngược chính sách đã áp, chỉ đọc, không hàm CSDL mới
 /**
  * LÀN CHÍNH SÁCH của truy vết (PHASE-031 · 20 §2). CHỈ ĐỌC. Nối bằng khoá thật, không bảng / hàm CSDL mới:

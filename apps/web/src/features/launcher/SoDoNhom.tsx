@@ -7,7 +7,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import type { SoDo, SoDoNhomBuoc, SoDoNode } from '../../layout/so-do-nhom';
-import { DANG_PHAT_TRIEN, type GonResolvedSection } from '../../layout/menu-gon';
+import { AN_DANG_PHAT_TRIEN, DANG_PHAT_TRIEN, type GonResolvedSection } from '../../layout/menu-gon';
 
 function Icon({ name, size = 16 }: { name: string; size?: number }) {
   const C = (Icons as unknown as Record<string, Icons.LucideIcon>)[name] ?? Icons.FileText;
@@ -40,10 +40,11 @@ function Node({ n }: { n: SoDoNode }) {
   }, [open]);
   const hasSub = (n.sub?.length ?? 0) > 1;
   // Bước chưa có màn: hiện mờ, ghi "đang phát triển".
+  if (!n.path && AN_DANG_PHAT_TRIEN) return null; // bước chưa có màn: gom ở trang Đang phát triển
   if (!n.path) return (
     <div className="sd-node soon" title="Đang phát triển, sẽ có ở bản sau">
       <Art icon={n.icon} />
-      <div className="sd-btn-wrap"><span className="sd-btn"><Icon name={n.icon} size={15} /> {n.label}</span><small className="sd-soon">{DANG_PHAT_TRIEN}</small></div>
+      <div className="sd-btn-wrap"><span className="sd-btn"><Icon name={n.icon} size={15} /> {n.label}</span>{!AN_DANG_PHAT_TRIEN && <small className="sd-soon">{DANG_PHAT_TRIEN}</small>}</div>
     </div>
   );
   return (

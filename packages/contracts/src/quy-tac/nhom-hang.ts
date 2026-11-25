@@ -1,3 +1,4 @@
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-19 Nguyễn Văn Thủy] quy tắc khai báo Nhóm hàng / phân loại hàng (DM11: nhóm, ngành, nhãn, loại; nhóm hạch toán, loại thuế của mặt hàng) — docs/nghiep-vu/25 (đóng góp)
 import type { CatalogHintDef } from '../catalog-hint.js';
 

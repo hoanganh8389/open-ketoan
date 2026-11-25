@@ -1,4 +1,5 @@
 // @bizcity-layer P module-sdk
+// [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-12 09:10 PM Võ Hoàng] POS-KM — S031-15 phần chương trình bán (chữ chốt PHASE-031 · 00 §17 mục 1): sale.program.gift@1, sale.program.discount@1 — luật của chương trình bán BH12 (đóng góp)
 /**
  * CHƯƠNG TRÌNH BÁN (BH12) — hai Rule Contract mà BH12 đã ghi ở sổ đăng ký (`sale.program.<mode>@1`) nhưng trước đây chưa có.

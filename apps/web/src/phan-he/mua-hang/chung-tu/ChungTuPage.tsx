@@ -11,7 +11,7 @@ import { workBranch } from '@/lib/workBranch';
 import { restoreDock } from '@/layout/WindowDock';
 import { cloneElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { COST_TYPES, ORDER_INVOICE_LABEL, invoiceDueDate, invoiceLabel, invoicePlanText, orderInvoice, orderProgress, receiptFromOrder, type InvoicePlan, type OrderInvoice, type PDoc } from '@bizcity/mua-hang-domain';
+import { COST_TYPES, ORDER_INVOICE_LABEL, invoiceDueDate, invoiceKey, invoiceLabel, invoicesOf, invoicePlanText, orderInvoice, orderProgress, receiptFromOrder, type InvoicePlan, type OrderInvoice, type PDoc } from '@bizcity/mua-hang-domain';
 import { useDimension } from '@/components/voucher/lookups';
 import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
@@ -28,7 +28,7 @@ import { congNo, tienPhieu } from './tienPhieu';
 import { TongHopTheoNhom } from '../tong-hop/TongHopMuaPage';
 import { LocKho, matchKho, useKhoOf, type KhoFilter } from '../thanh-phan/LocKho';
 import { FilterLayout } from '@/components/ReportPanel';
-import { BranchSelect } from '@/components/filters';
+import { BranchSelect, DateRange } from '@/components/filters';
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { NccInfo } from '../thanh-phan/NccInfo';
 import { PrintButton } from '@/components/print';
@@ -38,7 +38,7 @@ import { HopDongMuaPage, hopDongMoiPath } from '../hop-dong/HopDongPage';
 
 /** Hoá đơn của phiếu nhập theo kế hoạch của đơn. */
 type HdPhieu = 'co' | 'thieu' | 'cho' | 'qua-han' | 'khong';
-const HD_PHIEU: Record<HdPhieu, string> = { co: 'Đã có HĐ', thieu: 'Thiếu HĐ', cho: 'Chờ HĐ', 'qua-han': 'Quá hạn HĐ', khong: 'Không lấy HĐ' };
+const HD_PHIEU: Record<HdPhieu, string> = { co: 'Đã có HĐ', thieu: 'Thiếu HĐ', cho: 'Chờ HĐ', 'qua-han': 'Quá hạn HĐ', khong: 'Hàng không có HĐ' };
 const GROUPS: [string, string, PDoc['kind'][]][] = [
   ['all', 'Tất cả', []], ['hop-dong', 'Hợp đồng', []], ['order', 'Đơn đặt hàng', ['order']], ['receipt', 'Nhập mua', ['receipt']], ['return', 'Trả / đổi hàng', ['return', 'exchange']],
   ['money', 'Ứng trước / trả tiền', ['prepayment', 'payment']], ['gift', 'Quà tặng', ['gift_in', 'gift_out']], ['adjust', 'Chi phí / thưởng', ['cost', 'rebate']],
@@ -193,9 +193,10 @@ export function ChungTuPage({ embedPartner, embedGroup, command, report, formsOn
     const homNay = today();
     return (d: PDoc): { state: HdPhieu; han: string; plan?: InvoicePlan } | null => {
       if (d.kind !== 'receipt') return null;
-      const plan = d.invoicePlan ?? (d.refIds?.[0] ? byId.get(d.refIds[0])?.invoicePlan : undefined);
-      const han = invoiceDueDate(plan, d.receivedDate ?? d.docDate);
-      if (d.invoice?.no) return { state: 'co', han, plan };
+      const don = d.refIds?.[0] ? byId.get(d.refIds[0]) : undefined;
+      const plan = d.invoicePlan ?? don?.invoicePlan;
+      const han = invoiceDueDate(plan, d.docDate, don?.docDate);
+      if (invoicesOf(d).length) return { state: 'co', han, plan };
       if (plan?.mode === 'none') return { state: 'khong', han, plan };
       if (plan?.mode === 'later') return { state: han < homNay ? 'qua-han' : 'cho', han, plan };
       return { state: 'thieu', han, plan };
@@ -215,7 +216,7 @@ export function ChungTuPage({ embedPartner, embedGroup, command, report, formsOn
       && (!onlyErr || ((d.status === 'draft' || d.status === 'pending_approval') && (d.checks ?? []).some((c) => c.level === 'error')))
       && (!from || d.docDate >= from) && (!to || d.docDate <= to)
       && matchKho(khoFilter, d.branchCode, khoOf(d.branchCode, d.kind === 'order' ? d.deliveryWarehouse : d.warehouseCode))
-      && (!s || [d.docNo, d.note, d.invoice?.no, d.partnerCode, names.partnerName(d.partnerCode), names.partner(d.partnerCode)?.taxCode, names.partner(d.partnerCode)?.phone, names.partner(d.partnerCode)?.address].some((x) => x?.toLowerCase().includes(s))));
+      && (!s || [d.docNo, d.note, ...invoicesOf(d).map(invoiceKey), d.partnerCode, names.partnerName(d.partnerCode), names.partner(d.partnerCode)?.taxCode, names.partner(d.partnerCode)?.phone, names.partner(d.partnerCode)?.address].some((x) => x?.toLowerCase().includes(s))));
   }, [data, group, status, onlyErr, outside, partner, from, to, search, names, khoOf, branchCodes, whCodes, hd, km, invOf]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -295,13 +296,13 @@ export function ChungTuPage({ embedPartner, embedGroup, command, report, formsOn
     { key: 'workBranch', header: 'Chi nhánh đang làm việc', width: 150, title: 'Chi nhánh đang làm việc của người lập phiếu (chọn ở nút chi nhánh trên cùng). Phiếu cũ: bằng chi nhánh của phiếu', value: (r) => { const w = r.workBranchCode ?? r.branchCode; return `${w} · ${names.branchName(w)}`; },
       render: (r) => { const w = r.workBranchCode ?? r.branchCode; return <span className={w === r.branchCode ? 'muted' : ''} title={names.branchName(w)}>{w} · {names.branchName(w)}</span>; } },
     { key: 'kho', header: 'Phân kho', width: 130, title: 'Mã phân kho của phiếu hàng (chưa ghi kho = kho mặc định của chi nhánh; "mặc định" = chi nhánh chưa khai kho); đơn đặt: kho giao', value: (r) => { const k = r.kind === 'order' ? khoOf(r.branchCode, r.deliveryWarehouse) : GOODS_KINDS.includes(r.kind) ? khoOf(r.branchCode, r.warehouseCode) : ''; return k || (GOODS_KINDS.includes(r.kind) ? 'mặc định' : ''); } },
-    { key: 'contract', header: 'Hợp đồng', type: 'code', width: 150, title: 'Số hợp đồng mua của phiếu (MH29) — bút toán, công nợ mang số này', value: (r) => r.contractCode ?? '' },
+    { key: 'contract', header: 'Hợp đồng', type: 'code', width: 150, title: 'Số hợp đồng mua của phiếu (MH29) — bút toán, công nợ mang số này', value: (r) => r.contractCode || 'Không theo HĐ', render: (r) => (r.contractCode ? <span className="mono">{r.contractCode}</span> : <span className="muted">không theo HĐ</span>) },
     { key: 'ref', header: 'Theo đơn / phiếu', width: 120, title: 'Chứng từ gốc (đơn đặt của phiếu nhập…); phiếu nhập không theo đơn ghi "Nhập ngoài đơn"', value: (r) => (nhapNgoaiDon(r) ? 'Nhập ngoài đơn' : (r.refIds ?? []).map((x) => data?.docs.find((d) => d.id === x)?.docNo ?? '').filter(Boolean).join(', ')),
       render: (r) => (nhapNgoaiDon(r) ? <span className="badge badge-warn" title={r.outsideOrder?.reason ? `Lý do: ${r.outsideOrder.reason}${r.outsideOrder.by ? `
 Duyệt: ${r.outsideOrder.by}` : ''}${r.outsideOrder.reviewedBy ? `
 Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoài đơn'}>Ngoài đơn{r.outsideOrder?.reviewedBy ? ' ✓' : ''}</span> : (r.refIds ?? []).map((x) => data?.docs.find((d) => d.id === x)?.docNo ?? '').filter(Boolean).join(', ')) },
-    { key: 'invoiceSerial', header: 'Ký hiệu HĐ', type: 'code', width: 90, value: (r) => r.invoice?.serial ?? '' },
-    { key: 'invoice', header: 'Số HĐ', type: 'code', width: 80, value: (r) => r.invoice?.no ?? '' },
+    { key: 'invoiceSerial', header: 'Ký hiệu HĐ', type: 'code', width: 90, value: (r) => [...new Set(invoicesOf(r).map((i) => i.serial ?? ''))].filter(Boolean).join(', ') },
+    { key: 'invoice', header: 'Số HĐ', type: 'code', width: 80, title: 'Số hoá đơn của phiếu — phiếu nhập nhiều hoá đơn thì ghi đủ các số', value: (r) => invoicesOf(r).map((i) => i.no).join(', ') },
     { key: 'invPlan', header: 'Hoá đơn', width: 130, title: 'Kế hoạch hoá đơn đầu vào khai ở đơn đặt (cùng hàng / nhận sau N ngày / không lấy) và tình trạng của phiếu nhập',
       value: (r) => { const x = hdPhieu(r); return x ? `${HD_PHIEU[x.state]}${x.state === 'cho' || x.state === 'qua-han' ? ` ${dmy(x.han)}` : ''}` : r.kind === 'order' ? invoicePlanText(r.invoicePlan) : ''; },
       render: (r) => { const x = hdPhieu(r); if (!x) return r.kind === 'order' ? <span className="muted">{invoicePlanText(r.invoicePlan)}</span> : null;
@@ -410,7 +411,8 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
           </div>;
         })()}
         <ErrorBox error={error ? errorText(error) : null} />
-        {view === 'nhom' ? <TongHopTheoNhom from={from} to={to} />
+        {/* [2026-11-25 Nguyễn Văn Thủy] mở từ liên kết chưa có kỳ: gom theo nhóm vẫn cần kỳ → mặc định đầu tháng đến hôm nay (đóng góp) */}
+        {view === 'nhom' ? <TongHopTheoNhom from={from || `${today().slice(0, 7)}-01`} to={to || today()} />
         : !isLoading && data && view !== 'phieu' ? (
           <XemTheoMaHang docs={rows} data={data} mode={view} partnerName={names.partnerName} onOpen={(d) => setEditing(d)} locDong={ln.coLoc ? ln.loc : undefined}
             khoText={(d) => { const k = d.kind === 'order' ? khoOf(d.branchCode, d.deliveryWarehouse) : khoOf(d.branchCode, d.warehouseCode); return k; }} />
@@ -425,8 +427,7 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
         return (
           <FilterLayout filters={<>
             {!embedded && <div className="field"><label>Nhà cung cấp</label><PartnerPicker kind="supplier" value={partner} onChange={setPartner} placeholder="Mọi nhà cung cấp" /></div>}
-            <div className="field"><label>Từ ngày</label><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-            <div className="field"><label>Đến ngày</label><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+            <DateRange from={from} to={to} remember={false} onChange={(a, b) => { setFrom(a); setTo(b); }} />
             <BranchSelect value={branchCodes} onChange={setBranchCodes} warehouses={{ value: whCodes, onChange: setWhCodes }} />
             {view !== 'phieu' && view !== 'nhom' && <ChonNhomHang value={nhom} onChange={setNhom} />}
             <div className="field"><label>Trạng thái</label>{statusSel}</div>

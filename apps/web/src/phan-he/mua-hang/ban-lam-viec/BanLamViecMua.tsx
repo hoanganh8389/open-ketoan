@@ -26,7 +26,7 @@ const NGAN: Record<string, string> = {
   contract_expiring: 'HĐ sắp hết hạn', contract_no_price: 'HĐ chưa có giá',
   credit_over: 'vượt hạn mức', order_pending: 'chờ duyệt', order_no_contract: 'không theo hợp đồng', price_diff: 'lệch giá hợp đồng', blocked: 'bị chặn duyệt',
   orders: 'chưa nhận đủ', outside: 'nhập ngoài đơn', expired: 'lô hết hạn', near: 'lô cận date',
-  inv_late: 'quá hạn nhận HĐ', receipt_no_invoice: 'thiếu hoá đơn', inv_wait: 'chờ hoá đơn', inv_unmatched: 'HĐ chưa nhận mã', inv_no_receipt: 'HĐ chưa có phiếu nhập', costs: 'chi phí chưa phân bổ',
+  inv_late: 'quá hạn nhận HĐ', receipt_no_invoice: 'thiếu hoá đơn', inv_wait: 'chờ hoá đơn', inv_unmatched: 'HĐ chưa nhận mã', inv_no_receipt: 'HĐ chưa có phiếu nhập', bridge_stale: 'cầu nối mất liên lạc', costs: 'chi phí chưa phân bổ',
   overdue: 'nợ quá hạn', due: 'đến hạn hôm nay', soon: 'sắp đến hạn',
   return_no_ref: 'chưa gắn phiếu nhập',
   rebates: 'thưởng chưa quyết toán', contract_expired: 'HĐ hết hạn chưa thanh lý', gifts: 'quà vượt tồn',
@@ -36,6 +36,8 @@ const BAO_CAO: { label: string; path: string }[] = [
   { label: 'Sổ tổng hợp công nợ phải trả', path: '/bao-cao/cong-no-phai-tra' },
   { label: 'Sổ chi tiết công nợ phải trả', path: '/bao-cao/chi-tiet-thanh-toan' },
   { label: 'Công nợ theo hợp đồng', path: '/mua-hang/cong-no-hop-dong' },
+  { label: 'Tình hình thực hiện chính sách', path: '/mua-hang/thuc-hien-chinh-sach' },
+  { label: 'Tình hình thực hiện hợp đồng', path: '/mua-hang/thuc-hien-hop-dong' },
   { label: 'Tổng hợp mua hàng theo mặt hàng', path: '/mua-hang/tong-hop-mat-hang' },
   { label: 'Tổng hợp mua hàng theo chi nhánh', path: '/mua-hang/tong-hop?xem=nhom' },
   { label: 'Biên bản đối chiếu công nợ', path: '/cong-no/doi-chieu' },
@@ -60,13 +62,10 @@ export function BanLamViecMua({ g, canOpen, onHelp }: { g: GonGroup; canOpen: (p
 
   /** Phần gắn cuối mỗi thẻ: nhãn thiếu / lệch + nút lập phiếu. */
   const them = (b: SoDoNhomBuoc): ReactNode => {
-    const its = of(b.viec);
-    if (!its.length && !b.lap && !b.viec?.length) return null;
+    if (!b.lap) return null;
     return (
       <div className="blv-them">
-        {its.length > 0 ? its.map((t) => (
-          <Link key={t.key} to={t.path} className={`blv-nhan ${t.level}`} title={t.amount ? `${t.text} · ${vnd(t.amount)}` : t.text}><b>{t.count}</b> {NGAN[t.key] ?? t.text}</Link>
-        )) : b.viec?.length && !q.isLoading ? <span className="blv-nhan ok"><Check size={12} /> Đã khớp</span> : null}
+        {/* [2026-11-21 Nguyễn Văn Thủy] thẻ bước KHÔNG hiện cảnh báo (đỡ ngợp) — mọi việc thiếu / lệch ở khung "Cần xử lý" góc dưới bên phải (đóng góp) */}
         {b.lap?.map((x) => <Link key={x.label} to={x.path} className="blv-lap-nho"><Plus size={12} /> {x.label}</Link>)}
       </div>
     );
@@ -77,7 +76,7 @@ export function BanLamViecMua({ g, canOpen, onHelp }: { g: GonGroup; canOpen: (p
       <b>Nghiệp vụ mua hàng — làm theo thứ tự</b>
       <span className="blv-tong">
         {q.isLoading ? '' : loi + can === 0 ? <span className="ok"><Check size={14} /> Không có thiếu / lệch</span>
-          : <>{loi > 0 && <span className="error">{loi} lỗi</span>}{can > 0 && <span className="warn">{can} cần xử lý</span>}</>}
+          : <a href="#blv-can" className="warn" title="Xem danh sách ở khung Cần xử lý (góc dưới bên phải)" onClick={(e) => { e.preventDefault(); document.getElementById('blv-can')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }}>{loi + can} việc cần xử lý ↘</a>}
       </span>
       <button type="button" className="btn btn-sm" onClick={() => void q.refetch()} title="Soát lại thiếu / lệch"><RefreshCw size={14} className={q.isFetching ? 'spin' : ''} /></button>
       <button type="button" className="btn btn-sm" onClick={() => setSp({ xem: 'chi-tiet' }, { replace: true })} title="Luồng chi tiết: từng bước phần mềm tự làm gì"><Workflow size={14} /></button>
@@ -92,11 +91,23 @@ export function BanLamViecMua({ g, canOpen, onHelp }: { g: GonGroup; canOpen: (p
       </div>
       <div className="sd-layout">
         <div className="sd-main"><SoDoNhom soDo={soDo} canOpen={canOpen} sections={g.sections} them={them} dau={dau} /></div>
+        <div className="blv-phai">
         <aside className="card sd-bc">
           <b>Báo cáo</b>
           {BAO_CAO.filter((r) => canOpen(r.path.split('?')[0]!)).map((r) => <Link key={r.label} to={r.path}>{r.label}</Link>)}
           <Link className="sd-bc-all" to={`/bao-cao?nhom=${g.key}`}>Tất cả báo cáo ›</Link>
         </aside>
+        <aside className="card sd-bc blv-can" id="blv-can">
+          <b>Cần xử lý {tatCa.length > 0 && <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>({tatCa.length})</span>}</b>
+          {q.isLoading ? <span className="muted">Đang soát…</span> : !tatCa.length ? <span className="ok" style={{ fontSize: 13 }}><Check size={13} /> Không có thiếu / lệch</span>
+            : [...(soDo.nhom?.chuoi ?? []), ...(soDo.nhom?.nhanh ?? [])].filter((b) => of(b.viec).length).map((b, i) => (
+              <div key={i} className="blv-can-nhom">
+                <small className="muted">{b.nhom}</small>
+                {of(b.viec).map((t) => <Link key={t.key} to={t.path} className={`blv-can-dong ${t.level}`} title={t.amount ? `${t.text} · ${vnd(t.amount)}` : t.text}><b>{t.count}</b> {NGAN[t.key] ?? t.text}</Link>)}
+              </div>
+            ))}
+        </aside>
+        </div>
       </div>
     </>
   );
