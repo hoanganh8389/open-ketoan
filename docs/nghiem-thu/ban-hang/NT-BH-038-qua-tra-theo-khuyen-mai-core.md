@@ -7,7 +7,7 @@
 | Màn hình | Máy bán: Đơn hàng → Hoàn hàng; API `GET /api/v1/m/pos/orders/:id/returnable`, `POST /api/v1/m/pos/returns` |
 | Ngày tạo | 25/11/2026 |
 | Trạng thái | **Đã chốt 25/11/2026** (Võ Hoàng) |
-| Căn cứ | Thử thật shop2 24/11 (React POS → open-ketoan): đơn `CN02BT10032` mua 2 tặng 1 theo chương trình Core `KM-THU-QUA-CN02`; trả hết 2 lon mua, phiếu `CN02.B00006` được nhận mà lon quà vẫn ở khách |
+| Căn cứ | Thử trên máy local 24/11 (máy bán React → open-ketoan): đơn `CN02BT10032` mua 2 tặng 1 theo chương trình Core `KM-THU-QUA-CN02`; trả hết 2 lon mua, phiếu `CN02.B00006` được nhận mà lon quà vẫn ở khách |
 
 ## 1. Hiện trạng
 - Luật "quà trả theo hàng chính" (họp kế toán 04/11, #22; NT-BH-024): suất quà khách được giữ = floor(quà × hàng chính khách giữ ÷ hàng chính đã mua); quà đang giữ vượt suất phải trả cùng phiếu. Máy chủ (`modules/pos/api/domain/returns.ts` `requiredGiftReturns`) và máy bán (`@tgs/pos-core` `requiredGiftReturns`) ghép quà với hàng chính theo `promotionId` **số** của khuyến mại website cũ.
@@ -39,7 +39,7 @@
 
 ## 5. Kiểm
 - Test đơn vị `domain/returns` (nhóm Core, hàng ngoài chương trình, order_gift, không đọc được chương trình) + test API trên CSDL test (tệp mới, đề xuất: `apps/api/test/nt-bh-038-qua-tra-khuyen-mai-core.test.ts`).
-- Thử thật shop2: bán mua 2 tặng 1 → trả 2 hàng chính → quà tự điền, về `CN02-KKM`.
+- Thử trên máy local: bán mua 2 tặng 1 → trả 2 hàng chính → quà tự điền, về `CN02-KKM`.
 
 ## 6. Kết quả chạy
 <!-- [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038: kết quả code + kiểm (đóng góp) -->
@@ -53,10 +53,10 @@ Nhánh `feat/nt-bh-038-qua-tra-km-core`, 25/11/2026.
 | test API `nt-bh-038-qua-tra-khuyen-mai-core` | 5 / 5: returnable có `policyKey`; trả hết hàng chính thiếu quà → `POS_GIFT_REQUIRED`; trả hàng ngoài chương trình → nhận; trả kèm quà → quà về KKM; trả 1 / 2 hàng chính → phải trả quà |
 | Hồi quy | nt-bh-003, 005, 019, 020, 024, 028, 030, 035, golden-tra-hang-doi-ma: 61 / 61; module pos 118 / 118; `module check pos` ĐẠT |
 | Máy bán React | PR riêng ở open-pos `fix/qua-tra-theo-km-core` (luật I-0): pos-core ghép quà theo `policyKey`, hộp Hoàn hàng đọc `GET /api/v1/policies`; React 775 / 775 test |
-| Thử thật shop2 25/11 (Docker dựng từ nhánh này) | Đơn `CN02BT10034` mua 2 tặng 1 (`KM-THU-QUA-CN02`); hộp Hoàn hàng chỉ nhập 2 hàng chính → tự điền 1 quà "quà trả theo"; phiếu `CN02.B00008`: 2 lon về `CN02-K1`, 1 lon quà về `CN02-KKM` |
+| Thử trên máy local 25/11 (open-ketoan Docker dựng từ nhánh này) | Đơn `CN02BT10034` mua 2 tặng 1 (`KM-THU-QUA-CN02`); hộp Hoàn hàng chỉ nhập 2 hàng chính → tự điền 1 quà "quà trả theo"; phiếu `CN02.B00008`: 2 lon về `CN02-K1`, 1 lon quà về `CN02-KKM` |
 
 ## 7. Lịch sử thay đổi
 | Ngày | Thay đổi |
 |---|---|
-| 25/11/2026 | Tạo phiếu sau thử thật shop2 24/11; chốt Q1–Q3; giữ chỗ code |
+| 25/11/2026 | Tạo phiếu sau thử trên máy local 24/11; chốt Q1–Q3; giữ chỗ code |
 | 25/11/2026 | Code máy chủ xong, kết quả §6; nhả giữ chỗ |
