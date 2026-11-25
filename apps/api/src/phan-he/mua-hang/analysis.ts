@@ -12,7 +12,7 @@ import { writeTenantSection } from '@bizcity/platform/core/settings';
 import { sql } from 'kysely';
 import {
   ACC, brandMix, brandShare, checkDoc, codeSwaps, computeDoc, creditStatus, docBrand, fefoCheck, findPolicy, termFromRule, orderProgress, postingFor, ratioIn, receiptsOfOrder, scheduleStatus, type OrderLineProgress,
-  type Accounts, type Check, type CreditStatus, type ProductUnit, type SupplierProduct, type DocCalc, type Entry, type PDoc, type Policy, type PriceRow, type Product, deliveryBranches, invoicesOf, invoiceQtyBySku,
+  type Accounts, type Check, type CreditStatus, type ProductUnit, type SupplierProduct, type DocCalc, type Entry, type PDoc, type Policy, type PriceRow, type Product, deliveryBranches, invoicesOf, invoiceQtyBySku, invoiceGrossBySku,
   TAX_RATE, activationOf, activationResult, activationText, contractApplies, periodRange, scopeBranches } from '@bizcity/mua-hang-domain';
 import { toNumber, type Db } from '../../db/client.js';
 import { FREEZE_KINDS, FREEZE_VERSION, freezeOf, listPolicies, noDueDate, receiptsWithSku, toDoc, type StoredDoc } from './store.js';
@@ -219,7 +219,7 @@ export async function prepaymentFor(trx: Db, tenantId: string, doc: PDoc, docs: 
 
 export interface Analysis { prices: SupplierProduct[]; units: Record<string, ProductUnit[]>; calc: DocCalc; checks: Check[]; credit: CreditStatus[]; entries: Entry[]; blocking: Check[]; prepayment: number; refOrder?: StoredDoc; priceHistory: Record<string, (PriceRow & { discountPct?: number })[]>; accounts: Accounts; priceWarnPct: number;
   /** [2026-11-21 Nguyễn Văn Thủy] phiếu nhập: SL theo các hoá đơn (MH22) từng mã, ĐVT nhỏ nhất, cộng dồn; hoá đơn chưa đối soát được (đóng góp) */
-  invoiceQty?: { bySku: Record<string, number>; invoices: string[]; missing: string[]; shared: string[] };
+  invoiceQty?: { bySku: Record<string, number>; invoices: string[]; missing: string[]; shared: string[]; /** Tiền hàng trước CK, chưa thuế theo hoá đơn từng mã (đơn giá hoá đơn = tiền / SL ĐVT nhỏ nhất). */ grossBySku?: Record<string, number> };
   /** [2026-11-21 Nguyễn Văn Thủy] chính sách chưa đạt điều kiện kích hoạt — không áp trên phiếu này (giao diện tính lại bỏ các mã này) (đóng góp) */
   blockedPolicies?: { code: string; name: string; reasons: string[]; wouldApply?: boolean }[] }
 
@@ -502,7 +502,7 @@ export async function analyze(trx: Db, tenantId: string, doc: PDoc, ctx: Ctx): P
   if (doc.kind === 'receipt' && invoicesOf(doc).length) {
     const q = await invoiceQtyForReceipt(trx, tenantId, doc, docs);
     const u2 = { ...units, ...(await unitsOf(trx, tenantId, q.list.flatMap((x) => x.lines.map((l) => l.sku)).filter((x) => !units[x]))) };
-    invoiceQty = { bySku: Object.fromEntries(invoiceQtyBySku(q.list, u2)), invoices: q.list.map((x) => x.key), missing: q.missing, shared: q.shared };
+    invoiceQty = { bySku: Object.fromEntries(invoiceQtyBySku(q.list, u2)), grossBySku: Object.fromEntries(invoiceGrossBySku(q.list)), invoices: q.list.map((x) => x.key), missing: q.missing, shared: q.shared };
   }
   return { prices, units, calc, checks, credit, entries, blocking: checks.filter((c) => c.blocking), prepayment: pre.amount, refOrder, priceHistory: history, accounts, priceWarnPct: settings.priceWarnPct, invoiceQty, ...(blockedOut.length ? { blockedPolicies: blockedOut } : {}) };
 }

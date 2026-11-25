@@ -176,7 +176,7 @@ export async function invoiceQtyForReceipt(trx: Db, tenantId: string, doc: PDoc,
     const inv = (await loadInvoices(trx, tenantId, { id: String(hit.id) }))[0]!;
     if (inv.lines.some((l) => !l.sku)) { out.missing.push(`${k} (còn dòng chưa nhận diện mã)`); continue; }
     if (receiptsOfInvoice(inv, docs).some((d) => d.id !== doc.id)) out.shared.push(k);
-    out.list.push({ key: k, lines: inv.lines.filter((l) => l.sku).map((l) => ({ sku: l.sku!, unit: l.unit || l.nccUnit, qty: l.qty })) });
+    out.list.push({ key: k, lines: inv.lines.filter((l) => l.sku).map((l) => ({ sku: l.sku!, unit: l.unit || l.nccUnit, qty: l.qty, price: l.price })) });
   }
   return out;
 }

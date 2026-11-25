@@ -11,7 +11,7 @@ import { ratioIn, type UnitMap } from './dat-hang.js';
 import { skuInfo } from './ma-hang.js';
 
 /** Dòng hoá đơn đã nhận diện mã (MH22). */
-export interface InvoiceLineQty { sku: string; unit: string; qty: number }
+export interface InvoiceLineQty { sku: string; unit: string; qty: number; /** [2026-11-25 Nguyễn Văn Thủy] đơn giá chưa thuế, trước CK, theo ĐVT của dòng hoá đơn (đóng góp) */ price?: number }
 export interface InvoiceQty { key: string; lines: InvoiceLineQty[] }
 
 const r4 = (n: number) => Math.round(n * 10000) / 10000;
@@ -22,6 +22,13 @@ const sameSku = (a: string, b: string) => a === b || skuInfo(a).base === skuInfo
 export function invoiceQtyBySku(invoices: InvoiceQty[], units?: UnitMap): Map<string, number> {
   const m = new Map<string, number>();
   for (const inv of invoices) for (const l of inv.lines) if (l.sku) m.set(l.sku, r4((m.get(l.sku) ?? 0) + l.qty * (ratioIn(units, l.sku, l.unit) || 1)));
+  return m;
+}
+
+/** [2026-11-25 Nguyễn Văn Thủy] Tiền hàng trước CK, chưa thuế (Σ SL × đơn giá) từng mã trên các hoá đơn của phiếu — chia cho SL (ĐVT nhỏ nhất) ra đơn giá hoá đơn (đóng góp) */
+export function invoiceGrossBySku(invoices: InvoiceQty[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const inv of invoices) for (const l of inv.lines) if (l.sku && l.price !== undefined) m.set(l.sku, Math.round(((m.get(l.sku) ?? 0) + l.qty * l.price) * 100) / 100);
   return m;
 }
 
