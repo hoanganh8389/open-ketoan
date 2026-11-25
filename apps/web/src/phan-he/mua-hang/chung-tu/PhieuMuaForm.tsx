@@ -736,10 +736,12 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     ['loai', 'Loại hàng', !isGiftDoc], ['cn', 'Chi nhánh nhận', isOrder], ['kho', 'Phân kho', coKhoDong], ['km', 'Khoản mục', coKmDong], ['ton', 'Phân tích tồn', isOrder], ['conlai', 'Còn phải nhập theo đơn (chi nhánh này)', v.kind === 'receipt' && Boolean(donGoc)], ['theohd', 'SL theo hoá đơn', v.kind === 'receipt' && invs.length > 0],
     ['ck', 'Chiết khấu (% và đ)', !isGiftDoc], ['thue', 'Thuế suất', !isGiftDoc], ['tien', 'Thành tiền chưa thuế', !isGiftDoc], ['vat', 'Tiền thuế', !isGiftDoc], ['gom', 'Thành tiền gồm thuế', !isGiftDoc],
     ['gv', 'Giá vốn / ĐVT', !isGiftDoc], ['lo', 'Số lô, NSX, hạn dùng', !isOrder], ['gc', 'Ghi chú', true],
+    // [2026-11-25 Nguyễn Văn Thủy] #45 tab Test: mã chương trình KM áp vào dòng + đơn giá sau CK gồm VAT (đóng góp)
+    ['ctkm', 'Mã CTKM của dòng', !isGiftDoc], ['giasau', 'Đơn giá sau CK, gồm VAT', !isGiftDoc],
   ];
   const co = (k: string) => hien(k) && (COT_TUY.find((c) => c[0] === k)?.[2] ?? false);
   const cotDau = ['#', v.kind === 'exchange' ? 'chieu' : '', co('loai') ? 'loai' : '', 'ma', 'ten', 'dvt', co('cn') ? 'cn' : '', co('kho') ? 'kho' : '', co('km') ? 'km' : '', 'sl', co('ton') ? 'ton' : '', co('conlai') ? 'conlai' : '', co('theohd') ? 'theohd' : '', 'gia',
-    co('ck') ? 'ck1' : '', co('ck') ? 'ck2' : '', co('thue') ? 'thue' : ''].filter(Boolean).length;
+    co('ck') ? 'ck1' : '', co('ck') ? 'ck2' : '', co('ctkm') ? 'ctkm' : '', co('thue') ? 'thue' : ''].filter(Boolean).length;
   const cotSau = [co('gv'), ...(isGiftDoc ? [true] : []), ...(co('lo') ? [true, true, true] : []), co('gc'), true].filter(Boolean).length;
   const nhanMacDinh = (isOrder && v.deliveryBranch) || v.branchCode;
   const branchOfLine = (l: PLine) => l.branchCode || nhanMacDinh;
@@ -1146,7 +1148,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                     <thead><tr>
                       <th data-minw="56">#</th>{v.kind === 'exchange' && <th>Chiều</th>}{co('loai') && <th title="Tự nhận theo mã hàng (quy tắc mã hàng) và đơn giá: giá 0 = hàng tặng">Loại hàng</th>}<th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th>{co('cn') && <th title="Chi nhánh nhận hàng của dòng — trống = chi nhánh đầu đơn. Đơn giao nhiều chi nhánh: mỗi chi nhánh nhận lập phiếu nhập riêng phần của mình">Chi nhánh nhận</th>}{co('kho') && <th title="Phân kho của dòng — trống = theo đầu phiếu (Phân kho / Giao tại kho)">Phân kho</th>}{co('km') && <th title="Khoản mục chi phí của dòng — trống = theo khoản mục đầu phiếu">Khoản mục</th>}<th className="num">SL</th>{co('ton') && <th title="Phân tích thông minh: số liệu tồn chụp lúc thêm hàng / lưu đơn (Phân tích đặt hàng MH02)">Phân tích tồn</th>}{co('conlai') && <th className="num" title={`SL đơn ${donGoc?.docNo ?? ''} còn phải nhập${donNhieuCN ? ` ở chi nhánh ${v.branchCode}` : ''} (trước phiếu này), theo ĐVT của dòng`}>Còn phải nhập (đơn)</th>}{co('theohd') && <th className="num" title="Cộng dồn SL các hoá đơn của phiếu (hoá đơn đã lưu ở MH22), theo ĐVT của dòng">Theo HĐ</th>}
                       <th className="num">{isGiftDoc ? 'Giá trị / ĐVT' : v.priceIncludesVat ? 'Đơn giá gồm thuế' : 'Đơn giá chưa thuế'}</th>
-                      {co('ck') && <><th className="num" title="Chiết khấu dòng theo %, tối đa 100%. Gõ % thì cột CK (đ) tự tính; để trống cả hai = tự lấy theo chính sách">CK %</th><th className="num" title="Chiết khấu dòng bằng tiền (theo loại giá của phiếu), tối đa bằng tiền hàng của dòng. Gõ tiền thì cột CK % tự tính lại">CK (đ)</th></>}{co('thue') && <th>Thuế suất</th>}{co('tien') && <th className="num">Thành tiền chưa thuế</th>}{co('vat') && <th className="num">Tiền thuế</th>}{co('gom') && <th className="num" title="Thành tiền chưa thuế + tiền thuế (sau chiết khấu)">Thành tiền (gồm thuế)</th>}{co('gv') && <th className="num" title="Giá vốn đơn vị thực tế: trước thuế, sau CK, đã chia quà người bán">Giá vốn / ĐVT</th>}
+                      {co('ck') && <><th className="num" title="Chiết khấu dòng theo %, tối đa 100%. Gõ % thì cột CK (đ) tự tính; để trống cả hai = tự lấy theo chính sách">CK %</th><th className="num" title="Chiết khấu dòng bằng tiền (theo loại giá của phiếu), tối đa bằng tiền hàng của dòng. Gõ tiền thì cột CK % tự tính lại">CK (đ)</th></>}{co('ctkm') && <th title="Chương trình khuyến mại / chiết khấu đang áp vào dòng (theo Bảng khuyến mại của phiếu)">Mã CTKM</th>}{co('thue') && <th>Thuế suất</th>}{co('tien') && <th className="num">Thành tiền chưa thuế</th>}{co('vat') && <th className="num">Tiền thuế</th>}{co('gom') && <th className="num" title="Thành tiền chưa thuế + tiền thuế (sau chiết khấu)">Thành tiền (gồm thuế)</th>}{co('giasau') && <th className="num" title="Thành tiền gồm thuế ÷ SL: đơn giá thực trả sau chiết khấu, đã gồm VAT">Đơn giá sau CK, gồm VAT</th>}{co('gv') && <th className="num" title="Giá vốn đơn vị thực tế: trước thuế, sau CK, đã chia quà người bán">Giá vốn / ĐVT</th>}
                       {isGiftDoc && <th>Chương trình</th>}{co('lo') && <><th>Số lô</th><th>NSX</th><th>Hạn dùng</th></>}{co('gc') && <th>Ghi chú</th>}<th data-minw="72" style={{ minWidth: 72 }} title="Nhân đôi / xoá dòng (cũng có ở cột # đầu dòng và khi bấm chuột phải)" />
                     </tr></thead>
                     <tbody onPaste={(e) => {
@@ -1243,10 +1245,12 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                             <td><NumInput style={{ width: 90 }} decimals={0} value={l.lineType === 'buy' && (l.discountAmt !== undefined || l.lineDiscount) ? l.lineDiscount : null} disabled={l.lineType !== 'buy'} placeholder="tự"
                               title={`Chiết khấu dòng bằng tiền, tối đa ${fmt(l.gross)} (tiền hàng của dòng). Gõ tiền thì CK % tự tính lại`}
                               onChange={(n) => setLine(l.lineKey, { discountAmt: n === null ? undefined : Math.min(l.gross, n), discountPct: undefined })} /></td></>}
+                            {co('ctkm') && <td style={{ whiteSpace: 'nowrap' }}>{(() => { const ds = [...new Set(board.filter((r) => r.status === 'applied' && r.policy && r.policy !== 'Trên phiếu' && (r.lineKey ? r.lineKey === l.lineKey : Boolean(r.sku) && r.sku === l.sku)).map((r) => r.policy))]; return ds.length ? <span className="mono" title={ds.map((c) => `${c} — ${board.find((r) => r.policy === c)?.name ?? ''}`).join('\n')}>{ds.join(', ')}</span> : null; })()}</td>}
                             {co('thue') && <td><ChonThue value={l.taxCode} ngay={v.docDate} style={{ width: 92 }} title="Thuế suất GTGT — tự lấy theo danh mục mặt hàng (loại thuế cố định, dùng chung mua / bán)" onChange={(c) => setLine(l.lineKey, { taxCode: c })} /></td>}
                             {co('tien') && <td className="num">{l.lineType === 'buy' ? fmt(l.beforeTax) : <span className="muted">tặng</span>}</td>}
                             {co('vat') && <td className="num">{fmt(l.tax)}</td>}
                             {co('gom') && <td className="num"><b>{l.lineType === 'buy' ? fmt(l.beforeTax + l.tax) : ''}</b></td>}
+                            {co('giasau') && <td className="num">{l.lineType === 'buy' && l.qty ? fmt(Math.round((l.beforeTax + l.tax) / l.qty)) : ''}</td>}
                             {co('gv') && <td className="num">{l.lineType === 'gift_consumer' ? <span className="muted">—</span> : fmt(l.realUnitCost)}</td>}
                           </>}
                           {isGiftDoc && <td><input className="input mono" style={{ width: 110 }} value={l.program ?? ''} placeholder={v.gift?.program ?? ''} onChange={(e) => setLine(l.lineKey, { program: e.target.value.trim() || undefined })} /></td>}
@@ -1278,7 +1282,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                     {!isGiftDoc && (
                       <tfoot>
                         <tr><td colSpan={cotDau}>Cộng — mua {fmt(calc.buyQty)} · KM người bán {fmt(calc.giftSellerQty)} · KM NTD / quà {fmt(calc.giftConsumerQty)} <span style={{ float: 'right' }}>Tiền hàng {fmt(calc.gross)} − CK {fmt(calc.lineDiscount + calc.orderDiscount)}</span></td>
-                          {co('tien') && <td className="num">{fmt(calc.beforeTax)}</td>}{co('vat') && <td className="num">{fmt(calc.tax)}</td>}{co('gom') && <td className="num"><b>{fmt(calc.beforeTax + calc.tax)}</b></td>}<td colSpan={cotSau} /></tr>
+                          {co('tien') && <td className="num">{fmt(calc.beforeTax)}</td>}{co('vat') && <td className="num">{fmt(calc.tax)}</td>}{co('gom') && <td className="num"><b>{fmt(calc.beforeTax + calc.tax)}</b></td>}{co('giasau') && <td />}<td colSpan={cotSau} /></tr>
                       </tfoot>
                     )}
                   </table>

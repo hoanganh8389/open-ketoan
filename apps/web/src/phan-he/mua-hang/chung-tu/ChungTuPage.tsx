@@ -350,7 +350,7 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
         subtitle="Đơn đặt → phiếu nhập kho → trả tiền: lập, sửa, duyệt phiếu; mỗi phiếu một dòng với tiền trước / sau chiết khấu, thuế, đã trả / còn nợ; gom theo NCC, chi nhánh, mã hàng…" />
         : report === 'bao-cao' && theoMa ? <PageHeader title="Tổng hợp mua hàng theo mặt hàng" code="MH23A" helpKey="mua-hang-bao-cao"
           subtitle="Số lượng, giá trị mua, chiết khấu, trả lại và tổng giá trị mua của từng mặt hàng trong kỳ" />
-        : report === 'bao-cao' ? <PageHeader title="Báo cáo mua hàng" code="MH23" helpKey="mua-hang-bao-cao"
+        : report === 'bao-cao' ? <PageHeader title="Sổ chi tiết mua hàng" code="MH23" helpKey="mua-hang-bao-cao"
           subtitle="Chi tiết từng dòng hàng của các phiếu mua hàng theo kỳ: SL, đơn giá, tiền hàng trước / sau chiết khấu, thuế, tổng thanh toán, ký hiệu / số hoá đơn" />
         : !embedded && <PageHeader title="Chứng từ mua hàng" code="MH03" helpKey="mua-hang-chung-tu"
         subtitle="Đơn đặt → phiếu nhập kho → trả tiền, theo từng nhà cung cấp — phiếu tự áp chính sách của NCC, tự cảnh báo; duyệt là ghi sổ" />}

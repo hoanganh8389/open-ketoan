@@ -16,14 +16,18 @@ import { buyTemplates } from '../mauIn/baoCaoMua';
 import { KIND_LABEL, P, useNames } from '../du-lieu';
 import { dmy } from '../chung';
 import '../mua-hang.css';
+import { PageHeader } from '@/components/PageHeader';
+import { FilterLayout } from '@/components/ReportPanel';
+import { DateRange } from '@/components/filters';
+import { today } from '@/lib/format';
 
-type GroupBy = 'partner' | 'brand' | 'industry' | 'group' | 'sku' | 'branch';
+export type GroupBy = 'partner' | 'brand' | 'industry' | 'group' | 'sku' | 'branch';
 interface Row { key: string; label: string; name: string; baseUnit: string; invoiceUnit: string; invoiceQty: number | null; invoiceQtyText: string; buyQty: number; giftQty: number; returnQty: number; gross: number; discount: number; net: number; tax: number; returns: number; cost: number; rebate: number; value: number; unitCost: number | null; openDebt: number; documents: number; docList: { id: string; docNo: string; kind: string; docDate: string }[] }
 const GROUPS: [GroupBy, string][] = [['sku', 'Mã hàng'], ['group', 'Nhóm hàng'], ['industry', 'Ngành hàng'], ['brand', 'Nhãn hàng'], ['partner', 'Nhà cung cấp'], ['branch', 'Chi nhánh']];
 
-export function TongHopTheoNhom({ from, to }: { from: string; to: string }) {
+export function TongHopTheoNhom({ from, to, gomBanDau = 'sku', anThe }: { from: string; to: string; /** Cách gom khi mở. */ gomBanDau?: GroupBy; /** Báo cáo riêng một cách gom (vd theo chi nhánh): ẩn hàng thẻ. */ anThe?: boolean }) {
   const names = useNames();
-  const [groupBy, setGroupBy] = useState<GroupBy>('sku');
+  const [groupBy, setGroupBy] = useState<GroupBy>(gomBanDau);
   const exportRef = useRef<(() => void) | null>(null);
   const [sel, setSel] = useState<Row | null>(null);
   const q = useQuery({ queryKey: ['mua-hang', 'summary', groupBy, from, to], queryFn: () => api.get<{ rows: Row[] }>(`${P}/summary`, { ...(from ? { from } : {}), ...(to ? { to } : {}), groupBy }) });
@@ -54,7 +58,7 @@ export function TongHopTheoNhom({ from, to }: { from: string; to: string }) {
   ];
   return (
     <>
-        <div className="tabs" style={{ marginBottom: 0 }}>{GROUPS.map(([k, l]) => <button key={k} className={`tab ${groupBy === k ? 'active' : ''}`} onClick={() => setGroupBy(k)}>Theo {l.toLowerCase()}</button>)}</div>
+        {!anThe && <div className="tabs" style={{ marginBottom: 0 }}>{GROUPS.map(([k, l]) => <button key={k} className={`tab ${groupBy === k ? 'active' : ''}`} onClick={() => setGroupBy(k)}>Theo {l.toLowerCase()}</button>)}</div>}
         <div className="filters">
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
           <PrintButton small screen="MH11" templates={buyTemplates(groupBy)} disabled={!q.data}
@@ -76,6 +80,20 @@ export function TongHopTheoNhom({ from, to }: { from: string; to: string }) {
             </tbody></table>
           </div>
         )}
+    </>
+  );
+}
+
+// [2026-11-25 Nguyễn Văn Thủy] #54 tab Test: báo cáo riêng Tổng hợp mua hàng theo chi nhánh (MH23B) — trước mượn kiểu Gom của MH11 nên tưởng mở nhầm màn (đóng góp)
+/** MH23B Tổng hợp mua hàng theo chi nhánh: mỗi chi nhánh một dòng — SL mua, tặng, trả, tiền hàng, chiết khấu, giá trị mua (phiếu đã duyệt). */
+export function TongHopTheoChiNhanhPage() {
+  const [ky, setKy] = useState(() => ({ from: `${today().slice(0, 7)}-01`, to: today() }));
+  return (
+    <>
+      <PageHeader title="Tổng hợp mua hàng theo chi nhánh" code="MH23B" helpKey="mua-hang-bao-cao" subtitle="Giá trị mua, chiết khấu, trả lại của từng chi nhánh trong kỳ — theo phiếu đã duyệt" />
+      <FilterLayout filters={<DateRange from={ky.from} to={ky.to} onChange={(from, to) => setKy({ from, to })} />}>
+        <div className="card"><TongHopTheoNhom from={ky.from} to={ky.to} gomBanDau="branch" anThe /></div>
+      </FilterLayout>
     </>
   );
 }

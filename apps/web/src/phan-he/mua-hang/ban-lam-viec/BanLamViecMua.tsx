@@ -39,7 +39,7 @@ const BAO_CAO: { label: string; path: string }[] = [
   { label: 'Tình hình thực hiện chính sách', path: '/mua-hang/thuc-hien-chinh-sach' },
   { label: 'Tình hình thực hiện hợp đồng', path: '/mua-hang/thuc-hien-hop-dong' },
   { label: 'Tổng hợp mua hàng theo mặt hàng', path: '/mua-hang/tong-hop-mat-hang' },
-  { label: 'Tổng hợp mua hàng theo chi nhánh', path: '/mua-hang/tong-hop?xem=nhom' },
+  { label: 'Tổng hợp mua hàng theo chi nhánh', path: '/mua-hang/tong-hop-chi-nhanh' },
   { label: 'Biên bản đối chiếu công nợ', path: '/cong-no/doi-chieu' },
   { label: 'Sổ chi tiết mua hàng', path: '/mua-hang/bao-cao' },
   { label: 'Sổ kho theo mặt hàng', path: '/mua-hang/so-kho' },
