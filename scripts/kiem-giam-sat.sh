@@ -22,8 +22,11 @@ SUA=0; MA=""
 while [ $# -gt 0 ]; do case "$1" in --sua) SUA=1;; --ma) MA="${2:-}"; shift;; esac; shift; done
 
 MON=infrastructure/monitoring/docker-compose.monitoring.yml
-C="docker compose -f docker-compose.yml -f $MON"
-PROJ="$(grep -E '^name:' docker-compose.yml | awk '{print $2}' | tr -d '\r')"; PROJ="${PROJ:-ketoan}"
+# [2026-11-25 Nguyễn Văn Thủy] Tên dự án docker theo đúng thứ tự docker compose: biến môi trường → COMPOSE_PROJECT_NAME trong .env → name: trong compose.
+# Máy có nhiều site (dev / test / main) mỗi site đặt COMPOSE_PROJECT_NAME riêng — chỉ đọc name: sẽ soi (và sửa) nhầm container của site khác. (đóng góp)
+PROJ="${COMPOSE_PROJECT_NAME:-$(grep -E '^COMPOSE_PROJECT_NAME=' .env 2>/dev/null | tail -n1 | cut -d= -f2- | tr -d '\r"')}"
+[ -n "$PROJ" ] || PROJ="$(grep -E '^name:' docker-compose.yml | awk '{print $2}' | tr -d '\r')"; PROJ="${PROJ:-ketoan}"
+C="docker compose -p $PROJ -f docker-compose.yml -f $MON"
 ok()   { echo "  ✔ $*"; }
 bad()  { echo "  ✘ $*"; LOI=$((LOI+1)); }
 warn() { echo "  ! $*"; }
