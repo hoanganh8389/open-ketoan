@@ -71,14 +71,17 @@ export const GON_DEFS: GonDef[] = [
   {
     key: 'mua-hang', label: 'Mua hàng', icon: 'ShoppingBag', description: 'Đơn đặt, nhập hàng, hoá đơn NCC, trả hàng, công nợ và thanh toán NCC', color: '#e8710a', module: 'mua-hang', homeLabel: 'Bàn làm việc',
     // [2026-11-20 Nguyễn Văn Thủy] UX MUA HÀNG GỌN — bấm Mua hàng ở menu trái vào thẳng Bàn làm việc (việc cần làm + lập nhanh);
-    // thẻ đầu trang chỉ 5 màn làm hằng ngày; danh sách theo việc: Hằng ngày / Định kỳ / Khai báo. Mỗi việc một lối vào (đóng góp)
+    // thẻ đầu trang chỉ 5 màn làm hằng ngày; danh sách theo việc: Hằng ngày / Định kỳ / Danh mục. Mỗi việc một lối vào (đóng góp)
     the: ['/mua-hang/tong-hop', '/mua-hang/hoa-don-ncc', '/mua-hang/dat-hang', '/mua-hang/han-muc', '/mua-hang/hop-dong'],
     sections: [
       { label: 'Hằng ngày', paths: ['/mua-hang/tong-hop', '/mua-hang/hoa-don-ncc', '/mua-hang/doi-chieu-hoa-don', '/mua-hang/han-muc'] },
       { label: 'Đặt hàng', paths: ['/mua-hang/dang-ky-max', '/mua-hang/ton-max', '/mua-hang/cong-thuc', '/mua-hang/dat-hang', '/mua-hang/chuyen-shop'] },
       { label: 'Định kỳ', paths: ['/mua-hang/thuong', '/mua-hang/phan-bo', '/mua-hang/lo-han', '/mua-hang/qua-tang'] },
+      // [2026-11-21 kiennt] NT-MH-005 — nhóm Khai báo của Mua hàng đổi tên thành Danh mục (đóng góp)
+      // [2026-11-21 kiennt] NT-MH-005 — Cài đặt mua hàng (MH12) chuyển sang Phần riêng → Cấu hình (đóng góp)
+      // [2026-11-21 kiennt] NT-MH-005 — MH01 bỏ khỏi menu, thay bằng Nhà cung cấp của Danh mục (DM13); hồ sơ NCC mở từ mã NCC (đóng góp)
       // [2026-11-25 Nguyễn Văn Thủy] #26 tab Test: khai báo đối tượng / mặt hàng dùng đúng màn của Danh mục tổng (DM13, DM10) — một nơi khai, cùng dữ liệu (đóng góp)
-      { label: 'Khai báo', paths: ['/mua-hang/nha-cung-cap', '/danh-muc/nha-cung-cap', '/danh-muc/mat-hang', '/mua-hang/hop-dong', '/mua-hang/chinh-sach', '/mua-hang/cai-dat'] },
+      { label: 'Danh mục', paths: ['/danh-muc/nha-cung-cap', '/danh-muc/mat-hang', '/mua-hang/hop-dong', '/mua-hang/chinh-sach'] },
     ],
     reports: [
       { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/tong-hop-chi-nhanh', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/so-kho', '/mua-hang/ton-kho', '/mua-hang/nhat-ky'] },
@@ -99,7 +102,7 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Chính sách bán', paths: ['/app/pos/khuyen-mai', '/danh-muc/bang-gia'], soon: ['Hạn mức nợ khách'] },
       { label: 'Danh mục', paths: ['/danh-muc/khach-hang', '/danh-muc/mat-hang', '/cau-hinh/hinh-thuc-thanh-toan'] },
       // [2026-11-13 09:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-014: bỏ mục mờ "Định khoản bán hàng" — tài khoản bán hàng xem ở khối ④ của BH17, sửa ở ACC41 (đóng góp)
-      { label: 'Cài đặt', paths: ['/app/pos/cai-dat'] }, // [2026-11-17 Nguyễn Văn Thủy] Tài khoản ngầm định chỉ ở Danh mục (đóng góp)
+      // [2026-11-21 kiennt] NT-MH-005 — bỏ mục Cài đặt: Cài đặt bán hàng (BH17) chuyển sang Phần riêng → Cấu hình (đóng góp)
     ],
     reports: [
       { label: 'Bán hàng', paths: ['/ban-hang/bao-cao', '/ban-hang/tong-hop', '/cong-no/nhat-ky-ban-hang', '/ban-hang/lai-gop', '/ban-hang/thu-tien-ban-hang'] },
@@ -184,9 +187,11 @@ export const GON_DEFS: GonDef[] = [
     sections: [
       { label: 'Nạp chứng từ', paths: ['/chung-tu/bang-diem', '/he-thong/chi-nhanh-lam-viec', '/mua-hang/khoi-dau'] },
       // [2026-11-12 10:10 PM Võ Hoàng] POS-UIKIT — mục Bán lẻ máy POS: màn quản trị của module pos (NT-BH-008) + Chương trình bán (BH12) cùng một chỗ (đóng góp)
-      { label: 'Bán lẻ máy POS', paths: ['/app/pos/khuyen-mai', '/app/pos/don-ban', '/app/pos/tra-hang', '/app/pos/ca-ban', '/app/pos/tong-quan', '/app/pos/cai-dat'] },
+      { label: 'Bán lẻ máy POS', paths: ['/app/pos/khuyen-mai', '/app/pos/don-ban', '/app/pos/tra-hang', '/app/pos/ca-ban', '/app/pos/tong-quan'] },
       { label: 'Bán lẻ, giá vốn', paths: ['/ban-hang/thu-tien', '/cau-hinh/hinh-thuc-thanh-toan', '/nghiep-vu/cong-thuc-gia-von', '/tai-san/ke-hoach-khau-hao'] },
       { label: 'Công nợ', paths: ['/cong-no/khoan-cong-no', '/cong-no/phai-thu', '/cong-no/phai-tra', '/nghiep-vu/can-tru-cong-no', '/cong-no/dat-coc', '/cong-no/yeu-cau-thanh-toan', '/cong-no/chung-tu-nguon', '/cong-no/doi-chieu'] },
+      // [2026-11-21 kiennt] NT-MH-005 — cài đặt của Mua hàng (MH12) và Bán hàng (BH17) gom một chỗ (đóng góp)
+      { label: 'Cấu hình', paths: ['/mua-hang/cai-dat', '/app/pos/cai-dat'] },
     ],
     reports: [
       { label: 'Phần riêng', paths: ['/bao-cao/hanh-trinh-mat-hang', '/bao-cao/ket-qua-theo-cua-hang', '/bao-cao/phan-loai-dai-han', '/bao-cao/cong-no-noi-bo', '/bao-cao/cong-no-noi-bo-chi-tiet', '/quy/nhat-ky-chi-tien-khoan-muc'] },
