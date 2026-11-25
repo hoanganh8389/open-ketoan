@@ -5,9 +5,12 @@
  * Nguồn khác (hình thức thanh toán, loại kho, loại thuế) hiện để xem, sửa ở danh mục của nó. Dưới cùng: xem thử bút toán một phiếu.
  * Dữ liệu: GET /api/v1/posting/scheme; đổi TK: PUT /api/v1/posting/scheme/accounts/:key; mục đích: PUT /api/v1/posting/purposes/:code;
  * xem thử: POST /api/v1/posting/scheme/preview.
+ * Lý do phiếu kế toán (nguồn "reason", vd Chênh lệch két máy bán): cặp Nợ / Có nằm trên lý do — PUT /api/v1/posting/scheme/reasons/:code.
+ * Mở thẳng một nghiệp vụ: ?nghiep-vu=<mã> (vd BH17 → ?nghiep-vu=pos_cash_diff).
  */
+// [2026-11-25 11:30 PM Võ Hoàng] NT-BH-042 — C3: nghiệp vụ Chênh lệch két máy bán, khai cặp Nợ / Có của lý do ngay trên màn; ?nghiep-vu= mở thẳng nghiệp vụ (đóng góp)
 import { useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -20,8 +23,13 @@ import { ErrorBox, Field, Loading, Modal, useViewAgain } from '@/components/ui';
 import { AccountPicker, ItemPicker } from '@/components/pickers';
 import { useBranches } from '@/components/filters';
 
-type Source = 'rule' | 'payment' | 'warehouse' | 'tax' | 'purpose';
-interface SLine { side: 'debit' | 'credit'; role: string; amount: string; source: Source; key?: string; when?: string }
+type Source = 'rule' | 'payment' | 'warehouse' | 'tax' | 'purpose' | 'reason';
+interface SLine { side: 'debit' | 'credit'; role: string; amount: string; source: Source; key?: string; reason?: string; when?: string }
+/** Lý do phiếu kế toán có trên màn: cặp Nợ / Có, phạm vi, trạng thái từng bên (missing = chưa khai, range = ngoài phạm vi). */
+interface ReasonRow {
+  code: string; label: string; help: string; name: string; exists: boolean; isActive: boolean; debitRange: string[]; creditRange: string[];
+  debitAccount: string | null; debitName: string | null; debitStatus: string; creditAccount: string | null; creditName: string | null; creditStatus: string;
+}
 interface Business { code: string; name: string; docType: string; description: string; groups: { name: string; lines: SLine[] }[] }
 interface Key { key: string; label: string; range: string[]; help: string; suggest: string; accountCode: string | null; accountName: string | null; status: string }
 interface Src { code: string; name: string; accountCode: string | null; accountName: string | null; status: string }
@@ -31,6 +39,7 @@ interface Scheme {
   keys: Key[];
   sources: { paymentMethods: (Src & { isReceivable: boolean; partnerCode: string | null })[]; warehouseTypes: (Src & { owned: boolean })[]; taxCodes: (Src & { direction: string; rate: number })[]; purposes: Purpose[] };
   purposeRange: string[];
+  reasons?: ReasonRow[];
 }
 interface PreviewLine { accountCode: string; accountName: string; debit: number; credit: number; description: string; sku: string | null }
 interface PreviewRes { ok: boolean; error?: string; entries?: { docType: string | null; docNo: string | null; lines: PreviewLine[] }[] }
@@ -45,8 +54,14 @@ const SOURCE: Record<Source, { label: string; tip: string; link?: string }> = {
   warehouse: { label: 'Loại kho của phân kho', tip: 'Kho trên dòng thuộc loại nào thì lấy TK kho của loại đó; loại chưa khai TK thì dùng TK dự phòng', link: '/danh-muc/loai-kho' },
   tax: { label: 'Loại thuế của dòng', tip: 'Loại thuế đã khai TK thì dùng TK đó; chưa khai thì dùng TK dự phòng', link: '/danh-muc/loai-thue' },
   purpose: { label: 'Mục đích xuất của phiếu', tip: 'Phiếu ghi mục đích nào thì lấy TK của mục đích đó; không ghi mục đích thì dùng TK dự phòng' },
+  reason: { label: 'Lý do phiếu kế toán', tip: 'Dòng phiếu kế toán mang mã lý do; tài khoản Nợ / Có nằm trên lý do — đổi ngay ở đây, trong phạm vi đầu số' },
 };
-const STATUS_BAD: Record<string, string> = { missing: 'Chưa đặt', unknown: 'Không có trong hệ thống tài khoản', summary: 'Là TK tổng hợp — chọn TK chi tiết' };
+const STATUS_BAD: Record<string, string> = { missing: 'Chưa đặt', unknown: 'Không có trong hệ thống tài khoản', summary: 'Là TK tổng hợp — chọn TK chi tiết', range: 'Ngoài phạm vi đầu số' };
+/** Tài khoản của dòng sổ lấy từ lý do. */
+const reasonAcc = (l: SLine, reasons: ReasonRow[] | undefined) => {
+  const r = reasons?.find((x) => x.code === l.reason);
+  return r ? (l.side === 'debit' ? { code: r.debitAccount, name: r.debitName, status: r.debitStatus, r } : { code: r.creditAccount, name: r.creditName, status: r.creditStatus, r }) : null;
+};
 const fmt = (n: number) => (n ? n.toLocaleString('vi-VN') : '');
 
 // [2026-11-17 10:45 AM kiennt] ACC41 — thứ tự bút toán của một nghiệp vụ: kho / giá vốn (số lượng, giá vốn tính cuối tháng) → doanh thu, giá trị → tiền (đóng góp)
@@ -63,8 +78,11 @@ export function QuyTacHachToanPage() {
   const { can } = useAuth();
   const canWrite = can('settings:write');
   const q = useQuery({ queryKey: ['posting-scheme'], queryFn: () => api.get<Scheme>('/api/v1/posting/scheme') });
-  const [cur, setCur] = useState('sale');
+  const [params] = useSearchParams();
+  const moThang = params.get('nghiep-vu');
+  const [cur, setCur] = useState(moThang || 'sale');
   const [editKey, setEditKey] = useState<Key | null>(null);
+  const [editReason, setEditReason] = useState<ReasonRow | null>(null);
   const [editPurpose, setEditPurpose] = useState<(Partial<Purpose> & { isNew?: boolean }) | null>(null);
   const data = q.data;
   const biz = data?.businesses.find((b) => b.code === cur);
@@ -72,7 +90,7 @@ export function QuyTacHachToanPage() {
   const missing = (data?.keys ?? []).filter((k) => k.status !== 'ok');
   const sources = useMemo(() => new Set(biz?.groups.flatMap((g) => g.lines.map((l) => l.source)) ?? []), [biz]);
   // [2026-11-17 Nguyễn Văn Thủy] hai chế độ: Gọn (mặc định — Loại · TK Nợ · TK Có · Sửa) và Chi tiết (khung Nợ / Có, nguồn, xem thử) (đóng góp)
-  const [chiTiet, setChiTiet] = useState(() => { try { return localStorage.getItem('acc41-xem') === 'chi-tiet'; } catch { return false; } });
+  const [chiTiet, setChiTiet] = useState(() => { if (moThang) return true; try { return localStorage.getItem('acc41-xem') === 'chi-tiet'; } catch { return false; } });
   const doiXem = (v: boolean) => { setChiTiet(v); try { localStorage.setItem('acc41-xem', v ? 'chi-tiet' : 'gon'); } catch { /* bỏ qua */ } };
   const nutXem = (
     <span className="row" style={{ gap: 0 }}>
@@ -131,16 +149,23 @@ export function QuyTacHachToanPage() {
                             <td><span className={`qt-side ${l.side}`} title={l.side === 'debit' ? 'Ghi Nợ' : 'Ghi Có'}>{l.side === 'debit' ? 'Nợ' : 'Có'}</span></td>
                             <td title={k?.help ?? l.role}>{l.role}</td>
                             <td className="muted" title="Khoản tiền lấy từ chứng từ">{AMOUNT[l.amount] ?? l.amount}</td>
-                            <td title={SOURCE[l.source].tip}>{SOURCE[l.source].label}</td>
+                            <td title={SOURCE[l.source].tip}>{SOURCE[l.source].label}{l.reason ? <span className="muted mono"> {l.reason}</span> : null}</td>
                             <td title={bad ? STATUS_BAD[k!.status] : k?.help}>
-                              {l.source === 'rule' ? (
+                              {l.source === 'reason' ? (() => {
+                                const a = reasonAcc(l, data.reasons);
+                                const sai = !a || a.status !== 'ok';
+                                return <span className={sai ? 'text-danger' : ''} title={sai ? (a?.status === 'missing' ? 'Chưa khai tài khoản' : STATUS_BAD[a?.status ?? 'missing']) : a?.r.help}>
+                                  <b className="mono">{a?.code ?? '—'}</b> {a?.status === 'missing' ? 'Chưa khai tài khoản' : sai ? STATUS_BAD[a!.status] ?? a?.name : a?.name}
+                                </span>;
+                              })() : l.source === 'rule' ? (
                                 <span className={bad ? 'text-danger' : ''}><b className="mono">{k?.accountCode ?? '—'}</b> {k?.accountName ?? (bad ? STATUS_BAD[k!.status] : '')}</span>
                               ) : (
                                 <span className="muted">theo danh sách bên dưới{k ? <> · dự phòng <b className="mono" title={k.label}>{k.accountCode ?? '—'}</b></> : null}</span>
                               )}
                             </td>
                             <td className="muted" title="Khi nào có dòng này">{l.when ?? ''}</td>
-                            <td>{l.source === 'rule' && k && <button className="btn btn-sm" disabled={!canWrite} title={`Đổi tài khoản — chỉ chọn trong ${k.range.join(', ')}`} onClick={() => setEditKey(k)}>Đổi</button>}</td>
+                            <td>{l.source === 'rule' && k && <button className="btn btn-sm" disabled={!canWrite} title={`Đổi tài khoản — chỉ chọn trong ${k.range.join(', ')}`} onClick={() => setEditKey(k)}>Đổi</button>}
+                              {l.source === 'reason' && canWrite && reasonAcc(l, data.reasons) && <button className="btn btn-sm" title="Đổi cặp Nợ / Có của lý do" onClick={() => setEditReason(reasonAcc(l, data.reasons)!.r)}>Đổi</button>}</td>
                           </tr>
                         );
                       }),
@@ -180,7 +205,9 @@ export function QuyTacHachToanPage() {
               </div>
             )}
 
-            {biz && <PreviewCard biz={biz} scheme={data} />}
+            {sources.has('reason') && <ReasonCard reasons={data.reasons ?? []} codes={biz?.groups.flatMap((g) => g.lines.map((l) => l.reason ?? '')) ?? []} canWrite={canWrite} onEdit={setEditReason} />}
+
+            {biz && !sources.has('reason') && <PreviewCard biz={biz} scheme={data} />}
 
             <div className="card" style={{ padding: 0, marginTop: 12 }}>
               <div className="qt-head" title="Toàn bộ tài khoản của quy tắc — mỗi khoá dùng ở một hoặc nhiều nghiệp vụ">Tất cả tài khoản của quy tắc</div>
@@ -203,6 +230,7 @@ export function QuyTacHachToanPage() {
         </div>
       )}
       {editKey && <KeyDialog k={editKey} onClose={() => setEditKey(null)} />}
+      {editReason && <ReasonDialog r={editReason} onClose={() => setEditReason(null)} />}
       {editPurpose && data && <PurposeDialog p={editPurpose} range={data.purposeRange} onClose={() => setEditPurpose(null)} />}
       <style>{`
         .qt-head { padding: 8px 10px; border-bottom: 1px solid var(--border, #dfe4ec); font-weight: 600; }
@@ -265,7 +293,7 @@ function KeyDialog({ k, onClose }: { k: Key; onClose: () => void }) {
   });
   return (
     <Modal title={`Tài khoản: ${k.label}`} onClose={onClose} helpKey="quy-tac-hach-toan"
-      footer={<><button className="btn" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={!acc || acc === k.accountCode || m.isPending} onClick={() => m.mutate()}>Ghi</button></>}>
+      footer={<><button className="btn" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={!acc || acc === k.accountCode || m.isPending} title={!acc || acc === k.accountCode ? 'Chọn tài khoản khác tài khoản đang dùng rồi bấm Ghi' : m.isPending ? 'Đang ghi…' : 'Ghi tài khoản mới'} onClick={() => m.mutate()}>Ghi</button></>}>
       <ErrorBox error={m.error ? errorText(m.error) : null} />
       <p className="muted" style={{ marginTop: 0 }}>{k.help}</p>
       <Field label="Tài khoản" hint={`Chỉ tài khoản chi tiết trong ${k.range.join(', ')}`}>
@@ -286,9 +314,9 @@ function PurposeDialog({ p, range, onClose }: { p: Partial<Purpose> & { isNew?: 
   });
   return (
     <Modal title={p.isNew ? 'Thêm mục đích xuất' : `Mục đích ${p.code}`} onClose={onClose} viewFirst={!p.isNew} helpKey="quy-tac-hach-toan"
-      footer={<><button className="btn" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={!v.code || !v.name || !v.accountCode || m.isPending} onClick={() => m.mutate()}>Ghi</button></>}>
+      footer={<><button className="btn" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={!v.code || !v.name || !v.accountCode || m.isPending} title={!v.code || !v.name || !v.accountCode ? 'Nhập đủ Mã, Mục đích, Tài khoản đối ứng' : m.isPending ? 'Đang ghi…' : 'Ghi mục đích'} onClick={() => m.mutate()}>Ghi</button></>}>
       <ErrorBox error={m.error ? errorText(m.error) : null} />
-      <Field label="Mã" hint="Hệ thống nguồn gửi kèm phiếu (purposeCode)"><input className="input" value={v.code} disabled={!p.isNew} onChange={(e) => set({ code: e.target.value.toUpperCase() })} placeholder="VD: HUY" /></Field>
+      <Field label="Mã" hint="Hệ thống nguồn gửi kèm phiếu (purposeCode)"><input className="input" value={v.code} disabled={!p.isNew} title={p.isNew ? 'Mã gửi kèm phiếu' : 'Mã đã dùng không đổi được — thêm mục đích mới nếu cần mã khác'} onChange={(e) => set({ code: e.target.value.toUpperCase() })} placeholder="VD: HUY" /></Field>
       <Field label="Mục đích"><input className="input" value={v.name} onChange={(e) => set({ name: e.target.value })} placeholder="VD: Hủy hàng hỏng, hết hạn" /></Field>
       <Field label="Dùng cho">
         <select className="input" value={v.direction} onChange={(e) => set({ direction: e.target.value })}>
@@ -388,7 +416,7 @@ function PreviewCard({ biz, scheme }: { biz: Business; scheme: Scheme }) {
 }
 
 /** Tài khoản hiện ở chế độ gọn cho một dòng sổ: TK của quy tắc; nguồn khác (HTTT, loại kho, loại thuế) thì TK dự phòng. */
-const NGUON_NGAN: Record<Source, string> = { rule: '', payment: 'theo HTTT', warehouse: 'theo loại kho', tax: 'theo loại thuế', purpose: 'theo mục đích' };
+const NGUON_NGAN: Record<Source, string> = { rule: '', payment: 'theo HTTT', warehouse: 'theo loại kho', tax: 'theo loại thuế', purpose: 'theo mục đích', reason: 'theo lý do' };
 const tkCua = (l: SLine, keys: Map<string, Key>) => (l.key ? keys.get(l.key)?.accountCode ?? '' : NGUON_NGAN[l.source]);
 const uniq = (a: string[]) => [...new Set(a.filter(Boolean))];
 
@@ -401,8 +429,10 @@ interface GonRow { id: string; loai: string; nhom: string; title: string; no: st
 function GonView({ data, canWrite, nutXem, onRefresh }: { data: Scheme; canWrite: boolean; nutXem: React.ReactNode; onRefresh: () => unknown }) {
   const exportRef = useRef<(() => void) | null>(null);
   const [sua, setSua] = useState<{ title: string; lines: SLine[] } | null>(null);
+  const [suaLyDo, setSuaLyDo] = useState<ReasonRow | null>(null);
   const keys = useMemo(() => new Map(data.keys.map((k) => [k.key, k])), [data]);
-  const rows: GonRow[] = useMemo(() => data.businesses.flatMap((b) => xepNhom(b.groups).map((g) => {
+  // Nhóm lấy tài khoản từ lý do (Chênh lệch két máy bán) không vào bảng (Xuất / Nhập Excel chỉ cho tài khoản của quy tắc) — hiện ở khối riêng bên dưới.
+  const rows: GonRow[] = useMemo(() => data.businesses.flatMap((b) => xepNhom(b.groups).filter((g) => !g.lines.some((l) => l.source === 'reason')).map((g) => {
     const nhom = g.name.replace(/\s*\(.*\)$/, '');
     return {
       id: `${b.code}|${g.name}`, loai: b.name, nhom, title: `${b.name} – ${nhom}`,
@@ -426,7 +456,65 @@ function GonView({ data, canWrite, nutXem, onRefresh }: { data: Scheme; canWrite
         onRowDoubleClick={(r) => { if (canWrite) setSua(r); }} />
       {/* [2026-11-17 11:23 AM kiennt] ACC41 — bỏ cột Chức năng; bấm đúp mở chi tiết ở chế độ xem, bấm Sửa mới sửa (như các màn danh mục) (đóng góp) */}
       {sua && <SuaGon title={sua.title} lines={sua.lines} keys={keys} onClose={() => setSua(null)} />}
+      {(data.reasons ?? []).length > 0 && <ReasonCard reasons={data.reasons ?? []} canWrite={canWrite} onEdit={setSuaLyDo} />}
+      {suaLyDo && <ReasonDialog r={suaLyDo} onClose={() => setSuaLyDo(null)} />}
     </div>
+  );
+}
+
+/** Khối "Lý do phiếu kế toán": mỗi lý do một dòng Nợ / Có, trạng thái, nút Đổi (chỉ người có quyền ghi cấu hình thấy nút). */
+function ReasonCard({ reasons, codes, canWrite, onEdit }: { reasons: ReasonRow[]; codes?: string[]; canWrite: boolean; onEdit: (r: ReasonRow) => void }) {
+  const rows = codes ? reasons.filter((r) => codes.includes(r.code)) : reasons;
+  const acc = (code: string | null, name: string | null, st: string) => (st === 'missing' ? <span className="text-danger">Chưa khai tài khoản</span>
+    : <span className={st !== 'ok' ? 'text-danger' : ''} title={STATUS_BAD[st] ?? name ?? ''}><b className="mono">{code}</b> {st !== 'ok' ? STATUS_BAD[st] : name}</span>);
+  return (
+    <div className="card" style={{ padding: 0, marginTop: 12 }}>
+      <div className="qt-head" title="Phiếu kế toán phân hệ lập (vd chốt ca máy bán lệch két): mỗi dòng mang mã lý do, tài khoản nằm trên lý do">Lý do phiếu kế toán — Chênh lệch két máy bán</div>
+      <table className="grid full">
+        <thead><tr><th title="Mã lý do dòng phiếu mang">Mã lý do</th><th title="Tên lý do">Lý do</th><th title="Tài khoản ghi Nợ">TK Nợ</th><th title="Tài khoản ghi Có">TK Có</th><th title="Đầu số được chọn">Phạm vi</th><th /></tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.code}>
+              <td className="mono" title="Mã lý do">{r.code}</td>
+              <td title={r.help}>{r.name}</td>
+              <td>{acc(r.debitAccount, r.debitName, r.debitStatus)}</td>
+              <td>{acc(r.creditAccount, r.creditName, r.creditStatus)}</td>
+              <td className="mono muted" title="Nợ trong … / Có trong …">Nợ {r.debitRange.join(', ')} · Có {r.creditRange.join(', ')}</td>
+              <td>{canWrite && <button className="btn btn-sm" onClick={() => onEdit(r)} title="Đổi cặp Nợ / Có">{r.exists ? 'Đổi' : 'Khai'}</button>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="muted" style={{ padding: '6px 10px', fontSize: 12 }}>Đổi tài khoản chỉ áp cho phiếu lập sau; phiếu đã ghi giữ nguyên (muốn sửa: đảo rồi lập lại ở Sổ ca bán).</div>
+    </div>
+  );
+}
+
+/** Đổi cặp Nợ / Có của một lý do: hai ô chọn tài khoản chi tiết trong phạm vi; lỗi máy chủ tô đỏ đúng ô (error.fields). */
+function ReasonDialog({ r, onClose }: { r: ReasonRow; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [debit, setDebit] = useState(r.debitAccount ?? '');
+  const [credit, setCredit] = useState(r.creditAccount ?? '');
+  const same = debit === (r.debitAccount ?? '') && credit === (r.creditAccount ?? '');
+  const m = useMutation({
+    mutationFn: () => api.put(`/api/v1/posting/scheme/reasons/${encodeURIComponent(r.code)}`, {
+      debitAccount: debit, creditAccount: credit, expected: { debitAccount: r.debitAccount, creditAccount: r.creditAccount },
+    }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['posting-scheme'] }); void qc.invalidateQueries({ queryKey: ['reasons'] }); onClose(); },
+  });
+  return (
+    <Modal title={`Lý do ${r.code}: ${r.label}`} onClose={onClose} helpKey="quy-tac-hach-toan"
+      footer={<><button className="btn" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={!debit || !credit || same || m.isPending} title={!debit || !credit ? 'Chọn đủ TK Nợ và TK Có' : same ? 'Cặp tài khoản chưa đổi' : m.isPending ? 'Đang ghi…' : 'Ghi cặp tài khoản mới'} onClick={() => m.mutate()}>Ghi</button></>}>
+      <ErrorBox error={m.error ? errorText(m.error) : null} />
+      <p className="muted" style={{ marginTop: 0 }}>{r.help}</p>
+      <Field label="TK Nợ" truong="debitAccount" hint={`Chỉ tài khoản chi tiết trong ${r.debitRange.join(', ')}`}>
+        <AccountPicker postingOnly prefixes={r.debitRange} value={debit} onChange={setDebit} />
+      </Field>
+      <Field label="TK Có" truong="creditAccount" hint={`Chỉ tài khoản chi tiết trong ${r.creditRange.join(', ')}`}>
+        <AccountPicker postingOnly prefixes={r.creditRange} value={credit} onChange={setCredit} />
+      </Field>
+      <p className="muted" style={{ fontSize: 12 }}>Áp cho phiếu chênh lệch két lập từ bây giờ (kể cả "Lập lại phiếu" ở Sổ ca). Phiếu đã ghi không tự đổi.</p>
+    </Modal>
   );
 }
 
@@ -444,7 +532,7 @@ function SuaGon({ title, lines, keys, onClose }: { title: string; lines: SLine[]
   return (
     <Modal wide viewFirst viewAgain={viewAgain} title="Tài khoản ngầm định" onClose={onClose} helpKey="quy-tac-hach-toan"
       // [2026-11-17 11:28 AM kiennt] ACC41 — chân hộp thoại như các màn khác: Ghi và thoát · Ghi · Thoát (đóng góp)
-      footer={<><button className="btn btn-primary" disabled={!doi.length || m.isPending} onClick={() => m.mutate()}>Ghi</button><button className="btn" onClick={onClose}>Thoát</button></>}>
+      footer={<><button className="btn btn-primary" disabled={!doi.length || m.isPending} title={!doi.length ? 'Chưa đổi tài khoản nào' : m.isPending ? 'Đang ghi…' : 'Ghi các tài khoản đã đổi'} onClick={() => m.mutate()}>Ghi</button><button className="btn" onClick={onClose}>Thoát</button></>}>
       <ErrorBox error={m.error ? errorText(m.error) : null} />
       <div className="full">Loại chứng từ: <b>{title}</b></div>
       <table className="grid full">

@@ -15,7 +15,7 @@
  *   purpose   mục đích xuất của phiếu (bảng stock_purposes); không có mục đích → TK của quy tắc
  */
 
-export type SchemeSource = 'rule' | 'payment' | 'warehouse' | 'tax' | 'purpose';
+export type SchemeSource = 'rule' | 'payment' | 'warehouse' | 'tax' | 'purpose' | 'reason';
 export type SchemeAmount = 'goods' | 'tax' | 'total' | 'paid' | 'unpaid' | 'cost' | 'discount';
 
 export interface SchemeLine {
@@ -24,8 +24,8 @@ export interface SchemeLine {
   role: string;
   amount: SchemeAmount;
   source: SchemeSource;
-  /** Khoá tài khoản của quy tắc: nguồn 'rule', hoặc tài khoản dự phòng của nguồn khác. */
-  key?: string;
+  /** Khoá tài khoản của quy tắc: nguồn 'rule', hoặc tài khoản dự phòng của nguồn khác. Nguồn 'reason': mã lý do ở `reason` (REASON_KEYS). */
+  key?: string; reason?: string;
   /** Khi nào có dòng này (trống = luôn có). */
   when?: string;
 }
@@ -251,7 +251,52 @@ export const SCHEME: SchemeBusiness[] = [
       ] },
     ],
   },
+  {
+    code: 'pos_cash_diff', name: 'Chênh lệch két máy bán', docType: 'manual_journal',
+    description: 'Chốt ca máy bán đếm tiền lệch: phân hệ bán lẻ lập một phiếu kế toán theo lý do thiếu / thừa, đối tượng là chi nhánh. Tài khoản nằm trên lý do, đổi ngay ở đây trong phạm vi đầu số.',
+    groups: [
+      { name: 'Thiếu tiền két', lines: [
+        { side: 'debit', role: 'Thiếu chờ xử lý (đối tượng chi nhánh)', amount: 'total', source: 'reason', reason: 'POS-THIEU-KET', when: 'Đếm ít hơn phải có' },
+        { side: 'credit', role: 'Tiền mặt két', amount: 'total', source: 'reason', reason: 'POS-THIEU-KET', when: 'Đếm ít hơn phải có' },
+      ] },
+      { name: 'Thừa tiền két', lines: [
+        { side: 'debit', role: 'Tiền mặt két', amount: 'total', source: 'reason', reason: 'POS-THUA-KET', when: 'Đếm nhiều hơn phải có' },
+        { side: 'credit', role: 'Thừa chờ xử lý (đối tượng chi nhánh)', amount: 'total', source: 'reason', reason: 'POS-THUA-KET', when: 'Đếm nhiều hơn phải có' },
+      ] },
+    ],
+  },
 ];
+
+// [2026-11-25 11:30 PM Võ Hoàng] NT-BH-042 — C3/C4: nguồn "reason" (tài khoản lấy từ lý do loại journal), nghiệp vụ Chênh lệch két máy bán, phạm vi đầu số của hai lý do (đóng góp)
+// Nguồn "reason" của SchemeLine: dòng phiếu kế toán (manual_journal) mang mã lý do; tài khoản là posting_reasons.debit_account / credit_account.
+/** Lý do loại journal khai được ở ACC41: tài khoản Nợ / Có nằm trên lý do (posting_reasons), đổi trong phạm vi đầu số. */
+export interface ReasonKey {
+  label: string;
+  /** Tên khi ACC41 tạo lý do lần đầu (đơn vị chưa có mã). */
+  name: string;
+  /** Khoá lý do mặc định (flags.default) và phân hệ cần lý do (flags.module). */
+  flags: { default: string; module: string };
+  debitRange: string[];
+  creditRange: string[];
+  help: string;
+}
+
+/**
+ * Lý do loại journal có trên màn Quy tắc hạch toán — mã mặc định của module pos (khoá bizcity.pos.cash_short_reason /
+ * cash_over_reason). Tài khoản gợi ý nằm ở dữ liệu (migration 0185), không ở đây.
+ */
+export const REASON_KEYS: Record<string, ReasonKey> = {
+  'POS-THIEU-KET': {
+    label: 'Thiếu tiền két', name: 'Thiếu tiền két chờ xử lý (máy bán POS)', flags: { default: 'manual_journal:pos_cash_short', module: 'pos' },
+    debitRange: ['138', '334', '632', '811'], creditRange: ['111'],
+    help: 'Chốt ca đếm thiếu tiền: Nợ tài sản thiếu chờ xử lý (đối tượng chi nhánh) / Có tiền mặt. Xử lý sau (bắt bồi thường, tính chi phí) là phiếu riêng của kế toán.',
+  },
+  'POS-THUA-KET': {
+    label: 'Thừa tiền két', name: 'Thừa tiền két chờ xử lý (máy bán POS)', flags: { default: 'manual_journal:pos_cash_over', module: 'pos' },
+    debitRange: ['111'], creditRange: ['338', '711'],
+    help: 'Chốt ca đếm thừa tiền: Nợ tiền mặt / Có tài sản thừa chờ xử lý (đối tượng chi nhánh) hoặc thu nhập khác.',
+  },
+};
 
 /** Phạm vi tài khoản đối ứng của mục đích xuất. */
 export const PURPOSE_RANGE = ['138', '15', '211', '241', '242', '334', '338', '353', '632', '641', '642', '711', '811'];
