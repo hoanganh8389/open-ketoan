@@ -29,7 +29,7 @@ import {
   type Check, type TraceItem,
 } from '@bizcity/mua-hang-domain';
 import { useQuery } from '@tanstack/react-query';
-import { api, errorText } from '@/lib/api';
+import { api, errorText, type ApiError } from '@/lib/api';
 import { Modal, NumInput, openNextInEdit } from '@/components/ui';
 import { roundPrice } from '@/lib/format';
 import { HelpDrawer } from '@/components/HelpDrawer';
@@ -59,6 +59,7 @@ import { STATE_LABEL, invoiceApi, receiptPartsFromInvoice } from '../hoa-don/api
 import { invoiceLabel, sameInvoice } from '@bizcity/mua-hang-domain';
 import { ChonChungTu, OChonChungTu } from '../thanh-phan/ChonChungTu';
 import { HoaDonModal } from '../hoa-don/HoaDonModal';
+import { nhapLoiDangMo } from './NhapLoi';
 import type { InvoiceRow } from '../hoa-don/api';
 import { layPhieuIn, mauInCua } from './mauIn';
 import { ChonThue } from '@/lib/thueGtgt';
@@ -185,7 +186,8 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const [danBao, setDanBao] = useState<{ ok: boolean; text: string } | null>(null);
   const [dirty, setDirty] = useState(false);
   // Thu nhỏ xuống thanh dưới (giữ nguyên phiếu đang nhập); chấm cam ở ô = phiếu có thay đổi chưa lưu.
-  const dock = useDockWindow(onClose, dirty, `mh:${value.id}`);
+  const dock = useDockWindow(() => thoatRef.current(), dirty, `mh:${value.id}`);
+  const thoatRef = useRef<() => void>(onClose);
   const names = useNames();
   const brands = useBrands(data.policies);
   const costItems = useDimension('cost_item'); // [2026-11-20 khanhtd] MUA-HANG — Danh mục khoản mục cho phiếu chi phí (đóng góp)
@@ -704,21 +706,50 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     }
   };
 
-  /** Chạy một thao tác máy chủ; lưu trước nếu phiếu đang sửa dở. */
-  const act = async (fn: (id: string) => Promise<StoredDoc>, needSave = true) => {
+  // [2026-11-25 Nguyễn Văn Thủy] NHÁP LỖI: bấm Ghi / Gửi duyệt / Duyệt mà máy chủ không lưu được phiếu (lỗi gì cũng vậy) → giữ nguyên nội
+  // dung phiếu + lỗi vào "Nháp lỗi" (MH11) để mở lại, sửa và để dev truy vết theo mã lỗi / mã tra cứu. Ghi được phiếu thì nháp lỗi tự xong (đóng góp)
+  const keyLoi = useRef(value.id.startsWith('new-') ? value.id : `doc-${value.id}`);
+  const coLoiLuu = useRef(nhapLoiDangMo.has(keyLoi.current));
+  const luuNhapLoi = async (e: unknown, action: string): Promise<boolean> => {
+    const ae = e as Partial<ApiError>;
+    try {
+      await api.post(`${P}/save-failed`, { key: keyLoi.current, doc: withSnapshot(v, true), action, error: { code: String(ae?.code ?? ''), message: errorText(e).slice(0, 1900), ...(ae?.requestId ? { requestId: ae.requestId } : {}) } });
+      coLoiLuu.current = true; return true;
+    } catch { return false; }
+  };
+  const xongNhapLoi = (docNo?: string) => { if (!coLoiLuu.current) return; coLoiLuu.current = false; void api.post(`${P}/save-failed/done`, { key: keyLoi.current, how: 'saved', ...(docNo ? { docNo } : {}) }).catch(() => undefined); };
+  /** Chạy một thao tác máy chủ; lưu trước nếu phiếu đang sửa dở. `laLuu`: chính thao tác là lưu phiếu. */
+  const act = async (fn: (id: string) => Promise<StoredDoc>, needSave = true, laLuu = false) => {
     setBusy(true); setErr('');
+    let canLuu = laLuu, daLuu = false;
     try {
       let id = v.id;
       if (needSave && (dirty || v.id.startsWith('new-'))) {
+        canLuu = true;
         const saved = await purchaseApi.save(withSnapshot(v, true));
-        id = saved.id; setV(saved); setStored(saved); setDirty(false);
+        id = saved.id; setV(saved); setStored(saved); setDirty(false); daLuu = true; xongNhapLoi(saved.docNo);
       }
       const out = await fn(id);
       setV(out); setStored(out); setDirty(false);
+      if (laLuu) xongNhapLoi(out.docNo);
       onSaved();
-    } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
+    } catch (e) {
+      const loi = errorText(e);
+      setErr(loi);
+      if (canLuu && !daLuu && await luuNhapLoi(e, laLuu ? 'ghi' : 'thao tác')) setErr(`${loi} — đã giữ phiếu vào Nháp lỗi (Chứng từ mua hàng MH11) để sửa lại / truy vết`);
+    } finally { setBusy(false); }
   };
-  const save = () => act(async () => { const s = await purchaseApi.save(withSnapshot(v, true)); return s; }, false);
+  const save = () => act(async () => { const s = await purchaseApi.save(withSnapshot(v, true)); return s; }, false, true);
+  // Thoát khi phiếu đang sửa dở (hoặc vừa lỗi lưu): hỏi lưu nháp để theo dõi lại.
+  const [hoiThoat, setHoiThoat] = useState(false);
+  const thoat = () => { if (!readOnly && (dirty || coLoiLuu.current)) setHoiThoat(true); else onClose(); };
+  thoatRef.current = thoat;
+  const luuRoiThoat = async () => {
+    setBusy(true);
+    try { const s = await purchaseApi.save(withSnapshot(v, true)); xongNhapLoi(s.docNo); onSaved(); }
+    catch (e) { await luuNhapLoi(e, 'thoát'); }
+    finally { setBusy(false); setHoiThoat(false); onClose(); }
+  };
   // Cảnh báo chặn được duyệt ngoại lệ (người có quyền, ghi lý do): vượt hạn mức, đổi mã so với đơn, nhập ngoài đơn khi MH12 bắt buộc theo đơn.
   const creditOnly = blocking.length > 0 && blocking.every((c) => c.code === 'credit_exceeded' || c.code === 'code_swap' || c.code === 'po_none');
   const duyetNgoaiLe = () => {
@@ -971,7 +1002,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
 
   return (
     <DockScope>
-    <div className={`mh-sheet${dock.minimized ? ' is-min' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`mh-sheet${dock.minimized ? ' is-min' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && thoat()}>
       <div className="mh-sheet-box" role="dialog" aria-modal="true" onDoubleClick={viewing && !frozen ? (e) => { if (!(e.target as HTMLElement).closest('button, a, .tab, .tabs')) setViewing(false); } : undefined}>
         <div className="mh-sheet-head" ref={(el) => { dock.headRef.current = el; }}>
           <h2>{v.kind === 'rebate' && !v.rebate ? 'Chiết khấu / giảm giá sau mua' : KIND_LABEL[v.kind]} {v.docNo || '(mới)'} {stored?.adjust ? <span className="badge badge-warn" title="Phiếu đã ghi sổ đang sửa; sổ còn theo bản đã duyệt">Đang điều chỉnh</span> : <span className={`badge ${statusBadge(v.status)}`}>{STATUS_LABEL[v.status]}</span>}{v.override && <span className="badge badge-warn" style={{ marginLeft: 6 }}>Duyệt ngoại lệ: {v.override.by}</span>}{outside && <span className="badge badge-warn" style={{ marginLeft: 6 }} title={v.outsideOrder?.by ? `Lý do: ${v.outsideOrder.reason}
@@ -981,9 +1012,13 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
           <span className="ct-total"><small>{v.kind === 'exchange' ? 'Chênh lệch' : v.kind === 'return' ? 'Giảm công nợ' : 'Phải trả NCC'}</small><b>{vnd(calc.payable)}</b></span>
           <button className="btn btn-sm btn-help" onClick={() => setHelp(true)}>? Hướng dẫn</button>
           {dock.top && <MinimizeButton onClick={dock.minimize} />}
-          <button className="btn btn-sm btn-ghost" onClick={onClose} aria-label="Đóng">✕</button>
+          <button className="btn btn-sm btn-ghost" onClick={thoat} aria-label="Đóng">✕</button>
         </div>
         {help && <HelpDrawer guideKey="mua-hang-chung-tu" onClose={() => setHelp(false)} />}
+        {hoiThoat && <Modal title="Phiếu đang sửa dở" onClose={() => setHoiThoat(false)}
+          footer={<><button className="btn btn-primary" disabled={busy} onClick={() => void luuRoiThoat()}>Lưu nháp rồi thoát</button><button className="btn" onClick={() => { setHoiThoat(false); onClose(); }}>Thoát không lưu</button><button className="btn" onClick={() => setHoiThoat(false)}>Ở lại</button></>}>
+          <div className="full">{coLoiLuu.current ? 'Phiếu vừa lưu bị lỗi và còn thay đổi chưa ghi.' : 'Phiếu có thay đổi chưa lưu.'} Lưu nháp để theo dõi lại sau? Không lưu được vào sổ (lỗi) thì phiếu được giữ ở <b>Nháp lỗi</b> của Chứng từ mua hàng (MH11).</div>
+        </Modal>}
         {mauNcc && <XemMauNcc doc={v} info={mauInfo()} parts={mauParts()} onClose={() => setMauNcc(false)} onExport={() => void xuatMauNcc(v, mauInfo(), mauParts())} />}
         {lsHd && v.docNo && <LichSuHoaDon docNo={v.docNo} onClose={() => setLsHd(false)} />}
         {doiGia !== null && (
@@ -1217,8 +1252,10 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   {v.priceIncludesVat
                     ? <div className="field"><label title="Phiếu cũ nhập đơn giá đã gồm thuế. Chuẩn hiện nay: đơn giá chưa thuế — đổi để mọi cột giá, gợi ý tính cùng một chuẩn">Đơn giá</label><select className="select input" value="1" onChange={(e) => e.target.value === '0' && doiLoaiGia(false)}><option value="1">Đang nhập giá gồm thuế (phiếu cũ)</option><option value="0">Đổi về đơn giá chưa thuế (chuẩn)</option></select></div>
                     : null}
-                  {(v.kind === 'receipt' || v.kind === 'return') && (
-                    <div className="field"><label>Chiết khấu trên đơn</label>
+                  {/* [2026-11-25 Nguyễn Văn Thủy] phiếu nhập: CK trên đơn luôn theo chính sách (hợp đồng / NCC) — bỏ ô chọn; chỉ còn hiện ở phiếu cũ
+                      đã ghi tay để đưa về "Theo chính sách". Phiếu trả hàng giữ ô này (đóng góp) */}
+                  {(v.kind === 'return' || (v.kind === 'receipt' && v.orderDiscount !== undefined && !readOnly)) && (
+                    <div className="field"><label title={v.kind === 'receipt' ? 'Phiếu cũ ghi tay CK trên đơn — chọn "Theo chính sách" để tính theo hợp đồng / chính sách NCC' : undefined}>Chiết khấu trên đơn</label>
                       <div className="row" style={{ gap: 4 }}>
                         <select className="select input" style={{ width: 120 }} value={v.orderDiscount === undefined ? 'policy' : v.orderDiscount.pct ? 'pct' : v.orderDiscount.amount ? 'amount' : 'none'}
                           onChange={(e) => set({ orderDiscount: e.target.value === 'policy' ? undefined : e.target.value === 'pct' ? { pct: v.orderDiscount?.pct || 5 } : e.target.value === 'amount' ? { amount: v.orderDiscount?.amount || 1_000_000 } : {} })}>
@@ -1933,7 +1970,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
           {v.status === 'approved' && (v.kind === 'payment' || v.kind === 'prepayment') && <button className="btn" disabled={busy} onClick={() => { if (window.confirm('Huỷ ghi sổ: phiếu chi / uỷ nhiệm chi của phiếu này bị huỷ (đảo bút toán bằng số âm), phiếu về nháp. Tiếp tục?')) void act((id) => purchaseApi.unapprove(id), false); }}>Huỷ ghi sổ</button>}
           {stored?.adjust && <button className="btn" disabled={busy} title="Bỏ các thay đổi đang sửa, phiếu về đúng bản đã duyệt; sổ không đổi" onClick={() => { if (window.confirm('Huỷ điều chỉnh: bỏ các thay đổi, phiếu về bản đã duyệt. Tiếp tục?')) void act((id) => purchaseApi.adjustCancel(id), false); }}>Huỷ điều chỉnh</button>}
           {v.status !== 'cancelled' && !v.id.startsWith('new-') && v.status !== 'approved' && !stored?.adjust && <button className="btn" disabled={busy} onClick={() => { if (window.confirm('Huỷ phiếu này?')) void act((id) => purchaseApi.cancel(id), false); }}>Huỷ phiếu</button>}
-          <button className="btn" onClick={onClose}>Thoát</button>
+          <button className="btn" onClick={thoat}>Thoát</button>
         </div>
       </div>
     </div>

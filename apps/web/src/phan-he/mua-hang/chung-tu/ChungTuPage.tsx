@@ -20,6 +20,7 @@ import { PartnerPicker } from '@/components/pickers';
 import { errorText } from '@/lib/api';
 import { GOODS_KINDS, KIND_LABEL, STATUS_LABEL, lastUsed, nhapNgoaiDon, purchaseApi, today, useMuaHang, useNames, type StoredDoc } from '../du-lieu';
 import { dmy } from '../chung';
+import { NhapLoi } from './NhapLoi';
 import { PhieuMuaForm } from './PhieuMuaForm';
 import { NhapExcel } from './NhapExcel';
 import { receiptPartsFromInvoice } from '../hoa-don/api';
@@ -357,6 +358,8 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
           subtitle="Chi tiết từng dòng hàng của các phiếu mua hàng theo kỳ: SL, đơn giá, tiền hàng trước / sau chiết khấu, thuế, tổng thanh toán, ký hiệu / số hoá đơn" />
         : !embedded && <PageHeader title="Chứng từ mua hàng" code="MH03" helpKey="mua-hang-chung-tu"
         subtitle="Đơn đặt → phiếu nhập kho → trả tiền, theo từng nhà cung cấp — phiếu tự áp chính sách của NCC, tự cảnh báo; duyệt là ghi sổ" />}
+      {/* [2026-11-25 Nguyễn Văn Thủy] phiếu lưu bị lỗi (Nháp lỗi) — mở lại để sửa / truy vết (đóng góp) */}
+      {!embedded && report !== 'bao-cao' && <NhapLoi onOpen={(d) => setEditing(d)} />}
       {(() => {
         const statusSel = <select className="select input" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">Mọi trạng thái</option>{Object.entries(STATUS_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>;
         const outsideSel = <select className="select input" value={outside} onChange={(e) => setOutside(e.target.value)} title="Phiếu nhập không theo đơn đặt nào (ngoại lệ) — rà soát riêng"><option value="">Theo đơn / ngoài đơn: tất cả</option><option value="all">Chỉ phiếu nhập ngoài đơn</option><option value="cho">Ngoài đơn — chờ rà soát</option><option value="lech">Phiếu nhập lệch đơn đặt (thiếu, thừa, mã ngoài đơn, lệch giá, đổi mã)</option></select>;

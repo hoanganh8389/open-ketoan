@@ -137,6 +137,21 @@ export async function purchaseRoutes(app: FastifyInstance): Promise<void> {
   r.get('/api/v1/purchase/allocations/:id', { preHandler: read, schema: { tags, summary: 'Phân bổ phiếu chi phí vào phiếu nhập', params: idParamSchema, querystring: z.object({ basis: z.enum(['value', 'qty']).optional() }) },
     handler: async (req) => ok(costAllocation(await ctxOf(authOf(req).tenantId), req.params.id, req.query.basis)) });
   r.get('/api/v1/purchase/real-cost/:id', { preHandler: read, schema: { tags, summary: 'Giá vốn thực tế từng mã của phiếu nhập', params: idParamSchema }, handler: async (req) => ok(await realCost(db, authOf(req).tenantId, await ctxOf(authOf(req).tenantId), req.params.id)) });
+  // [2026-11-25 Nguyễn Văn Thủy] nháp lỗi còn chờ sửa: bản mới nhất của mỗi phiếu, bỏ phiếu đã ghi được / đã bỏ (90 ngày gần nhất) (đóng góp)
+  r.get('/api/v1/purchase/save-failed', { preHandler: read, schema: { tags, summary: 'Nháp lỗi chờ sửa (phiếu không ghi được), mới nhất trước' }, handler: async (req) => {
+    const from = new Date(Date.now() - 90 * 86_400_000).toISOString().slice(0, 10);
+    const rows = await readLog(authOf(req).tenantId, { from });
+    const xong = new Map<string, string>();
+    for (const x of rows) if (x.event === 'luu_loi_xong') { const k = String(x.data.key ?? ''); if (!xong.has(k)) xong.set(k, x.ts); }
+    const out = new Map<string, unknown>();
+    for (const x of rows) {
+      if (x.event !== 'luu_loi') continue;
+      const k = String(x.data.key ?? '');
+      if (out.has(k) || (xong.get(k) ?? '') >= x.ts) continue;
+      out.set(k, { key: k, ts: x.ts, user: x.user, docNo: x.docNo, action: x.data.action, kind: x.data.kind, partnerCode: x.data.partnerCode, branchCode: x.data.branchCode, error: x.data.error, doc: x.data.doc });
+    }
+    return ok([...out.values()]);
+  } });
   r.get('/api/v1/purchase/logs', { preHandler: read, schema: { tags, summary: 'Nhật ký mua hàng (JSONL)', querystring: z.object({ event: z.string().optional(), from: z.string().optional(), to: z.string().optional(), docNo: z.string().optional(), partnerCode: z.string().optional(), sku: z.string().optional(), contractCode: z.string().optional().describe('Nhật ký một hợp đồng: ghi hợp đồng, giá mua, chính sách thuộc hợp đồng') }) },
     handler: async (req) => {
       const q = req.query;
@@ -354,6 +369,36 @@ export const routesTsWriteActions: AnyActionDef[] = [
     evidence: { objectType: 'purchase' },
     handler: async (ctx, input) => {
       await logEvents(ctx.legacyAuth.tenantId, [{ event: 'line_columns', docNo: '', user: ctx.legacyAuth.actorName, data: { kind: input.kind, order: input.order, before: input.before, machine: input.machine } }]);
+      return { ok: true };
+    },
+  }),
+  // [2026-11-25 Nguyễn Văn Thủy] NHÁP LỖI: bấm Ghi / Gửi duyệt / Duyệt mà máy chủ từ chối (hoặc thoát khi đang sửa dở) → giữ nguyên nội dung
+  //   phiếu + lỗi vào nhật ký JSONL (không vào bảng chứng từ — phiếu lỗi không được tính tồn, công nợ, tiến độ đơn). MH11 liệt kê để mở lại,
+  //   sửa, ghi; dev truy vết theo mã lỗi / mã tra cứu. Ghi được phiếu hoặc bấm Bỏ thì đánh dấu xong (đóng góp)
+  defineAction({
+    id: 'mua-hang.purchase.save-failed', title: 'Lưu nháp lỗi (phiếu không ghi được) để mở lại / truy vết', tags,
+    permission: 'documents:write', effect: 'write', sideEffects: ['documents'], idempotency: 'natural',
+    input: z.object({
+      key: z.string().trim().min(1).max(80), doc: z.record(z.string(), z.unknown()), action: z.string().trim().max(40).default('save'),
+      error: z.object({ code: z.string().max(80).default(''), message: z.string().max(2000).default(''), requestId: z.string().max(80).optional() }),
+    }),
+    output: anyOut,
+    expose: { http: { method: 'POST', path: '/api/v1/purchase/save-failed', bodyLimit: 5 * 1024 * 1024 }, mcp: false, ai: 'deny' },
+    evidence: { objectType: 'purchase' },
+    handler: async (ctx, input) => {
+      const d = input.doc as { kind?: string; docNo?: string; partnerCode?: string; branchCode?: string };
+      await logEvents(ctx.legacyAuth.tenantId, [{ event: 'luu_loi', docNo: String(d.docNo ?? ''), user: ctx.legacyAuth.actorName, data: { key: input.key, action: input.action, kind: d.kind, partnerCode: d.partnerCode, branchCode: d.branchCode, error: input.error, doc: input.doc } }]);
+      return { ok: true };
+    },
+  }),
+  defineAction({
+    id: 'mua-hang.purchase.save-failed-done', title: 'Đánh dấu xong nháp lỗi (đã ghi được phiếu / bỏ)', tags,
+    permission: 'documents:write', effect: 'write', sideEffects: ['documents'], idempotency: 'natural',
+    input: z.object({ key: z.string().trim().min(1).max(80), how: z.enum(['saved', 'discarded']), docNo: z.string().max(64).optional() }), output: anyOut,
+    expose: { http: { method: 'POST', path: '/api/v1/purchase/save-failed/done' }, mcp: false, ai: 'deny' },
+    evidence: { objectType: 'purchase' },
+    handler: async (ctx, input) => {
+      await logEvents(ctx.legacyAuth.tenantId, [{ event: 'luu_loi_xong', docNo: input.docNo ?? '', user: ctx.legacyAuth.actorName, data: { key: input.key, how: input.how } }]);
       return { ok: true };
     },
   }),
