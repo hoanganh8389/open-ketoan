@@ -21,6 +21,22 @@ PULL=1
 [ "${1:-}" = "--no-pull" ] && PULL=0
 
 [ -f .env ] || { echo "Chưa có tệp .env (sao chép từ .env.example rồi sửa)" >&2; exit 1; }
+# [2026-11-25 09:11 PM Johnny Chu - Chu Hoàng Anh] STD-12b — bộ giám sát đang chạy (container otel-collector của dự án) → mọi lệnh compose ghép tệp giám sát
+#   (và tệp Docker Desktop như scripts/cai-nhanh.sh), để api giữ OTEL_EXPORTER_OTLP_ENDPOINT + DEVTOOLS_* sau cập nhật. Trước đây cập nhật xong api thôi gửi trace
+#   → màn Tra mã (DEV02) "Không tìm thấy trace". Không có bộ giám sát: như cũ (chỉ docker-compose.yml).
+DC=(docker compose)
+DC_PROJ="$(grep -E '^name:' docker-compose.yml | awk '{print $2}' | tr -d '\r' || true)"
+if [ -f infrastructure/monitoring/docker-compose.monitoring.yml ] \
+  && docker ps -q --filter "label=com.docker.compose.project=${DC_PROJ:-ketoan}" --filter "label=com.docker.compose.service=otel-collector" 2>/dev/null | grep -q .; then
+  DC+=(-f docker-compose.yml -f infrastructure/monitoring/docker-compose.monitoring.yml)
+  if docker info --format '{{.OperatingSystem}}' 2>/dev/null | grep -qi 'docker desktop'; then DC+=(-f infrastructure/monitoring/docker-compose.desktop.yml); fi
+  if "${DC[@]}" config -q 2>/dev/null; then
+    echo "• Bộ giám sát đang chạy — lệnh compose ghép tệp giám sát (api giữ cấu hình gửi trace)"
+  else
+    echo "! Bộ giám sát đang chạy nhưng tệp giám sát không dựng được cấu hình (thiếu biến trong .env, vd GRAFANA_ADMIN_PASSWORD) — cập nhật như cũ; sau đó chạy: bash scripts/kiem-giam-sat.sh --sua" >&2
+    DC=(docker compose)
+  fi
+fi
 # đọc 2 biến cổng từ .env, không nạp cả tệp (tránh làm lộ khoá)
 env_get() { grep -E "^$1=" .env | tail -n1 | cut -d= -f2- | tr -d '\r' || true; }
 WEB_BIND="$(env_get WEB_BIND)"; WEB_BIND="${WEB_BIND:-0.0.0.0}"
@@ -28,7 +44,7 @@ WEB_PORT="$(env_get WEB_PORT)"; WEB_PORT="${WEB_PORT:-8088}"
 PROBE_HOST="$WEB_BIND"; [ "$PROBE_HOST" = "0.0.0.0" ] && PROBE_HOST="127.0.0.1"
 
 echo "== 1. Sao lưu cơ sở dữ liệu"
-if docker compose ps --status running db 2>/dev/null | grep -q db; then
+if "${DC[@]}" ps --status running db 2>/dev/null | grep -q db; then
   ./scripts/sao-luu.sh
 else
   echo "   (cơ sở dữ liệu chưa chạy: lần cài đầu, bỏ qua sao lưu)"
@@ -44,13 +60,13 @@ else
 fi
 
 echo "== 3. Dựng ảnh mới (chưa đụng container đang chạy)"
-docker compose build api web
+"${DC[@]}" build api web
 
 echo "== 4. Cơ sở dữ liệu + API (không gồm web)"
 # Chỉ gọi đích danh: db, db-migrate (qua depends_on của api) và api. Web KHÔNG đi qua Compose.
-if ! docker compose up -d db api; then
+if ! "${DC[@]}" up -d db api; then
   echo "LỖI khi khởi động db/api. Nhật ký nâng cấp cơ sở dữ liệu (db-migrate):" >&2
-  docker compose logs --tail 60 db-migrate >&2 || true
+  "${DC[@]}" logs --tail 60 db-migrate >&2 || true
   echo "Nếu thông báo có 'device or resource busy': dừng lại, KHÔNG lặp lệnh; xem docs/ops/DEPLOY.md mục 5." >&2
   exit 1
 fi
@@ -58,24 +74,24 @@ fi
 echo "== 5. Chờ API lên khoẻ"
 HEALTHY=0
 for _ in $(seq 1 40); do
-  STATE="$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps -q api)" 2>/dev/null || echo starting)"
+  STATE="$(docker inspect --format '{{.State.Health.Status}}' "$(${DC[*]} ps -q api)" 2>/dev/null || echo starting)"
   [ "$STATE" = "healthy" ] && { HEALTHY=1; break; }
   sleep 3
 done
 if [ "$HEALTHY" != "1" ]; then
   echo "LỖI: API chưa lên khoẻ sau 2 phút. Nhật ký gần nhất:" >&2
-  docker compose logs --tail 40 api >&2
+  "${DC[@]}" logs --tail 40 api >&2
   exit 1
 fi
 echo "   API đã sẵn sàng."
 
 echo "== 6. Thay container web (ngoài Compose)"
-NETWORK="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' "$(docker compose ps -q api)")"
-IMAGE="$(docker compose config --images | grep -E -- '-web$' | head -n1)"
+NETWORK="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' "$("${DC[@]}" ps -q api)")"
+IMAGE="$("${DC[@]}" config --images | grep -E -- '-web$' | head -n1)"
 [ -n "$NETWORK" ] && [ -n "$IMAGE" ] || { echo "Không xác định được mạng ($NETWORK) hoặc ảnh web ($IMAGE)" >&2; exit 1; }
 
 # Mọi container web cũ: do Compose (…-web-1) hoặc do script này (ketoan-web-*) — dừng để nhả cổng, gỡ nếu được.
-OLD="$( { docker compose ps -aq web 2>/dev/null; docker ps -aq --filter 'label=ketoan.role=web'; docker ps -aq --filter 'name=^ketoan-web-'; } | sort -u )"
+OLD="$( { "${DC[@]}" ps -aq web 2>/dev/null; docker ps -aq --filter 'label=ketoan.role=web'; docker ps -aq --filter 'name=^ketoan-web-'; } | sort -u )"
 for id in $OLD; do
   docker stop "$id" >/dev/null 2>&1 || true
 done
