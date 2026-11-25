@@ -52,7 +52,8 @@ Nhánh `feat/nt-bh-038-qua-tra-km-core`, 25/11/2026.
 | test đơn vị `modules/pos/test/returns.test.ts` | 14 / 14 (5 ca NT-BH-038) |
 | test API `nt-bh-038-qua-tra-khuyen-mai-core` | 5 / 5: returnable có `policyKey`; trả hết hàng chính thiếu quà → `POS_GIFT_REQUIRED`; trả hàng ngoài chương trình → nhận; trả kèm quà → quà về KKM; trả 1 / 2 hàng chính → phải trả quà |
 | Hồi quy | nt-bh-003, 005, 019, 020, 024, 028, 030, 035, golden-tra-hang-doi-ma: 61 / 61; module pos 118 / 118; `module check pos` ĐẠT |
-| Máy bán React | PR riêng ở open-pos (luật I-0) |
+| Máy bán React | PR riêng ở open-pos `fix/qua-tra-theo-km-core` (luật I-0): pos-core ghép quà theo `policyKey`, hộp Hoàn hàng đọc `GET /api/v1/policies`; React 775 / 775 test |
+| Thử thật shop2 25/11 (Docker dựng từ nhánh này) | Đơn `CN02BT10034` mua 2 tặng 1 (`KM-THU-QUA-CN02`); hộp Hoàn hàng chỉ nhập 2 hàng chính → tự điền 1 quà "quà trả theo"; phiếu `CN02.B00008`: 2 lon về `CN02-K1`, 1 lon quà về `CN02-KKM` |
 
 ## 7. Lịch sử thay đổi
 | Ngày | Thay đổi |
