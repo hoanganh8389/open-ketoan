@@ -109,6 +109,20 @@ node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầ
 - **Đẩy code**: luôn `git fetch origin && git rebase origin/dev` ngay trước `git push origin HEAD:dev`. Rebase xung đột → `git rebase --abort`,
   trả mục về `moi` kèm ghi chú, **không** ép đẩy (`--force` cấm).
 
+### 4.4 Máy chủ chạy nhiều site (dev / test / main trên cùng một máy)
+- Mỗi site đặt **`COMPOSE_PROJECT_NAME` riêng** trong `.env` (vd `ketoan-develop`). Chỉ **một** site bật bộ giám sát (cổng 3000 / 9090).
+- Promtail gom log theo đúng tên đó (`LOKI_PROJECT = ${COMPOSE_PROJECT_NAME}`); `scripts/kiem-giam-sat.sh` cũng soi theo tên đó.
+  Dòng đầu kết quả kiểm phải ghi `dự án docker: <tên site dev>` — ghi `ketoan` là đang soi nhầm site khác.
+- Đổi cấu hình giám sát xong: `docker compose up -d --no-deps promtail` (cron Dựng lại cũng tự làm), rồi
+  `docker compose exec -T promtail sh -c 'echo $LOKI_PROJECT'` phải in tên site dev.
+
+### 4.5 Thử cả vòng (sau khi cài, hoặc khi nghi máy quét không bắt lỗi)
+1. Mở `<site dev>/dev/tra-ma?ma=req-thu-may-quet` — máy chủ từ chối `NOT_FOUND` (lỗi do **máy chủ** trả, có log).
+   Form chặn ngay trên trình duyệt (nút Ghi mờ, ô viền đỏ) **không** gửi lên máy chủ → không có log → HT20 không thấy (chỉ HT19 ghi).
+2. 1–2 phút sau: HT20 → ô **kiểu từ chối hôm nay** có mục `NOT_FOUND GET /api/v1/system/devtools/requests/:requestId`.
+3. Bấm **Tra mã** ở mục đó → DEV02 hiện câu báo, mã lỗi, vết xử lý (Tempo ✓ · Loki ✓). Xong bấm **Bỏ qua**.
+4. Không thấy mục → chạy `bash scripts/kiem-giam-sat.sh` trên máy chủ, sửa tới khi ĐẠT.
+
 ## 5. Quy trình sửa một lỗi (người hoặc AI đều theo — luật ở [AGENTS.md](../../AGENTS.md))
 1. Đầu phiên: `node scripts/moi-truong-dev.mjs --sua`.
 2. Kéo danh sách: `keo-loi.mjs danh-sach --co-the-nhan` (hoặc xem HT20). Chọn mục **Lỗi phần mềm** / **Được yêu cầu sửa** của phân hệ mình.
