@@ -7,7 +7,7 @@
 | Màn hình | Máy bán POS React, nhóm Báo cáo: Báo cáo bán hàng (`sales-report`), Tổng hợp bán hàng (`sales-summary`), Thu tiền bán hàng (`sales-collection`), Bán hàng theo danh mục (`category-sales`), Doanh số theo ngày (`daily-sales`) |
 | Ngày tạo | 25/11/2026 |
 | Trạng thái | **Đã chốt 25/11/2026** (Võ Hoàng) — mọi câu §6 theo phương án đề xuất |
-| Căn cứ | Quyết định của anh Hoàng 25/11: module `pos` trả các trường còn thiếu và gom số ở máy chủ. Đối chiếu POS cũ `tgs_pos/templates/front/*.php`; NT-BH-007 (ca bán, báo cáo), NT-BH-008 (quản trị bán lẻ) |
+| Căn cứ | Quyết định của anh Hoàng 25/11: module `pos` trả các trường còn thiếu và gom số ở máy chủ. Đối chiếu POS cũ open-pos tgs_pos/templates/front/*.php; NT-BH-007 (ca bán, báo cáo), NT-BH-008 (quản trị bán lẻ) |
 
 ## 1. Hiện trạng (đọc trên `origin/main` 25/11)
 
@@ -22,11 +22,11 @@
 
 | Màn React | POS cũ (PHP) | Nguồn số hiện nay | Cột / chức năng còn thiếu so với POS cũ |
 |---|---|---|---|
-| `SalesReportPage.tsx` (một dòng một mặt hàng của phiếu bán / trả) | `templates/front/pos-sales-report.php` → `templates/front/partials/pos-bctk-sales-report.php` (report_type `sales`) | orders + returns, gom trên máy | **Giá vốn, Nhân viên, Mã NV, Số lô, Hạn dùng**; nhóm chỉ có mã |
-| `SalesSummaryPage.tsx` (một dòng một phiếu) | `templates/front/pos-sales-summary.php` → cùng partial (report_type `sales_summary`) | như trên | **Nhân viên, Mã NV, Ghi chú phiếu, Thêm quà thủ công** |
-| `SalesCollectionPage.tsx` (một dòng một lần thu) | `templates/front/pos-sales-collection-report.php` | orders, tách theo hình thức thanh toán | **Số phiếu thu tiền**, Mã HTsoft, **Ngân hàng**, **User tạo PTT** |
-| `CategorySalesPage.tsx` (gom theo mã hàng, lọc danh mục) | `templates/front/pos-category-sales-report.php` | gom `lineRows` | **Cây danh mục** (tên nhóm, nhóm cha, chọn nhóm cha lấy cả nhóm con) |
-| `DailySalesPage.tsx` (mỗi ngày của tháng một dòng) | `templates/front/pos-daily-sales-report.php` | gom `lineRows` | Lọc theo cây danh mục; tháng đông đơn bị cắt 5.000 |
+| `SalesReportPage.tsx` (một dòng một mặt hàng của phiếu bán / trả) | open-pos templates/front/pos-sales-report.php → open-pos templates/front/partials/pos-bctk-sales-report.php (report_type `sales`) | orders + returns, gom trên máy | **Giá vốn, Nhân viên, Mã NV, Số lô, Hạn dùng**; nhóm chỉ có mã |
+| `SalesSummaryPage.tsx` (một dòng một phiếu) | open-pos templates/front/pos-sales-summary.php → cùng partial (report_type `sales_summary`) | như trên | **Nhân viên, Mã NV, Ghi chú phiếu, Thêm quà thủ công** |
+| `SalesCollectionPage.tsx` (một dòng một lần thu) | open-pos templates/front/pos-sales-collection-report.php | orders, tách theo hình thức thanh toán | **Số phiếu thu tiền**, Mã HTsoft, **Ngân hàng**, **User tạo PTT** |
+| `CategorySalesPage.tsx` (gom theo mã hàng, lọc danh mục) | open-pos templates/front/pos-category-sales-report.php | gom `lineRows` | **Cây danh mục** (tên nhóm, nhóm cha, chọn nhóm cha lấy cả nhóm con) |
+| `DailySalesPage.tsx` (mỗi ngày của tháng một dòng) | open-pos templates/front/pos-daily-sales-report.php | gom `lineRows` | Lọc theo cây danh mục; tháng đông đơn bị cắt 5.000 |
 
 ### 1b. Số liệu đang có ở open-ketoan
 
