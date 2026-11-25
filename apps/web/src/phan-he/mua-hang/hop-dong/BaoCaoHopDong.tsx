@@ -205,7 +205,7 @@ export function ChinhSachTheoHopDongPage() {
 }
 
 /* ------------------------------------------------------------------ MH34 */
-interface PriceRow { docId: string; docNo: string; docDate: string; branchCode: string; partnerCode: string; contractCode: string; sku: string; name: string; unit: string; qty: number; agreed: number | null; actual: number; diff: number | null; diffPct: number | null; diffAmount: number | null; source: string; actualFrom: 'hoa-don' | 'phieu-nhap'; invoiceNos: string }
+interface PriceRow { docId: string; docNo: string; docDate: string; branchCode: string; partnerCode: string; contractCode: string; sku: string; name: string; unit: string; qty: number; agreed: number | null; actual: number; diff: number | null; diffPct: number | null; diffAmount: number | null; source: string; actualFrom: 'hoa-don' | 'phieu-nhap'; invoiceNos: string; orderPrice: number | null; orderId: string; orderNo: string; receiptPrice: number; invoicePrice: number | null; fixAt: string }
 export function DoiChieuGiaHopDongPage() {
   const navigate = useNavigate();
   const names = useNames();
@@ -218,6 +218,8 @@ export function DoiChieuGiaHopDongPage() {
   const rows = chiLech ? all.filter((r) => lech(r) || r.agreed === null) : all;
   const tang = all.filter((r) => (r.diffAmount ?? 0) > 0).reduce((t, r) => t + r.diffAmount!, 0);
   const giam = all.filter((r) => (r.diffAmount ?? 0) < 0).reduce((t, r) => t + r.diffAmount!, 0);
+  /** Ô giá: lệch giá hợp đồng ≥ 1đ tô đỏ (cao hơn) / xanh (thấp hơn); — = không có. */
+  const giaO = (r: PriceRow, v: number | null) => (v === null ? <span className="muted">—</span> : <span className={r.agreed !== null && Math.abs(v - r.agreed) >= 1 ? (v > r.agreed ? 'mh-bad' : 'mh-ok') : undefined}>{vnd(v)}</span>);
   const cols: Column<PriceRow>[] = [
     { key: 'docNo', header: 'Phiếu nhập', type: 'code', width: 120, render: (r) => <a href="#" className="mono" onClick={(e) => { e.preventDefault(); navigate(`/mua-hang/tong-hop?mo=${encodeURIComponent(r.docId)}`); }}>{r.docNo}</a> },
     { key: 'docDate', header: 'Ngày', width: 90, value: (r) => dmy(r.docDate) },
@@ -228,13 +230,18 @@ export function DoiChieuGiaHopDongPage() {
     { key: 'name', header: 'Tên hàng', width: 220 },
     { key: 'unit', header: 'ĐVT', width: 60 },
     { key: 'qty', header: 'SL', type: 'number', width: 70 },
-    { key: 'agreed', header: 'Giá thoả thuận', type: 'money', width: 120, title: 'Giá theo hợp đồng của phiếu (phiếu không theo hợp đồng: giá NCC ngoài hợp đồng), quy chưa thuế, đúng ĐVT', value: (r) => r.agreed ?? '', render: (r) => (r.agreed === null ? <span className="muted">chưa khai</span> : vnd(r.agreed)) },
-    { key: 'actual', header: 'Giá thực tế', type: 'money', width: 120, title: 'Giá SAU chiết khấu, TRƯỚC VAT, cùng ĐVT với dòng: theo hoá đơn NCC (chính thức); chưa có hoá đơn thì tạm theo phiếu nhập' },
-    { key: 'actualFrom', header: 'Theo', width: 120, title: 'Giá thực tế lấy từ hoá đơn NCC (chính thức) hay phiếu nhập (tạm — chưa có hoá đơn)', value: (r) => (r.actualFrom === 'hoa-don' ? `Hoá đơn ${r.invoiceNos}` : 'Phiếu nhập (tạm)'), render: (r) => (r.actualFrom === 'hoa-don' ? <span title={r.invoiceNos}>Hoá đơn <span className="mono" style={{ fontSize: 11 }}>{r.invoiceNos}</span></span> : <span className="badge badge-warn">Phiếu nhập (tạm)</span>) },
-    { key: 'diff', header: 'Chênh / ĐVT', type: 'money', width: 110, value: (r) => r.diff ?? '', render: (r) => (r.diff === null ? '' : <span className={r.diff > 0 ? 'mh-bad' : r.diff < 0 ? 'mh-ok' : 'muted'}>{r.diff > 0 ? '+' : ''}{vnd(r.diff)}</span>) },
+    { key: 'agreed', header: 'Giá hợp đồng', type: 'money', width: 120, title: 'Giá theo hợp đồng của phiếu (phiếu không theo hợp đồng: giá NCC ngoài hợp đồng), quy chưa thuế, đúng ĐVT', value: (r) => r.agreed ?? '', render: (r) => (r.agreed === null ? <span className="muted">chưa khai</span> : vnd(r.agreed)) },
+    // [2026-11-25 Nguyễn Văn Thủy] đủ 4 mức giá đặt cạnh nhau (chưa thuế, sau CK, cùng ĐVT): hợp đồng · đơn đặt · phiếu nhập · hoá đơn — lệch giá thoả thuận tô đỏ / xanh (đóng góp)
+    { key: 'orderPrice', header: 'Giá đơn đặt', type: 'money', width: 120, title: 'Giá trên đơn đặt hàng mà phiếu nhập lập theo (sau CK, trước VAT, quy cùng ĐVT). — = nhập ngoài đơn', value: (r) => r.orderPrice ?? '', render: (r) => giaO(r, r.orderPrice) },
+    { key: 'orderNo', header: 'Đơn đặt', type: 'code', width: 120, hidden: true, render: (r) => (r.orderId ? <a href="#" className="mono" onClick={(e) => { e.preventDefault(); navigate(`/mua-hang/tong-hop?mo=${encodeURIComponent(r.orderId)}`); }}>{r.orderNo}</a> : <span className="muted">ngoài đơn</span>) },
+    { key: 'receiptPrice', header: 'Giá phiếu nhập', type: 'money', width: 120, title: 'Giá trên phiếu nhập (sau CK, trước VAT)', render: (r) => giaO(r, r.receiptPrice) },
+    { key: 'invoicePrice', header: 'Giá hoá đơn', type: 'money', width: 120, title: 'Giá theo hoá đơn NCC đính vào phiếu (MH22), quy cùng ĐVT. — = chưa có hoá đơn', value: (r) => r.invoicePrice ?? '', render: (r) => giaO(r, r.invoicePrice) },
+    { key: 'invoiceNos', header: 'Số hoá đơn', width: 130, hidden: true },
+    { key: 'diff', header: 'Chênh / ĐVT', type: 'money', width: 110, title: 'Giá hoá đơn (chưa có hoá đơn: giá phiếu nhập) trừ giá thoả thuận', value: (r) => r.diff ?? '', render: (r) => (r.diff === null ? '' : <span className={r.diff > 0 ? 'mh-bad' : r.diff < 0 ? 'mh-ok' : 'muted'}>{r.diff > 0 ? '+' : ''}{vnd(r.diff)}</span>) },
     { key: 'diffPct', header: '%', width: 70, value: (r) => (r.diffPct === null ? '' : `${r.diffPct > 0 ? '+' : ''}${r.diffPct.toLocaleString('vi-VN')}%`) },
     { key: 'diffAmount', header: 'Tiền chênh', type: 'money', width: 120, sum: true, value: (r) => r.diffAmount ?? 0 },
-    { key: 'source', header: 'Giá thoả thuận lấy từ', width: 190 },
+    { key: 'fixAt', header: 'Nên sửa ở đâu', width: 330, title: 'Gợi ý theo các mức giá đang lệch: hoá đơn khác phiếu → điều chỉnh phiếu nhập; hoá đơn khác giá thoả thuận → điều chỉnh giá hợp đồng hoặc đề nghị NCC xuất lại hoá đơn' },
+    { key: 'source', header: 'Giá thoả thuận lấy từ', width: 190, hidden: true },
   ];
   return (
     <>

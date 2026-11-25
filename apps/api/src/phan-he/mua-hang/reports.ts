@@ -708,6 +708,15 @@ export interface PriceCheckRow {
   agreed: number | null; actual: number; diff: number | null; diffPct: number | null; diffAmount: number | null; source: string;
   /** Giá thực tế lấy từ: hoá đơn NCC (chính thức) / phiếu nhập (tạm, chưa có hoá đơn). */
   actualFrom: 'hoa-don' | 'phieu-nhap'; invoiceNos: string;
+  // [2026-11-25 Nguyễn Văn Thủy] đối chiếu đủ 4 mức giá (chưa thuế, sau CK, theo ĐVT của dòng) để biết sửa ở đâu: hợp đồng · đơn đặt · phiếu nhập · hoá đơn (đóng góp)
+  /** Giá trên đơn đặt hàng mà phiếu nhập lập theo (null = nhập ngoài đơn / không tìm được dòng đơn). */
+  orderPrice: number | null; orderId: string; orderNo: string;
+  /** Giá trên phiếu nhập (sau CK, trước VAT). */
+  receiptPrice: number;
+  /** Giá theo hoá đơn NCC đính vào phiếu (null = chưa có hoá đơn). */
+  invoicePrice: number | null;
+  /** Gợi ý chỗ cần điều chỉnh khi các mức giá lệch nhau. */
+  fixAt: string;
 }
 /** Dòng hoá đơn NCC (không tính hàng tặng) đính vào từng phiếu nhập (document_links attachesTo của sổ chứng từ chung). */
 async function invoiceLinesOfReceipts(trx: Db, tenantId: string, receiptIds: string[]) {
@@ -738,6 +747,9 @@ export async function contractPriceCheck(trx: Db, tenantId: string, ctx: Ctx, f:
   const prices = await listSupplierProducts(trx, tenantId, { skus, withGeneral: true, all: true });
   const units = await unitsOf(trx, tenantId, skus);
   const invLines = await invoiceLinesOfReceipts(trx, tenantId, docs.map((d) => d.id));
+  const orderById = new Map(ctx.docs.filter((x) => x.kind === 'order').map((x) => [x.id, x]));
+  const orderCalcs = new Map<string, ReturnType<typeof computeDoc>>();
+  const orderCalc = (o: StoredDoc) => orderCalcs.get(o.id) ?? orderCalcs.set(o.id, computeDoc(o, [])).get(o.id)!;
   const out: PriceCheckRow[] = [];
   for (const d of docs) {
     const calc = computeDoc(d, []);
@@ -751,18 +763,36 @@ export async function contractPriceCheck(trx: Db, tenantId: string, ctx: Ctx, f:
       const hdl = (invLines.get(d.id) ?? []).filter((x) => x.sku === l.sku);
       const rl = ratio(l.unit);
       const baseQty = hdl.reduce((t, x) => t + x.qty * (ratio(x.unit || l.unit) ?? NaN), 0);
-      let actual: number; let actualFrom: PriceCheckRow['actualFrom'] = 'phieu-nhap';
-      if (hdl.length && rl && baseQty > 0 && Number.isFinite(baseQty)) { actual = (hdl.reduce((t, x) => t + x.net, 0) / baseQty) * rl; actualFrom = 'hoa-don'; }
-      else { const c = calc.lines[idx]; actual = c && l.qty ? c.beforeTax / l.qty : chuaThue(l.price, d.priceIncludesVat); }
-      actual = Math.round(actual * 100) / 100;
+      const r2 = (x: number) => Math.round(x * 100) / 100;
+      const cl = calc.lines[idx];
+      const receiptPrice = r2(cl && l.qty ? cl.beforeTax / l.qty : chuaThue(l.price, d.priceIncludesVat));
+      const invoicePrice = hdl.length && rl && baseQty > 0 && Number.isFinite(baseQty) ? r2((hdl.reduce((t, x) => t + x.net, 0) / baseQty) * rl) : null;
+      const actual = invoicePrice ?? receiptPrice;
+      const actualFrom: PriceCheckRow['actualFrom'] = invoicePrice !== null ? 'hoa-don' : 'phieu-nhap';
+      // Đơn đặt mà phiếu lập theo: dòng theo refLineKey, không có thì cùng mã + ĐVT; giá đơn quy cùng ĐVT với dòng phiếu.
+      const don = (d.refIds ?? []).map((id) => orderById.get(id)).find(Boolean);
+      let orderPrice: number | null = null;
+      if (don) {
+        const oi = don.lines.findIndex((x) => (l.refLineKey && x.lineKey === l.refLineKey) || (x.sku === l.sku && x.lineType === 'buy'));
+        const ol = oi >= 0 ? don.lines[oi] : undefined;
+        const oc = ol ? orderCalc(don).lines[oi] : undefined;
+        if (ol && ol.qty) { const ro = ratio(ol.unit), rr = ratio(l.unit); const per = oc ? oc.beforeTax / ol.qty : chuaThue(ol.price, don.priceIncludesVat); orderPrice = r2(ro && rr ? (per / ro) * rr : per); }
+      }
       const hit = priceFor(prices, { date: d.docDate, partnerCode: d.partnerCode, sku: l.sku, unit: l.unit, contractCode: d.contractCode || undefined }, us);
       const agreed = hit ? Math.round(chuaThue(hit.price, Boolean(hit.row.priceIncludesVat)) * 100) / 100 : null;
       const diff = agreed !== null ? Math.round((actual - agreed) * 100) / 100 : null;
+      const lech = (a: number | null, b: number | null) => a !== null && b !== null && Math.abs(a - b) >= 1;
+      const fixAt = invoicePrice !== null && lech(invoicePrice, receiptPrice) ? 'Hoá đơn khác phiếu nhập → điều chỉnh phiếu nhập theo hoá đơn'
+        : lech(actual, agreed) && invoicePrice !== null ? 'Hoá đơn khác giá thoả thuận → điều chỉnh giá hợp đồng (nếu NCC đổi giá) hoặc đề nghị NCC xuất lại hoá đơn'
+        : lech(actual, agreed) ? 'Phiếu nhập khác giá thoả thuận → kiểm tra lại khi nhận hoá đơn'
+        : lech(orderPrice, receiptPrice) ? 'Phiếu nhập khác đơn đặt → kiểm tra đơn đặt / phiếu nhập'
+        : agreed === null ? 'Chưa khai giá thoả thuận → khai giá ở hợp đồng / giá mua của NCC' : '';
       out.push({
         docId: d.id, docNo: d.docNo, docDate: d.docDate, branchCode: d.branchCode, partnerCode: d.partnerCode, contractCode: d.contractCode ?? '', sku: l.sku, name: l.name, unit: l.unit, qty: l.qty,
         agreed, actual, diff, diffPct: agreed ? Math.round((diff! / agreed) * 10000) / 100 : null, diffAmount: diff !== null ? Math.round(diff * l.qty) : null,
         source: !hit ? 'chưa khai giá thoả thuận' : hit.row.contractCode ? `giá hợp đồng ${hit.row.contractCode}` : hit.row.partnerCode ? 'giá NCC (ngoài hợp đồng)' : 'giá chung',
         actualFrom, invoiceNos: [...new Set(hdl.map((x) => x.invoiceNo))].join(', '),
+        orderPrice, orderId: don?.id ?? '', orderNo: don?.docNo ?? '', receiptPrice, invoicePrice, fixAt,
       });
     });
   }
