@@ -6,7 +6,10 @@ export const HOLD_KEY = 'bizcity.phieu_ban.hold_warehouses';
 export type OrderLine = {
   lineKey: string; sku: string; name: string; unit: string; qty: number; unitPrice: number; discount: number; amountBeforeTax: number; taxAmount: number;
   isGift: boolean; delivered: number; held: number; shipping?: number;
+  /** [2026-11-25 khanhtd] Chương trình khuyến mại sinh dòng này (quà / chiết khấu) — máy chủ áp khi Ghi (đơn Nháp / Chờ duyệt). */
+  policyRef?: PolicyRef;
 };
+export type PolicyRef = { key: string; version: number; line?: 'gift' | 'discount' };
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-032: thông tin giao, chuyến giao, copy đơn (đóng góp)
 export type Shipping = { receiver?: string; phone?: string; address?: string; fee: number; carrier?: string; trackingNo?: string; cod: number };
 export type ShipStatus = 'waiting' | 'shipping' | 'delivered' | 'returned';
@@ -32,6 +35,8 @@ export type Order = {
   closeReason: string | null; deliveries: { docId: string; docNo: string; at: string; by: string; returned?: boolean; lines: { sku: string; qty: number }[] }[];
   rejection?: { by: string; at: string; note: string }; createdBy: string; createdAt: string; approvedBy?: string; approvedAt?: string;
   shipping?: Shipping | null; copiedFrom?: string | null; shipments?: Shipment[];
+  /** Bản chương trình khuyến mại đã áp (kèm băm) — căn cứ của các dòng có policyRef. */
+  policyRefs?: { key: string; version: number; hash: string }[];
 };
 export type Status = 'draft' | 'pending' | 'open' | 'closed' | 'cancelled';
 export type HistoryEvent = { id: string; at: string; actor: string; actorName: string | null; action: string; changes: { field: string; from: unknown; to: unknown }[]; note: string | null };
