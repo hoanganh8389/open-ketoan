@@ -17,7 +17,7 @@ import { db } from '@bizcity/platform/db/client';
 import { authOf, requireAuthenticated, requirePermission } from '@bizcity/platform/core/auth';
 import { Errors } from '@bizcity/platform/core/errors';
 import { ok } from '@bizcity/platform/core/http';
-import { getJson, LOGQL, logWindow, queryLogs } from './devtools.sources.js';
+import { getJson } from './devtools.sources.js';
 
 const tags = ['Lỗi hệ thống'];
 const DIR = () => path.resolve(process.env.DATA_DIR ?? './data', 'he-thong', 'loi');
@@ -45,7 +45,7 @@ const phanHeOf = (route: string) => [...PHAN_HE].sort((a, b) => b[0].length - a[
 const TRANG_THAI = ['moi', 'yeu_cau', 'dang_sua', 'da_sua', 'bo_qua'] as const;
 type TrangThai = (typeof TRANG_THAI)[number];
 
-type Gap = { t: 'gap'; ts: string; fp: string; phanHe: string; loai: 'phan-mem' | 'tu-choi'; errCode: string; status: number; method: string; route: string; msg: string; reqId: string; traceId?: string; actor?: string };
+type Gap = { t: 'gap'; ts: string; fp: string; phanHe: string; loai: 'phan-mem' | 'tu-choi'; errCode: string; status: number; method: string; route: string; msg: string; reqId: string; traceId?: string; actor?: string; errFp?: string; ban?: string };
 type Ev = Gap
   | { t: 'trang_thai'; ts: string; fp: string; status: TrangThai; by: string; note?: string; commit?: string; may?: string; ip?: string }
   | { t: 'dung_lai_yc'; ts: string; id: string; by: string; note?: string }
@@ -78,6 +78,8 @@ const vanTay = (g: Pick<Gap, 'phanHe' | 'errCode' | 'method' | 'route' | 'msg'>)
 export interface MucLoi {
   fp: string; phanHe: string; tenPhanHe: string; loai: 'phan-mem' | 'tu-choi'; errCode: string; status: number; method: string; route: string; msg: string;
   count: number; first: string; last: string; lastReqId: string; lastTraceId?: string;
+  /** errFp + commit bản đang chạy ở lần lỗi gần nhất (nếu log có). */
+  lastErrFp?: string; lastBan?: string;
   trangThai: TrangThai | 'tai_phat'; nguoi?: string; ghiChu?: string; commit?: string; doiLuc?: string; may?: string; ip?: string;
   /** Đang sửa và còn trong hạn giữ chỗ — máy khác né ra. */
   giuDen?: string;
@@ -90,8 +92,8 @@ function gom(evs: Ev[]) {
   for (const e of evs) {
     if (e.t === 'gap') {
       const x = m.get(e.fp);
-      if (!x) m.set(e.fp, { fp: e.fp, phanHe: e.phanHe, tenPhanHe: TEN_PHAN_HE[e.phanHe] ?? e.phanHe, loai: e.loai, errCode: e.errCode, status: e.status, method: e.method, route: e.route, msg: e.msg, count: 1, first: e.ts, last: e.ts, lastReqId: e.reqId, lastTraceId: e.traceId, trangThai: 'moi' });
-      else { x.count += 1; if (e.ts >= x.last) { x.last = e.ts; x.lastReqId = e.reqId; x.lastTraceId = e.traceId; x.msg = e.msg; } }
+      if (!x) m.set(e.fp, { fp: e.fp, phanHe: e.phanHe, tenPhanHe: TEN_PHAN_HE[e.phanHe] ?? e.phanHe, loai: e.loai, errCode: e.errCode, status: e.status, method: e.method, route: e.route, msg: e.msg, count: 1, first: e.ts, last: e.ts, lastReqId: e.reqId, lastTraceId: e.traceId, lastErrFp: e.errFp, lastBan: e.ban, trangThai: 'moi' });
+      else { x.count += 1; if (e.ts >= x.last) { x.last = e.ts; x.lastReqId = e.reqId; x.lastTraceId = e.traceId; x.lastErrFp = e.errFp; x.lastBan = e.ban; x.msg = e.msg; } }
     } else if (e.t === 'trang_thai') tt.set(e.fp, e);
     else if (e.t === 'dung_lai_yc') { yc = e; nhan = null; kq = null; }
     else if (e.t === 'dung_lai_nhan') { if (yc?.id === e.id) nhan = e.ts; }
@@ -128,7 +130,7 @@ export async function quetLoi(): Promise<{ moi: number }> {
     }
   }
   // Gom theo mã yêu cầu.
-  const theoReq = new Map<string, { ns: bigint; tenant: string; route: string; method: string; status: number; errCode: string; msg: string; traceId?: string; actor?: string; level: string }>();
+  const theoReq = new Map<string, { ns: bigint; tenant: string; route: string; method: string; status: number; errCode: string; msg: string; traceId?: string; actor?: string; level: string; errFp?: string; ban?: string }>();
   let max = tu;
   for (const { ns, j, lbl } of lines) {
     if (ns > max) max = ns;
@@ -142,6 +144,9 @@ export async function quetLoi(): Promise<{ moi: number }> {
     if (!x.msg && err?.message) x.msg = String(err.message);
     if (j.traceId) x.traceId = String(j.traceId);
     if (j.actor) x.actor = String(j.actor);
+    // errFp + commit của bản đang chạy (docs/ops/DOC-LOG-SUA-LOI.md) — AI đọc mã đúng commit đó, gom theo errFp.
+    if (j.errFp) x.errFp = String(j.errFp);
+    if (j.commit) x.ban = String(j.commit);
     const lv = Number(j.level ?? 0); if (lv >= 50) x.level = 'error';
     if (ns < x.ns) x.ns = ns;
     theoReq.set(req, x);
@@ -151,7 +156,7 @@ export async function quetLoi(): Promise<{ moi: number }> {
     if (!x.route && !x.errCode && x.level !== 'error') continue;
     const loai: Gap['loai'] = x.status >= 500 || x.level === 'error' || /INTERNAL/.test(x.errCode) ? 'phan-mem' : 'tu-choi';
     const g = { phanHe: phanHeOf(x.route), errCode: x.errCode || (x.status >= 500 ? 'INTERNAL_ERROR' : ''), method: x.method, route: x.route, msg: x.msg || `${x.method} ${x.route} → ${x.status}` };
-    const ev: Gap = { t: 'gap', ts: new Date(Number(x.ns / 1_000_000n)).toISOString(), fp: vanTay(g), ...g, loai, status: x.status, reqId: req, traceId: x.traceId, actor: x.actor };
+    const ev: Gap = { t: 'gap', ts: new Date(Number(x.ns / 1_000_000n)).toISOString(), fp: vanTay(g), ...g, loai, status: x.status, reqId: req, traceId: x.traceId, actor: x.actor, ...(x.errFp ? { errFp: x.errFp } : {}), ...(x.ban ? { ban: x.ban } : {}) };
     (theoDonVi.get(x.tenant) ?? theoDonVi.set(x.tenant, []).get(x.tenant)!).push(ev);
   }
   let moi = 0;
@@ -282,11 +287,5 @@ export async function loiHeThongRoutes(app: FastifyInstance): Promise<void> {
     const ai = await aiGoi(req); const t = ai.tenant; const b = req.body as { tomTat: string; commit?: string; fps: string[]; chiTiet?: string };
     await ghi(t, [{ t: 'sua_xong', ts: new Date().toISOString(), tomTat: b.tomTat, fps: b.fps, by: ai.may || 'tự sửa (khoá kết nối)', may: ai.may || undefined, ip: ai.ip, ...(b.commit ? { commit: b.commit } : {}), ...(b.chiTiet ? { chiTiet: b.chiTiet } : {}) }]);
     return ok({ ok: true });
-  });
-  app.get('/api/v1/ket-noi/tra-ma', { ...pub, schema: { tags, summary: 'Lịch tự sửa: log của một mã tra cứu (gồm chỗ lỗi trong mã)', querystring: z.object({ ma: z.string().min(6).max(80), at: z.string().optional() }) } }, async (req) => {
-    const t = await donViTheoKhoa(req); const q = req.query as { ma: string; at?: string };
-    const logs = await queryLogs(LOGQL.byRequest(q.ma, t), t, logWindow(q.at), { ops: true });
-    if (!logs.length) throw Errors.notFound('mã tra cứu trong 24 giờ quanh mốc đã chọn');
-    return ok({ ma: q.ma, logs });
   });
 }

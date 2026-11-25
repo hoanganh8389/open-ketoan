@@ -1,7 +1,7 @@
 # Truy lỗi trên bản dev: hướng dẫn cho kế toán và dev
 <!-- [2026-11-25 09:08 PM Johnny Chu - Chu Hoàng Anh] STD-12 — hướng dẫn truy lỗi trên bản dev (chủ chỉ đạo 2026-11-25): kế toán tìm nguyên nhân và sửa tại chỗ; chép mã tra cứu gửi dev; dev + AI xử lý theo luật repo; người quản trị kiểm / bật bộ truy lỗi bằng scripts/kiem-giam-sat.sh -->
 
-> **Dành cho:** kế toán, dev và người quản trị máy dev. **Đọc kèm:** [SO-TAY-DIEU-TRA-LOI](SO-TAY-DIEU-TRA-LOI.md) (dev, chi tiết từng tình huống) · [OBSERVABILITY](OBSERVABILITY.md) · [DEPLOY §5](DEPLOY.md) (máy cPanel).
+> **Dành cho:** kế toán, dev và người quản trị máy dev. **Đọc kèm:** [SO-TAY-DIEU-TRA-LOI](SO-TAY-DIEU-TRA-LOI.md) (dev, chi tiết từng tình huống) · [OBSERVABILITY](OBSERVABILITY.md) · [DEPLOY §5](DEPLOY.md) (máy cPanel). · [TU-DONG-SUA-LOI](TU-DONG-SUA-LOI.md) (màn Lỗi hệ thống HT20: tự gom lỗi theo phân hệ, giao / tự sửa, dựng lại bản dev) <!-- [2026-11-25 Nguyễn Văn Thủy] liên kết đường máy HT20 (đóng góp) -->
 
 Khi chứng từ hay danh mục không lưu, không ghi sổ được, kế toán đọc lời nhắc ngay trên màn và sửa tại chỗ. Việc vượt quá thì chép mã tra cứu gửi dev. Dev dán mã vào màn Tra mã (DEV02), hoặc giao cho AI xử lý theo luật của repo.
 
