@@ -1,6 +1,6 @@
 # Nợ chuẩn nền — Open Kế Toán (Bizcity Core)
 
-<!-- [2026-11-25 01:19 PM Johnny Chu - Chu Hoàng Anh] STD-5 — sinh bởi bizcity-platform tools/no-chuan.mjs (R-STD-9). Sửa nợ ở repo này; thêm / bớt mục "đã biết" thì sửa sổ docs/standard/no-chuan.json bên bizcity-platform rồi sinh lại. -->
+<!-- [2026-11-25 01:26 PM Johnny Chu - Chu Hoàng Anh] STD-5 — sinh bởi bizcity-platform tools/no-chuan.mjs (R-STD-9). Sửa nợ ở repo này; thêm / bớt mục "đã biết" thì sửa sổ docs/standard/no-chuan.json bên bizcity-platform rồi sinh lại. -->
 
 > Ngày đo: 2026-11-25 · Repo: `open-ketoan` · Chuẩn: [bản đồ chuẩn nền `bizcity_standard_map@1`](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/README.md) · Kiến trúc: [ARCHITECTURE](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/ARCHITECTURE.md)
 
@@ -51,4 +51,4 @@ node ../bizcity-platform/tools/users-check.mjs --repo .
 node ../bizcity-platform/tools/no-chuan.mjs --repo . --write   # sinh lại tệp này
 ```
 
-4. Mục "đã biết" trả xong: PR nhỏ vào bizcity-platform gỡ mục khỏi `docs/standard/no-chuan.json`, rồi sinh lại tệp này.
+4. Mục "đã biết" trả xong: PR nhỏ vào bizcity-platform gỡ mục khỏi [sổ nợ chuẩn nền](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/no-chuan.json), rồi sinh lại tệp này.

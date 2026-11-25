@@ -262,6 +262,10 @@ export const checks = [
           for (const m of t.matchAll(/\b((?:R|STD|CONF)-[A-Z]+-\d+)\b/g)) {
             // Mã luật của hệ sinh thái (plugin bizcity-twin-ai, Hub) được trích dẫn, không định nghĩa ở repo này.
             if (/^R-(SETUP|LLM|TOKEN|USAGE|WALLET|MCP|TAA)-/.test(m[1])) continue;
+            // [2026-11-25 01:26 PM Johnny Chu - Chu Hoàng Anh] STD-5 — mã của chuẩn nền bizcity-platform (bản đồ chuẩn `bizcity_standard_map@1`) là mã trích dẫn;
+            //   `STD-<x>-<n>` nằm trong `R-STD-<x>-<n>` không phải mã STD-* của repo này (chữ chốt ở dòng giữ chỗ STD-5, PR #643).
+            if (/^R-(STD|USER|WEBARCH|IDENT|SPINE)-/.test(m[1])) continue;
+            if (m[1].startsWith('STD-') && t.slice(Math.max(0, m.index - 2), m.index) === 'R-') continue;
             if (!defined.has(m[1])) findings.push(ctx.finding(f, i + 1, `nhắc ${m[1]} nhưng không nơi nào định nghĩa`, `undef:${m[1]}`));
           }
         });
