@@ -9,6 +9,8 @@
  * "Duyệt ngoại lệ" (ghi lý do vào nhật ký).
  */
 import { ChonKho } from '@/components/phieu-hang/ChonKho';
+import { ChonHopDong } from '../hop-dong/ChonHopDong';
+import { hopDongPath } from '../hop-dong/HopDongPage';
 import { ChonNhieuChiNhanh } from '@/components/phieu-hang/ChonNhieuChiNhanh';
 import { ChonNhieuKho } from '@/components/phieu-hang/ChonNhieuKho';
 import { useKiemLoi } from '@/components/useKiemLoi';
@@ -1103,11 +1105,8 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                 </div>
                 {v.kind !== 'gift_out' && v.partnerCode && (
                   <div className="field span2"><label title="Hợp đồng mua ký với NCC: giá, chiết khấu, hạn thanh toán lấy theo hợp đồng; bút toán, công nợ mang số hợp đồng (xem Công nợ theo hợp đồng MH30). Đơn / phiếu mới tự gợi ý hợp đồng đang hiệu lực; phiếu lập từ đơn theo hợp đồng của đơn">Hợp đồng</label>
-                    <select className="select input" value={v.contractCode ?? ''} onChange={(e) => { hdTouched.current = true; set({ contractCode: e.target.value || undefined }); }}>
-                      <option value="">{hds.length ? '— không theo hợp đồng —' : 'NCC chưa có hợp đồng mua'}</option>
-                      {hds.filter((c) => c.status === 'active' || c.code === v.contractCode).map((c) => <option key={c.code} value={c.code}>{c.code} · {c.statusText}{c.endDate ? ` · đến ${dmy(c.endDate)}` : ''}</option>)}
-                      {v.contractCode && !hd && <option value={v.contractCode}>{v.contractCode}</option>}
-                    </select>
+                    {/* [2026-11-25 Nguyễn Văn Thủy] ô chọn hợp đồng dùng chung, có nút + thêm hợp đồng ngay tại phiếu (đóng góp) */}
+                    <ChonHopDong partnerCode={v.partnerCode} value={v.contractCode ?? ''} disabled={readOnly} onChange={(c) => { hdTouched.current = true; set({ contractCode: c || undefined }); }} />
                     {hd && (() => { const t = data.policies.find((x) => x.kind === 'payment_term' && x.isActive && x.scope.contractCode === hd.code); return <span className="muted" style={{ fontSize: 11, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                       Hạn thanh toán: <b>{t ? termText(termFromRule(t.rule)) : 'theo điều khoản chung của NCC'}</b>
                       {!readOnly && (v.kind === 'order' || v.kind === 'receipt') && <button type="button" className="btn btn-xs btn-primary" title="Chọn mặt hàng của hợp đồng, giá lấy theo hợp đồng" onClick={() => setFillHd(true)}>Lấy từ hợp đồng</button>}
@@ -1260,7 +1259,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                     {hmCredit && <span className="muted" style={{ fontSize: 11 }} title={`Hạn mức ${vnd(hmCredit.limit)} − nợ đang có ${vnd(hmCredit.current)} − đơn / phiếu đang chờ ${vnd(hmCredit.openOrders)}`}>Hạn mức công nợ còn <b>{vnd(hmCon ?? 0)}</b> — {hmNhan}{!readOnly && v.budget !== hmCon && <button type="button" className="btn btn-xs" style={{ marginLeft: 4 }} onClick={() => { budgetAuto.current = hmCon; set({ budget: hmCon }); }}>Lấy</button>}</span>}
                     {/* [2026-11-25 Nguyễn Văn Thủy] chưa khai hạn mức: mở thẳng bước Điều khoản của hợp đồng (Công nợ & điều khoản thanh toán) để khai (đóng góp) */}
                     {!hmCredit && a && <span className="muted" style={{ fontSize: 11 }}>{v.contractCode
-                      ? <>Hợp đồng {v.contractCode} chưa khai hạn mức công nợ — <Link to={`/mua-hang/hop-dong?so=${encodeURIComponent(v.contractCode)}&buoc=dieu-khoan`} target="_blank" title="Mở hợp đồng, bước Điều khoản hợp đồng → khối Công nợ & điều khoản thanh toán → Hạn mức công nợ">khai hạn mức ở hợp đồng</Link></>
+                      ? <>Hợp đồng {v.contractCode} chưa khai hạn mức công nợ — <Link to={hopDongPath(v.contractCode, 'dieu-khoan')} target="_blank" title="Mở hợp đồng, bước Điều khoản hợp đồng → khối Công nợ & điều khoản thanh toán → Hạn mức công nợ">khai hạn mức ở hợp đồng</Link></>
                       : 'NCC chưa khai hạn mức công nợ (ngoài hợp đồng)'}</span>}
                     {v.budget ? <span style={{ fontSize: 11.5, fontWeight: 700, color: v.budget - calc.beforeTax >= 0 ? 'var(--ok, #16a34a)' : '#dc2626' }}>{v.budget - calc.beforeTax >= 0 ? 'Còn' : 'Vượt'} {vnd(Math.abs(v.budget - calc.beforeTax))} <span className="muted" style={{ fontWeight: 400 }}>(so tổng sau CK chưa thuế)</span></span> : null}</div>
                 </>}

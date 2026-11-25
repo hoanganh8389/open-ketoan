@@ -42,10 +42,7 @@ export const SO_DO_V2: Record<string, SoDo> = {
     nhom: {
       chuoi: [
         // [2026-11-21 kiennt] NT-MH-005 — Khai báo → Danh mục (đóng góp)
-        { nhom: 'Danh mục', icon: 'Settings', viec: ['ncc_dup_tax', 'ncc_no_tax', 'contract_expiring', 'contract_no_price'], items: [
-          { label: 'Nhà cung cấp', path: '/danh-muc/nha-cung-cap' }, // [2026-11-21 kiennt] NT-MH-005 — NCC ở DM13 (đóng góp)
-          { label: 'Hợp đồng mua hàng', path: '/mua-hang/hop-dong' },
-          { label: 'Chính sách mua hàng', path: '/mua-hang/chinh-sach' }] },
+        // [2026-11-25 Nguyễn Văn Thủy] bỏ bước Danh mục khỏi luồng mua hàng: NCC, hợp đồng, chính sách khai ở phân hệ Danh mục (việc cần xử lý vẫn ở khung Cần xử lý) (đóng góp)
         { nhom: 'Kế hoạch đặt hàng', icon: 'Gauge', items: [
           { label: 'Phiếu đăng ký tồn max (shop)', path: '/mua-hang/dang-ky-max' }, { label: 'Tồn max (kế toán mua hàng)', path: '/mua-hang/ton-max' },
           { label: 'Công thức đặt hàng', path: '/mua-hang/cong-thuc' }, { label: 'Phân tích đặt hàng', path: '/mua-hang/dat-hang' }] },
@@ -148,6 +145,8 @@ export const SO_DO: Record<string, SoDo> = {
         { nhom: 'Mặt hàng', icon: 'Package' },
         { nhom: 'Tài sản', icon: 'Building2' },
         { nhom: 'Thuế suất', icon: 'Percent' },
+        // [2026-11-25 Nguyễn Văn Thủy] khai báo của Mua hàng: hợp đồng mua, chính sách mua, cài đặt mua hàng (đóng góp)
+        { nhom: 'Mua hàng', icon: 'ShoppingBag' },
       ],
     },
     reports: [

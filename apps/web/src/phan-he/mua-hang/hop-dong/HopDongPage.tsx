@@ -215,29 +215,7 @@ function ChiTietHopDong() {
           {buoc === 'dieu-khoan' && <h4 className="mh-h4" style={{ marginTop: 6 }}>Giao nhận, đổi trả, phạt</h4>}
           {form ? (
             <fieldset disabled={!editing} className={editing ? '' : 'view-plain'} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }} onDoubleClick={() => !editing && tt.sua && setEditing(true)}>
-              {buoc === 'thong-tin' && <div className="hd-grid">
-                <Field label="Số hợp đồng (*)" tip="Số in trên hợp đồng / phụ lục, vd 05/2026/HĐMB-VC — là mã hợp đồng trên đơn đặt, phiếu nhập, bút toán; không đổi sau khi ghi">
-                  <input className="input mono" value={v.code} disabled={!isNew} autoFocus={isNew} placeholder="vd 05/2026/HĐMB-VC" onChange={(e) => set({ code: e.target.value.replace(/\s+/g, '') })} />
-                </Field>
-                <Field label="Tên hợp đồng" tip="Trống = tự đặt 'Hợp đồng mua <tên NCC>'"><input className="input" value={v.name} placeholder={v.partnerCode ? `Hợp đồng mua ${names.partnerName(v.partnerCode)}` : ''} onChange={(e) => set({ name: e.target.value })} /></Field>
-                <Field label="Nhà cung cấp (*)">
-                  {isNew && !params.get('ncc') ? <PartnerPicker value={v.partnerCode} onChange={(p) => set({ partnerCode: p })} activeOnly kind="supplier" addKind="supplier" />
-                    : <div className="input" style={{ background: 'var(--surface-2, #f4f6f9)' }}><b className="mono">{v.partnerCode}</b> {names.partnerName(v.partnerCode)}</div>}
-                </Field>
-                <Field label="Ngày ký (*)"><input className="input" type="date" value={v.signedDate ?? ''} onChange={(e) => set({ signedDate: e.target.value || null })} /></Field>
-                <Field label="Hiệu lực từ (*)"><input className="input" type="date" value={v.startDate ?? ''} onChange={(e) => set({ startDate: e.target.value || null })} /></Field>
-                <Field label="Hiệu lực đến" tip="Trống = không thời hạn"><input className="input" type="date" value={v.endDate ?? ''} onChange={(e) => set({ endDate: e.target.value || null })} /></Field>
-                <BranchMultiSelect label="Chi nhánh áp dụng" value={v.branchCodes.join(',')} onChange={(x) => set({ branchCodes: x ? x.split(',') : [] })} branches={branchList} />
-                <Field label="Người ký bên bán" tip="Họ tên, chức vụ người đại diện ký của NCC"><input className="input" value={v.signerSeller} placeholder="vd Nguyễn Văn A — Giám đốc" onChange={(e) => set({ signerSeller: e.target.value })} /></Field>
-                <Field label="Người ký bên mua" tip="Họ tên, chức vụ người đại diện ký bên mình"><input className="input" value={v.signerBuyer} onChange={(e) => set({ signerBuyer: e.target.value })} /></Field>
-                <Field label="Trạng thái" tip="Nháp: đang thương lượng. Đang hiệu lực: đơn đặt hàng tự lấy hợp đồng này. Thanh lý ở bước 5">
-                  <select className="select input" value={v.status === 'liquidated' ? 'liquidated' : v.status} disabled={v.status === 'liquidated'} onChange={(e) => set({ status: e.target.value as ContractStatus })}>
-                    <option value="draft">Nháp</option><option value="active">Đang hiệu lực</option>{v.status === 'liquidated' && <option value="liquidated">Đã thanh lý</option>}
-                  </select>
-                </Field>
-                <Field label="Giá trị hợp đồng" tip="Tổng giá trị cam kết (nếu có), để theo dõi; không dùng để tính"><NumInput value={v.value ?? 0} decimals={0} onChange={(n) => set({ value: n || null })} /></Field>
-                <Field label="Ghi chú"><input className="input" value={v.note} placeholder="Phạm vi, hồ sơ kèm theo…" onChange={(e) => set({ note: e.target.value })} /></Field>
-              </div>}
+              {buoc === 'thong-tin' && <ThongTinHopDong v={v} set={set} isNew={isNew} khoaNcc={Boolean(params.get('ncc'))} branchList={branchList} />}
               {buoc === 'hang-hoa' && <HangTheoHopDong v={v} set={set} />}
               {buoc === 'dieu-khoan' && <div className="hd-grid">
                 <Field label="Địa điểm giao hàng"><input className="input" value={v.deliveryPlace} placeholder="vd Kho chi nhánh Nghệ An" onChange={(e) => set({ deliveryPlace: e.target.value })} /></Field>
@@ -361,3 +339,37 @@ function CongNoHopDong({ code, from }: { code: string; from?: string }) {
     </>
   );
 }
+
+// [2026-11-25 Nguyễn Văn Thủy] bộ ô Thông tin hợp đồng dùng chung: bước 1 của MH29 và hộp Thêm hợp đồng nhanh (nút + ở ô Hợp đồng của phiếu) (đóng góp)
+/** Ô nhập thông tin hợp đồng: số, tên, NCC, ngày ký, hiệu lực, chi nhánh áp dụng, người ký, trạng thái, giá trị, ghi chú. */
+export function ThongTinHopDong({ v, set, isNew, khoaNcc, branchList }: { v: ContractInput & { code: string }; set: (p: Partial<ContractInput & { code: string }>) => void; isNew: boolean; khoaNcc?: boolean; branchList: ReturnType<typeof useBranches>['data'] & object }) {
+  const names = useNames();
+  return (
+    <div className="hd-grid">
+      <Field label="Số hợp đồng (*)" tip="Số in trên hợp đồng / phụ lục, vd 05/2026/HĐMB-VC — là mã hợp đồng trên đơn đặt, phiếu nhập, bút toán; không đổi sau khi ghi">
+        <input className="input mono" value={v.code} disabled={!isNew} autoFocus={isNew} placeholder="vd 05/2026/HĐMB-VC" onChange={(e) => set({ code: e.target.value.replace(/\s+/g, '') })} />
+      </Field>
+      <Field label="Tên hợp đồng" tip="Trống = tự đặt 'Hợp đồng mua <tên NCC>'"><input className="input" value={v.name} placeholder={v.partnerCode ? `Hợp đồng mua ${names.partnerName(v.partnerCode)}` : ''} onChange={(e) => set({ name: e.target.value })} /></Field>
+      <Field label="Nhà cung cấp (*)">
+        {isNew && !khoaNcc ? <PartnerPicker value={v.partnerCode} onChange={(p) => set({ partnerCode: p })} activeOnly kind="supplier" addKind="supplier" />
+          : <div className="input" style={{ background: 'var(--surface-2, #f4f6f9)' }}><b className="mono">{v.partnerCode}</b> {names.partnerName(v.partnerCode)}</div>}
+      </Field>
+      <Field label="Ngày ký (*)"><input className="input" type="date" value={v.signedDate ?? ''} onChange={(e) => set({ signedDate: e.target.value || null })} /></Field>
+      <Field label="Hiệu lực từ (*)"><input className="input" type="date" value={v.startDate ?? ''} onChange={(e) => set({ startDate: e.target.value || null })} /></Field>
+      <Field label="Hiệu lực đến" tip="Trống = không thời hạn"><input className="input" type="date" value={v.endDate ?? ''} onChange={(e) => set({ endDate: e.target.value || null })} /></Field>
+      <BranchMultiSelect label="Chi nhánh áp dụng" value={v.branchCodes.join(',')} onChange={(x) => set({ branchCodes: x ? x.split(',') : [] })} branches={branchList} />
+      <Field label="Người ký bên bán" tip="Họ tên, chức vụ người đại diện ký của NCC"><input className="input" value={v.signerSeller} placeholder="vd Nguyễn Văn A — Giám đốc" onChange={(e) => set({ signerSeller: e.target.value })} /></Field>
+      <Field label="Người ký bên mua" tip="Họ tên, chức vụ người đại diện ký bên mình"><input className="input" value={v.signerBuyer} onChange={(e) => set({ signerBuyer: e.target.value })} /></Field>
+      <Field label="Trạng thái" tip="Nháp: đang thương lượng. Đang hiệu lực: đơn đặt hàng tự lấy hợp đồng này. Thanh lý ở bước 5">
+        <select className="select input" value={v.status === 'liquidated' ? 'liquidated' : v.status} disabled={v.status === 'liquidated'} onChange={(e) => set({ status: e.target.value as ContractStatus })}>
+          <option value="draft">Nháp</option><option value="active">Đang hiệu lực</option>{v.status === 'liquidated' && <option value="liquidated">Đã thanh lý</option>}
+        </select>
+      </Field>
+      <Field label="Giá trị hợp đồng" tip="Tổng giá trị cam kết (nếu có), để theo dõi; không dùng để tính"><NumInput value={v.value ?? 0} decimals={0} onChange={(n) => set({ value: n || null })} /></Field>
+      <Field label="Ghi chú"><input className="input" value={v.note} placeholder="Phạm vi, hồ sơ kèm theo…" onChange={(e) => set({ note: e.target.value })} /></Field>
+    </div>
+  );
+}
+
+/** Hợp đồng mới để trống (ngày ký / hiệu lực = hôm nay, đang hiệu lực) — dùng cho hộp Thêm hợp đồng nhanh. */
+export const hopDongTrong = empty;
