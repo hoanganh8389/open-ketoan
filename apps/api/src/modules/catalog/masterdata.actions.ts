@@ -28,11 +28,26 @@ const partnerUpsert = defineAction({
     kind: z.enum(['customer', 'supplier', 'other']).default('customer'),
     taxCode: z.string().trim().max(32).optional(), address: z.string().trim().max(500).optional(),
     phone: z.string().trim().max(32).optional(), email: z.string().trim().max(255).optional(),
+    // [2026-11-25 04:45 PM Võ Hoàng] NT-BH-035 — trường tuỳ chọn createdBy (đóng góp)
+    /** Tên người tạo ở hệ thống gửi sang (vd tài khoản website). Chỉ dùng khi TẠO MỚI, để màn Khách hàng ghi "Tạo bởi". */
+    createdBy: z.string().trim().max(120).optional(),
   }),
   output: z.object({ id: z.string(), code: z.string() }),
   expose: { http: { method: 'POST', path: '/api/v1/partners/upsert' }, ai: 'deny' },
   evidence: { objectType: 'partner', objectId: (i) => i.code },
-  handler: async (ctx, i) => ({ id: await partnerRepository.upsert(ctx.data.tx, ctx.tenant.id, i, i.kind), code: i.code }),
+  // [2026-11-25 04:45 PM Võ Hoàng] NT-BH-035 — core.partner.upsert ghi created_by khi tạo mới (tên người gọi, hoặc createdBy · người gọi); trước để rỗng, màn Khách hàng hiện "Tạo bởi —" (đóng góp)
+  handler: async (ctx, i) => {
+    const { createdBy, ...input } = i;
+    const tx = ctx.data.tx;
+    const existed = await tx.selectFrom('partners').select('code').where('tenant_id', '=', ctx.tenant.id).where('code', '=', input.code).executeTakeFirst();
+    const id = await partnerRepository.upsert(tx, ctx.tenant.id, input, input.kind);
+    if (!existed) {
+      const actor = ctx.legacyAuth.actorName ?? '';
+      const by = createdBy ? (actor && actor !== createdBy ? `${createdBy} · ${actor}` : createdBy) : actor;
+      if (by) await tx.updateTable('partners').set({ created_by: by.slice(0, 255) }).where('tenant_id', '=', ctx.tenant.id).where('code', '=', input.code).execute();
+    }
+    return { id, code: input.code };
+  },
 });
 
 // [2026-11-05 02:05 PM Nguyễn Văn Thủy] PHASE-026 — S024-11: core.item.upsert cùng đường ghi với core.product.upsert, trả về itemId (đóng góp)

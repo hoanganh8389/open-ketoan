@@ -122,7 +122,7 @@ Không có hook nào cho phép module: đổi bút toán, đổi tài khoản, c
 
 - Mọi route của module sinh từ action, nằm dưới `/api/v1/m/<key>/…` (phân hệ hiện có giữ đường dẫn cũ trong major 1).
 - Module gọi action của module khác hoặc của Core bằng `ctx.actions.call(id, input)`: vẫn qua quyền, idempotency, bằng chứng như gọi từ ngoài, với `actor` là người dùng gốc và `via: 'module:<id>'`.
-- Action công khai của Core cho module (v1): `core.partner.upsert`, `core.product.upsert` (**có** 2026-11-02 — `POST /api/v1/partners/upsert`, `/products/upsert`, quyền `catalog:write`, dùng cho `seed[]`), `core.partner.get`, `core.product.get`, `core.branch.list`, `core.payment-method.list`, `core.notify.send` (thông báo trong ứng dụng; qua Cell nếu có).
+- Action công khai của Core cho module (v1): `core.partner.upsert`, `core.product.upsert` (**có** 2026-11-02 — `POST /api/v1/partners/upsert`, `/products/upsert`, quyền `catalog:write`, dùng cho `seed[]`; `core.partner.upsert` nhận thêm `createdBy` tuỳ chọn — tên người tạo ở hệ thống gửi sang, chỉ ghi khi tạo mới, 2026-11-25 <!-- [2026-11-25 04:45 PM Võ Hoàng] NT-BH-035 — createdBy của core.partner.upsert (đóng góp) -->), `core.partner.get`, `core.product.get`, `core.branch.list`, `core.payment-method.list`, `core.notify.send` (thông báo trong ứng dụng; qua Cell nếu có).
 
 ## 6. Quyền và cấu hình
 

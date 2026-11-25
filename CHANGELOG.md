@@ -12,6 +12,15 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Người tạo đối tượng qua core.partner.upsert (NT-BH-035) <!-- [2026-11-25 04:45 PM Võ Hoàng] NT-BH-035 — mục CHANGELOG (đóng góp) -->
+
+- **Thêm:** `core.partner.upsert` (`POST /api/v1/partners/upsert`) nhận trường tuỳ chọn `createdBy` — tên người tạo ở hệ thống gửi sang (vd tài khoản website); chỉ dùng khi tạo mới.
+- **Đổi:** —
+- **Sửa:** đối tượng tạo qua action này (cầu nối website "Thêm khách" trên máy bán, khách tạo kèm đơn) nay có `created_by` = tên người gọi, hoặc `createdBy · người gọi`; trước để rỗng nên màn Khách hàng / Nhà cung cấp hiện "Tạo bởi —". Cập nhật đối tượng đã có không đổi người tạo. Test `apps/api/test/partner-upsert-created-by.test.ts` (3 ca).
+- **Thay đổi định khoản:** — (danh mục, không chạm sổ)
+- **Nâng cấp cần làm:** — (trường thêm không bắt buộc; bên gửi cũ không đổi gì)
+- **Bảo mật:** `createdBy` chỉ là nhãn hiển thị, luôn kèm tên khoá / người gọi thật; không dùng cho quyền.
+
 ### Đăng nhập WordPress có sub + aud (SPINE-5, C-9-13) <!-- [2026-11-24 10:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-5 — mục CHANGELOG; chủ duyệt bizcity_identity@1 1.0.0 ngày 2026-11-24 -->
 
 - **Thêm:** `POST /api/v1/auth/wp-sso` nhận `sub` (`wp:<id>` | `biz:<id>`) và `aud` trong vé, theo `bizcity_identity@1` (bizcity-platform). Khớp người dùng theo `sub` **trước**, email sau; người dùng cũ chưa có `sub` được gắn ở lần đăng nhập đầu có `sub`; **email đã gắn `sub` khác bị từ chối** (không để vé WordPress khác chiếm tài khoản qua email trùng). `aud` khác `WP_SSO_AUD` (mặc định `open-ketoan`) bị từ chối; `sub` sai khuôn bị từ chối. Cấu hình mới `WP_SSO_AUD`, `WP_SSO_REQUIRE_SUB` (mặc định 0: vé thiếu `sub` vẫn vào trong giai đoạn chuyển 90 ngày; bật 1 để bắt buộc). Test `apps/api/test/wp-sso-sub-aud.test.ts` (9 ca). Chữ chốt: BIZCITY-API-v1 §5.2.
