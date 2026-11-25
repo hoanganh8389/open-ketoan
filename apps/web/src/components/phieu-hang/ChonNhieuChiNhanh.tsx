@@ -43,6 +43,8 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
   const d0 = cay.index.get(goc)?.depth ?? 0;
   const ds = useMemo(() => [goc, ...cay.conCua(goc)].map((b) => { const u = cay.index.get(b); return { b, ten: u?.name ?? b, cap: u?.levelLabel ?? '', sau: Math.max(0, (u?.depth ?? d0) - d0), cha: u?.parentCode ?? null, con: Boolean(u?.hasKids), active: u?.isActive ?? true }; })
     .filter((x) => x.active || value.includes(x.b))
+    // [2026-11-25 Nguyễn Văn Thủy] chỉ tới cấp chi nhánh (đơn vị có cấp dưới) — cửa hàng / kho chọn ở ô Giao tại kho (đóng góp)
+    .filter((x) => x.con || x.b === goc || value.includes(x.b))
     // Chi nhánh đang tích nhưng ngoài cây của chi nhánh lập (phiếu cũ / đổi chi nhánh lập): hiện cuối, chữ đỏ để bỏ.
     .concat(value.filter((b) => b !== goc && !cay.conCua(goc).includes(b)).map((b) => ({ b, ten: cay.index.get(b)?.name ?? b, cap: 'ngoài chi nhánh lập', sau: 0, cha: null, con: false, active: true, ngoai: true }))), [goc, cay, d0, value]);
   const coTrong = useMemo(() => new Set(ds.map((x) => x.b)), [ds]);
@@ -56,6 +58,7 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
   };
   const k = boDau(q.trim());
   const khop = k ? new Set(ds.filter((x) => boDau(`${x.b} ${x.ten}`).includes(k)).flatMap((x) => [x.b, ...chaCua(x.b)])) : null;
+  const coConHien = (b: string) => ds.some((y) => y.cha === b);
   const hien = ds.filter((x) => (khop ? khop.has(x.b) : !chaCua(x.b).some((c) => dong.has(c))));
   const doi = (c: string) => onChange(value.includes(c) ? value.filter((x) => x !== c) : [...value, c]);
   const togg = (b: string) => setDong((s) => { const n = new Set(s); if (n.has(b)) n.delete(b); else n.add(b); return n; });
@@ -75,8 +78,8 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
             const o = khop ? true : !dong.has(x.b);
             return (
               <div key={x.b} className={'ngoai' in x ? 'mh-bad' : undefined} style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '2px 4px', paddingLeft: 4 + x.sau * 16, fontSize: 12.5, whiteSpace: 'nowrap' }} title={`${x.b} · ${x.ten}${x.cap ? ` (${x.cap})` : ''}`}>
-                <button type="button" className="btn-ghost" style={{ width: 16, border: 0, background: 'none', padding: 0, cursor: x.con ? 'pointer' : 'default', color: 'var(--muted)' }} disabled={!x.con || Boolean(khop)} onClick={() => togg(x.b)} tabIndex={-1}>
-                  {x.con ? (o ? <ChevronDown size={13} /> : <ChevronRight size={13} />) : null}
+                <button type="button" className="btn-ghost" style={{ width: 16, border: 0, background: 'none', padding: 0, cursor: coConHien(x.b) ? 'pointer' : 'default', color: 'var(--muted)' }} disabled={!coConHien(x.b) || Boolean(khop)} onClick={() => togg(x.b)} tabIndex={-1}>
+                  {coConHien(x.b) ? (o ? <ChevronDown size={13} /> : <ChevronRight size={13} />) : null}
                 </button>
                 <label style={{ display: 'flex', gap: 5, alignItems: 'center', cursor: 'pointer', minWidth: 0, flex: 1 }}>
                   <input type="checkbox" checked={value.includes(x.b)} onChange={() => doi(x.b)} />
