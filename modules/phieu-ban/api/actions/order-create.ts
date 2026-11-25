@@ -5,7 +5,7 @@
 // [2026-11-17 Võ Hoàng] NGHIEM-THU — NT-BH-023: action đơn đặt hàng (đóng góp)
 import { defineAction, z } from '@bizcity/module-sdk';
 import { orderInput } from '../domain/order.js';
-import { createOrder } from '../order-service.js';
+import { createOrderWithPromo } from '../order-service.js';
 
 export default defineAction({
   id: 'phieu-ban.order.create', title: 'Lập đơn đặt hàng (nháp / báo giá)', tags: ['Đơn đặt hàng'],
@@ -14,5 +14,6 @@ export default defineAction({
   input: orderInput.extend({ onDuplicate: z.enum(['ask', 'keep', 'merge']).default('ask'), mergeInto: z.string().trim().max(64).optional() }),
   output: z.record(z.unknown()),
   expose: { http: { method: 'POST', path: '/orders' }, mcp: false, ai: 'propose' },
-  handler: async (ctx, { onDuplicate, mergeInto, ...input }) => createOrder(ctx, input, { onDuplicate, mergeInto }),
+  // [2026-11-25 khanhtd] NGHIEM-THU — BH20: lập đơn áp khuyến mại đang hiệu lực theo ngày đơn (trước: chỉ Copy đơn mới áp)
+  handler: async (ctx, { onDuplicate, mergeInto, ...input }) => createOrderWithPromo(ctx, input, { onDuplicate, mergeInto }),
 });

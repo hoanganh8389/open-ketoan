@@ -228,6 +228,10 @@ async function mergeInto(ctx: ActionContext, targetId: string, add: OrderInput) 
 
 /** Sửa đơn (Nháp / Chờ duyệt / Đã gửi). Chờ duyệt sửa → về Nháp (gửi lại). Đã gửi: không đổi cửa hàng / kho / khách; số lượng đổi → chuyển bù. */
 export async function updateOrderFlow(ctx: ActionContext, id: string, input: OrderInput, action: 'update' | 'merge' = 'update') {
+  // [2026-11-25 khanhtd] NGHIEM-THU — BH20: Nháp / Chờ duyệt → áp lại khuyến mại theo ngày đơn (withPromo); Đã gửi (đang giữ hàng) giữ nguyên
+  //   dòng chương trình như màn gửi (không đổi quà / chiết khấu của đơn đã giữ hàng)
+  const st = (await ctx.data.module(async (tx) => getOrder(tx, id))).status;
+  if (st === 'draft' || st === 'pending') input = await withPromo(ctx, input);
   const plan = await ctx.data.module(async (tx) => {
     const cur = await getOrder(tx, id, true);
     if (!['draft', 'pending', 'open'].includes(cur.status)) throw stateError(cur, 'không sửa được');
@@ -858,4 +862,40 @@ async function promoFor(ctx: ActionContext, branch: string, date: string, lines:
   const used = new Set([...[...discounts.values()].map((d) => d.ref.key), ...gifts.map((g) => g.policyRef.key)]);
   const policyRefs = (ev.applied ?? []).map((a) => a.policyRef).filter((p) => used.has(p.key)).map((p) => ({ key: p.key, version: p.version, hash: p.hash }));
   return { discounts, gifts, policyRefs, skipped: null };
+}
+
+// [2026-11-25 khanhtd] NGHIEM-THU — BH20: Ghi đơn (lập / sửa khi Nháp, Chờ duyệt) áp khuyến mại đang hiệu lực như Copy đơn — trước đây màn ghi
+//   "máy chủ tính lại khuyến mại khi Ghi" nhưng chỉ Copy đơn mới hỏi Core, Lập / Sửa không bao giờ có khuyến mại
+/**
+ * Áp lại khuyến mại theo ngày đơn trước khi Ghi: bỏ phần do chương trình sinh lần trước (dòng quà có policyRef, chiết khấu của dòng có
+ * policyRef), hỏi Core (promoFor) trên các dòng hàng bán, rồi gắn: chiết khấu chương trình chỉ vào dòng KHÔNG có chiết khấu gõ tay (gõ tay
+ * thắng), quà thành dòng G… 0đ, policyRefs chỉ giữ chương trình thật sự dùng. Core không trả lời → giữ nguyên đơn như người dùng gửi,
+ * báo `promoSkipped` (không xoá khuyến mại cũ chỉ vì Core lỗi).
+ */
+async function withPromo(ctx: ActionContext, input: OrderInput): Promise<OrderInput> {
+  const base = input.lines.filter((l) => !(l.isGift && l.policyRef)).map((l) => {
+    if (!l.policyRef) return l;
+    const { policyRef: _ref, discount: _discount, ...rest } = l;
+    return rest as OrderInput['lines'][number];
+  });
+  const promo = await promoFor(ctx, input.branchCode, input.orderDate, base.filter((l) => !l.isGift));
+  if (promo.skipped) { ctx.meta('promoSkipped', promo.skipped); return input; }
+  const lines: OrderInput['lines'] = base.map((l) => {
+    const d = promo.discounts.get(l.lineKey);
+    return d && !l.isGift && !l.discount ? { ...l, discount: d.discount, policyRef: d.ref } : l;
+  });
+  let g = 0;
+  for (const x of promo.gifts) {
+    do g++; while (lines.some((l) => l.lineKey === `G${g}`));
+    lines.push({ lineKey: `G${g}`, sku: x.sku, qty: x.qty, isGift: true, policyRef: x.policyRef } as OrderInput['lines'][number]);
+  }
+  const used = new Set(lines.flatMap((l) => (l.policyRef ? [l.policyRef.key] : [])));
+  const policyRefs = promo.policyRefs.filter((p) => used.has(p.key));
+  const { policyRefs: _old, ...rest } = input;
+  return { ...rest, lines, ...(policyRefs.length ? { policyRefs } : {}) };
+}
+
+/** Lập đơn từ màn / API: áp khuyến mại theo ngày đơn rồi lập (Copy đơn đã tự áp, gọi thẳng createOrder). */
+export async function createOrderWithPromo(ctx: ActionContext, input: OrderInput, dup: DupMode = { onDuplicate: 'ask' }) {
+  return createOrder(ctx, await withPromo(ctx, input), dup);
 }

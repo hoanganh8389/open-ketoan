@@ -18,7 +18,7 @@ import { errorText } from '@/lib/api';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { ChonMatHang } from '../thanh-phan/ChonMatHang';
 import { num, qtyFmt, stockApi, useHierarchy, type MaxBoardRow } from './api';
-import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, KhoiSo, isOff, HaiCachMax } from './chung';
+import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, KhoiSo, isOff } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { useThaoTac } from '@/lib/manHinh';
 
@@ -134,7 +134,6 @@ export function TonMaxPage() {
     <>
       <PageHeader title="Tồn max (kế toán mua hàng)" code="MH16" helpKey="mua-hang-ton-max" subtitle="Kế toán mua hàng xem và sửa max theo chi nhánh – kho – mã. Gợi ý từ tốc độ bán (shop) và tổng max shop (kho). Max là gốc của chia hàng xuống shop và đặt mua" />
       <div className="card">
-        <HaiCachMax here="ton-max" />
         <ChuaPhanCap branches={h.data?.branches} />
         <div className="tm-bar">
           <ChonChiNhanhCha value={parent} onChange={(v) => { setParent(v); setTarget(''); setWh(''); setDrafts({}); setExtra([]); }} />

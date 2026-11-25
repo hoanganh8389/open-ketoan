@@ -13,13 +13,21 @@ import { MAX_REQUEST_STATUS, type MaxRequestItem, type MaxRequestKind, type MaxR
 import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Loading, Modal } from '@/components/ui';
-import { errorText } from '@/lib/api';
+import { api, errorText } from '@/lib/api';
 import { monthStart, today } from '../du-lieu';
-import { ChonMatHang } from '../thanh-phan/ChonMatHang';
+import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
-import { ChonChiNhanhCha, ChuaPhanCap, KhoiSo, HaiCachMax } from './chung';
+import { ChonChiNhanhCha, ChuaPhanCap } from './chung';
 import { useThaoTac } from '@/lib/manHinh';
+
+// [2026-11-25 kiennt] NT-MH-006 — đọc số trong ô Excel: "1.500" / "1,500" = nghìn; "1.5" / "1,5" = thập phân; không phải số → NaN (đóng góp)
+function docSo(raw: string): number {
+  const t = raw.replace(/\s/g, '');
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) return Number(t.replace(/\./g, '').replace(',', '.'));
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) return Number(t.replace(/,/g, ''));
+  return /^\d+([.,]\d+)?$/.test(t) ? Number(t.replace(',', '.')) : Number.NaN;
+}
 
 const TONE: Record<MaxRequestStatus, string> = { draft: 'info', submitted: 'warn', approved: 'ok', cancelled: 'bad' };
 
@@ -29,11 +37,9 @@ export function DangKyMaxPage() {
   const [parent, setParent] = useState('');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
-  const [status, setStatus] = useState('');
   const [open, setOpen] = useState<{ id?: string; kind: MaxRequestKind; branchCode?: string } | null>(null);
   const q = useQuery({ queryKey: ['ton-max', 'max-requests', parent, from, to], enabled: Boolean(parent), queryFn: () => stockApi.maxRequests({ from, to, branchCode: parent }) });
   const all = q.data ?? [];
-  const rows = all.filter((r) => !status || r.status === status || (status === 'unlinked' && r.unlinked > 0));
   const cols: Column<MaxRequest>[] = [
     { key: 'code', header: 'Số phiếu', type: 'code', width: 120 },
     { key: 'createdAt', header: 'Ngày lập', width: 130, value: (r) => r.createdAt, render: (r) => new Date(r.createdAt).toLocaleString('vi-VN') },
@@ -51,7 +57,6 @@ export function DangKyMaxPage() {
     <>
       <PageHeader title="Phiếu đăng ký tồn max (shop)" code="MH17" helpKey="mua-hang-dang-ky-max" subtitle="Shop lập phiếu đề nghị max; kế toán mua hàng duyệt (duyệt = ghi tồn max). Hàng mới chưa có mã: chi nhánh đăng ký max cho từng shop" />
       <div className="card">
-        <HaiCachMax here="dang-ky" />
         <ChuaPhanCap branches={h.data?.branches} />
         <div className="tm-bar">
           <ChonChiNhanhCha value={parent} onChange={setParent} />
@@ -61,15 +66,9 @@ export function DangKyMaxPage() {
           {tt.them && <button className="btn btn-sm" disabled={!parent} onClick={() => setOpen({ kind: 'new_item', branchCode: parent })}><Plus size={14} /> Phiếu hàng mới</button>}
           {tt.them && <button className="btn btn-primary" disabled={!parent} onClick={() => setOpen({ kind: 'existing' })}><Plus size={14} /> Phiếu shop đăng ký max</button>}
         </div>
-        <div className="tm-stats">
-          <KhoiSo label="Tất cả" value={all.length} active={!status} onClick={() => setStatus('')} />
-          <KhoiSo label="Chờ duyệt" value={all.filter((r) => r.status === 'submitted').length} tone="orange" active={status === 'submitted'} onClick={() => setStatus('submitted')} />
-          <KhoiSo label="Nháp" value={all.filter((r) => r.status === 'draft').length} tone="grey" active={status === 'draft'} onClick={() => setStatus('draft')} />
-          <KhoiSo label="Đã duyệt" value={all.filter((r) => r.status === 'approved').length} tone="green" active={status === 'approved'} onClick={() => setStatus('approved')} />
-          <KhoiSo label="Hàng mới chờ gắn mã" value={all.filter((r) => r.unlinked > 0).length} tone="red" active={status === 'unlinked'} onClick={() => setStatus('unlinked')} />
-        </div>
+        {/* [2026-11-25 kiennt] NT-MH-006 — bỏ dải ô đếm Tất cả / Chờ duyệt / Nháp / Đã duyệt / Hàng mới chờ gắn mã; lọc trạng thái ở cột Trạng thái của lưới (đóng góp) */}
         <ErrorBox error={q.error ? errorText(q.error) : null} />
-        {q.isLoading ? <Loading /> : <DataGrid rows={rows} columns={cols} rowKey={(r) => r.id} storageKey="dang-ky-max" onRowClick={(r) => setOpen({ id: r.id, kind: r.kind })} exportName={`phieu-dang-ky-max-${parent}`} emptyText="Chưa có phiếu nào trong khoảng ngày này." />}
+        {q.isLoading ? <Loading /> : <DataGrid rows={all} columns={cols} rowKey={(r) => r.id} storageKey="dang-ky-max" onRowClick={(r) => setOpen({ id: r.id, kind: r.kind })} exportName={`phieu-dang-ky-max-${parent}`} emptyText="Chưa có phiếu nào trong khoảng ngày này." />}
       </div>
       {open && parent && <PhieuDangKy key={open.id ?? open.kind} parent={parent} init={open} branches={h.data?.branches ?? []} onClose={() => setOpen(null)} />}
     </>
@@ -90,6 +89,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
   const [search, setSearch] = useState('');
   const [add, setAdd] = useState(false);
   const [imp, setImp] = useState(false);
+  const [impShop, setImpShop] = useState(false); // [2026-11-25 kiennt] NT-MH-006 — nhập Excel phiếu shop đăng ký max (đóng góp)
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const req = cur.data;
@@ -117,17 +117,34 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
   };
   const approve = async () => { setBusy(true); try { await stockApi.approveMaxRequest(req!.id); await qc.invalidateQueries({ queryKey: ['ton-max'] }); onClose(); } catch (e) { setErr(errorText(e)); } finally { setBusy(false); } };
   const cancel = async () => { if (!window.confirm('Huỷ phiếu này?')) return; try { await stockApi.cancelMaxRequest(req!.id); await qc.invalidateQueries({ queryKey: ['ton-max'] }); onClose(); } catch (e) { setErr(errorText(e)); } };
+  // [2026-11-25 kiennt] NT-MH-006 — mặt hàng đang dùng CHƯA CÓ MAX ở ít nhất một shop của chi nhánh (đóng góp)
+  /** Mỗi mã: max đang có theo shop (shop chưa có thì không có khoá). Chỉ lấy mã còn shop chưa có max. */
+  const chuaCoMax = async () => {
+    const codes = shops.map((x) => x.code);
+    const [ds, lv] = await Promise.all([api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 }), stockApi.levels({ branchCodes: codes })]);
+    const co = new Map<string, Record<string, number>>();
+    for (const l of lv) if (l.max > 0) { const m = co.get(l.sku) ?? {}; m[l.branchCode] = (m[l.branchCode] ?? 0) + l.max; co.set(l.sku, m); }
+    const out = ds.filter((p) => codes.some((c) => !(co.get(p.sku)?.[c]))).sort((a, b) => a.sku.localeCompare(b.sku)).map((p) => ({ sku: p.sku, name: p.name, unit: p.unit, co: co.get(p.sku) ?? {} }));
+    if (!out.length) throw new Error('Mọi mặt hàng đang dùng đã có max ở mọi shop — sửa max ở Tồn max (MH16) hoặc phiếu shop');
+    return out;
+  };
+  const daCo = (co: Record<string, number>) => Object.entries(co).map(([c, m]) => `${c}: ${m}`).join('; ');
   const template = async () => {
     const XLSX = await import('@/lib/excelChuan').then((m) => m.xlsxChuan()); // [2026-11-11 Nguyễn Văn Thủy] xuất Excel định dạng chuẩn (đóng góp)
     const head = ['Tên hàng', 'Mã bên NCC', 'Mã hàng', 'ĐVT', 'Quy cách', 'Ghi chú', ...shops.map((s) => s.code)];
-    const body = rows.length ? rows.map((r) => [r.name, r.nccSku ?? '', r.sku, r.unit ?? '', r.pack ?? '', r.note ?? '', ...shops.map((s) => r.maxByShop?.[s.code] ?? '')]) : [['Sữa bột mới 800g', 'NCC-001', '', 'Lon', 6, '', ...shops.map(() => '')]];
+    // Phiếu còn trống: tệp có sẵn mặt hàng chưa có max (cột Ghi chú ghi shop đã có max) — điền số vào cột shop là xong.
+    const body = rows.length ? rows.map((r) => [r.name, r.nccSku ?? '', r.sku, r.unit ?? '', r.pack ?? '', r.note ?? '', ...shops.map((s) => r.maxByShop?.[s.code] ?? '')])
+      : await chuaCoMax().then((ds) => ds.map((x) => [x.name, '', x.sku, x.unit, '', daCo(x.co) ? `Đã có max — ${daCo(x.co)}` : '', ...shops.map(() => '')]), (e: Error) => { window.alert(e.message); return null; });
+    if (!body) return;
     const ws = XLSX.utils.aoa_to_sheet([head, shops.length ? ['', '', '', '', '', 'Tên shop →', ...shops.map((s) => s.name)] : [], ...body]);
-    ws['!cols'] = [{ wch: 36 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 9 }, { wch: 18 }, ...shops.map(() => ({ wch: 9 }))];
+    ws.headerRows = shops.length ? [0, 1] : [0]; // [2026-11-25 kiennt] NT-MH-006 — chỉ rõ dòng tiêu đề (dòng 2 = tên shop), không để tự đoán (đóng góp)
+    ws['!cols'] = [{ wch: Math.min(60, Math.max(36, ...body.map((r) => String(r[0] ?? '').length + 2))) }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 9 }, { wch: 24 }, ...shops.map(() => ({ wch: 12 }))];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dang ky max'); XLSX.writeFile(wb, `dang-ky-max-hang-moi-${parent}.xlsx`);
   };
   const exportExisting = async () => {
     const XLSX = await import('@/lib/excelChuan').then((m) => m.xlsxChuan()); // [2026-11-11 Nguyễn Văn Thủy] xuất Excel định dạng chuẩn (đóng góp)
     const ws = XLSX.utils.aoa_to_sheet([['Mã hàng', 'Tên hàng', 'Tồn', 'Bán / ngày', 'Max hiện tại', 'Max gợi ý', 'Max đề nghị', 'Ghi chú'], ...rows.map((r) => [r.sku, r.name, tonOf.get(r.sku) ?? '', r.avgPerDay ?? '', r.currentMax ?? 0, r.suggestedMax ?? 0, r.proposedMax ?? 0, r.note ?? ''])]);
+    ws.headerRows = [0]; // [2026-11-25 kiennt] NT-MH-006 — dòng 1 là tiêu đề cột (đóng góp)
     ws['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 8 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 11 }, { wch: 24 }];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dang ky max'); XLSX.writeFile(wb, `dang-ky-max-${br}.xlsx`);
   };
@@ -136,7 +153,6 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
     <Modal wide title={req ? `${req.code} · ${kind === 'new_item' ? 'Đăng ký max hàng mới' : 'Shop đăng ký tồn max'} — ${MAX_REQUEST_STATUS[req.status]}` : kind === 'new_item' ? 'Phiếu đăng ký max hàng mới (mặt hàng × shop)' : 'Phiếu shop đăng ký tồn max'} onClose={onClose}
       footer={<>
         {req && req.status !== 'cancelled' && !(req.status === 'approved' && kind === 'existing') && tt.huy && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => void cancel()}>Huỷ phiếu</button>}
-        <button className="btn" onClick={() => void (kind === 'new_item' ? template() : exportExisting())}><FileDown size={14} /> Xuất Excel</button>
         {!locked && <>
           {(!req || req.status === 'draft') && luu && <button className="btn" disabled={busy} onClick={() => void save({})}>Lưu nháp</button>}
           {(!req || req.status === 'draft') && luu && <button className="btn" disabled={busy} onClick={() => void save({ submit: true })}>Gửi duyệt</button>}
@@ -148,20 +164,23 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
         <button className="btn" onClick={onClose}>Đóng</button>
       </>}>
       {init.id && cur.isLoading ? <Loading /> : <>
-        <div className="full row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* [2026-11-25 kiennt] NT-MH-006 — đầu phiếu chia 2 hàng: ① thông tin phiếu (shop / chi nhánh, tiêu đề); ② thao tác với bảng (tìm, lọc bên trái — thêm, Excel bên phải; Xuất Excel từ chân phiếu lên cạnh Nhập Excel) (đóng góp) */}
+        <div className="full row" style={{ gap: 8, alignItems: 'center' }}>
           {kind === 'existing' ? (
             <label className="tm-parent"><span>Shop</span><select className="select input" disabled={Boolean(req)} value={br} onChange={(e) => { setBranch(e.target.value); setItems(null); }}>
               <option value="">— chọn shop —</option><option value={parent}>★ Kho chi nhánh {parent}</option>
               {shops.map((s) => <option key={s.code} value={s.code}>{s.code} · {s.name}</option>)}</select></label>
-          ) : <span className="tm-chip warn">Chi nhánh {parent} · {shops.length} shop</span>}
-          <input className="input" style={{ flex: 1, minWidth: 200 }} placeholder="Tiêu đề (vd Đăng ký max kỳ 2 tháng 10)" value={title ?? req?.title ?? ''} disabled={locked} onChange={(e) => setTitle(e.target.value)} />
-          <input className="input" type="search" placeholder="Tìm mã / tên…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 180 }} />
+          ) : <span className="tm-chip warn" style={{ whiteSpace: 'nowrap' }}>Chi nhánh {parent} · {shops.length} shop</span>}
+          <label className="tm-parent" style={{ flex: 1 }}><span>Tiêu đề</span><input className="input" style={{ flex: 1 }} placeholder="vd Đăng ký max kỳ 2 tháng 10" value={title ?? req?.title ?? ''} disabled={locked} onChange={(e) => setTitle(e.target.value)} /></label>
+        </div>
+        <div className="full row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input className="input" type="search" placeholder="Tìm mã / tên…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 220 }} />
           {kind === 'existing' && <label className="checkbox"><input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} /> Chỉ mã đổi max</label>}
+          <span className="grow" style={{ flex: 1 }} />
           {!locked && kind === 'existing' && br && <button className="btn btn-sm" onClick={() => setAdd(true)}><Plus size={13} /> Thêm mã</button>}
-          {!locked && kind === 'new_item' && <>
-            <button className="btn btn-sm" onClick={() => setItems([...rows, { key: `n${Date.now().toString(36)}`, sku: '', name: '', maxByShop: {} }])}><Plus size={13} /> Thêm dòng</button>
-            <button className="btn btn-sm" onClick={() => setImp(true)}><FileUp size={13} /> Nhập Excel (mẫu NCC / shop điền)</button>
-          </>}
+          {!locked && kind === 'new_item' && <button className="btn btn-sm" onClick={() => setItems([...rows, { key: `n${Date.now().toString(36)}`, sku: '', name: '', maxByShop: {} }])}><Plus size={13} /> Thêm dòng</button>}
+          {!locked && (kind === 'new_item' || br) && <button className="btn btn-sm" onClick={() => (kind === 'new_item' ? setImp(true) : setImpShop(true))}><FileUp size={13} /> Nhập Excel</button>}
+          {(kind === 'new_item' || br) && <button className="btn btn-sm" onClick={() => void (kind === 'new_item' ? template() : exportExisting())} title={kind === 'new_item' ? 'Tải bảng mặt hàng × shop (có sẵn cột từng shop) để gửi NCC / shop điền' : 'Xuất các dòng đang có trên phiếu'}><FileDown size={13} /> Xuất Excel</button>}
         </div>
         {req && <div className="full muted" style={{ fontSize: 12 }}>Lập bởi {req.createdBy} lúc {new Date(req.createdAt).toLocaleString('vi-VN')} (nguồn {req.source.toUpperCase()}){req.approvedBy ? ` · duyệt bởi ${req.approvedBy}` : ''}{req.pendingApply ? ` · còn ${req.pendingApply} dòng chờ gắn mã mới ghi max` : ''}</div>}
         {kind === 'existing' ? (
@@ -203,6 +222,62 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
         {err && <div className="full alert alert-bad">{err}</div>}
       </>}
       {add && <ChonMatHang existing={new Map(rows.map((r) => [r.sku, '✓ đã có']))} onClose={() => setAdd(false)} onPick={(p) => setItems([...rows, { key: p.sku, sku: p.sku, name: p.name, unit: p.unit, currentMax: 0, proposedMax: 0 }])} />}
+      {impShop && <NhapExcelChung<'sku' | 'name' | 'max' | 'note', MaxRequestItem> onClose={() => setImpShop(false)} onAdd={(l) => {
+        // [2026-11-25 kiennt] NT-MH-006 — mã đã có trên phiếu: thay max đề nghị (và ghi chú); mã chưa có: thêm dòng (đóng góp)
+        setImpShop(false);
+        const by = new Map(l.map((x) => [x.sku, x]));
+        const merged = rows.map((r) => { const x = by.get(r.sku); if (!x) return r; by.delete(r.sku); return { ...r, proposedMax: x.proposedMax, ...(x.note ? { note: x.note } : {}) }; });
+        setItems([...merged, ...by.values()]);
+      }} s={{
+        title: `Nhập Excel max đề nghị — shop ${br}`, file: `mau-dang-ky-max-${br}.xlsx`, keyField: 'sku',
+        columns: [
+          { name: 'Mã hàng', required: true, aliases: 'Mã SP', example: 'SP001', note: 'Mã trong danh mục mặt hàng' },
+          { name: 'Tên hàng', example: 'Sữa bột 800g', note: 'Chỉ để xem — nhập bỏ qua' },
+          { name: 'ĐVT', example: 'Lon', note: 'Chỉ để xem' },
+          { name: 'Tồn', example: 12, note: 'Tồn của shop — chỉ để xem' },
+          { name: 'Bán / ngày', example: 1.5, note: 'Chỉ để xem' },
+          { name: 'Max hiện tại', example: 10, note: 'Chỉ để xem' },
+          { name: 'Max gợi ý', example: 11, note: 'Bán / ngày × số ngày đủ hàng — chỉ để xem' },
+          { name: 'Max đề nghị', aliases: 'Max', example: 12, note: 'Số ≥ 0 theo ĐVT nhỏ nhất. Để trống = bỏ qua dòng' },
+          { name: 'Ghi chú', example: '', note: '' },
+        ],
+        spec: [['sku', ['ma hang', 'ma sp']], ['name', ['ten hang']], ['max', ['max de nghi', 'max']], ['note', ['ghi chu']]],
+        mau: async () => {
+          // Mặt hàng đang dùng CHƯA CÓ MAX ở shop này (mã đã có max nằm sẵn trên phiếu); mã có tồn / bán kèm số của shop. Max đề nghị để trống cho shop điền.
+          // Lấy số của shop ngay lúc tải (phiếu nháp mở lại không có sẵn gợi ý) — để lọc đúng mã đã có max.
+          const [ds, sg] = await Promise.all([api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 }), stockApi.maxSuggest(br)]);
+          const sugBy = new Map(sg.map((x) => [x.sku, x]));
+          const skus = [...new Set([...sg.map((x) => x.sku), ...ds.map((p) => p.sku)])].filter((k) => !((sugBy.get(k)?.currentMax ?? 0) > 0)).sort((a, b) => a.localeCompare(b));
+          if (!skus.length) throw new Error('Mọi mặt hàng đang dùng đã có max ở shop này — sửa max ngay trên phiếu');
+          const pBy = new Map(ds.map((p) => [p.sku, p]));
+          return skus.map((k) => {
+            const x = sugBy.get(k); const p = pBy.get(k);
+            return [k, x?.name ?? p?.name ?? '', x?.unit ?? p?.unit ?? '', x ? x.ton : '', x?.avgPerDay ?? '', x?.currentMax ?? '', x?.suggestedMax ?? '', '', ''];
+          });
+        },
+        map: (r) => {
+          const sku = String(r.sku ?? '').trim();
+          const raw = String(r.max ?? '').trim();
+          if (!raw) return { skip: true };
+          const v = docSo(raw);
+          if (!Number.isFinite(v) || v < 0) return { error: `${sku}: Max đề nghị "${raw}" không phải số ≥ 0` };
+          return { value: { key: sku, sku, name: String(r.name ?? '').trim(), currentMax: 0, proposedMax: v, note: String(r.note ?? '').trim() || undefined } };
+        },
+        check: async (list) => {
+          const [ds, sg] = await Promise.all([api.get<CatalogItem[]>('/api/v1/products', { status: 'all', pageSize: 1_000_000 }), stockApi.maxSuggest(br)]);
+          const pBy = new Map(ds.map((p) => [p.sku, p]));
+          // Mã phải có trong danh mục; điền tên / ĐVT / max hiện tại theo phiếu (hoặc danh mục). Trùng mã: onAdd lấy dòng sau.
+          return list.map((x) => {
+            const p = pBy.get(x.sku);
+            if (!p) return `Mã ${x.sku} chưa có trong danh mục mặt hàng`;
+            const cur = rows.find((r) => r.sku === x.sku) ?? sg.find((r) => r.sku === x.sku);
+            x.name = cur?.name || p.name; x.unit = cur?.unit ?? p.unit; x.currentMax = cur?.currentMax ?? 0;
+            return undefined;
+          });
+        },
+        head: ['Mã hàng', 'Tên hàng', 'Max hiện tại', 'Max đề nghị', 'Ghi chú'], cells: (x) => [x.sku, x.name, qtyFmt(x.currentMax), qtyFmt(x.proposedMax), x.note ?? ''],
+        note: 'Tải file mẫu: có sẵn các mặt hàng đang dùng CHƯA CÓ MAX ở shop này (kèm tồn / bán nếu có); mã đã có max nằm sẵn trên phiếu, sửa ngay trên phiếu hoặc thêm dòng vào tệp. Chỉ điền cột Max đề nghị; dòng để trống được bỏ qua. Trùng mã trong tệp: lấy dòng sau.',
+      }} />}
       {imp && <NhapExcelChung<string, MaxRequestItem> onClose={() => setImp(false)} onAdd={(l) => { setImp(false); setItems([...rows, ...l]); }} s={{
         title: 'Nhập hàng mới từ Excel (mỗi shop một cột max)', file: `mau-dang-ky-max-hang-moi-${parent}.xlsx`, keyField: 'name',
         columns: [
@@ -211,15 +286,30 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
           { name: 'Mã hàng', aliases: 'Mã SP', example: '', note: 'Để trống nếu chưa có mã' },
           { name: 'ĐVT', example: 'Lon', note: 'ĐVT nhỏ nhất' },
           { name: 'Quy cách', example: 6, note: 'Số ĐVT / thùng' },
-          ...shops.map((s) => ({ name: s.code, example: '', note: `Max của shop ${s.name}` })),
+          { name: 'Đã có max ở', example: '', note: 'Chỉ để xem — shop đã có max (ô của shop đó để trống = giữ max cũ)' },
+          ...shops.map((s) => ({ name: s.code, example: '', note: `Max của shop ${s.name}. Trống = không đổi` })),
         ],
+        // Tải file mẫu: có sẵn mặt hàng đang dùng còn shop chưa có max; chỉ điền số vào cột từng shop.
+        mau: async () => (await chuaCoMax()).map((x) => [x.name, '', x.sku, x.unit, '', daCo(x.co), ...shops.map(() => '')]),
         spec: [['name', ['ten hang', 'ten san pham']], ['ncc', ['ma ben ncc', 'ma ncc']], ['sku', ['ma hang', 'ma sp']], ['unit', ['dvt']], ['pack', ['quy cach']], ...shops.map((s) => [s.code, [fold(s.code)]] as [string, string[]])],
         map: (r) => {
           const name = String(r.name ?? '').trim();
           if (!name || name === 'Tên shop →') return { error: 'thiếu tên hàng' };
           const maxByShop: Record<string, number> = {};
-          for (const s of shops) { const v = String(r[s.code] ?? '').trim(); if (v) maxByShop[s.code] = num(v); }
+          for (const s of shops) {
+            const v = String(r[s.code] ?? '').trim(); if (!v) continue;
+            const n = docSo(v); if (!Number.isFinite(n) || n < 0) return { error: `${name} — shop ${s.code}: max "${v}" không phải số ≥ 0` };
+            maxByShop[s.code] = n;
+          }
+          // Dòng có mã (từ tệp mẫu) mà chưa điền shop nào: bỏ qua, không đưa vào phiếu.
+          if (String(r.sku ?? '').trim() && !Object.keys(maxByShop).length) return { skip: true };
           return { value: { key: `n${Math.random().toString(36).slice(2, 8)}`, name, nccSku: String(r.ncc ?? '').trim() || undefined, sku: String(r.sku ?? '').trim(), unit: String(r.unit ?? '').trim() || undefined, pack: num(String(r.pack ?? '')) || undefined, maxByShop } };
+        },
+        check: async (list) => {
+          // Dòng ghi mã: mã phải có trong danh mục (không thì phiếu chờ gắn mã mãi).
+          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'all', pageSize: 1_000_000 });
+          const co = new Set(ds.map((p) => p.sku));
+          return list.map((x) => (x.sku && !co.has(x.sku) ? `Mã ${x.sku} chưa có trong danh mục mặt hàng (hàng chưa có mã thì để trống cột Mã hàng)` : undefined));
         },
         head: ['Tên hàng', 'Mã NCC', 'Mã hàng', 'Số shop có max', 'Tổng max'], cells: (x) => [x.name, x.nccSku ?? '', x.sku || '—', Object.keys(x.maxByShop ?? {}).length, qtyFmt(Object.values(x.maxByShop ?? {}).reduce((s, v) => s + v, 0))],
       }} />}
