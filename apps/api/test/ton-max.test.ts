@@ -318,7 +318,17 @@ describe('Phân cấp, tồn max, đề xuất chuyển, công thức đặt hà
     const lv = await ok('GET', '/api/v1/stock/levels?skus=SUA2');
     expect(lv.map((l: { branchCode: string; max: number }) => [l.branchCode, l.max])).toEqual([['08001', 6], ['08002', 12]]);
     const shop = await call(ctx, 'POST', '/api/v1/stock/max-requests', { kind: 'new_item', branchCode: '08001', items: [{ key: 'x', name: 'Hàng mới' }] });
-    expect(shop.status).toBe(400);
+    expect(shop.status).toBe(400); // từ shop: dòng phải có max của chính shop
+  });
+
+  // [2026-11-25 07:30 PM Võ Hoàng] NT-BH-035 — phiếu hàng mới lập từ shop (máy bán) (đóng góp)
+  it('phiếu hàng mới lập từ shop (máy bán): tự chuyển lên chi nhánh cha, chỉ ghi max của chính shop', async () => {
+    const r = await ok('POST', '/api/v1/stock/max-requests', { kind: 'new_item', branchCode: '08001', source: 'pos', submit: true, items: [{ key: 'm1', name: 'Hàng mới từ shop', nccSku: 'NCC-9', maxByShop: { '08001': 4 } }] });
+    expect(r).toMatchObject({ kind: 'new_item', branchCode: '08000', parentCode: '08000', status: 'submitted', source: 'pos' });
+    expect(r.items[0].maxByShop).toEqual({ '08001': 4 });
+    const other = await call(ctx, 'POST', '/api/v1/stock/max-requests', { kind: 'new_item', branchCode: '08001', items: [{ key: 'm2', name: 'Ghi hộ shop khác', maxByShop: { '08001': 1, '08002': 9 } }] });
+    expect(other.status).toBe(400);
+    expect(JSON.stringify(other.body)).toContain('chỉ ghi max của chính shop đó');
   });
 
   it('đơn đặt có dòng hàng mới chưa có mã: lưu được; phiếu nhập phải gắn mã; gắn xong ghi ngược mã vào đơn', async () => {
