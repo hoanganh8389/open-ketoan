@@ -1,0 +1,2616 @@
+{
+  "schema": "bizcity_authz_manifest@1",
+  "app": "open-ketoan",
+  "core_permissions": [
+    "catalog:read",
+    "catalog:write",
+    "conformance:approve",
+    "conformance:read",
+    "conformance:run",
+    "devtools:read",
+    "documents:bypass-date-lock",
+    "documents:edit-all",
+    "documents:read",
+    "documents:write",
+    "ledger:read",
+    "payments:approve",
+    "payments:approve-final",
+    "periods:lock",
+    "reports:read",
+    "review:read",
+    "settings:write",
+    "users:write"
+  ],
+  "permissions": [
+    {
+      "key": "ban-hang:chuong-trinh-han-muc",
+      "label": "Đổi hạn mức chương trình bán theo cửa hàng",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:chuong-trinh-lap",
+      "label": "Thêm chương trình bán",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:chuong-trinh-sua",
+      "label": "Sửa / ngừng chương trình bán",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:chuong-trinh-xem",
+      "label": "Xem chương trình bán",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:hoa-don-duyet",
+      "label": "Duyệt / bỏ duyệt hoá đơn bán hàng",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:hoa-don-huy",
+      "label": "Huỷ hoá đơn bán hàng",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:hoa-don-lap",
+      "label": "Lập / sửa hoá đơn bán hàng (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:hoa-don-sua",
+      "label": "Sửa hoá đơn bán hàng",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:hoa-don-xem",
+      "label": "Xem hoá đơn bán hàng",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:hoa-don-xuat",
+      "label": "Xuất Excel hoá đơn bán hàng (bảng kê bán hàng)",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:tra-hang-duyet",
+      "label": "Duyệt / bỏ duyệt phiếu hàng bán trả lại",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:tra-hang-huy",
+      "label": "Huỷ phiếu hàng bán trả lại",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:tra-hang-lap",
+      "label": "Lập / sửa phiếu hàng bán trả lại (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:tra-hang-sua",
+      "label": "Sửa phiếu hàng bán trả lại",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:tra-hang-xem",
+      "label": "Xem phiếu hàng bán trả lại",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "ban-hang:tra-hang-xuat",
+      "label": "Xuất Excel phiếu hàng bán trả lại (bảng kê bán hàng)",
+      "risk": "low",
+      "module": "ban-hang"
+    },
+    {
+      "key": "he-thong:bang-gia-sua",
+      "label": "Thêm / sửa — Bảng giá",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:bang-gia-xoa",
+      "label": "Xoá — Bảng giá",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:chi-nhanh-sua",
+      "label": "Sửa — Chi nhánh",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:chi-nhanh-them",
+      "label": "Thêm — Chi nhánh",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:chi-nhanh-xoa",
+      "label": "Xoá — Chi nhánh",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:doi-tuong-nhap-excel",
+      "label": "Nhập Excel — Khách hàng / nhà cung cấp",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:doi-tuong-sua",
+      "label": "Sửa — Khách hàng / nhà cung cấp",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:doi-tuong-them",
+      "label": "Thêm — Khách hàng / nhà cung cấp",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:doi-tuong-xoa",
+      "label": "Xoá — Khách hàng / nhà cung cấp",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:don-vi-khoi-anh",
+      "label": "Khối ảnh — Thông tin đơn vị, cài đặt",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:don-vi-sua",
+      "label": "Sửa thông tin / cài đặt — Thông tin đơn vị, cài đặt",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:don-vi-tinh-sua",
+      "label": "Sửa — Đơn vị tính",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:don-vi-tinh-them",
+      "label": "Thêm — Đơn vị tính",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:don-vi-tinh-xoa",
+      "label": "Xoá — Đơn vị tính",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:kho-sua",
+      "label": "Sửa — Danh mục kho",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:kho-them",
+      "label": "Thêm — Danh mục kho",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:kho-xoa",
+      "label": "Xoá — Danh mục kho",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:khoa-api-them",
+      "label": "Cấp khoá — Khoá API",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:khoa-api-xoa",
+      "label": "Thu hồi khoá — Khoá API",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:loai-kho-sua",
+      "label": "Thêm / sửa — Loại kho",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:mat-hang-nhap-excel",
+      "label": "Nhập Excel — Danh mục mặt hàng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:mat-hang-sua",
+      "label": "Thêm / sửa — Danh mục mặt hàng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:mat-hang-xoa",
+      "label": "Xoá — Danh mục mặt hàng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:nguoi-dung-gan-vai-tro",
+      "label": "Gán / thu hồi vai trò — Người dùng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:nguoi-dung-sua",
+      "label": "Sửa / khoá / đặt lại mật khẩu — Người dùng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:nguoi-dung-them",
+      "label": "Thêm — Người dùng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:nhom-doi-tuong-sua",
+      "label": "Thêm / sửa — Nhóm đối tượng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:nhom-doi-tuong-xoa",
+      "label": "Xoá — Nhóm đối tượng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:nhom-hang-sua",
+      "label": "Thêm / sửa — Nhóm hàng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:nhom-hang-xoa",
+      "label": "Xoá — Nhóm hàng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:tai-khoan-sua",
+      "label": "Sửa — Hệ thống tài khoản",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:tai-khoan-them",
+      "label": "Thêm — Hệ thống tài khoản",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:tai-khoan-xoa",
+      "label": "Xoá — Hệ thống tài khoản",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:tk-ngan-hang-sua",
+      "label": "Thêm / sửa — Tài khoản ngân hàng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "he-thong:tk-ngan-hang-xoa",
+      "label": "Xoá — Tài khoản ngân hàng",
+      "risk": "low",
+      "module": "he-thong"
+    },
+    {
+      "key": "ke-toan:but-toan-huy",
+      "label": "Huỷ bút toán tổng hợp",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:but-toan-lap",
+      "label": "Lập / sửa bút toán tổng hợp (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:but-toan-xem",
+      "label": "Xem bút toán tổng hợp",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:dinh-muc-sua",
+      "label": "Định mức chi phí: Sửa / sao chép định mức",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:dinh-muc-xem",
+      "label": "Định mức chi phí: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:doi-tru-go",
+      "label": "Khoản công nợ và đối trừ: Gỡ đối trừ",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:doi-tru-lap",
+      "label": "Khoản công nợ và đối trừ: Đối trừ / tự đối trừ",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:doi-tru-xem",
+      "label": "Khoản công nợ và đối trừ: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:gia-von-tinh",
+      "label": "Tính giá vốn: Tính giá vốn",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:gia-von-xem",
+      "label": "Tính giá vốn: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ke-hoach-thu-chi-lap",
+      "label": "Kế hoạch thu chi: Thêm / điền tự động",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ke-hoach-thu-chi-sua",
+      "label": "Kế hoạch thu chi: Sửa",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ke-hoach-thu-chi-xem",
+      "label": "Kế hoạch thu chi: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ke-hoach-thu-chi-xoa",
+      "label": "Kế hoạch thu chi: Xoá",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ket-chuyen-cau-hinh",
+      "label": "Kết chuyển lãi / lỗ: Sửa thứ tự / quy tắc kết chuyển",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ket-chuyen-chay",
+      "label": "Kết chuyển lãi / lỗ: Kết chuyển",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ket-chuyen-huy",
+      "label": "Kết chuyển lãi / lỗ: Huỷ kết chuyển",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ket-chuyen-nam-truoc",
+      "label": "Kết chuyển lãi / lỗ: Chuyển lợi nhuận năm trước",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ket-chuyen-xem",
+      "label": "Kết chuyển lãi / lỗ: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ky-ke-toan-khai",
+      "label": "Đóng / mở kỳ kế toán: Khai kỳ (năm)",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ky-ke-toan-khoa",
+      "label": "Đóng / mở kỳ kế toán: Khoá kỳ",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ky-ke-toan-mo-khoa",
+      "label": "Đóng / mở kỳ kế toán: Mở khoá kỳ",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:ky-ke-toan-xem",
+      "label": "Đóng / mở kỳ kế toán: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:lap-bctc-luu",
+      "label": "Lập báo cáo tài chính: Lưu bộ báo cáo",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:lap-bctc-xem",
+      "label": "Lập báo cáo tài chính: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:lap-bctc-xoa",
+      "label": "Lập báo cáo tài chính: Xoá bộ báo cáo",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:phieu-ke-toan-duyet",
+      "label": "Phiếu kế toán: Duyệt / ghi sổ",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:phieu-ke-toan-huy",
+      "label": "Phiếu kế toán: Huỷ",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:phieu-ke-toan-lap",
+      "label": "Phiếu kế toán: Thêm",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:phieu-ke-toan-sua",
+      "label": "Phiếu kế toán: Sửa",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:phieu-ke-toan-xem",
+      "label": "Phiếu kế toán: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:so-du-dau-ky-huy",
+      "label": "Số dư tài khoản đầu kỳ: Huỷ",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:so-du-dau-ky-lap",
+      "label": "Số dư tài khoản đầu kỳ: Nhập số dư",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:so-du-dau-ky-sua",
+      "label": "Số dư tài khoản đầu kỳ: Sửa",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "ke-toan:so-du-dau-ky-xem",
+      "label": "Số dư tài khoản đầu kỳ: Xem",
+      "risk": "low",
+      "module": "ke-toan"
+    },
+    {
+      "key": "kho:chuyen-kho-huy",
+      "label": "Huỷ phiếu chuyển kho",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:chuyen-kho-lap",
+      "label": "Lập / sửa phiếu chuyển kho (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:chuyen-kho-nhan",
+      "label": "Nhận hàng / bỏ nhận phiếu chuyển kho (thủ kho bên nhận)",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:chuyen-kho-sua",
+      "label": "Sửa phiếu chuyển kho đã ghi",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:chuyen-kho-xem",
+      "label": "Xem phiếu chuyển kho",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:dieu-chinh-huy",
+      "label": "Huỷ phiếu điều chỉnh kho",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:dieu-chinh-lap",
+      "label": "Lập / sửa phiếu điều chỉnh kho (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:dieu-chinh-xem",
+      "label": "Xem phiếu điều chỉnh kho",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:kiem-ke-bo-ghi-nhan",
+      "label": "Bỏ ghi nhận chênh lệch kiểm kê",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:kiem-ke-ghi-nhan",
+      "label": "Ghi nhận chênh lệch kiểm kê (sinh chứng từ điều chỉnh, chuyển kho cách ly)",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:kiem-ke-huy-quyet-dinh",
+      "label": "Huỷ quyết định xử lý chênh lệch",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:kiem-ke-lap",
+      "label": "Lập biên bản kiểm kê (nháp)",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:kiem-ke-quyet-dinh",
+      "label": "Quyết định xử lý chênh lệch (phiếu kế toán tất toán)",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:kiem-ke-sua",
+      "label": "Sửa biên bản kiểm kê nháp",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:kiem-ke-xac-minh",
+      "label": "Biên bản xác minh chênh lệch",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "kho:kiem-ke-xem",
+      "label": "Xem biên bản kiểm kê kho",
+      "risk": "low",
+      "module": "kho"
+    },
+    {
+      "key": "loyalty:read",
+      "label": "Xem điểm thành viên: chính sách tích điểm của cửa hàng, số dư / lô / lịch sử điểm của khách (máy bán, kế toán)",
+      "risk": "low",
+      "module": "loyalty"
+    },
+    {
+      "key": "mua-hang:bien-the-sua",
+      "label": "Lưu biến thể mặt hàng (còn cần quyền cấu hình)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:bien-the-xem",
+      "label": "Xem biến thể mặt hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:cai-dat-sua",
+      "label": "Lưu cài đặt mua hàng (còn cần quyền cấu hình)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:cai-dat-xem",
+      "label": "Xem cài đặt mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chinh-sach-lap",
+      "label": "Thêm chính sách mua hàng (còn cần quyền danh mục)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chinh-sach-sua",
+      "label": "Sửa chính sách mua hàng, điều chuyển hạn mức (còn cần quyền danh mục)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chinh-sach-xem",
+      "label": "Xem chính sách mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chinh-sach-xoa",
+      "label": "Xoá chính sách mua hàng chưa áp (còn cần quyền danh mục)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chung-tu-bo-duyet",
+      "label": "Bỏ duyệt chứng từ mua hàng (huỷ chứng từ kế toán đã sinh)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chung-tu-duyet",
+      "label": "Duyệt (ghi sổ) chứng từ mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chung-tu-duyet-ngoai-le",
+      "label": "Duyệt ngoại lệ vượt hạn mức / rà soát nhập ngoài đơn (còn cần quyền duyệt chi)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chung-tu-gui-duyet",
+      "label": "Gửi duyệt chứng từ mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chung-tu-huy",
+      "label": "Huỷ chứng từ mua hàng chưa duyệt",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chung-tu-lap",
+      "label": "Thêm chứng từ mua hàng (đơn mua, phiếu nhập, trả lại, giảm giá…)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chung-tu-sua",
+      "label": "Sửa chứng từ mua hàng nháp / chờ duyệt",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chung-tu-xem",
+      "label": "Xem chứng từ mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chuyen-shop-huy",
+      "label": "Huỷ đề nghị chuyển hàng xuống shop",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chuyen-shop-lap",
+      "label": "Chốt đề nghị chuyển hàng xuống shop",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chuyen-shop-xem",
+      "label": "Xem đề nghị chuyển hàng xuống shop",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:chuyen-shop-xong",
+      "label": "Đánh dấu đề nghị chuyển đã lên phiếu / mở lại",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:cong-thuc-sua",
+      "label": "Lưu công thức đặt hàng (còn cần quyền cấu hình)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:cong-thuc-xem",
+      "label": "Xem công thức đặt hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:dang-ky-max-duyet",
+      "label": "Duyệt phiếu đăng ký tồn max (ghi tồn max)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:dang-ky-max-huy",
+      "label": "Huỷ phiếu đăng ký tồn max",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:dang-ky-max-lap",
+      "label": "Lập phiếu đăng ký tồn max",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:dang-ky-max-sua",
+      "label": "Sửa phiếu đăng ký tồn max",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:dang-ky-max-xem",
+      "label": "Xem phiếu đăng ký tồn max",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:doi-chieu-xem",
+      "label": "Xem đối chiếu đơn đặt ↔ phiếu nhập",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:gia-mua-sua",
+      "label": "Thêm / sửa / xoá mặt hàng & giá mua NCC (còn cần quyền danh mục)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:han-muc-xem",
+      "label": "Xem hạn mức & công nợ đến hạn NCC",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:hoa-don-ncc-huy",
+      "label": "Huỷ hoá đơn đầu vào của NCC",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:hoa-don-ncc-lap",
+      "label": "Thêm / nhập / đọc hoá đơn đầu vào của NCC",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:hoa-don-ncc-sua",
+      "label": "Sửa hoá đơn đầu vào của NCC, xoá cách ghi mã đã học",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:hoa-don-ncc-xem",
+      "label": "Xem hoá đơn đầu vào của NCC",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:hop-dong-sua",
+      "label": "Thêm / sửa / thanh lý hợp đồng mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:hop-dong-xem",
+      "label": "Xem hợp đồng mua hàng và công nợ theo hợp đồng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:khoi-dau-nhap",
+      "label": "Ghi dữ liệu khởi đầu: giá mua, cân tồn, tồn max (còn cần quyền danh mục)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:khoi-dau-xem",
+      "label": "Xem màn nhập dữ liệu khởi đầu",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:lo-han-xem",
+      "label": "Xem lô & hạn dùng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:nha-cung-cap-xem",
+      "label": "Xem nhà cung cấp mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:phieu-mua-huy",
+      "label": "Huỷ phiếu mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:phieu-mua-lap",
+      "label": "Lập / sửa phiếu mua hàng (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:phieu-mua-xem",
+      "label": "Xem phiếu mua hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:qua-tang-xem",
+      "label": "Xem quà tặng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:so-kho-xem",
+      "label": "Xem sổ kho theo mặt hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:thuong-xem",
+      "label": "Xem tính thưởng cuối kỳ",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:ton-kho-xem",
+      "label": "Xem tồn kho theo mặt hàng",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:ton-max-sua",
+      "label": "Ghi tồn max / min, cài riêng từng mã",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:ton-max-xem",
+      "label": "Xem tồn max",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:tra-ncc-huy",
+      "label": "Huỷ phiếu trả hàng nhà cung cấp",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:tra-ncc-lap",
+      "label": "Lập / sửa phiếu trả hàng nhà cung cấp (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "mua-hang:tra-ncc-xem",
+      "label": "Xem phiếu trả hàng nhà cung cấp",
+      "risk": "low",
+      "module": "mua-hang"
+    },
+    {
+      "key": "phieu-ban:giao-hang-lap",
+      "label": "Giao hàng đơn đặt hàng — lập chuyến giao (Chờ lấy hàng) (NT-BH-032)",
+      "risk": "low",
+      "module": "phieu-ban"
+    },
+    {
+      "key": "phieu-ban:giao-hang-sua",
+      "label": "Giao hàng đơn đặt hàng — cập nhật trạng thái chuyến: Đang giao (chuyển kho sang KHG), Đã giao (sinh phiếu bán nháp), Hoàn (NT-BH-032)",
+      "risk": "low",
+      "module": "phieu-ban"
+    },
+    {
+      "key": "phieu-ban:order-approve",
+      "label": "Duyệt / từ chối đơn đặt hàng chờ duyệt (vượt hạn mức nợ, nợ quá hạn)",
+      "risk": "high",
+      "module": "phieu-ban"
+    },
+    {
+      "key": "phieu-ban:read",
+      "label": "Xem phiếu bán / trả hàng nhập tay",
+      "risk": "low",
+      "module": "phieu-ban"
+    },
+    {
+      "key": "phieu-ban:write",
+      "label": "Lập, sửa, duyệt, bỏ duyệt phiếu bán / trả hàng nhập tay",
+      "risk": "low",
+      "module": "phieu-ban"
+    },
+    {
+      "key": "pos:cancel",
+      "label": "Huỷ đơn máy POS đang chờ thanh toán",
+      "risk": "low",
+      "module": "pos"
+    },
+    {
+      "key": "pos:kenh-ban-lap",
+      "label": "Kênh bán hàng — thêm kênh (NT-BH-031)",
+      "risk": "low",
+      "module": "pos"
+    },
+    {
+      "key": "pos:kenh-ban-sua",
+      "label": "Kênh bán hàng — sửa tên / loại online-offline / thứ tự, dùng lại kênh đã ngừng (NT-BH-031)",
+      "risk": "low",
+      "module": "pos"
+    },
+    {
+      "key": "pos:kenh-ban-xoa",
+      "label": "Kênh bán hàng — ngừng dùng kênh (thay cho xoá: kênh đã dùng không xoá, ECP-13; NT-BH-031)",
+      "risk": "low",
+      "module": "pos"
+    },
+    {
+      "key": "pos:promo-approve",
+      "label": "Duyệt / từ chối chương trình khuyến mại (BH18) — người lập không tự duyệt; duyệt xong màn phát hành vào sổ chính sách",
+      "risk": "high",
+      "module": "pos"
+    },
+    {
+      "key": "pos:report",
+      "label": "Xem quản trị bán lẻ máy POS: đơn, phiếu trả, sổ ca, tổng quan, cài đặt bán hàng của mọi chi nhánh (kế toán, quản lý)",
+      "risk": "low",
+      "module": "pos"
+    },
+    {
+      "key": "pos:return",
+      "label": "Trả hàng / đổi hàng trên máy POS (phiếu trả nối đơn gốc)",
+      "risk": "low",
+      "module": "pos"
+    },
+    {
+      "key": "pos:return-approve",
+      "label": "Duyệt / từ chối yêu cầu trả hàng quá hạn của máy bán (NT-BH-030) — người gửi không tự duyệt; duyệt xong máy bán mới lập phiếu trả đúng nội dung đã duyệt",
+      "risk": "high",
+      "module": "pos"
+    },
+    {
+      "key": "pos:sell",
+      "label": "Bán hàng trên máy POS: khởi động màn bán, xin số phiếu, gửi đơn, xem / tra đơn, tìm khách",
+      "risk": "low",
+      "module": "pos"
+    },
+    {
+      "key": "quy:bao-co-duyet",
+      "label": "Duyệt / ghi sổ giấy báo có (thu tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-co-huy",
+      "label": "Huỷ giấy báo có (thu tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-co-lap",
+      "label": "Lập giấy báo có (thu tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-co-sua",
+      "label": "Sửa giấy báo có (thu tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-co-xem",
+      "label": "Xem giấy báo có (thu tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-no-duyet",
+      "label": "Duyệt / ghi sổ giấy báo nợ (chi tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-no-huy",
+      "label": "Huỷ giấy báo nợ (chi tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-no-lap",
+      "label": "Lập giấy báo nợ (chi tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-no-sua",
+      "label": "Sửa giấy báo nợ (chi tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:bao-no-xem",
+      "label": "Xem giấy báo nợ (chi tiền gửi)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:chi-tien-huy",
+      "label": "Huỷ phiếu chi trả nhà cung cấp",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:chi-tien-lap",
+      "label": "Lập / sửa phiếu chi trả nhà cung cấp (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:chi-tien-xem",
+      "label": "Xem phiếu chi trả nhà cung cấp",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:chuyen-tien-huy",
+      "label": "Huỷ phiếu chuyển tiền",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:chuyen-tien-lap",
+      "label": "Lập / sửa phiếu chuyển tiền (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:chuyen-tien-xem",
+      "label": "Xem phiếu chuyển tiền",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-chi-duyet",
+      "label": "Duyệt / ghi sổ phiếu chi",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-chi-huy",
+      "label": "Huỷ phiếu chi",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-chi-lap",
+      "label": "Lập phiếu chi",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-chi-sua",
+      "label": "Sửa phiếu chi",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-chi-xem",
+      "label": "Xem phiếu chi",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-thu-duyet",
+      "label": "Duyệt / ghi sổ phiếu thu",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-thu-huy",
+      "label": "Huỷ phiếu thu",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-thu-lap",
+      "label": "Lập phiếu thu",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-thu-sua",
+      "label": "Sửa phiếu thu",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:phieu-thu-xem",
+      "label": "Xem phiếu thu",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:thu-tien-huy",
+      "label": "Huỷ phiếu thu tiền khách hàng",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:thu-tien-lap",
+      "label": "Lập / sửa phiếu thu tiền khách hàng (cửa nạp chứng từ)",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "quy:thu-tien-xem",
+      "label": "Xem phiếu thu tiền khách hàng",
+      "risk": "low",
+      "module": "quy"
+    },
+    {
+      "key": "tai-san:bien-dong-lap",
+      "label": "Biến động tài sản (đánh giá lại, điều chuyển, kiểm kê): Thêm sự kiện",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:bien-dong-xem",
+      "label": "Biến động tài sản (đánh giá lại, điều chuyển, kiểm kê): Xem",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:bien-dong-xoa",
+      "label": "Biến động tài sản (đánh giá lại, điều chuyển, kiểm kê): Xoá sự kiện",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:khau-hao-sua-tay",
+      "label": "Tính khấu hao, phân bổ: Sửa tay số trích",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:khau-hao-tinh",
+      "label": "Tính khấu hao, phân bổ: Tính khấu hao và ghi sổ",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:khau-hao-xem",
+      "label": "Tính khấu hao, phân bổ: Xem",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:loai-tai-san-lap",
+      "label": "Loại tài sản: Thêm",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:loai-tai-san-sua",
+      "label": "Loại tài sản: Sửa",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:loai-tai-san-xem",
+      "label": "Loại tài sản: Xem",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:loai-tai-san-xoa",
+      "label": "Loại tài sản: Xoá",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:the-tai-san-ghi-so",
+      "label": "Thẻ tài sản (tăng / giảm TSCĐ): Lập chứng từ ghi tăng / điều chuyển",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:the-tai-san-lap",
+      "label": "Thẻ tài sản (tăng / giảm TSCĐ): Thêm / nhập Excel",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:the-tai-san-sua",
+      "label": "Thẻ tài sản (tăng / giảm TSCĐ): Sửa (cả ghi giảm, tạm ngừng, ảnh)",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:the-tai-san-xem",
+      "label": "Thẻ tài sản (tăng / giảm TSCĐ): Xem",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "tai-san:the-tai-san-xoa",
+      "label": "Thẻ tài sản (tăng / giảm TSCĐ): Xoá thẻ chưa trích",
+      "risk": "low",
+      "module": "tai-san"
+    },
+    {
+      "key": "thue:bo-sung-thong-tin-sua",
+      "label": "Bổ sung thông tin thuế: Ghi thông tin thuế",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:bo-sung-thong-tin-xem",
+      "label": "Bổ sung thông tin thuế: Xem",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:bo-sung-thong-tin-xoa",
+      "label": "Bổ sung thông tin thuế: Xoá thông tin thuế",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:hoa-don-cqt-nhap",
+      "label": "Hoá đơn từ cơ quan thuế: Nhập hoá đơn từ cổng",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:hoa-don-cqt-tham-chieu",
+      "label": "Hoá đơn từ cơ quan thuế: Chuyển thành chứng từ tham chiếu",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:hoa-don-cqt-xem",
+      "label": "Hoá đơn từ cơ quan thuế: Xem",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:hoa-don-cqt-xoa",
+      "label": "Hoá đơn từ cơ quan thuế: Xoá hoá đơn đã nhập",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:hoa-don-rui-ro-sua",
+      "label": "Cảnh báo hoá đơn rủi ro: Thêm / sửa người nộp thuế rủi ro",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:hoa-don-rui-ro-xem",
+      "label": "Cảnh báo hoá đơn rủi ro: Xem",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:hoa-don-rui-ro-xoa",
+      "label": "Cảnh báo hoá đơn rủi ro: Xoá người nộp thuế rủi ro",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:nguoi-nop-thue-sua",
+      "label": "Thông tin người nộp thuế: Sửa",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:nguoi-nop-thue-xem",
+      "label": "Thông tin người nộp thuế: Xem",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:phan-loai-dai-han-luu",
+      "label": "Phân loại dài hạn (B01): Lưu phần dài hạn",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:phan-loai-dai-han-xem",
+      "label": "Phân loại dài hạn (B01): Xem",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:quyet-toan-tndn-luu",
+      "label": "Quyết toán thuế TNDN: Lưu tờ khai",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:quyet-toan-tndn-xem",
+      "label": "Quyết toán thuế TNDN: Xem",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:to-khai-gtgt-bo-sung",
+      "label": "Khai thuế GTGT: Lập tờ khai bổ sung",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:to-khai-gtgt-chap-nhan",
+      "label": "Khai thuế GTGT: Đánh dấu cơ quan thuế chấp nhận",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:to-khai-gtgt-luu",
+      "label": "Khai thuế GTGT: Lưu tờ khai",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:to-khai-gtgt-xem",
+      "label": "Khai thuế GTGT: Xem",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "thue:to-khai-gtgt-xoa",
+      "label": "Khai thuế GTGT: Xoá lần khai chưa chấp nhận",
+      "risk": "low",
+      "module": "thue"
+    },
+    {
+      "key": "voucher:read",
+      "label": "Xem voucher: đợt phát, mã, tra cứu mã đã dùng ở đơn nào, báo cáo",
+      "risk": "low",
+      "module": "voucher"
+    },
+    {
+      "key": "voucher:use",
+      "label": "Dùng voucher của khách khi bán (máy bán, BH10): xem voucher còn hạn của khách, kiểm mã — vé thu ngân cần quyền này",
+      "risk": "low",
+      "module": "voucher"
+    },
+    {
+      "key": "voucher:write",
+      "label": "Lập / sửa / ngừng đợt phát voucher, sinh / nạp mã gắn khách, thu hồi mã",
+      "risk": "low",
+      "module": "voucher"
+    }
+  ],
+  "roles": [
+    {
+      "key": "accountant",
+      "label": "Kế toán",
+      "admin": false,
+      "permissions": [
+        "ban-hang:chuong-trinh-han-muc",
+        "ban-hang:chuong-trinh-lap",
+        "ban-hang:chuong-trinh-sua",
+        "ban-hang:chuong-trinh-xem",
+        "ban-hang:hoa-don-duyet",
+        "ban-hang:hoa-don-huy",
+        "ban-hang:hoa-don-lap",
+        "ban-hang:hoa-don-sua",
+        "ban-hang:hoa-don-xem",
+        "ban-hang:hoa-don-xuat",
+        "ban-hang:tra-hang-duyet",
+        "ban-hang:tra-hang-huy",
+        "ban-hang:tra-hang-lap",
+        "ban-hang:tra-hang-sua",
+        "ban-hang:tra-hang-xem",
+        "ban-hang:tra-hang-xuat",
+        "catalog:read",
+        "catalog:write",
+        "conformance:read",
+        "conformance:run",
+        "documents:read",
+        "documents:write",
+        "he-thong:bang-gia-sua",
+        "he-thong:bang-gia-xoa",
+        "he-thong:chi-nhanh-sua",
+        "he-thong:chi-nhanh-them",
+        "he-thong:chi-nhanh-xoa",
+        "he-thong:doi-tuong-nhap-excel",
+        "he-thong:doi-tuong-sua",
+        "he-thong:doi-tuong-them",
+        "he-thong:doi-tuong-xoa",
+        "he-thong:don-vi-khoi-anh",
+        "he-thong:don-vi-sua",
+        "he-thong:don-vi-tinh-sua",
+        "he-thong:don-vi-tinh-them",
+        "he-thong:don-vi-tinh-xoa",
+        "he-thong:kho-sua",
+        "he-thong:kho-them",
+        "he-thong:kho-xoa",
+        "he-thong:khoa-api-them",
+        "he-thong:khoa-api-xoa",
+        "he-thong:loai-kho-sua",
+        "he-thong:mat-hang-nhap-excel",
+        "he-thong:mat-hang-sua",
+        "he-thong:mat-hang-xoa",
+        "he-thong:nguoi-dung-gan-vai-tro",
+        "he-thong:nguoi-dung-sua",
+        "he-thong:nguoi-dung-them",
+        "he-thong:nhom-doi-tuong-sua",
+        "he-thong:nhom-doi-tuong-xoa",
+        "he-thong:nhom-hang-sua",
+        "he-thong:nhom-hang-xoa",
+        "he-thong:tai-khoan-sua",
+        "he-thong:tai-khoan-them",
+        "he-thong:tai-khoan-xoa",
+        "he-thong:tk-ngan-hang-sua",
+        "he-thong:tk-ngan-hang-xoa",
+        "ke-toan:but-toan-huy",
+        "ke-toan:but-toan-lap",
+        "ke-toan:but-toan-xem",
+        "ke-toan:dinh-muc-sua",
+        "ke-toan:dinh-muc-xem",
+        "ke-toan:doi-tru-go",
+        "ke-toan:doi-tru-lap",
+        "ke-toan:doi-tru-xem",
+        "ke-toan:gia-von-tinh",
+        "ke-toan:gia-von-xem",
+        "ke-toan:ke-hoach-thu-chi-lap",
+        "ke-toan:ke-hoach-thu-chi-sua",
+        "ke-toan:ke-hoach-thu-chi-xem",
+        "ke-toan:ke-hoach-thu-chi-xoa",
+        "ke-toan:ket-chuyen-cau-hinh",
+        "ke-toan:ket-chuyen-chay",
+        "ke-toan:ket-chuyen-huy",
+        "ke-toan:ket-chuyen-nam-truoc",
+        "ke-toan:ket-chuyen-xem",
+        "ke-toan:ky-ke-toan-khai",
+        "ke-toan:ky-ke-toan-khoa",
+        "ke-toan:ky-ke-toan-mo-khoa",
+        "ke-toan:ky-ke-toan-xem",
+        "ke-toan:lap-bctc-luu",
+        "ke-toan:lap-bctc-xem",
+        "ke-toan:lap-bctc-xoa",
+        "ke-toan:phieu-ke-toan-duyet",
+        "ke-toan:phieu-ke-toan-huy",
+        "ke-toan:phieu-ke-toan-lap",
+        "ke-toan:phieu-ke-toan-sua",
+        "ke-toan:phieu-ke-toan-xem",
+        "ke-toan:so-du-dau-ky-huy",
+        "ke-toan:so-du-dau-ky-lap",
+        "ke-toan:so-du-dau-ky-sua",
+        "ke-toan:so-du-dau-ky-xem",
+        "kho:chuyen-kho-huy",
+        "kho:chuyen-kho-lap",
+        "kho:chuyen-kho-nhan",
+        "kho:chuyen-kho-sua",
+        "kho:chuyen-kho-xem",
+        "kho:dieu-chinh-huy",
+        "kho:dieu-chinh-lap",
+        "kho:dieu-chinh-xem",
+        "kho:kiem-ke-bo-ghi-nhan",
+        "kho:kiem-ke-ghi-nhan",
+        "kho:kiem-ke-huy-quyet-dinh",
+        "kho:kiem-ke-lap",
+        "kho:kiem-ke-quyet-dinh",
+        "kho:kiem-ke-sua",
+        "kho:kiem-ke-xac-minh",
+        "kho:kiem-ke-xem",
+        "ledger:read",
+        "loyalty:read",
+        "mua-hang:bien-the-sua",
+        "mua-hang:bien-the-xem",
+        "mua-hang:cai-dat-sua",
+        "mua-hang:cai-dat-xem",
+        "mua-hang:chinh-sach-lap",
+        "mua-hang:chinh-sach-sua",
+        "mua-hang:chinh-sach-xem",
+        "mua-hang:chinh-sach-xoa",
+        "mua-hang:chung-tu-bo-duyet",
+        "mua-hang:chung-tu-duyet",
+        "mua-hang:chung-tu-duyet-ngoai-le",
+        "mua-hang:chung-tu-gui-duyet",
+        "mua-hang:chung-tu-huy",
+        "mua-hang:chung-tu-lap",
+        "mua-hang:chung-tu-sua",
+        "mua-hang:chung-tu-xem",
+        "mua-hang:chuyen-shop-huy",
+        "mua-hang:chuyen-shop-lap",
+        "mua-hang:chuyen-shop-xem",
+        "mua-hang:chuyen-shop-xong",
+        "mua-hang:cong-thuc-sua",
+        "mua-hang:cong-thuc-xem",
+        "mua-hang:dang-ky-max-duyet",
+        "mua-hang:dang-ky-max-huy",
+        "mua-hang:dang-ky-max-lap",
+        "mua-hang:dang-ky-max-sua",
+        "mua-hang:dang-ky-max-xem",
+        "mua-hang:doi-chieu-xem",
+        "mua-hang:gia-mua-sua",
+        "mua-hang:han-muc-xem",
+        "mua-hang:hoa-don-ncc-huy",
+        "mua-hang:hoa-don-ncc-lap",
+        "mua-hang:hoa-don-ncc-sua",
+        "mua-hang:hoa-don-ncc-xem",
+        "mua-hang:hop-dong-sua",
+        "mua-hang:hop-dong-xem",
+        "mua-hang:khoi-dau-nhap",
+        "mua-hang:khoi-dau-xem",
+        "mua-hang:lo-han-xem",
+        "mua-hang:nha-cung-cap-xem",
+        "mua-hang:phieu-mua-huy",
+        "mua-hang:phieu-mua-lap",
+        "mua-hang:phieu-mua-xem",
+        "mua-hang:qua-tang-xem",
+        "mua-hang:so-kho-xem",
+        "mua-hang:thuong-xem",
+        "mua-hang:ton-kho-xem",
+        "mua-hang:ton-max-sua",
+        "mua-hang:ton-max-xem",
+        "mua-hang:tra-ncc-huy",
+        "mua-hang:tra-ncc-lap",
+        "mua-hang:tra-ncc-xem",
+        "phieu-ban:giao-hang-lap",
+        "phieu-ban:giao-hang-sua",
+        "phieu-ban:read",
+        "phieu-ban:write",
+        "pos:kenh-ban-lap",
+        "pos:kenh-ban-sua",
+        "pos:report",
+        "quy:bao-co-duyet",
+        "quy:bao-co-huy",
+        "quy:bao-co-lap",
+        "quy:bao-co-sua",
+        "quy:bao-co-xem",
+        "quy:bao-no-duyet",
+        "quy:bao-no-huy",
+        "quy:bao-no-lap",
+        "quy:bao-no-sua",
+        "quy:bao-no-xem",
+        "quy:chi-tien-huy",
+        "quy:chi-tien-lap",
+        "quy:chi-tien-xem",
+        "quy:chuyen-tien-huy",
+        "quy:chuyen-tien-lap",
+        "quy:chuyen-tien-xem",
+        "quy:phieu-chi-duyet",
+        "quy:phieu-chi-huy",
+        "quy:phieu-chi-lap",
+        "quy:phieu-chi-sua",
+        "quy:phieu-chi-xem",
+        "quy:phieu-thu-duyet",
+        "quy:phieu-thu-huy",
+        "quy:phieu-thu-lap",
+        "quy:phieu-thu-sua",
+        "quy:phieu-thu-xem",
+        "quy:thu-tien-huy",
+        "quy:thu-tien-lap",
+        "quy:thu-tien-xem",
+        "reports:read",
+        "review:read",
+        "tai-san:bien-dong-lap",
+        "tai-san:bien-dong-xem",
+        "tai-san:bien-dong-xoa",
+        "tai-san:khau-hao-sua-tay",
+        "tai-san:khau-hao-tinh",
+        "tai-san:khau-hao-xem",
+        "tai-san:loai-tai-san-lap",
+        "tai-san:loai-tai-san-sua",
+        "tai-san:loai-tai-san-xem",
+        "tai-san:loai-tai-san-xoa",
+        "tai-san:the-tai-san-ghi-so",
+        "tai-san:the-tai-san-lap",
+        "tai-san:the-tai-san-sua",
+        "tai-san:the-tai-san-xem",
+        "tai-san:the-tai-san-xoa",
+        "thue:bo-sung-thong-tin-sua",
+        "thue:bo-sung-thong-tin-xem",
+        "thue:bo-sung-thong-tin-xoa",
+        "thue:hoa-don-cqt-nhap",
+        "thue:hoa-don-cqt-tham-chieu",
+        "thue:hoa-don-cqt-xem",
+        "thue:hoa-don-cqt-xoa",
+        "thue:hoa-don-rui-ro-sua",
+        "thue:hoa-don-rui-ro-xem",
+        "thue:hoa-don-rui-ro-xoa",
+        "thue:nguoi-nop-thue-sua",
+        "thue:nguoi-nop-thue-xem",
+        "thue:phan-loai-dai-han-luu",
+        "thue:phan-loai-dai-han-xem",
+        "thue:quyet-toan-tndn-luu",
+        "thue:quyet-toan-tndn-xem",
+        "thue:to-khai-gtgt-bo-sung",
+        "thue:to-khai-gtgt-chap-nhan",
+        "thue:to-khai-gtgt-luu",
+        "thue:to-khai-gtgt-xem",
+        "thue:to-khai-gtgt-xoa",
+        "voucher:read",
+        "voucher:use",
+        "voucher:write"
+      ]
+    },
+    {
+      "key": "auditor",
+      "label": "Kiểm soát (ban kiểm soát)",
+      "admin": false,
+      "permissions": [
+        "ban-hang:chuong-trinh-xem",
+        "ban-hang:hoa-don-xem",
+        "ban-hang:hoa-don-xuat",
+        "ban-hang:tra-hang-xem",
+        "ban-hang:tra-hang-xuat",
+        "catalog:read",
+        "conformance:read",
+        "documents:read",
+        "ke-toan:but-toan-xem",
+        "ke-toan:dinh-muc-xem",
+        "ke-toan:doi-tru-xem",
+        "ke-toan:gia-von-xem",
+        "ke-toan:ke-hoach-thu-chi-xem",
+        "ke-toan:ket-chuyen-xem",
+        "ke-toan:ky-ke-toan-xem",
+        "ke-toan:lap-bctc-xem",
+        "ke-toan:phieu-ke-toan-xem",
+        "ke-toan:so-du-dau-ky-xem",
+        "kho:chuyen-kho-xem",
+        "kho:dieu-chinh-xem",
+        "kho:kiem-ke-xem",
+        "ledger:read",
+        "mua-hang:bien-the-xem",
+        "mua-hang:cai-dat-xem",
+        "mua-hang:chinh-sach-xem",
+        "mua-hang:chung-tu-xem",
+        "mua-hang:chuyen-shop-xem",
+        "mua-hang:cong-thuc-xem",
+        "mua-hang:dang-ky-max-xem",
+        "mua-hang:doi-chieu-xem",
+        "mua-hang:han-muc-xem",
+        "mua-hang:hoa-don-ncc-xem",
+        "mua-hang:hop-dong-xem",
+        "mua-hang:khoi-dau-xem",
+        "mua-hang:lo-han-xem",
+        "mua-hang:nha-cung-cap-xem",
+        "mua-hang:phieu-mua-xem",
+        "mua-hang:qua-tang-xem",
+        "mua-hang:so-kho-xem",
+        "mua-hang:thuong-xem",
+        "mua-hang:ton-kho-xem",
+        "mua-hang:ton-max-xem",
+        "mua-hang:tra-ncc-xem",
+        "quy:bao-co-xem",
+        "quy:bao-no-xem",
+        "quy:chi-tien-xem",
+        "quy:chuyen-tien-xem",
+        "quy:phieu-chi-xem",
+        "quy:phieu-thu-xem",
+        "quy:thu-tien-xem",
+        "reports:read",
+        "review:read",
+        "tai-san:bien-dong-xem",
+        "tai-san:khau-hao-xem",
+        "tai-san:loai-tai-san-xem",
+        "tai-san:the-tai-san-xem",
+        "thue:bo-sung-thong-tin-xem",
+        "thue:hoa-don-cqt-xem",
+        "thue:hoa-don-rui-ro-xem",
+        "thue:nguoi-nop-thue-xem",
+        "thue:phan-loai-dai-han-xem",
+        "thue:quyet-toan-tndn-xem",
+        "thue:to-khai-gtgt-xem"
+      ]
+    },
+    {
+      "key": "chief_accountant",
+      "label": "Kế toán trưởng",
+      "admin": false,
+      "permissions": [
+        "ban-hang:chuong-trinh-han-muc",
+        "ban-hang:chuong-trinh-lap",
+        "ban-hang:chuong-trinh-sua",
+        "ban-hang:chuong-trinh-xem",
+        "ban-hang:hoa-don-duyet",
+        "ban-hang:hoa-don-huy",
+        "ban-hang:hoa-don-lap",
+        "ban-hang:hoa-don-sua",
+        "ban-hang:hoa-don-xem",
+        "ban-hang:hoa-don-xuat",
+        "ban-hang:tra-hang-duyet",
+        "ban-hang:tra-hang-huy",
+        "ban-hang:tra-hang-lap",
+        "ban-hang:tra-hang-sua",
+        "ban-hang:tra-hang-xem",
+        "ban-hang:tra-hang-xuat",
+        "catalog:read",
+        "catalog:write",
+        "conformance:approve",
+        "conformance:read",
+        "conformance:run",
+        "documents:bypass-date-lock",
+        "documents:edit-all",
+        "documents:read",
+        "documents:write",
+        "he-thong:bang-gia-sua",
+        "he-thong:bang-gia-xoa",
+        "he-thong:chi-nhanh-sua",
+        "he-thong:chi-nhanh-them",
+        "he-thong:chi-nhanh-xoa",
+        "he-thong:doi-tuong-nhap-excel",
+        "he-thong:doi-tuong-sua",
+        "he-thong:doi-tuong-them",
+        "he-thong:doi-tuong-xoa",
+        "he-thong:don-vi-khoi-anh",
+        "he-thong:don-vi-sua",
+        "he-thong:don-vi-tinh-sua",
+        "he-thong:don-vi-tinh-them",
+        "he-thong:don-vi-tinh-xoa",
+        "he-thong:kho-sua",
+        "he-thong:kho-them",
+        "he-thong:kho-xoa",
+        "he-thong:khoa-api-them",
+        "he-thong:khoa-api-xoa",
+        "he-thong:loai-kho-sua",
+        "he-thong:mat-hang-nhap-excel",
+        "he-thong:mat-hang-sua",
+        "he-thong:mat-hang-xoa",
+        "he-thong:nguoi-dung-gan-vai-tro",
+        "he-thong:nguoi-dung-sua",
+        "he-thong:nguoi-dung-them",
+        "he-thong:nhom-doi-tuong-sua",
+        "he-thong:nhom-doi-tuong-xoa",
+        "he-thong:nhom-hang-sua",
+        "he-thong:nhom-hang-xoa",
+        "he-thong:tai-khoan-sua",
+        "he-thong:tai-khoan-them",
+        "he-thong:tai-khoan-xoa",
+        "he-thong:tk-ngan-hang-sua",
+        "he-thong:tk-ngan-hang-xoa",
+        "ke-toan:but-toan-huy",
+        "ke-toan:but-toan-lap",
+        "ke-toan:but-toan-xem",
+        "ke-toan:dinh-muc-sua",
+        "ke-toan:dinh-muc-xem",
+        "ke-toan:doi-tru-go",
+        "ke-toan:doi-tru-lap",
+        "ke-toan:doi-tru-xem",
+        "ke-toan:gia-von-tinh",
+        "ke-toan:gia-von-xem",
+        "ke-toan:ke-hoach-thu-chi-lap",
+        "ke-toan:ke-hoach-thu-chi-sua",
+        "ke-toan:ke-hoach-thu-chi-xem",
+        "ke-toan:ke-hoach-thu-chi-xoa",
+        "ke-toan:ket-chuyen-cau-hinh",
+        "ke-toan:ket-chuyen-chay",
+        "ke-toan:ket-chuyen-huy",
+        "ke-toan:ket-chuyen-nam-truoc",
+        "ke-toan:ket-chuyen-xem",
+        "ke-toan:ky-ke-toan-khai",
+        "ke-toan:ky-ke-toan-khoa",
+        "ke-toan:ky-ke-toan-mo-khoa",
+        "ke-toan:ky-ke-toan-xem",
+        "ke-toan:lap-bctc-luu",
+        "ke-toan:lap-bctc-xem",
+        "ke-toan:lap-bctc-xoa",
+        "ke-toan:phieu-ke-toan-duyet",
+        "ke-toan:phieu-ke-toan-huy",
+        "ke-toan:phieu-ke-toan-lap",
+        "ke-toan:phieu-ke-toan-sua",
+        "ke-toan:phieu-ke-toan-xem",
+        "ke-toan:so-du-dau-ky-huy",
+        "ke-toan:so-du-dau-ky-lap",
+        "ke-toan:so-du-dau-ky-sua",
+        "ke-toan:so-du-dau-ky-xem",
+        "kho:chuyen-kho-huy",
+        "kho:chuyen-kho-lap",
+        "kho:chuyen-kho-nhan",
+        "kho:chuyen-kho-sua",
+        "kho:chuyen-kho-xem",
+        "kho:dieu-chinh-huy",
+        "kho:dieu-chinh-lap",
+        "kho:dieu-chinh-xem",
+        "kho:kiem-ke-bo-ghi-nhan",
+        "kho:kiem-ke-ghi-nhan",
+        "kho:kiem-ke-huy-quyet-dinh",
+        "kho:kiem-ke-lap",
+        "kho:kiem-ke-quyet-dinh",
+        "kho:kiem-ke-sua",
+        "kho:kiem-ke-xac-minh",
+        "kho:kiem-ke-xem",
+        "ledger:read",
+        "loyalty:read",
+        "mua-hang:bien-the-sua",
+        "mua-hang:bien-the-xem",
+        "mua-hang:cai-dat-sua",
+        "mua-hang:cai-dat-xem",
+        "mua-hang:chinh-sach-lap",
+        "mua-hang:chinh-sach-sua",
+        "mua-hang:chinh-sach-xem",
+        "mua-hang:chinh-sach-xoa",
+        "mua-hang:chung-tu-bo-duyet",
+        "mua-hang:chung-tu-duyet",
+        "mua-hang:chung-tu-duyet-ngoai-le",
+        "mua-hang:chung-tu-gui-duyet",
+        "mua-hang:chung-tu-huy",
+        "mua-hang:chung-tu-lap",
+        "mua-hang:chung-tu-sua",
+        "mua-hang:chung-tu-xem",
+        "mua-hang:chuyen-shop-huy",
+        "mua-hang:chuyen-shop-lap",
+        "mua-hang:chuyen-shop-xem",
+        "mua-hang:chuyen-shop-xong",
+        "mua-hang:cong-thuc-sua",
+        "mua-hang:cong-thuc-xem",
+        "mua-hang:dang-ky-max-duyet",
+        "mua-hang:dang-ky-max-huy",
+        "mua-hang:dang-ky-max-lap",
+        "mua-hang:dang-ky-max-sua",
+        "mua-hang:dang-ky-max-xem",
+        "mua-hang:doi-chieu-xem",
+        "mua-hang:gia-mua-sua",
+        "mua-hang:han-muc-xem",
+        "mua-hang:hoa-don-ncc-huy",
+        "mua-hang:hoa-don-ncc-lap",
+        "mua-hang:hoa-don-ncc-sua",
+        "mua-hang:hoa-don-ncc-xem",
+        "mua-hang:hop-dong-sua",
+        "mua-hang:hop-dong-xem",
+        "mua-hang:khoi-dau-nhap",
+        "mua-hang:khoi-dau-xem",
+        "mua-hang:lo-han-xem",
+        "mua-hang:nha-cung-cap-xem",
+        "mua-hang:phieu-mua-huy",
+        "mua-hang:phieu-mua-lap",
+        "mua-hang:phieu-mua-xem",
+        "mua-hang:qua-tang-xem",
+        "mua-hang:so-kho-xem",
+        "mua-hang:thuong-xem",
+        "mua-hang:ton-kho-xem",
+        "mua-hang:ton-max-sua",
+        "mua-hang:ton-max-xem",
+        "mua-hang:tra-ncc-huy",
+        "mua-hang:tra-ncc-lap",
+        "mua-hang:tra-ncc-xem",
+        "payments:approve",
+        "periods:lock",
+        "phieu-ban:giao-hang-lap",
+        "phieu-ban:giao-hang-sua",
+        "phieu-ban:order-approve",
+        "phieu-ban:read",
+        "phieu-ban:write",
+        "pos:kenh-ban-lap",
+        "pos:kenh-ban-sua",
+        "pos:kenh-ban-xoa",
+        "pos:promo-approve",
+        "pos:report",
+        "pos:return-approve",
+        "quy:bao-co-duyet",
+        "quy:bao-co-huy",
+        "quy:bao-co-lap",
+        "quy:bao-co-sua",
+        "quy:bao-co-xem",
+        "quy:bao-no-duyet",
+        "quy:bao-no-huy",
+        "quy:bao-no-lap",
+        "quy:bao-no-sua",
+        "quy:bao-no-xem",
+        "quy:chi-tien-huy",
+        "quy:chi-tien-lap",
+        "quy:chi-tien-xem",
+        "quy:chuyen-tien-huy",
+        "quy:chuyen-tien-lap",
+        "quy:chuyen-tien-xem",
+        "quy:phieu-chi-duyet",
+        "quy:phieu-chi-huy",
+        "quy:phieu-chi-lap",
+        "quy:phieu-chi-sua",
+        "quy:phieu-chi-xem",
+        "quy:phieu-thu-duyet",
+        "quy:phieu-thu-huy",
+        "quy:phieu-thu-lap",
+        "quy:phieu-thu-sua",
+        "quy:phieu-thu-xem",
+        "quy:thu-tien-huy",
+        "quy:thu-tien-lap",
+        "quy:thu-tien-xem",
+        "reports:read",
+        "review:read",
+        "settings:write",
+        "tai-san:bien-dong-lap",
+        "tai-san:bien-dong-xem",
+        "tai-san:bien-dong-xoa",
+        "tai-san:khau-hao-sua-tay",
+        "tai-san:khau-hao-tinh",
+        "tai-san:khau-hao-xem",
+        "tai-san:loai-tai-san-lap",
+        "tai-san:loai-tai-san-sua",
+        "tai-san:loai-tai-san-xem",
+        "tai-san:loai-tai-san-xoa",
+        "tai-san:the-tai-san-ghi-so",
+        "tai-san:the-tai-san-lap",
+        "tai-san:the-tai-san-sua",
+        "tai-san:the-tai-san-xem",
+        "tai-san:the-tai-san-xoa",
+        "thue:bo-sung-thong-tin-sua",
+        "thue:bo-sung-thong-tin-xem",
+        "thue:bo-sung-thong-tin-xoa",
+        "thue:hoa-don-cqt-nhap",
+        "thue:hoa-don-cqt-tham-chieu",
+        "thue:hoa-don-cqt-xem",
+        "thue:hoa-don-cqt-xoa",
+        "thue:hoa-don-rui-ro-sua",
+        "thue:hoa-don-rui-ro-xem",
+        "thue:hoa-don-rui-ro-xoa",
+        "thue:nguoi-nop-thue-sua",
+        "thue:nguoi-nop-thue-xem",
+        "thue:phan-loai-dai-han-luu",
+        "thue:phan-loai-dai-han-xem",
+        "thue:quyet-toan-tndn-luu",
+        "thue:quyet-toan-tndn-xem",
+        "thue:to-khai-gtgt-bo-sung",
+        "thue:to-khai-gtgt-chap-nhan",
+        "thue:to-khai-gtgt-luu",
+        "thue:to-khai-gtgt-xem",
+        "thue:to-khai-gtgt-xoa",
+        "voucher:read",
+        "voucher:use",
+        "voucher:write"
+      ]
+    },
+    {
+      "key": "developer",
+      "label": "Nhà phát triển",
+      "admin": false,
+      "permissions": [
+        "ban-hang:chuong-trinh-xem",
+        "ban-hang:hoa-don-xem",
+        "ban-hang:hoa-don-xuat",
+        "ban-hang:tra-hang-xem",
+        "ban-hang:tra-hang-xuat",
+        "catalog:read",
+        "conformance:read",
+        "devtools:read",
+        "documents:read",
+        "ke-toan:but-toan-xem",
+        "ke-toan:dinh-muc-xem",
+        "ke-toan:doi-tru-xem",
+        "ke-toan:gia-von-xem",
+        "ke-toan:ke-hoach-thu-chi-xem",
+        "ke-toan:ket-chuyen-xem",
+        "ke-toan:ky-ke-toan-xem",
+        "ke-toan:lap-bctc-xem",
+        "ke-toan:phieu-ke-toan-xem",
+        "ke-toan:so-du-dau-ky-xem",
+        "kho:chuyen-kho-xem",
+        "kho:dieu-chinh-xem",
+        "kho:kiem-ke-xem",
+        "ledger:read",
+        "mua-hang:bien-the-xem",
+        "mua-hang:cai-dat-xem",
+        "mua-hang:chinh-sach-xem",
+        "mua-hang:chung-tu-xem",
+        "mua-hang:chuyen-shop-xem",
+        "mua-hang:cong-thuc-xem",
+        "mua-hang:dang-ky-max-xem",
+        "mua-hang:doi-chieu-xem",
+        "mua-hang:han-muc-xem",
+        "mua-hang:hoa-don-ncc-xem",
+        "mua-hang:hop-dong-xem",
+        "mua-hang:khoi-dau-xem",
+        "mua-hang:lo-han-xem",
+        "mua-hang:nha-cung-cap-xem",
+        "mua-hang:phieu-mua-xem",
+        "mua-hang:qua-tang-xem",
+        "mua-hang:so-kho-xem",
+        "mua-hang:thuong-xem",
+        "mua-hang:ton-kho-xem",
+        "mua-hang:ton-max-xem",
+        "mua-hang:tra-ncc-xem",
+        "quy:bao-co-xem",
+        "quy:bao-no-xem",
+        "quy:chi-tien-xem",
+        "quy:chuyen-tien-xem",
+        "quy:phieu-chi-xem",
+        "quy:phieu-thu-xem",
+        "quy:thu-tien-xem",
+        "reports:read",
+        "tai-san:bien-dong-xem",
+        "tai-san:khau-hao-xem",
+        "tai-san:loai-tai-san-xem",
+        "tai-san:the-tai-san-xem",
+        "thue:bo-sung-thong-tin-xem",
+        "thue:hoa-don-cqt-xem",
+        "thue:hoa-don-rui-ro-xem",
+        "thue:nguoi-nop-thue-xem",
+        "thue:phan-loai-dai-han-xem",
+        "thue:quyet-toan-tndn-xem",
+        "thue:to-khai-gtgt-xem"
+      ]
+    },
+    {
+      "key": "staff",
+      "label": "Nhân viên (theo chi nhánh)",
+      "admin": false,
+      "permissions": [
+        "catalog:read"
+      ]
+    },
+    {
+      "key": "viewer",
+      "label": "Chỉ xem",
+      "admin": false,
+      "permissions": [
+        "ban-hang:chuong-trinh-xem",
+        "ban-hang:hoa-don-xem",
+        "ban-hang:hoa-don-xuat",
+        "ban-hang:tra-hang-xem",
+        "ban-hang:tra-hang-xuat",
+        "catalog:read",
+        "conformance:read",
+        "documents:read",
+        "ke-toan:but-toan-xem",
+        "ke-toan:dinh-muc-xem",
+        "ke-toan:doi-tru-xem",
+        "ke-toan:gia-von-xem",
+        "ke-toan:ke-hoach-thu-chi-xem",
+        "ke-toan:ket-chuyen-xem",
+        "ke-toan:ky-ke-toan-xem",
+        "ke-toan:lap-bctc-xem",
+        "ke-toan:phieu-ke-toan-xem",
+        "ke-toan:so-du-dau-ky-xem",
+        "kho:chuyen-kho-xem",
+        "kho:dieu-chinh-xem",
+        "kho:kiem-ke-xem",
+        "ledger:read",
+        "loyalty:read",
+        "mua-hang:bien-the-xem",
+        "mua-hang:cai-dat-xem",
+        "mua-hang:chinh-sach-xem",
+        "mua-hang:chung-tu-xem",
+        "mua-hang:chuyen-shop-xem",
+        "mua-hang:cong-thuc-xem",
+        "mua-hang:dang-ky-max-xem",
+        "mua-hang:doi-chieu-xem",
+        "mua-hang:han-muc-xem",
+        "mua-hang:hoa-don-ncc-xem",
+        "mua-hang:hop-dong-xem",
+        "mua-hang:khoi-dau-xem",
+        "mua-hang:lo-han-xem",
+        "mua-hang:nha-cung-cap-xem",
+        "mua-hang:phieu-mua-xem",
+        "mua-hang:qua-tang-xem",
+        "mua-hang:so-kho-xem",
+        "mua-hang:thuong-xem",
+        "mua-hang:ton-kho-xem",
+        "mua-hang:ton-max-xem",
+        "mua-hang:tra-ncc-xem",
+        "phieu-ban:read",
+        "pos:report",
+        "quy:bao-co-xem",
+        "quy:bao-no-xem",
+        "quy:chi-tien-xem",
+        "quy:chuyen-tien-xem",
+        "quy:phieu-chi-xem",
+        "quy:phieu-thu-xem",
+        "quy:thu-tien-xem",
+        "reports:read",
+        "tai-san:bien-dong-xem",
+        "tai-san:khau-hao-xem",
+        "tai-san:loai-tai-san-xem",
+        "tai-san:the-tai-san-xem",
+        "thue:bo-sung-thong-tin-xem",
+        "thue:hoa-don-cqt-xem",
+        "thue:hoa-don-rui-ro-xem",
+        "thue:nguoi-nop-thue-xem",
+        "thue:phan-loai-dai-han-xem",
+        "thue:quyet-toan-tndn-xem",
+        "thue:to-khai-gtgt-xem",
+        "voucher:read"
+      ]
+    }
+  ],
+  "api_scopes": {
+    "catalog:write": [
+      "catalog:read",
+      "catalog:write"
+    ],
+    "documents:write": [
+      "ban-hang:chuong-trinh-han-muc",
+      "ban-hang:chuong-trinh-lap",
+      "ban-hang:chuong-trinh-sua",
+      "ban-hang:chuong-trinh-xem",
+      "ban-hang:hoa-don-duyet",
+      "ban-hang:hoa-don-huy",
+      "ban-hang:hoa-don-lap",
+      "ban-hang:hoa-don-sua",
+      "ban-hang:hoa-don-xem",
+      "ban-hang:tra-hang-duyet",
+      "ban-hang:tra-hang-huy",
+      "ban-hang:tra-hang-lap",
+      "ban-hang:tra-hang-sua",
+      "ban-hang:tra-hang-xem",
+      "catalog:read",
+      "documents:edit-all",
+      "documents:read",
+      "documents:write",
+      "he-thong:bang-gia-sua",
+      "he-thong:bang-gia-xoa",
+      "he-thong:chi-nhanh-sua",
+      "he-thong:chi-nhanh-them",
+      "he-thong:chi-nhanh-xoa",
+      "he-thong:doi-tuong-nhap-excel",
+      "he-thong:doi-tuong-sua",
+      "he-thong:doi-tuong-them",
+      "he-thong:doi-tuong-xoa",
+      "he-thong:don-vi-khoi-anh",
+      "he-thong:don-vi-sua",
+      "he-thong:don-vi-tinh-sua",
+      "he-thong:don-vi-tinh-them",
+      "he-thong:don-vi-tinh-xoa",
+      "he-thong:kho-sua",
+      "he-thong:kho-them",
+      "he-thong:kho-xoa",
+      "he-thong:khoa-api-them",
+      "he-thong:khoa-api-xoa",
+      "he-thong:loai-kho-sua",
+      "he-thong:mat-hang-nhap-excel",
+      "he-thong:mat-hang-sua",
+      "he-thong:mat-hang-xoa",
+      "he-thong:nguoi-dung-gan-vai-tro",
+      "he-thong:nguoi-dung-sua",
+      "he-thong:nguoi-dung-them",
+      "he-thong:nhom-doi-tuong-sua",
+      "he-thong:nhom-doi-tuong-xoa",
+      "he-thong:nhom-hang-sua",
+      "he-thong:nhom-hang-xoa",
+      "he-thong:tai-khoan-sua",
+      "he-thong:tai-khoan-them",
+      "he-thong:tai-khoan-xoa",
+      "he-thong:tk-ngan-hang-sua",
+      "he-thong:tk-ngan-hang-xoa",
+      "ke-toan:but-toan-huy",
+      "ke-toan:but-toan-lap",
+      "ke-toan:but-toan-xem",
+      "ke-toan:dinh-muc-sua",
+      "ke-toan:dinh-muc-xem",
+      "ke-toan:doi-tru-go",
+      "ke-toan:doi-tru-lap",
+      "ke-toan:doi-tru-xem",
+      "ke-toan:gia-von-tinh",
+      "ke-toan:gia-von-xem",
+      "ke-toan:ke-hoach-thu-chi-lap",
+      "ke-toan:ke-hoach-thu-chi-sua",
+      "ke-toan:ke-hoach-thu-chi-xem",
+      "ke-toan:ke-hoach-thu-chi-xoa",
+      "ke-toan:ket-chuyen-cau-hinh",
+      "ke-toan:ket-chuyen-chay",
+      "ke-toan:ket-chuyen-huy",
+      "ke-toan:ket-chuyen-nam-truoc",
+      "ke-toan:ket-chuyen-xem",
+      "ke-toan:ky-ke-toan-khai",
+      "ke-toan:ky-ke-toan-khoa",
+      "ke-toan:ky-ke-toan-mo-khoa",
+      "ke-toan:ky-ke-toan-xem",
+      "ke-toan:lap-bctc-luu",
+      "ke-toan:lap-bctc-xem",
+      "ke-toan:lap-bctc-xoa",
+      "ke-toan:phieu-ke-toan-duyet",
+      "ke-toan:phieu-ke-toan-huy",
+      "ke-toan:phieu-ke-toan-lap",
+      "ke-toan:phieu-ke-toan-sua",
+      "ke-toan:phieu-ke-toan-xem",
+      "ke-toan:so-du-dau-ky-huy",
+      "ke-toan:so-du-dau-ky-lap",
+      "ke-toan:so-du-dau-ky-sua",
+      "ke-toan:so-du-dau-ky-xem",
+      "kho:chuyen-kho-huy",
+      "kho:chuyen-kho-lap",
+      "kho:chuyen-kho-nhan",
+      "kho:chuyen-kho-sua",
+      "kho:chuyen-kho-xem",
+      "kho:dieu-chinh-huy",
+      "kho:dieu-chinh-lap",
+      "kho:dieu-chinh-xem",
+      "kho:kiem-ke-bo-ghi-nhan",
+      "kho:kiem-ke-ghi-nhan",
+      "kho:kiem-ke-huy-quyet-dinh",
+      "kho:kiem-ke-lap",
+      "kho:kiem-ke-quyet-dinh",
+      "kho:kiem-ke-sua",
+      "kho:kiem-ke-xac-minh",
+      "kho:kiem-ke-xem",
+      "mua-hang:bien-the-sua",
+      "mua-hang:bien-the-xem",
+      "mua-hang:cai-dat-sua",
+      "mua-hang:cai-dat-xem",
+      "mua-hang:chinh-sach-lap",
+      "mua-hang:chinh-sach-sua",
+      "mua-hang:chinh-sach-xem",
+      "mua-hang:chinh-sach-xoa",
+      "mua-hang:chung-tu-bo-duyet",
+      "mua-hang:chung-tu-duyet",
+      "mua-hang:chung-tu-duyet-ngoai-le",
+      "mua-hang:chung-tu-gui-duyet",
+      "mua-hang:chung-tu-huy",
+      "mua-hang:chung-tu-lap",
+      "mua-hang:chung-tu-sua",
+      "mua-hang:chung-tu-xem",
+      "mua-hang:chuyen-shop-huy",
+      "mua-hang:chuyen-shop-lap",
+      "mua-hang:chuyen-shop-xem",
+      "mua-hang:chuyen-shop-xong",
+      "mua-hang:cong-thuc-sua",
+      "mua-hang:cong-thuc-xem",
+      "mua-hang:dang-ky-max-duyet",
+      "mua-hang:dang-ky-max-huy",
+      "mua-hang:dang-ky-max-lap",
+      "mua-hang:dang-ky-max-sua",
+      "mua-hang:dang-ky-max-xem",
+      "mua-hang:doi-chieu-xem",
+      "mua-hang:gia-mua-sua",
+      "mua-hang:han-muc-xem",
+      "mua-hang:hoa-don-ncc-huy",
+      "mua-hang:hoa-don-ncc-lap",
+      "mua-hang:hoa-don-ncc-sua",
+      "mua-hang:hoa-don-ncc-xem",
+      "mua-hang:hop-dong-sua",
+      "mua-hang:hop-dong-xem",
+      "mua-hang:khoi-dau-nhap",
+      "mua-hang:khoi-dau-xem",
+      "mua-hang:lo-han-xem",
+      "mua-hang:nha-cung-cap-xem",
+      "mua-hang:phieu-mua-huy",
+      "mua-hang:phieu-mua-lap",
+      "mua-hang:phieu-mua-xem",
+      "mua-hang:qua-tang-xem",
+      "mua-hang:so-kho-xem",
+      "mua-hang:thuong-xem",
+      "mua-hang:ton-kho-xem",
+      "mua-hang:ton-max-sua",
+      "mua-hang:ton-max-xem",
+      "mua-hang:tra-ncc-huy",
+      "mua-hang:tra-ncc-lap",
+      "mua-hang:tra-ncc-xem",
+      "quy:bao-co-duyet",
+      "quy:bao-co-huy",
+      "quy:bao-co-lap",
+      "quy:bao-co-sua",
+      "quy:bao-co-xem",
+      "quy:bao-no-duyet",
+      "quy:bao-no-huy",
+      "quy:bao-no-lap",
+      "quy:bao-no-sua",
+      "quy:bao-no-xem",
+      "quy:chi-tien-huy",
+      "quy:chi-tien-lap",
+      "quy:chi-tien-xem",
+      "quy:chuyen-tien-huy",
+      "quy:chuyen-tien-lap",
+      "quy:chuyen-tien-xem",
+      "quy:phieu-chi-duyet",
+      "quy:phieu-chi-huy",
+      "quy:phieu-chi-lap",
+      "quy:phieu-chi-sua",
+      "quy:phieu-chi-xem",
+      "quy:phieu-thu-duyet",
+      "quy:phieu-thu-huy",
+      "quy:phieu-thu-lap",
+      "quy:phieu-thu-sua",
+      "quy:phieu-thu-xem",
+      "quy:thu-tien-huy",
+      "quy:thu-tien-lap",
+      "quy:thu-tien-xem",
+      "tai-san:bien-dong-lap",
+      "tai-san:bien-dong-xem",
+      "tai-san:bien-dong-xoa",
+      "tai-san:khau-hao-sua-tay",
+      "tai-san:khau-hao-tinh",
+      "tai-san:khau-hao-xem",
+      "tai-san:loai-tai-san-lap",
+      "tai-san:loai-tai-san-sua",
+      "tai-san:loai-tai-san-xem",
+      "tai-san:loai-tai-san-xoa",
+      "tai-san:the-tai-san-ghi-so",
+      "tai-san:the-tai-san-lap",
+      "tai-san:the-tai-san-sua",
+      "tai-san:the-tai-san-xem",
+      "tai-san:the-tai-san-xoa",
+      "thue:bo-sung-thong-tin-sua",
+      "thue:bo-sung-thong-tin-xem",
+      "thue:bo-sung-thong-tin-xoa",
+      "thue:hoa-don-cqt-nhap",
+      "thue:hoa-don-cqt-tham-chieu",
+      "thue:hoa-don-cqt-xem",
+      "thue:hoa-don-cqt-xoa",
+      "thue:hoa-don-rui-ro-sua",
+      "thue:hoa-don-rui-ro-xem",
+      "thue:hoa-don-rui-ro-xoa",
+      "thue:nguoi-nop-thue-sua",
+      "thue:nguoi-nop-thue-xem",
+      "thue:phan-loai-dai-han-luu",
+      "thue:phan-loai-dai-han-xem",
+      "thue:quyet-toan-tndn-luu",
+      "thue:quyet-toan-tndn-xem",
+      "thue:to-khai-gtgt-bo-sung",
+      "thue:to-khai-gtgt-chap-nhan",
+      "thue:to-khai-gtgt-luu",
+      "thue:to-khai-gtgt-xem",
+      "thue:to-khai-gtgt-xoa"
+    ],
+    "reports:read": [
+      "ban-hang:hoa-don-xuat",
+      "ban-hang:tra-hang-xuat",
+      "catalog:read",
+      "conformance:read",
+      "ledger:read",
+      "reports:read"
+    ]
+  },
+  "user_meta": [],
+  "settings": [
+    {
+      "key": "bizcity.authz.branch_scope",
+      "label": "bizcity.authz.branch_scope",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.authz.shadow",
+      "label": "bizcity.authz.shadow",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.connector.connections",
+      "label": "bizcity.connector.connections",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.connector.pull_state",
+      "label": "bizcity.connector.pull_state",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "documents:write"
+    },
+    {
+      "key": "bizcity.intake.accept_roles",
+      "label": "bizcity.intake.accept_roles",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.intake.open_alert_days",
+      "label": "bizcity.intake.open_alert_days",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.intake.policy_check",
+      "label": "bizcity.intake.policy_check",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.intake.retention_days",
+      "label": "bizcity.intake.retention_days",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.intake.trial_retention_days",
+      "label": "bizcity.intake.trial_retention_days",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.item.auto_create",
+      "label": "bizcity.item.auto_create",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.lock.data",
+      "label": "bizcity.lock.data",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.lock.period",
+      "label": "bizcity.lock.period",
+      "scopes": [
+        "tenant",
+        "branch"
+      ],
+      "permission": "periods:lock"
+    },
+    {
+      "key": "bizcity.mua_hang.settings",
+      "label": "bizcity.mua_hang.settings",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.payment.approval_thresholds",
+      "label": "bizcity.payment.approval_thresholds",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.posting.default_accounts",
+      "label": "bizcity.posting.default_accounts",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.posting.modes",
+      "label": "bizcity.posting.modes",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.posting.payment_methods",
+      "label": "bizcity.posting.payment_methods",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.posting.product_groups",
+      "label": "bizcity.posting.product_groups",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.posting.reasons",
+      "label": "bizcity.posting.reasons",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.posting.tax_codes",
+      "label": "bizcity.posting.tax_codes",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.posting.use_reasons",
+      "label": "bizcity.posting.use_reasons",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.print.templates",
+      "label": "bizcity.print.templates",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.tenant.logo",
+      "label": "bizcity.tenant.logo",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.ui.phan_rieng",
+      "label": "bizcity.ui.phan_rieng",
+      "scopes": [
+        "tenant"
+      ],
+      "permission": "settings:write"
+    },
+    {
+      "key": "bizcity.ui.theme",
+      "label": "bizcity.ui.theme",
+      "scopes": [
+        "tenant",
+        "branch",
+        "user"
+      ],
+      "permission": "settings:write"
+    }
+  ]
+}
