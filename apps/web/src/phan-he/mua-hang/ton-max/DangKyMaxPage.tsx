@@ -18,7 +18,7 @@ import { monthStart, today } from '../du-lieu';
 import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { docSo, fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
-import { ChonChiNhanhCha, ChuaPhanCap } from './chung';
+import { ChonChiNhanhCha, ChuaPhanCap, OSo } from './chung'; // [2026-11-25 kiennt] NT-MH-009 — ô số gõ tay (đóng góp)
 import { useThaoTac } from '@/lib/manHinh';
 
 const TONE: Record<MaxRequestStatus, string> = { draft: 'info', submitted: 'warn', approved: 'ok', cancelled: 'bad' };
@@ -185,7 +185,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
                   <td className="mono">{r.sku}</td><td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.name}>{r.name}</td>
                   <td className="num tm-stock">{qtyFmt(tonOf.get(r.sku))}</td><td className="num">{qtyFmt(r.avgPerDay)}</td><td className="num">{qtyFmt(r.currentMax)}</td>
                   <td className="num">{r.suggestedMax ? <button className="tm-opt" disabled={locked} onClick={() => set(r.key, { proposedMax: r.suggestedMax })}><span className="tm-sug">{qtyFmt(r.suggestedMax)}</span></button> : ''}</td>
-                  <td className="num"><input className={`tm-input${d ? ' dirty' : ''}`} disabled={locked} value={r.proposedMax ?? ''} onChange={(e) => set(r.key, { proposedMax: num(e.target.value) })} /></td>
+                  <td className="num"><OSo className={`tm-input${d ? ' dirty' : ''}`} disabled={locked} value={r.proposedMax} onChange={(v) => set(r.key, { proposedMax: v })} /></td>
                   <td className="num">{d ? <span className={d > 0 ? 'tm-sug' : 'tm-low'}>{d > 0 ? '+' : ''}{qtyFmt(d)}{r.currentMax ? ` (${Math.round((d / r.currentMax) * 100)}%)` : ''}</span> : ''}</td>
                   <td><input className="input" style={{ height: 26, width: 160 }} disabled={locked} value={r.note ?? ''} onChange={(e) => set(r.key, { note: e.target.value })} /></td>
                 </tr>;
@@ -205,7 +205,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
               <td><input className="input" style={{ height: 26, width: 60 }} disabled={locked} value={r.unit ?? ''} onChange={(e) => set(r.key, { unit: e.target.value })} /></td>
               <td><input className="tm-input" style={{ width: 54 }} disabled={locked} value={r.pack ?? ''} onChange={(e) => set(r.key, { pack: num(e.target.value) || undefined })} /></td>
               <td className="num"><b>{qtyFmt(Object.values(r.maxByShop ?? {}).reduce((s, x) => s + x, 0))}</b></td>
-              {shops.map((s) => <td key={s.code}><input className="tm-input" style={{ width: 54 }} disabled={req?.status === 'cancelled' || (req?.status === 'approved' && Boolean(r.sku))} value={r.maxByShop?.[s.code] ?? ''} onChange={(e) => set(r.key, { maxByShop: { ...(r.maxByShop ?? {}), [s.code]: num(e.target.value) } })} /></td>)}
+              {shops.map((s) => <td key={s.code}><OSo className="tm-input" style={{ width: 54 }} disabled={req?.status === 'cancelled' || (req?.status === 'approved' && Boolean(r.sku))} value={r.maxByShop?.[s.code]} onChange={(v) => set(r.key, { maxByShop: { ...(r.maxByShop ?? {}), [s.code]: v } })} /></td>)}
               <td>{!locked && <button className="btn btn-xs" onClick={() => setItems(rows.filter((x) => x.key !== r.key))}>✕</button>}</td>
             </tr>)}
             {!shown.length && <tr><td colSpan={7 + shops.length} className="muted">Bấm "Thêm dòng" hoặc "Nhập Excel" (tệp NCC gửi / shop đã điền theo mẫu — nút Xuất Excel tải mẫu có sẵn cột từng shop).</td></tr>}
