@@ -5,7 +5,7 @@
   "kind": "module",
   "version": "0.3.0",
   "label": "Điểm thành viên",
-  "description": "Sổ điểm thành viên (NT-BH-020): chính sách khai và duyệt ở kế toán (NT-BH-039: nháp → duyệt → phát hành theo cửa hàng; website đẩy tay vẫn nhận nhưng bản kế toán mới hơn thắng); tích / hoàn theo đơn máy bán; đổi quà / voucher; điều chỉnh điểm tay có duyệt; hết hạn lô hằng ngày; nạp số dư cũ; báo cáo BH19. Không nộp chứng từ — điểm chỉ hạch toán lúc đổi (trên chứng từ bán).",
+  "description": "Sổ điểm thành viên (NT-BH-020): chính sách khai / duyệt ở kế toán theo cửa hàng (NT-BH-039); tích / hoàn theo đơn máy bán; đổi quà / voucher; điều chỉnh điểm tay có duyệt; hết hạn lô; nạp số dư cũ; báo cáo BH19. Điểm chỉ hạch toán lúc đổi.",
   "owners": [
     "@hoanganh8389"
   ],

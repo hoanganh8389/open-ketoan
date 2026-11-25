@@ -155,7 +155,7 @@ export function contentOf(p: LoyaltyProgram | ProgramContent): ProgramContent {
  * Áp chính sách cho nhiều cửa hàng một lần: cài đặt + bảng hạng lấy theo nội dung áp; chính sách gộp theo mã vào bản đang chạy của
  * từng cửa hàng (cùng mã → thay, mã mới → thêm; số thứ tự trùng với chính sách khác thì cấp số mới). Chính sách riêng của cửa hàng giữ nguyên.
  */
-export function mergeInto(base: ProgramContent | null, apply: ProgramContent): ProgramContent {
+export function mergePolicies(base: ProgramContent | null, apply: ProgramContent): ProgramContent {
   if (!base) return apply;
   const policies: LoyaltyPolicy[] = [...base.policies];
   for (const pol of apply.policies) {

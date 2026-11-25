@@ -67,3 +67,24 @@ Mỗi form ghi (bản nháp chính sách, danh mục đổi, cài đặt + hạn
 - câu hỏi ngược đã trả lời;
 - mỗi dòng chặn có mã lỗi và test;
 - dán `loi.mjs` + `failure-check --report` vào bằng chứng PR.
+
+## 6. Kết quả thực hiện
+<!-- [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: ghi kết quả thực hiện, nhánh feat/nt-bh-039-tich-diem (đóng góp) -->
+
+| Ca | Kết quả | Test |
+|---|---|---|
+| 1 | Đạt — nháp chép bản hiện hành, gửi duyệt; máy bán vẫn bản cũ | `apps/api/test/nt-bh-039-tich-diem.test.ts` ca 1 |
+| 2 | Đạt — phiên bản `kt-…` (băm nội dung), `received_by` = người duyệt; đơn 325.000 → +32 | ca 2 |
+| 3 | Đạt — người không có quyền duyệt 403; người lập (kể cả chủ đơn vị) tự duyệt 403 | ca 3 |
+| 4 | Đạt — +38,4 (bộ tính không đổi) | ca 4; `modules/loyalty/test/program-draft.test.ts` |
+| 5 | Đạt — "… chưa đủ hạng: cần hạng Bạc, khách đang hạng Thành viên" | ca 5; test module |
+| 6 | Đạt — dòng `adjust` +50, nhật ký A lập / B duyệt | ca 6 |
+| 7 | Đạt — tự duyệt bị chặn; trừ quá số dư bị chặn lúc lập và lúc duyệt | ca 7 |
+| 8 | Đạt — hai nháp cùng lần áp, duyệt cùng lúc; cửa hàng có nháp mở bị chặn | ca 8 |
+| 9 | Đạt — 409 `LOYALTY_PROGRAM_OLDER` "Kế toán có bản mới hơn…"; gửi lại bản đang chạy vẫn `changed: false` | ca 9 |
+
+Ghi chú cách làm:
+- Quyền lập / sửa mặc định gồm cả **kế toán** (để "kế toán A" ở ca 1 lập được); duyệt chỉ kế toán trưởng / chủ đơn vị.
+- Q4 "bản cũ hơn": khi bản đang chạy do kế toán phát hành, website chỉ đè được nếu gửi `program.updatedAt` mới hơn lúc kế toán duyệt; không gửi thì từ chối.
+- Áp nhiều cửa hàng: cài đặt + bảng hạng lấy theo nội dung áp; chính sách gộp theo mã vào bản đang chạy của từng cửa hàng (chính sách riêng giữ nguyên, Q-DM-01).
+- Bản đồ lỗi R-REV-17: `modules/loyalty/web/screens/diem/*.failure-map.json` (6 form, 37 tình huống, đủ mã + test).

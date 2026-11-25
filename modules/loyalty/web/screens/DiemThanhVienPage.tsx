@@ -1,6 +1,13 @@
 // [2026-11-16 11:00 AM Võ Hoàng] LOYALTY — NT-BH-020 bước 3: màn BH19 Điểm thành viên (đóng góp)
-/** BH19 Điểm thành viên (NT-BH-020 kiểm 5): phát sinh điểm trong kỳ theo cửa hàng, số dư cuối kỳ theo hạng, danh sách khách. Chỉ xem. */
+// [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: thêm thẻ Chương trình / Đổi điểm / Cài đặt + hạng / Điều chỉnh — khai, duyệt chính sách ở kế toán (đóng góp)
+/**
+ * BH19 Điểm thành viên. Thẻ Tổng quan (NT-BH-020 kiểm 5): phát sinh điểm trong kỳ theo cửa hàng, số dư cuối kỳ theo hạng, danh sách khách.
+ * NT-BH-039: thẻ Chương trình (L1), Đổi điểm (L2), Cài đặt + hạng (L3) soạn nháp chính sách theo cửa hàng → gửi duyệt → duyệt = phát hành
+ * cho máy bán; thẻ Điều chỉnh (L4) cộng / trừ điểm tay có duyệt.
+ */
 import { useState } from 'react';
+import { ChinhSachKhung } from './diem/ChinhSachKhung';
+import { DieuChinhTab } from './diem/DieuChinhTab';
 import { DataGrid, ErrorBox, FilterLayout, KpiCards, Loading, PageHeader, PeriodField, errorText, useApi, useQuery, type GridColumn } from '@bizcity/ui-kit';
 
 type Kinds = { earn: number; redeem: number; expire: number; reverse: number; adjust: number };
@@ -39,7 +46,25 @@ const customerCols: GridColumn<Report['customers'][number]>[] = [
   { key: 'expire', header: 'Hết hạn trong kỳ', type: 'number', sum: true, width: 120, value: (c) => c.period.expire },
 ];
 
+const TABS = [['tong-quan', 'Tổng quan'], ['chuong-trinh', 'Chương trình'], ['doi-diem', 'Đổi điểm'], ['cai-dat', 'Cài đặt + hạng'], ['dieu-chinh', 'Điều chỉnh']] as const;
+type Tab = (typeof TABS)[number][0];
+
 export function DiemThanhVienPage() {
+  const [tab, setTab] = useState<Tab>('tong-quan');
+  return (
+    <div>
+      <PageHeader title="Điểm thành viên" code="BH19" subtitle="Sổ điểm thành viên và chính sách tích điểm của từng cửa hàng (khai, duyệt ở kế toán). Điểm chỉ hạch toán lúc đổi (trên chứng từ bán)." />
+      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--line, #ddd)', marginBottom: 8 }}>
+        {TABS.map(([k, label]) => (
+          <button key={k} type="button" className={`btn btn-xs${tab === k ? ' btn-primary' : ''}`} onClick={() => setTab(k)}>{label}</button>
+        ))}
+      </div>
+      {tab === 'tong-quan' ? <TongQuan /> : tab === 'dieu-chinh' ? <DieuChinhTab /> : <ChinhSachKhung view={tab} />}
+    </div>
+  );
+}
+
+function TongQuan() {
   const today = vnToday();
   const [draft, setDraft] = useState({ from: `${today.slice(0, 7)}-01`, to: today });
   const [applied, setApplied] = useState(draft);
@@ -48,7 +73,6 @@ export function DiemThanhVienPage() {
   const d = q.data;
   return (
     <div>
-      <PageHeader title="Điểm thành viên" code="BH19" subtitle="Sổ điểm thành viên: điểm tích, đổi, hết hạn, hoàn trong kỳ theo cửa hàng; số dư cuối kỳ theo hạng và theo khách. Chỉ xem — điểm chỉ hạch toán lúc đổi (trên chứng từ bán)." />
       <FilterLayout
         onSearch={() => setApplied(draft)}
         filters={<PeriodField from={draft.from} to={draft.to} onChange={(from, to) => setDraft({ from, to })} />}

@@ -6,7 +6,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { Errors, sql, type ActionContext } from '@bizcity/module-sdk';
-import { DEFAULT_CONTENT, checkProgram, contentOf, contentVersion, giftSkus, mergeInto, type ProgramContent } from './domain/program-draft.js';
+import { DEFAULT_CONTENT, checkProgram, contentOf, contentVersion, giftSkus, mergePolicies, type ProgramContent } from './domain/program-draft.js';
 import { branchExists, latestProgram, type Tx } from './store.js';
 
 export type DraftStatus = 'draft' | 'pending' | 'published' | 'rejected';
@@ -93,7 +93,7 @@ async function baseOf(tx: Tx, branch: string): Promise<{ content: ProgramContent
  * Lập nháp cho một hoặc nhiều cửa hàng. Không gửi nội dung → mỗi cửa hàng chép bản đang chạy của chính nó ("Sửa từ bản hiện hành", Q3).
  * Có nội dung → gộp chính sách theo mã vào bản đang chạy của từng cửa hàng (áp nhiều cửa hàng một lần). Cửa hàng đã có nháp đang mở → chặn.
  */
-export async function createDrafts(tx: Tx, ctx: ActionContext, i: { branchCodes: string[]; program?: ProgramContent | undefined; submit?: boolean }) {
+export async function openProgramDrafts(tx: Tx, ctx: ActionContext, i: { branchCodes: string[]; program?: ProgramContent | undefined; submit?: boolean }) {
   const branches = [...new Set(i.branchCodes)].sort();
   for (const b of branches) await lockKey(tx, `loyalty:program-draft:${b}`);
   const unknown: string[] = [];
@@ -111,7 +111,7 @@ export async function createDrafts(tx: Tx, ctx: ActionContext, i: { branchCodes:
   const out: Draft[] = [];
   for (const b of branches) {
     const base = await baseOf(tx, b);
-    const content = i.program ? mergeInto(base.content, i.program) : (base.content ?? DEFAULT_CONTENT);
+    const content = i.program ? mergePolicies(base.content, i.program) : (base.content ?? DEFAULT_CONTENT);
     if (i.program || i.submit) await assertValid(tx, content, base.content, b);
     const id = randomUUID();
     await sql`INSERT INTO mod_loyalty.program_drafts (draft_id, tenant_id, branch_code, store_id, program, base_version, batch_id, status,

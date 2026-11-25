@@ -251,6 +251,12 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     // CN02 giữ chính sách riêng đã phát hành, thêm SINHNHAT; CN01 thêm vào bản website.
     expect(items[1]!.program.policies.map((p) => p.code)).toEqual(['TICH10K', 'THUONG1TR', 'DOIQUA', 'SINHNHAT']);
     expect(items[0]!.program.policies.map((p) => p.code)).toEqual(['THUONG1TR', 'SINHNHAT']);
+    // Chưa chọn cửa hàng / cửa hàng không có ở danh mục → chặn ở ô Cửa hàng.
+    const none = await req(A, 'POST', `${L}/program-drafts`, { branchCodes: [] });
+    expect(none.statusCode).toBe(400);
+    expect(none.json().error.code).toBe('VALIDATION_ERROR');
+    const unknownBranch = await req(A, 'POST', `${L}/program-drafts`, { branchCodes: ['KHONGCO'] });
+    expect(unknownBranch.json().error.details.findings[0]).toMatchObject({ code: 'LOYALTY_BRANCH_UNKNOWN', field: 'branchCodes' });
     const dup = await req(A, 'POST', `${L}/program-drafts`, { branchCodes: ['CN01'] });
     expect(dup.statusCode).toBe(409);
     expect(dup.json().error.details.reason).toBe('LOYALTY_DRAFT_OPEN');

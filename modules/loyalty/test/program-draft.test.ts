@@ -1,7 +1,7 @@
 // [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: hàm thuần nháp chính sách (kiểm, băm phiên bản, áp nhiều cửa hàng) + "chưa đủ hạng" (đóng góp)
 import { describe, expect, it } from 'vitest';
 import { calculateEarnPoints } from '../api/domain/engine.js';
-import { DRAFT_CODES, checkProgram, contentOf, contentVersion, mergeInto } from '../api/domain/program-draft.js';
+import { DRAFT_CODES, checkProgram, contentOf, contentVersion, mergePolicies } from '../api/domain/program-draft.js';
 import { quoteRedeem } from '../api/domain/redeem.js';
 import { PROGRAM } from './fixture.js';
 
@@ -35,10 +35,10 @@ describe('nháp chính sách tích điểm (NT-BH-039)', () => {
 
   it('áp nhiều cửa hàng: cùng mã → thay, mã mới → thêm (số thứ tự trùng thì cấp số mới), chính sách riêng giữ nguyên', () => {
     const apply = { ...base, policies: [{ ...base.policies[0]!, id: 4, code: 'MOI' }, { ...base.policies[3]!, title: 'Thưởng mới' }] };
-    const out = mergeInto(base, apply);
+    const out = mergePolicies(base, apply);
     expect(out.policies.map((p) => [p.id, p.code])).toEqual([[1, 'TICH10K'], [3, 'DOIVC'], [4, 'DOIQUA'], [2, 'THUONG1TR'], [5, 'MOI']]);
     expect(out.policies.find((p) => p.code === 'THUONG1TR')!.title).toBe('Thưởng mới');
-    expect(mergeInto(null, apply)).toBe(apply);
+    expect(mergePolicies(null, apply)).toBe(apply);
   });
 
   it('ca 4: bật nhân theo hạng, hạng Bạc ×1,2, đơn 325.000 → 38,4 (bộ tính làm tròn 2 số lẻ, không đổi)', () => {

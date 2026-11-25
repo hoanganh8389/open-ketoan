@@ -5,7 +5,7 @@
  * Cửa hàng đã có nháp đang mở → CONFLICT (LOYALTY_DRAFT_OPEN). `submit: true` = gửi duyệt luôn. Chưa áp ở máy bán tới khi duyệt.
  */
 import { defineAction, z } from '@bizcity/module-sdk';
-import { createDrafts } from '../drafts.js';
+import { openProgramDrafts } from '../drafts.js';
 import type { ProgramContent } from '../domain/program-draft.js';
 import { draftContentSchema } from '../schemas.js';
 
@@ -22,6 +22,6 @@ export default defineAction({
   evidence: { objectType: 'loyalty.program-draft', objectId: (i) => i.branchCodes.join(',') },
   branchOf: async (_ctx, i) => i.branchCodes,
   handler: async (ctx, i) => ({
-    items: await ctx.data.module((tx) => createDrafts(tx, ctx, { branchCodes: i.branchCodes, program: i.program as ProgramContent | undefined, submit: i.submit })),
+    items: await ctx.data.module((tx) => openProgramDrafts(tx, ctx, { branchCodes: i.branchCodes, program: i.program as ProgramContent | undefined, submit: i.submit })),
   }),
 });

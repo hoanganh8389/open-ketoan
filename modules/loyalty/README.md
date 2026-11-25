@@ -1,4 +1,5 @@
 # Module `loyalty` — Điểm thành viên
+<!-- [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: chính sách khai / duyệt ở kế toán, điều chỉnh điểm tay (đóng góp) -->
 
 Sổ điểm thành viên của đơn vị (phiếu [NT-BH-020](../../docs/nghiem-thu/ban-hang/NT-BH-020-pos-tich-diem.md); thiết kế
 `tgs_pos_react/docs/module-pos/70-TICH-DIEM.md`). Không nộp chứng từ: điểm **chỉ hạch toán lúc đổi** (quà / voucher nằm trên chứng từ
@@ -6,9 +7,14 @@ bán của module `pos`, định khoản do kế toán đặt).
 
 ## Nghiệp vụ
 
-- **Chính sách** là của website (`tgs_loyalty_points`): 4 loại tích (theo tiền, theo mã hàng, nhân điểm, thưởng theo mức đơn), hạng
-  + hệ số, danh mục đổi quà / voucher. Website đẩy `LoyaltyProgram` của từng cửa hàng sang `POST /program` (khoá API, quyền
-  `catalog:write`); module giữ mọi phiên bản, tính bằng bản mới nhất. Máy bán không gửi được chính sách.
+- **Chính sách** (khuôn `LoyaltyProgram`: 4 loại tích — theo tiền, theo mã hàng, nhân điểm, thưởng theo mức đơn; hạng + hệ số; danh mục
+  đổi quà / voucher) **khai và duyệt ở kế toán** từ NT-BH-039 (25/11): nháp theo cửa hàng (`program_drafts`, chép bản đang chạy) → gửi
+  duyệt → người khác có quyền duyệt = **phát hành** (thêm dòng `programs`, phiên bản = băm nội dung `kt-…`, `received_by` = người duyệt).
+  Áp nhiều cửa hàng một lần = mỗi cửa hàng một nháp (chính sách gộp theo mã). Website chỉ còn đẩy tay `POST /program`; bản đang chạy do kế
+  toán phát hành thì website đẩy bản khác bị từ chối (`CONFLICT LOYALTY_PROGRAM_OLDER`) trừ khi gửi `program.updatedAt` mới hơn lúc duyệt.
+  Module giữ mọi phiên bản, tính bằng bản mới nhất. Máy bán không gửi được chính sách.
+- **Điều chỉnh điểm tay** (`adjustments`): yêu cầu cộng / trừ + lý do → người khác duyệt → dòng `adjust` (ref manual). Trừ quá số điểm dùng
+  được bị chặn (lúc lập và lúc duyệt). Nhật ký lập / sửa / gửi / duyệt / từ chối ở `approval_log`.
 - **Sổ điểm chỉ thêm** (`mod_loyalty.entries`): mỗi lần tích / đổi / hết hạn / điều chỉnh / hoàn là một dòng có dấu. Dòng dương là
   **lô** có hạn (`expires_at`); dòng âm ghi phân bổ theo lô. Số dư = tổng dòng. Khách theo mã đối tượng (máy bán: SĐT).
 - **Tích** khi đơn máy bán hoàn tất có khách (sự kiện `pos.order.recorded`): bộ tính chép từ máy bán (`api/domain/engine.ts`, khớp
@@ -21,7 +27,14 @@ bán của module `pos`, định khoản do kế toán đặt).
 
 | Đường | Quyền | Việc |
 |---|---|---|
-| `POST /program` | `catalog:write` | website đẩy chính sách `{ branchCode, storeId, program }`; cùng phiên bản → `changed: false` (đặt trạng thái, không cần Idempotency-Key) |
+| `POST /program` | `catalog:write` | website đẩy chính sách `{ branchCode, storeId, program }`; cùng phiên bản đang chạy → `changed: false` (đặt trạng thái, không cần Idempotency-Key); bản kế toán phát hành mới hơn → 409 `LOYALTY_PROGRAM_OLDER` |
+| `GET /program-drafts?status=&branch=` · `GET /program-drafts/:id` | `loyalty:read` | nháp chính sách (kèm nhật ký) |
+| `POST /program-drafts` | `loyalty:chinh-sach-lap` | lập nháp `{ branchCodes, program?, submit? }`: không `program` = chép bản đang chạy; có = gộp theo mã (áp nhiều cửa hàng) |
+| `PUT /program-drafts/:id` | `loyalty:chinh-sach-sua` | sửa nháp `{ program, revision, submit? }`; revision lệch → 409 `LOYALTY_DRAFT_CHANGED` |
+| `POST /program-drafts/approve` · `/reject` | `loyalty:chinh-sach-duyet` | duyệt (= phát hành) / từ chối `{ ids[] }`; người lập không tự duyệt (403) |
+| `GET /adjustments` · `GET /adjustments/:id` | `loyalty:read` | yêu cầu điều chỉnh điểm (kèm nhật ký) |
+| `POST /adjustments` | `loyalty:dieu-chinh-lap` | lập `{ customerCode, points, reason, branchCode? }` |
+| `POST /adjustments/:id/approve` · `/reject` | `loyalty:dieu-chinh-duyet` | duyệt (= dòng adjust) / từ chối; người lập không tự duyệt |
 | `GET /program?branch=` | `loyalty:read` | chính sách mới nhất của cửa hàng (khuôn `LoyaltyProgram` của máy bán); không `branch` → danh sách cửa hàng đã có |
 | `GET /customers/:id?branch=` | `loyalty:read` | điểm của khách (khuôn `CustomerLoyalty`): số dư, dùng được, hạng, lô, 50 dòng gần nhất, voucher còn dùng |
 | `GET /vouchers/:code` | `loyalty:read` | tra voucher đổi điểm (khuôn `LoyaltyVoucher`); đã dùng / hết hạn vẫn trả kèm trạng thái |
@@ -39,7 +52,8 @@ bán của module `pos`, định khoản do kế toán đặt).
 
 - **Hết hạn**: nghe `bizcity.clock.daily` (01:00 giờ Việt Nam), lô quá hạn còn điểm → dòng `expire` = −phần còn; mỗi lô một lần.
 - **Số dư cũ**: website (`tgs_pos` `TGS_POS_Loyalty_Push::push_opening`, tự chạy khi cửa hàng đầu tiên bật máy bán React, hoặc `wp tgs-pos loyalty-opening`) đẩy ví điểm toàn mạng (mã = tên đăng nhập SĐT).
-- **Màn BH19 Điểm thành viên** (Phần riêng, quyền `loyalty:read`, hướng dẫn `docs/huong-dan/loyalty-diem.md`).
+- **Màn BH19 Điểm thành viên** (Phần riêng, quyền `loyalty:read`, hướng dẫn `docs/huong-dan/loyalty-diem.md`): thẻ Tổng quan, Chương
+  trình, Đổi điểm, Cài đặt + hạng, Điều chỉnh (NT-BH-039). Mỗi form ghi có bản đồ lỗi `web/screens/diem/*.failure-map.json` (R-REV-17).
 
 ## Sự kiện nghe
 
@@ -47,4 +61,4 @@ bán của module `pos`, định khoản do kế toán đặt).
 
 ## Chưa làm
 
-Điều chỉnh điểm tay (màn); hoàn điểm đã đổi khi khách trả quà đổi điểm.
+Hoàn điểm đã đổi khi khách trả quà đổi điểm; dùng điểm để thanh toán (L5).
