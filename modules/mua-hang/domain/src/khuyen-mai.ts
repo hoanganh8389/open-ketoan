@@ -172,32 +172,56 @@ export function syncGifts(doc: PDoc, policies: Policy[], info: (sku: string) => 
   const plan = giftPlan(doc, policies);
   const changes: string[] = [];
   let lines = [...doc.lines];
-  const want = new Map<string, { qty: number; g: (typeof plan)[number] }>();
+  // [2026-11-25 10:40 PM Nguyễn Văn Thủy] MH-KM — đơn đặt giao NHIỀU chi nhánh nhận: quà vẫn tính trên tổng cả đơn (một đơn được trọn khuyến mại),
+  // rồi chia về từng chi nhánh nhận theo tỉ lệ SL mua của mã ở chi nhánh đó (phần lẻ cho chi nhánh mua nhiều nhất) — dòng quà mang chi nhánh +
+  // kho của hàng mua, mẫu đơn gửi NCC từng chi nhánh có đúng quà của chi nhánh đó. Phiếu một chi nhánh: như cũ (đóng góp)
+  const isOrder = doc.kind === 'order';
+  const macDinh = doc.deliveryBranch || doc.branchCode;
+  const cnOf = (l: Pick<PLine, 'branchCode'>) => (isOrder ? l.branchCode || macDinh : '');
+  const want = new Map<string, { qty: number; g: (typeof plan)[number]; cn: string; src: PLine }>();
   for (const g of plan) {
-    const k = `${g.lineType}|${g.giftSku}|${g.policy.code}|${g.giftUnit.toLowerCase()}`;
-    const cur = want.get(k);
-    want.set(k, { qty: (cur?.qty ?? 0) + g.expected, g: cur?.g ?? g });
+    if (!g.expected) continue;
+    const buys = doc.lines.filter((l) => l.lineType === 'buy' && l.sku === g.sku && l.qty > 0);
+    const byCn = new Map<string, { qty: number; src: PLine }>();
+    for (const l of buys) { const c = cnOf(l); const cur = byCn.get(c); byCn.set(c, { qty: (cur?.qty ?? 0) + l.qty, src: cur && cur.src.qty >= l.qty ? cur.src : l }); }
+    const total = [...byCn.values()].reduce((t, x) => t + x.qty, 0);
+    const parts = [...byCn.entries()].map(([cn, x]) => ({ cn, src: x.src, buy: x.qty, raw: total ? (g.expected * x.qty) / total : 0 }));
+    // Quà nguyên (lon, hộp…): chia phần nguyên rồi phát phần dư cho chi nhánh có phần lẻ lớn nhất (bằng nhau → mua nhiều hơn).
+    const nguyen = Number.isInteger(g.expected);
+    for (const p of parts) (p as { qty?: number }).qty = nguyen ? Math.floor(p.raw) : Math.round(p.raw * 1000) / 1000;
+    if (nguyen) {
+      let du = g.expected - parts.reduce((t, p) => t + (p as { qty?: number }).qty!, 0);
+      for (const p of [...parts].sort((a, b) => (b.raw - Math.floor(b.raw)) - (a.raw - Math.floor(a.raw)) || b.buy - a.buy)) { if (du <= 0) break; (p as { qty?: number }).qty! += 1; du -= 1; }
+    }
+    for (const p of parts) {
+      const q = (p as { qty?: number }).qty!;
+      if (!q) continue;
+      const k = `${g.lineType}|${g.giftSku}|${g.policy.code}|${g.giftUnit.toLowerCase()}|${p.cn}`;
+      const cur = want.get(k);
+      want.set(k, { qty: (cur?.qty ?? 0) + q, g: cur?.g ?? g, cn: p.cn, src: cur?.src ?? p.src });
+    }
   }
   // Dòng tự thêm: chỉnh SL hoặc bỏ.
   lines = lines.flatMap((l) => {
     if (!l.autoGift) return [l];
-    const w = want.get(`${l.lineType}|${l.sku}|${l.program ?? ''}|${l.unit.toLowerCase()}`);
+    const w = want.get(`${l.lineType}|${l.sku}|${l.program ?? ''}|${l.unit.toLowerCase()}|${cnOf(l)}`);
     if (!w || !w.qty) { changes.push(`bỏ quà ${l.sku} (${l.program}) — ${doc.skipPolicies?.includes(l.program ?? '') ? 'đã bỏ tích chương trình' : 'hàng mua không còn đủ điều kiện'}`); return []; }
-    const manualSame = doc.lines.filter((x) => !x.autoGift && x.lineType === l.lineType && x.sku === l.sku && x.unit.toLowerCase() === l.unit.toLowerCase()).reduce((s, x) => s + x.qty, 0);
+    const manualSame = doc.lines.filter((x) => !x.autoGift && x.lineType === l.lineType && x.sku === l.sku && x.unit.toLowerCase() === l.unit.toLowerCase() && cnOf(x) === cnOf(l)).reduce((s, x) => s + x.qty, 0);
     const qty = Math.max(0, w.qty - manualSame);
     if (!qty) { changes.push(`bỏ quà ${l.sku} — đã có dòng nhập tay`); return []; }
     if (qty !== l.qty) changes.push(`quà ${l.sku}: ${vn(l.qty)} → ${vn(qty)} (${l.program})`);
     return [{ ...l, qty }];
   });
-  // Thêm dòng còn thiếu (chưa có dòng nào cùng loại + mã quà).
+  // Thêm dòng còn thiếu (chưa có dòng nào cùng loại + mã quà + chi nhánh nhận).
   for (const [k, w] of want) {
     if (!w.qty) continue;
     const [type, giftSku] = k.split('|') as [LineType, string];
-    if (lines.some((x) => x.lineType === type && x.sku === giftSku && x.unit.toLowerCase() === w.g.giftUnit.toLowerCase())) continue;
-    const src = doc.lines.find((x) => x.lineKey === w.g.buyLineKey)!;
+    if (lines.some((x) => x.lineType === type && x.sku === giftSku && x.unit.toLowerCase() === w.g.giftUnit.toLowerCase() && cnOf(x) === w.cn)) continue;
+    const src = w.src;
     const same = giftSku === src.sku;
     const meta = same ? undefined : info(giftSku);
-    lines.push({ lineKey: giftKey(), sku: giftSku, name: same ? src.name : meta?.name ?? '', unit: w.g.giftUnit || (same ? src.unit : meta?.unit ?? ''), qty: w.qty, price: 0, taxCode: same ? src.taxCode : meta?.taxCode ?? src.taxCode, lineType: type, program: w.g.policy.code, autoGift: true, brandCode: same ? src.brandCode : undefined, ...(same ? { lotNo: src.lotNo, expDate: src.expDate } : {}) });
+    const noiNhan = isOrder ? { ...(src.branchCode ? { branchCode: src.branchCode } : {}), ...(src.warehouseCode ? { warehouseCode: src.warehouseCode } : {}) } : {};
+    lines.push({ ...noiNhan, lineKey: giftKey(), sku: giftSku, name: same ? src.name : meta?.name ?? '', unit: w.g.giftUnit || (same ? src.unit : meta?.unit ?? ''), qty: w.qty, price: 0, taxCode: same ? src.taxCode : meta?.taxCode ?? src.taxCode, lineType: type, program:w.g.policy.code, autoGift: true, brandCode: same ? src.brandCode : undefined, ...(same ? { lotNo: src.lotNo, expDate: src.expDate } : {}) });
     changes.push(`tự thêm quà ${vn(w.qty)} ${w.g.giftUnit} ${giftSku} theo ${w.g.policy.code}`);
   }
   return { lines, changes };
