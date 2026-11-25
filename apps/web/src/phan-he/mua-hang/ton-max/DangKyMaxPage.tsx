@@ -136,7 +136,6 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
     <Modal wide title={req ? `${req.code} · ${kind === 'new_item' ? 'Đăng ký max hàng mới' : 'Shop đăng ký tồn max'} — ${MAX_REQUEST_STATUS[req.status]}` : kind === 'new_item' ? 'Phiếu đăng ký max hàng mới (mặt hàng × shop)' : 'Phiếu shop đăng ký tồn max'} onClose={onClose}
       footer={<>
         {req && req.status !== 'cancelled' && !(req.status === 'approved' && kind === 'existing') && tt.huy && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => void cancel()}>Huỷ phiếu</button>}
-        <button className="btn" onClick={() => void (kind === 'new_item' ? template() : exportExisting())}><FileDown size={14} /> Xuất Excel</button>
         {!locked && <>
           {(!req || req.status === 'draft') && luu && <button className="btn" disabled={busy} onClick={() => void save({})}>Lưu nháp</button>}
           {(!req || req.status === 'draft') && luu && <button className="btn" disabled={busy} onClick={() => void save({ submit: true })}>Gửi duyệt</button>}
@@ -148,21 +147,23 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
         <button className="btn" onClick={onClose}>Đóng</button>
       </>}>
       {init.id && cur.isLoading ? <Loading /> : <>
-        <div className="full row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* [2026-11-25 kiennt] NT-MH-006 — đầu phiếu chia 2 hàng: ① thông tin phiếu (shop / chi nhánh, tiêu đề); ② thao tác với bảng (tìm, lọc bên trái — thêm, Excel bên phải; Xuất Excel từ chân phiếu lên cạnh Nhập Excel) (đóng góp) */}
+        <div className="full row" style={{ gap: 8, alignItems: 'center' }}>
           {kind === 'existing' ? (
             <label className="tm-parent"><span>Shop</span><select className="select input" disabled={Boolean(req)} value={br} onChange={(e) => { setBranch(e.target.value); setItems(null); }}>
               <option value="">— chọn shop —</option><option value={parent}>★ Kho chi nhánh {parent}</option>
               {shops.map((s) => <option key={s.code} value={s.code}>{s.code} · {s.name}</option>)}</select></label>
-          ) : <span className="tm-chip warn">Chi nhánh {parent} · {shops.length} shop</span>}
-          <input className="input" style={{ flex: 1, minWidth: 200 }} placeholder="Tiêu đề (vd Đăng ký max kỳ 2 tháng 10)" value={title ?? req?.title ?? ''} disabled={locked} onChange={(e) => setTitle(e.target.value)} />
-          <input className="input" type="search" placeholder="Tìm mã / tên…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 180 }} />
+          ) : <span className="tm-chip warn" style={{ whiteSpace: 'nowrap' }}>Chi nhánh {parent} · {shops.length} shop</span>}
+          <label className="tm-parent" style={{ flex: 1 }}><span>Tiêu đề</span><input className="input" style={{ flex: 1 }} placeholder="vd Đăng ký max kỳ 2 tháng 10" value={title ?? req?.title ?? ''} disabled={locked} onChange={(e) => setTitle(e.target.value)} /></label>
+        </div>
+        <div className="full row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input className="input" type="search" placeholder="Tìm mã / tên…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 220 }} />
           {kind === 'existing' && <label className="checkbox"><input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} /> Chỉ mã đổi max</label>}
+          <span className="grow" style={{ flex: 1 }} />
           {!locked && kind === 'existing' && br && <button className="btn btn-sm" onClick={() => setAdd(true)}><Plus size={13} /> Thêm mã</button>}
-          {!locked && kind === 'existing' && br && <button className="btn btn-sm" onClick={() => setImpShop(true)}><FileUp size={13} /> Nhập Excel</button>}
-          {!locked && kind === 'new_item' && <>
-            <button className="btn btn-sm" onClick={() => setItems([...rows, { key: `n${Date.now().toString(36)}`, sku: '', name: '', maxByShop: {} }])}><Plus size={13} /> Thêm dòng</button>
-            <button className="btn btn-sm" onClick={() => setImp(true)}><FileUp size={13} /> Nhập Excel (mẫu NCC / shop điền)</button>
-          </>}
+          {!locked && kind === 'new_item' && <button className="btn btn-sm" onClick={() => setItems([...rows, { key: `n${Date.now().toString(36)}`, sku: '', name: '', maxByShop: {} }])}><Plus size={13} /> Thêm dòng</button>}
+          {!locked && (kind === 'new_item' || br) && <button className="btn btn-sm" onClick={() => (kind === 'new_item' ? setImp(true) : setImpShop(true))}><FileUp size={13} /> Nhập Excel</button>}
+          {(kind === 'new_item' || br) && <button className="btn btn-sm" onClick={() => void (kind === 'new_item' ? template() : exportExisting())} title={kind === 'new_item' ? 'Tải bảng mặt hàng × shop (có sẵn cột từng shop) để gửi NCC / shop điền' : 'Xuất các dòng đang có trên phiếu'}><FileDown size={13} /> Xuất Excel</button>}
         </div>
         {req && <div className="full muted" style={{ fontSize: 12 }}>Lập bởi {req.createdBy} lúc {new Date(req.createdAt).toLocaleString('vi-VN')} (nguồn {req.source.toUpperCase()}){req.approvedBy ? ` · duyệt bởi ${req.approvedBy}` : ''}{req.pendingApply ? ` · còn ${req.pendingApply} dòng chờ gắn mã mới ghi max` : ''}</div>}
         {kind === 'existing' ? (

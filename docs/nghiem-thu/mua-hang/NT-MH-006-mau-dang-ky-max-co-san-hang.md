@@ -27,6 +27,7 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 - Lưu / Gửi duyệt / Duyệt: như cũ (chỉ ghi các dòng đổi max so với hiện tại).
 - **Bổ sung (25/11):** danh sách phiếu MH17 **bỏ dải ô đếm** (Tất cả / Chờ duyệt / Nháp / Đã duyệt / Hàng mới chờ gắn mã). Lọc theo trạng thái bằng ô lọc cột **Trạng thái**; phiếu hàng mới chưa gắn mã xem ở cột **Chưa có mã**.
 - **Bổ sung (25/11):** bỏ dải **"Hai cách đặt tồn max"** (① Shop lập phiếu… / ② Kế toán mua hàng sửa thẳng…) ở đầu **MH17** và **MH16** — hai màn riêng, dải này chiếm chỗ. Lối qua lại giữa hai màn: menu Mua hàng › Đặt hàng.
+- **Bổ sung (25/11):** đầu phiếu (cả phiếu shop và phiếu hàng mới) chia **2 hàng**: ① thông tin phiếu — Shop / Chi nhánh, **Tiêu đề** (có nhãn); ② thao tác với bảng — Tìm mã / tên, Chỉ mã đổi max bên trái; **Thêm mã / Thêm dòng · Nhập Excel · Xuất Excel** bên phải. Nút Xuất Excel chuyển từ chân phiếu lên cạnh Nhập Excel; chân phiếu chỉ còn Lưu nháp / Gửi duyệt / Duyệt / Huỷ / Đóng.
 - Khung nhập Excel dùng chung của Mua hàng nhận thêm tuỳ chọn **mẫu có sẵn dòng** và **dòng trống bỏ qua** — các màn khác không đổi.
 
 ## 2. Phạm vi
@@ -44,6 +45,7 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 | 5 | Phiếu hàng mới, các màn nhập Excel khác của Mua hàng | Không đổi |
 | 6 | Mở MH17 | Không còn dải ô đếm; lọc cột Trạng thái vẫn dùng được |
 | 7 | Mở MH17, MH16 | Không còn dải "Hai cách đặt tồn max" |
+| 8 | Mở phiếu hàng mới / phiếu shop | Đầu phiếu 2 hàng: thông tin phiếu; tìm + Thêm · Nhập Excel · Xuất Excel |
 
 ## 4. Kết quả chạy
 | | |
@@ -63,3 +65,4 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 | 25/11/2026 | Tệp mẫu chỉ gồm mặt hàng chưa có max ở shop |
 | 25/11/2026 | Bỏ dải ô đếm trạng thái ở danh sách MH17 |
 | 25/11/2026 | Bỏ dải "Hai cách đặt tồn max" ở MH17, MH16 |
+| 25/11/2026 | Đầu phiếu đăng ký chia 2 hàng; Xuất Excel lên cạnh Nhập Excel |
