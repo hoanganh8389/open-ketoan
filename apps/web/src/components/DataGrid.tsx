@@ -19,7 +19,7 @@
  * Dòng đặc biệt (tiêu đề nhóm, dòng cộng nhóm) khai qua rowKind: khi đang lọc hoặc sắp xếp, các dòng này
  * được ẩn để bảng thành danh sách phẳng.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { isValidElement, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, ChevronRight, Columns3, FileSpreadsheet, Filter, FilterX, X } from 'lucide-react';
 import { date as fmtDate, money, price } from '@/lib/format';
@@ -27,6 +27,15 @@ import { Money } from './ui';
 
 /** price: đơn giá — như money nhưng giữ số lẻ (tới 4 chữ số); thành tiền vẫn dùng money (tròn đồng). */
 export type ColType = 'text' | 'code' | 'number' | 'money' | 'price' | 'qty' | 'date' | 'check';
+
+// [2026-11-25 Nguyễn Văn Thủy] #4 tab Test: ô không có dữ liệu để trống — giá trị chỉ là "—", "-", "_" (hoặc thẻ chỉ chứa dấu đó) không hiện, không xuất Excel (đóng góp)
+const DAU_TRONG = new Set(['—', '–', '-', '_']);
+/** Ô "không có dữ liệu": chuỗi chỉ là gạch / gạch dưới, hoặc thẻ (span…) chỉ chứa đúng dấu đó. */
+function oTrong(x: unknown): boolean {
+  if (typeof x === 'string') return DAU_TRONG.has(x.trim());
+  if (isValidElement(x)) { const ch = (x.props as { children?: unknown }).children; return typeof ch === 'string' && DAU_TRONG.has(ch.trim()); }
+  return false;
+}
 
 export interface Column<T> {
   key: string;
@@ -324,8 +333,9 @@ export function DataGrid<T>(p: DataGridProps<T>) {
   const showFooter = p.footerLabel !== false && cols.some((c) => c.sum || c.footer !== undefined || c.footerValue);
 
   const cell = (c: Column<T>, r: T): ReactNode => {
-    if (c.render) return c.render(r);
+    if (c.render) { const x = c.render(r); return oTrong(x) ? null : x; }
     const v = valueOf(c, r);
+    if (oTrong(v)) return '';
     switch (c.type) {
       case 'money': return <Money value={Number(v ?? 0)} blankZero={!c.showZero} bold={typeof c.bold === 'function' ? c.bold(r) : c.bold} />;
       case 'price': return v === null || v === undefined || (v === 0 && !c.showZero) ? '' : price(Number(v));
@@ -381,7 +391,7 @@ export function DataGrid<T>(p: DataGridProps<T>) {
     const { luuExcel } = await import('@/lib/excelChuan');
     const cellValue = (c: Column<T>, r: T): string | number => {
       const v = valueOf(c, r);
-      if (v === null || v === undefined) return '';
+      if (v === null || v === undefined || oTrong(v)) return '';
       if (isNumeric(c.type)) return Number(v);
       if (c.type === 'check') return v ? 'x' : '';
       if (c.type === 'date') return fmtDate(String(v));
