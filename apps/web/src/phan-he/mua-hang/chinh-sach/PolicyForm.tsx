@@ -145,8 +145,8 @@ export function PolicyForm({ value, all, kinds = ALL_KINDS, lockPartner, lockCon
       <Field label="Hiệu lực từ"><input className="input" type="date" value={p.validFrom ?? ''} onChange={(e) => setP({ ...p, validFrom: e.target.value || undefined })} /></Field>
       <Field label="Đến (trống = không thời hạn)"><input className="input" type="date" value={p.validTo ?? ''} onChange={(e) => setP({ ...p, validTo: e.target.value || undefined })} /></Field>
       {/* [2026-11-25 Nguyễn Văn Thủy] #29 tab Test: "Thứ tự áp" 1, 2, 3… (1 = áp trước) thay cho số ưu tiên — cách tính giữ nguyên (đóng góp) */}
-      <Field label="Thứ tự áp (1 = áp trước; trống = áp sau cùng)" tip="Hai chính sách cùng phạm vi, hoặc hai chương trình áp riêng cùng khớp một mã: thứ tự nhỏ hơn được áp, chương trình sau chỉ áp khi chương trình trước không khớp. Hết chương trình thì theo giá hợp đồng / giá niêm yết">
-        <input className="input num" value={thuTuOf(p.priority) ?? ''} placeholder="trống" onChange={(e) => setP({ ...p, priority: priorityOf(docThuTu(e.target.value)) })} /></Field>
+      <Field full label="Thứ tự áp khi nhiều chương trình cùng khớp" tip="Chỉ dùng khi có từ 2 chương trình cùng khớp một đơn / một mã (cùng loại, cùng phạm vi; hoặc cùng tích Áp riêng). Phần mềm xét lần lượt 1 → 2 → 3…: chương trình đứng trước khớp thì lấy nó; không khớp (hết hạn, chưa đạt điều kiện…) mới xét chương trình kế tiếp. Không chương trình nào khớp thì theo giá hợp đồng / giá niêm yết.">
+        <ThuTuAp p={p} all={all} onChange={(priority) => setP({ ...p, priority })} /></Field>
       {/* [2026-11-10 05:00 PM Nguyễn Văn Thủy] PHASE-026 — loại chương trình (đóng góp) */}
       {!lockContract && <Field label="Loại chương trình"><select className="select input" value={(p as Policy & { programKind?: string | null }).programKind ?? ''} onChange={(e) => setP({ ...p, programKind: e.target.value || null } as Policy)}>
         <option value="">— không —</option>
@@ -310,3 +310,30 @@ function DieuKienKichHoat({ p, onChange }: { p: Policy; onChange: (a: Activation
   );
 }
 
+
+// [2026-11-25 Nguyễn Văn Thủy] #29 tab Test: chọn thứ tự áp bằng danh sách có giải thích + thấy thứ tự của các chính sách cùng NCC / hợp đồng (đóng góp)
+/** Ô chọn thứ tự áp: 1 = xét đầu tiên, 2 = xét khi chương trình thứ tự 1 không khớp…; kèm danh sách thứ tự đang có của các chính sách cùng NCC, cùng hợp đồng, cùng loại. */
+function ThuTuAp({ p, all, onChange }: { p: Policy; all: Policy[]; onChange: (priority: number) => void }) {
+  const cur = thuTuOf(p.priority);
+  const cung = all.filter((x) => x.id !== p.id && x.isActive && x.kind === p.kind && (x.scope.partnerCode ?? '') === (p.scope.partnerCode ?? '') && (x.scope.contractCode ?? '') === (p.scope.contractCode ?? ''))
+    .map((x) => ({ x, t: thuTuOf(x.priority) })).sort((a, b) => (a.t ?? 999) - (b.t ?? 999));
+  const max = Math.max(5, cur ?? 0, ...cung.map((c) => c.t ?? 0)) + 1;
+  const nhan = (t: number) => (t === 1 ? 'xét đầu tiên' : `xét khi chương trình thứ tự ${t - 1} không khớp`);
+  return (
+    <div>
+      <select className="select input" value={cur ?? ''} onChange={(e) => onChange(priorityOf(e.target.value ? Number(e.target.value) : null))}>
+        <option value="">Không xếp — xét sau cùng (sau mọi chương trình có thứ tự)</option>
+        {Array.from({ length: max }, (_, k) => k + 1).map((t) => (
+          <option key={t} value={t}>{t} — {nhan(t)}{cung.some((c) => c.t === t) ? ` (đang có: ${cung.filter((c) => c.t === t).map((c) => c.x.code).join(', ')})` : ''}</option>
+        ))}
+      </select>
+      {cung.length > 0 && (
+        <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+          Cùng loại, cùng {p.scope.contractCode ? `hợp đồng ${p.scope.contractCode}` : p.scope.partnerCode ? 'NCC' : 'phạm vi chung'}:{' '}
+          {cung.slice(0, 6).map((c, k) => <span key={c.x.id}>{k ? ' · ' : ''}<b>{c.t ?? '—'}</b> {c.x.code}</span>)}
+          {cung.length > 6 ? ` · và ${cung.length - 6} chính sách khác` : ''}
+        </div>
+      )}
+    </div>
+  );
+}
