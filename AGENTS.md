@@ -217,6 +217,33 @@ Khi được yêu cầu "tạo module …": **không sửa Kernel, không sửa 
 <!-- [2026-11-03 07:17 PM Johnny Chu - Chu Hoàng Anh] ADR-0020 — module check gồm accounting-check; chứng từ mẫu examples/ -->
 8. Bắt đầu module mới bằng `npx bizcity module new <key> --label "Tên"` (khung từ [templates/starter-module/](templates/starter-module/)), rồi đọc `modules/<key>/AGENTS.md`. Module nằm ở `modules/<key>/`: API tự nạp (route `/api/v1/m/<key>/…`), web tự gom (`/app/<key>/…`); màn chỉ dùng `@bizcity/ui-kit`.
 
+## Màn có ghi dữ liệu: hỏi ngược, bản đồ lỗi, xem lỗi thật (R-REV-17) <!-- [2026-11-25 06:22 PM Johnny Chu - Chu Hoàng Anh] FLOW — STD-11: buộc contributor theo bizcity_failure_map@1 + bizcity_feedback_loop@1; chủ chỉ đạo 2026-11-25 "đảm bảo các contributor tuân thủ" -->
+
+Áp cho **mọi** người và mọi trợ lý AI khi thêm / sửa một màn có Thêm, Sửa, Xoá, Lưu, Ghi sổ, Duyệt, Gửi sang app khác. Đọc skill [tu-duy-nguoc](skills/tu-duy-nguoc/SKILL.md). Công cụ nằm ở repo [bizcity-platform](https://github.com/hoanganh8389/bizcity-platform), clone cạnh repo này (`../bizcity-platform`).
+
+1. **Trước khi viết mã lưu:** in câu hỏi ngược của luồng rồi **hỏi lại người yêu cầu trong khung chat** những câu chưa rõ, không đoán. Câu về kỳ, thuế, kho, giá vốn, công nợ, hạn mức: kế toán trưởng trả lời.
+   ```bash
+   node ../bizcity-platform/tools/failure-check.mjs --questions mua,kho      # luồng: chung danh-muc mua ban kho quy cong-no thue cuoi-ky gui-app
+   node ../bizcity-platform/tools/failure-check.mjs --repo . --scaffold <tệp form> --code <MÃ MÀN> --label "<tên>" --flow mua,kho --write
+   ```
+2. **Bản đồ lỗi** `<Tên>.failure-map.json` đặt cạnh form:
+   - ghi câu trả lời vào `questions[].answer`;
+   - mỗi dòng chặn có mã trong `packages/contracts/src` (thiếu thì thêm mã theo R-ERR-1 / R-INTAKE-11) và một test gây đúng mã;
+   - lời nhắc tiếng Việt nói sai gì, làm gì tiếp.
+
+   Cho người yêu cầu xem bảng tình huống trước khi code.
+3. **Màn chỉ đúng chỗ:** báo trước khi bấm ở chỗ biết trước được; tô / cuộn tới ô theo `error.fields`; danh sách chọn có thêm / sửa tại chỗ qua action của chủ danh mục.
+4. **Sau khi thử:** xem lỗi thật và độ phủ ngay ở terminal, rồi dán cả hai kết quả vào khối bằng chứng của PR.
+   ```bash
+   node ../bizcity-platform/tools/loi.mjs --repo . --since 2h          # lần ghi bị từ chối theo màn × mã, đối chiếu bản đồ; lỗi kỹ thuật kèm reqId / traceId
+   node ../bizcity-platform/tools/failure-check.mjs --repo . --report
+   ```
+5. **Bộ kiểm chặn:**
+   - SC-UI-2: form **mới** không có bản đồ thì đỏ (16 form cũ là nợ ở `baseline.json`, chỉ được bớt).
+   - SC-UI-3: bản đồ có dòng chặn thiếu mã / thiếu test, hoặc còn câu hỏi ngược chưa trả lời, thì đỏ.
+
+   Không báo "xong" khi hai kiểm này chưa đạt.
+
 ## Trước khi xong việc
 
 ```bash
