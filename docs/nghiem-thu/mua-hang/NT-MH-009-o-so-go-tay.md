@@ -39,7 +39,7 @@
 |---|---|
 | Ngày chạy | 25/11/2026 (máy dev, DB local, trình duyệt tự động, chặn lệnh ghi) |
 | Bản code (commit) | nhánh `feat/nt-mh-009-o-so-go-tay` |
-| Kết quả | Bước 1–4 đạt: "1,5" → 1,5; "1.5" → 1,5; "1.500" → 1500; "12" → 12; "abc" viền đỏ; MH17 "2,5" → 2,5, Chênh −32,5 (max hiện tại 35). Bước 5 chưa chạy. Typecheck web sạch |
+| Kết quả | Bước 1–4 đạt: "1,5" → 1,5; "1.5" → 1,5; "1.500" → 1500; "12" → 12; "abc" viền đỏ; MH17 "2,5" → 2,5, Chênh −32,5 (max hiện tại 35). Bước 5 (chạy lại 25/11, chặn lệnh ghi): "3,5" / "3.5" gửi coverDays 3.5; "abc", "0" báo lỗi, không gửi. Bước 1–4 chạy lại vẫn đạt. Typecheck web sạch |
 
 ## 6. Biên bản nghiệm thu
 | Ngày | Bộ phận | Kết quả | Ghi chú |
