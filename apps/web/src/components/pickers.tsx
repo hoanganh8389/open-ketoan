@@ -151,7 +151,10 @@ export function CodePicker({ value, onChange, options, nameOf, onSearch, loading
 
   const name = value && !multiple ? nameOf(value) : undefined;
   const showName = name && !hideName && !hasFocus && !open;
-  const asName = Boolean((nameFirst || nameOnly) && showName);
+  // [2026-11-25 Nguyễn Văn Thủy] ô chọn đã chọn xong chỉ hiện MÃ (không chữ tên mờ bên cạnh) — tên + thông tin ở chú thích rê chuột và danh sách khi bấm vào.
+  //   Ngoại lệ nameFirst: mã là số nội bộ (ID) không có nghĩa với người dùng thì hiện tên (đóng góp)
+  const asName = Boolean(nameFirst && showName);
+  void nameOnly;
 
   return (
     <span className={`picker${onAdd && !disabled ? ' has-add' : ''}`} style={style} title={title ?? (name ? `${value} — ${name}` : undefined)}>
@@ -196,7 +199,6 @@ export function CodePicker({ value, onChange, options, nameOf, onSearch, loading
           else if (e.key === 'Tab' && open && query && shown[active] && !shown.some((o) => o.code === query)) { pick(shown[active]); }
         }}
       />
-      {showName && !nameOnly && <span className="picker-name">{asName ? value : name}</span>}
       {onAdd && !disabled && <button type="button" tabIndex={-1} className="picker-add" title={`${addLabel} (F9)`} onMouseDown={(e) => e.preventDefault()} onClick={add}>+</button>}
       {open && pos && !disabled && createPortal(
         <div

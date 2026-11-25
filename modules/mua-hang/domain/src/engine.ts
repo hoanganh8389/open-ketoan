@@ -108,6 +108,8 @@ export interface PDoc {
   invoices?: DocInvoice[];
   /** Đơn đặt: các kho giao (tham chiếu, chọn nhiều) — phân kho thật lưu ở từng dòng. */
   deliveryWarehouses?: string[];
+  /** [2026-11-25 Nguyễn Văn Thủy] Đơn đặt: các chi nhánh nhận (chi nhánh lập chứng từ hoặc chi nhánh con), chọn nhiều — chi nhánh nhận của dòng phải thuộc danh sách này; trống = suy từ dòng (đóng góp) */
+  receiveBranches?: string[];
   orderDiscount?: { pct?: number; amount?: number };
   /** CK trên đơn chỉ chia vào các dòng này (lineKey) — chốt lúc duyệt khi có mã đang áp riêng chương trình khác. Trống = mọi dòng mua. */
   orderDiscountLines?: string[];
@@ -911,7 +913,7 @@ export function checkDoc(doc: PDoc, calc: DocCalc, c: CheckCtx): Check[] {
   // Dòng hàng mua phải có đơn giá (hàng tặng thì chọn loại hàng tặng) — đơn / phiếu tổng 0 không được gửi duyệt / duyệt.
   if (['order', 'receipt', 'return', 'exchange'].includes(doc.kind)) {
     const noPrice = doc.lines.filter((l) => l.lineType === 'buy' && l.qty > 0 && !(l.price > 0));
-    if (noPrice.length) out.push({ level: 'error', code: 'price_missing', blocking: true, lineKey: noPrice[0]!.lineKey, text: `${noPrice.length} dòng hàng mua chưa có đơn giá (${noPrice.slice(0, 3).map((l) => l.sku || l.name || '?').join(', ')}${noPrice.length > 3 ? '…' : ''}) — nhập đơn giá, hàng tặng thì chọn loại hàng tặng` });
+    if (noPrice.length) out.push({ level: 'error', code: 'price_missing', blocking: true, lineKey: noPrice[0]!.lineKey, text: `${noPrice.length} dòng hàng mua chưa có đơn giá (${noPrice.slice(0, 3).map((l) => l.sku || l.name || '?').join(', ')}${noPrice.length > 3 ? '…' : ''}) — ${doc.kind === 'order' ? 'khai giá ở hợp đồng / giá mua của NCC' : 'nhập đơn giá, hàng tặng thì chọn loại hàng tặng'}` });
     // Đơn đặt / phiếu nhập toàn hàng tặng (nhập giá 0 thì dòng thành hàng tặng) → tổng 0: không phải đơn mua.
     if ((doc.kind === 'order' || doc.kind === 'receipt') && doc.lines.length && !doc.lines.some((l) => l.lineType === 'buy' && l.qty > 0 && l.price > 0)) {
       out.push({ level: 'error', code: 'no_buy_line', blocking: true, text: `${doc.kind === 'order' ? 'Đơn đặt' : 'Phiếu nhập'} chưa có dòng hàng mua có đơn giá (tổng tiền 0) — nhập đơn giá cho hàng mua; chỉ có quà / hàng tặng thì lập phiếu Nhận quà` });

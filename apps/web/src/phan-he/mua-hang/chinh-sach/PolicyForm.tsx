@@ -3,6 +3,7 @@
  * Đi từ NCC: ô Nhà cung cấp đứng đầu; mã tự đặt "<mã NCC>-<loại>" (ví dụ NC100227-HANMUC), tên tự đặt theo NCC + nội dung.
  * Mở từ hồ sơ NCC thì NCC khoá sẵn và chỉ chọn các loại thuộc thẻ đang mở.
  */
+import { ThemHopDongNhanh } from '../hop-dong/ChonHopDong';
 import { docThuTu, priorityOf, thuTuOf, thuTuText } from './thuTu';
 import { useEffect, useRef, useState } from 'react';
 import { ACTIVATION_KINDS, POLICY_LABEL, STACK_KINDS, activationOf, activationText, type Activation, type ActivationPeriod, apRiengChong, canRepeat, coApRieng, giftItemsOf, isRepeat, scopeBranches, uuTienDeThang, type ApRiengChong, type Policy, type PolicyKind } from '@bizcity/mua-hang-domain';
@@ -66,6 +67,7 @@ export function PolicyForm({ value, all, kinds = ALL_KINDS, lockPartner, lockCon
   const skuBrand = useQuery({ queryKey: ['mua-hang', 'lookup', p.scope.sku ?? ''], enabled: Boolean(p.scope.sku), staleTime: 60_000, queryFn: () => purchaseApi.lookupProducts([p.scope.sku!]) }).data?.[0]?.brandCode ?? '';
   // [2026-11-18 Nguyễn Văn Thủy] chính sách mới của NCC đang có hợp đồng hiệu lực: tự chọn hợp đồng đó (bỏ chọn được) (đóng góp)
   const hdTouched = useRef(false);
+  const [themHd, setThemHd] = useState(false);
   useEffect(() => {
     if (!isNew || lockContract || hdTouched.current || p.scope.contractCode || !contracts.length) return;
     const c = contractFor(contracts, today(), scopeBranches(p.scope)[0] ?? '');
@@ -110,6 +112,9 @@ export function PolicyForm({ value, all, kinds = ALL_KINDS, lockPartner, lockCon
           <option value="">— không theo hợp đồng —</option>
           {contracts.filter((c) => c.status !== 'liquidated' || c.code === p.scope.contractCode).map((c) => <option key={c.code} value={c.code}>{c.code} · {c.statusText}</option>)}
         </select>
+        {/* [2026-11-25 Nguyễn Văn Thủy] nút + thêm hợp đồng ngay tại đây (cùng hộp với phiếu mua) (đóng góp) */}
+        <button type="button" className="btn btn-xs" style={{ marginTop: 3 }} title="Thêm hợp đồng mua mới với NCC này" onClick={() => setThemHd(true)}>+ Thêm hợp đồng</button>
+        {themHd && <ThemHopDongNhanh partnerCode={p.scope.partnerCode} onClose={() => setThemHd(false)} onSaved={(c) => { setThemHd(false); hdTouched.current = true; upd({ ...p, scope: { ...p.scope, contractCode: c } }); }} />}
         {isNew && p.scope.contractCode && !hdTouched.current && <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>Tự chọn hợp đồng đang hiệu lực của NCC — chương trình ngoài hợp đồng thì chọn "không theo hợp đồng"</div>}
       </Field>}
       <Field label="Loại chính sách" full>

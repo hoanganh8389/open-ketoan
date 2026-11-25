@@ -72,7 +72,8 @@ export const GON_DEFS: GonDef[] = [
     key: 'mua-hang', label: 'Mua hàng', icon: 'ShoppingBag', description: 'Đơn đặt, nhập hàng, hoá đơn NCC, trả hàng, công nợ và thanh toán NCC', color: '#e8710a', module: 'mua-hang', homeLabel: 'Bàn làm việc',
     // [2026-11-20 Nguyễn Văn Thủy] UX MUA HÀNG GỌN — bấm Mua hàng ở menu trái vào thẳng Bàn làm việc (việc cần làm + lập nhanh);
     // thẻ đầu trang chỉ 5 màn làm hằng ngày; danh sách theo việc: Hằng ngày / Định kỳ / Danh mục. Mỗi việc một lối vào (đóng góp)
-    the: ['/mua-hang/tong-hop', '/mua-hang/hoa-don-ncc', '/mua-hang/dat-hang', '/mua-hang/han-muc', '/mua-hang/hop-dong'],
+    // [2026-11-25 Nguyễn Văn Thủy] khai báo (NCC, mặt hàng, hợp đồng, chính sách, cài đặt) về phân hệ Danh mục — Mua hàng chỉ còn nghiệp vụ (đóng góp)
+    the: ['/mua-hang/tong-hop', '/mua-hang/hoa-don-ncc', '/mua-hang/dat-hang', '/mua-hang/han-muc'],
     sections: [
       { label: 'Hằng ngày', paths: ['/mua-hang/tong-hop', '/mua-hang/hoa-don-ncc', '/mua-hang/doi-chieu-hoa-don', '/mua-hang/han-muc'] },
       { label: 'Đặt hàng', paths: ['/mua-hang/dang-ky-max', '/mua-hang/ton-max', '/mua-hang/cong-thuc', '/mua-hang/dat-hang', '/mua-hang/chuyen-shop'] },
@@ -81,7 +82,6 @@ export const GON_DEFS: GonDef[] = [
       // [2026-11-21 kiennt] NT-MH-005 — Cài đặt mua hàng (MH12) chuyển sang Phần riêng → Cấu hình (đóng góp)
       // [2026-11-21 kiennt] NT-MH-005 — MH01 bỏ khỏi menu, thay bằng Nhà cung cấp của Danh mục (DM13); hồ sơ NCC mở từ mã NCC (đóng góp)
       // [2026-11-25 Nguyễn Văn Thủy] #26 tab Test: khai báo đối tượng / mặt hàng dùng đúng màn của Danh mục tổng (DM13, DM10) — một nơi khai, cùng dữ liệu (đóng góp)
-      { label: 'Danh mục', paths: ['/danh-muc/nha-cung-cap', '/danh-muc/mat-hang', '/mua-hang/hop-dong', '/mua-hang/chinh-sach'] },
     ],
     reports: [
       { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/tong-hop-chi-nhanh', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/nhat-ky'] },
@@ -176,6 +176,8 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Thuế suất', paths: ['/danh-muc/loai-thue'] },
       { label: 'Chi phí', paths: ['/danh-muc/khoan-muc', '/danh-muc/muc-thu-chi', '/danh-muc/hop-dong', '/danh-muc/vu-viec', '/danh-muc/du-an'] },
       { label: 'Tài sản', paths: ['/danh-muc/loai-tai-san', '/danh-muc/nhom-ccdc', '/danh-muc/nguon-von', '/danh-muc/muc-dich-su-dung'] },
+      // [2026-11-25 Nguyễn Văn Thủy] khai báo của Mua hàng ở Danh mục: hợp đồng mua, chính sách mua, cài đặt mua hàng (NCC, mặt hàng ở nhóm Đối tượng / Mặt hàng) (đóng góp)
+      { label: 'Mua hàng', paths: ['/mua-hang/hop-dong', '/mua-hang/chinh-sach', '/mua-hang/cai-dat'] },
     ],
   },
   {
@@ -192,7 +194,7 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Bán lẻ, giá vốn', paths: ['/ban-hang/thu-tien', '/cau-hinh/hinh-thuc-thanh-toan', '/nghiep-vu/cong-thuc-gia-von', '/tai-san/ke-hoach-khau-hao'] },
       { label: 'Công nợ', paths: ['/cong-no/khoan-cong-no', '/cong-no/phai-thu', '/cong-no/phai-tra', '/nghiep-vu/can-tru-cong-no', '/cong-no/dat-coc', '/cong-no/yeu-cau-thanh-toan', '/cong-no/chung-tu-nguon', '/cong-no/doi-chieu'] },
       // [2026-11-21 kiennt] NT-MH-005 — cài đặt của Mua hàng (MH12) và Bán hàng (BH17) gom một chỗ (đóng góp)
-      { label: 'Cấu hình', paths: ['/mua-hang/cai-dat', '/app/pos/cai-dat'] },
+      { label: 'Cấu hình', paths: ['/app/pos/cai-dat'] },
     ],
     reports: [
       { label: 'Phần riêng', paths: ['/bao-cao/hanh-trinh-mat-hang', '/bao-cao/ket-qua-theo-cua-hang', '/bao-cao/phan-loai-dai-han', '/bao-cao/cong-no-noi-bo', '/bao-cao/cong-no-noi-bo-chi-tiet', '/quy/nhat-ky-chi-tien-khoan-muc'] },

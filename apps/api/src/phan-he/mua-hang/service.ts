@@ -138,7 +138,12 @@ export const purchaseService = {
         }
         doc.deliveryWarehouses = ds.length ? ds : undefined;
         if (!doc.deliveryWarehouse && ds[0]) doc.deliveryWarehouse = ds[0];
-      } else delete doc.deliveryWarehouses;
+        // [2026-11-25 Nguyễn Văn Thủy] chi nhánh nhận đầu đơn (chọn nhiều): luôn gồm chi nhánh nhận của mọi dòng — không để dòng nhận ở chi nhánh ngoài danh sách (đóng góp)
+        if (doc.receiveBranches?.length) {
+          const rb = [...new Set([...doc.receiveBranches, ...doc.lines.filter((l) => l.sku).map((l) => l.branchCode || doc.deliveryBranch || doc.branchCode)])];
+          doc.receiveBranches = rb;
+        }
+      } else { delete doc.deliveryWarehouses; delete doc.receiveBranches; }
       // [2026-11-18 Nguyễn Văn Thủy] hợp đồng: trống mà phiếu gắn phiếu thuộc hợp đồng (nhập từ đơn, trả / chi phí / trả tiền theo phiếu nhập) thì kế thừa; có thì kiểm (đóng góp)
       // [2026-11-19 Nguyễn Văn Thủy] mọi phiếu thuộc hợp đồng đều mang số hợp đồng: phiếu gắn chứng từ của NHIỀU hợp đồng thì tách phiếu
       // (công nợ theo hợp đồng không chia được một khoản cho hai hợp đồng); phiếu thưởng lấy hợp đồng của chính sách (đóng góp)

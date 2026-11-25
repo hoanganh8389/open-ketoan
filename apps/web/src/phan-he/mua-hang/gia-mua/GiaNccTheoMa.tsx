@@ -7,6 +7,7 @@
  *   - Lịch sử thay đổi: mọi lần thêm / sửa / xoá giá của mã này (ai, lúc nào, trước → sau).
  */
 import { useMemo, useState } from 'react';
+import { ThemHopDongNhanh } from '../hop-dong/ChonHopDong';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { TAX_RATE, type SupplierProduct } from '@bizcity/mua-hang-domain';
@@ -113,6 +114,7 @@ export function GiaNccTheoMa({ sku, name, onChanged }: { sku: string; name: stri
 
 function HopGia({ v: init, units, rate, onClose, onDone }: { v: Form; units: { unit: string; ratio: number }[]; rate: number; onClose: () => void; onDone: () => void }) {
   const [v, setV] = useState<Form>(init);
+  const [themHd, setThemHd] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (p: Partial<Form>) => setV((x) => ({ ...x, ...p }));
@@ -147,8 +149,9 @@ function HopGia({ v: init, units, rate, onClose, onDone }: { v: Form; units: { u
       <Field label="Thuộc hợp đồng" full tip="Giá theo hợp đồng mua đã ký với NCC: đơn / phiếu chọn hợp đồng này lấy đúng giá này. Để trống = giá không theo hợp đồng">
         <ListPicker items={hds.filter((c) => c.status !== 'liquidated' || c.code === v.contractCode).map((c) => ({ code: c.code, name: `${c.name || ''}${c.endDate ? ` · đến ${dmy(c.endDate)}` : ''}`, hint: c.statusText }))}
           value={v.contractCode ?? ''} onChange={(c) => set({ contractCode: c || '' })} disabled={!v.partnerCode}
-          placeholder={!v.partnerCode ? 'chọn nhà cung cấp trước' : hds.length ? '— không theo hợp đồng —' : 'NCC chưa có hợp đồng mua — giá không theo hợp đồng'} emptyText="Không có hợp đồng khớp" />
+          placeholder={!v.partnerCode ? 'chọn nhà cung cấp trước' : hds.length ? '— không theo hợp đồng —' : 'NCC chưa có hợp đồng mua — giá không theo hợp đồng'} emptyText="Không có hợp đồng khớp" onAdd={v.partnerCode ? () => setThemHd(true) : undefined} addLabel="Thêm hợp đồng" />
       </Field>
+      {themHd && v.partnerCode && <ThemHopDongNhanh partnerCode={v.partnerCode} onClose={() => setThemHd(false)} onSaved={(c) => { setThemHd(false); set({ contractCode: c }); }} />}
       <Field label="ĐVT (*)">
         <select className="select input" value={v.unit} onChange={(e) => set({ unit: e.target.value })}>
           {units.map((u) => <option key={u.unit} value={u.unit}>{u.unit}{u.ratio !== 1 ? ` (×${u.ratio})` : ''}</option>)}
