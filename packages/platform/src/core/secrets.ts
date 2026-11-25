@@ -1,5 +1,6 @@
 // @bizcity-layer P secrets
 // [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets (BIZCITY-SECRETS-v1 §3–§5): bí mật mã hoá phong bì AES-256-GCM theo đơn vị — khoá gốc BIZCITY_SECRETS_KEY, khoá dữ liệu mỗi đơn vị (tenant_secret_keys), set / get / has / delete theo module, đổi khoá gốc, action đọc cho khoá app có secrets:read:<module> (đóng góp)
+// [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: sổ khai bí mật theo module (registerModuleSecrets) cho ctx.secrets, action đọc GET /api/v1/m/<key>/secrets/read, chặn ghi trong action đọc (đóng góp)
 /**
  * BÍ MẬT THEO ĐƠN VỊ (platform.secrets, docs/contracts/BIZCITY-SECRETS-v1.md, migration 0184).
  *
@@ -11,7 +12,8 @@
  *                 khác là không giải được.
  *   Module        tên `<module>.<tên>` — module chỉ chạm tên của mình; có danh sách khai (manifest secrets[]) thì chỉ tên đã khai,
  *                 đúng phạm vi đã khai. `get` chỉ phía máy chủ; giao diện chỉ thấy `has` (đã đặt lúc … bởi …).
- *   App ngoài     action `<module>.secrets.read` gác bằng quyền `secrets:read:<module>`; mỗi lần đọc ghi một dòng audit_logs.
+ *   App ngoài     action `<module>.secrets.read` (GET /api/v1/m/<module>/secrets/read — defineModule tự thêm khi manifest khai
+ *                 secrets[]) gác bằng quyền `secrets:read:<module>`; mỗi lần đọc ghi một dòng audit_logs.
  *   R-LOG-4       không log, không đưa giá trị vào lỗi / nhật ký / bằng chứng — nhật ký chỉ ghi "đã đổi".
  */
 import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } from 'node:crypto';
@@ -22,7 +24,7 @@ import type { Db } from '../db/client.js';
 import type { Database } from '../db/types.js';
 import { defineAction, type AnyActionDef } from './actions.js';
 import { writeAudit } from './audit.js';
-import type { Permission } from './auth.js';
+import { registerSecretsReadPermission, type Permission } from './auth.js';
 import { Errors } from './errors.js';
 
 export type SecretScopeType = 'tenant' | 'book' | 'branch';
@@ -144,6 +146,18 @@ export function secretDeclErrors(moduleKey: string, decls: readonly SecretDecl[]
   return bad;
 }
 
+// ── Sổ khai bí mật theo module ───────────────────────────────────────────────────────────────────────────────────────────
+const declarations = new Map<string, readonly SecretDecl[]>();
+/** Module khai `secrets[]` (defineModule gọi lúc nạp): ctx.secrets chỉ cho tên đã khai; quyền `secrets:read:<module>` vào sổ quyền. */
+export function registerModuleSecrets(moduleKey: string, decls: readonly SecretDecl[]): void {
+  const bad = secretDeclErrors(moduleKey, decls);
+  if (bad.length) throw new Error(`Module ${moduleKey}: ${bad.join('; ')}`);
+  declarations.set(moduleKey, Object.freeze([...decls]));
+  registerSecretsReadPermission(moduleKey);
+}
+/** Bí mật module đã khai; module không khai → [] (ctx.secrets từ chối mọi tên). */
+export const moduleSecretDecls = (moduleKey: string): readonly SecretDecl[] => declarations.get(moduleKey) ?? [];
+
 export interface SecretsOptions {
   tenantId: string;
   /** Module đang chạy (tiền tố id action) — chỉ chạm tên `<module>.…`. */
@@ -152,6 +166,8 @@ export interface SecretsOptions {
   actor: string;
   /** Danh sách khai trong manifest `secrets[]`. Có thì chỉ tên đã khai, đúng phạm vi đã khai. */
   declared?: readonly SecretDecl[];
+  /** Action đọc: set / delete bị chặn (ghi bí mật chỉ trong action ghi). */
+  readOnly?: boolean;
 }
 
 /** Dựng `ctx.secrets` cho một module trong một đơn vị, trên kết nối / giao dịch `conn` (giao dịch của action). */
@@ -173,6 +189,7 @@ export function secretsFor(conn: Db, o: SecretsOptions): SecretsApi {
   return {
     async set(name, value, opts) {
       const s = target(name, opts?.scope);
+      if (o.readOnly) throw new Error(`ctx.secrets.set chỉ dùng trong action ghi (${name})`);
       if (typeof value !== 'string' || value.length === 0) throw Errors.validation(`Giá trị bí mật ${name} trống — muốn bỏ thì dùng xoá`);
       if (Buffer.byteLength(value, 'utf8') > SECRET_VALUE_MAX) throw Errors.validation(`Giá trị bí mật ${name} dài quá ${SECRET_VALUE_MAX} byte`);
       const note = (opts?.note ?? '').slice(0, 500);
@@ -198,6 +215,7 @@ export function secretsFor(conn: Db, o: SecretsOptions): SecretsApi {
     },
     async delete(name, scope) {
       const s = target(name, scope);
+      if (o.readOnly) throw new Error(`ctx.secrets.delete chỉ dùng trong action ghi (${name})`);
       const r = await sql`DELETE FROM tenant_secrets WHERE tenant_id = ${o.tenantId} AND name = ${name} AND scope_type = ${s.type} AND scope_id = ${s.id}`.execute(conn);
       if (Number(r.numAffectedRows ?? 0n) > 0) {
         await writeAudit(conn, { tenantId: o.tenantId, actor: o.actor, action: 'secrets.delete', objectType: 'secret', objectId: `${name}@${s.type}:${s.id}`, after: { deleted: true } });
@@ -257,7 +275,7 @@ const readOutput = z.object({ name: z.string(), scope: z.enum(['tenant', 'book',
 
 /**
  * Action đọc bí mật cho khoá API / khoá app (cầu nối, plugin Viettel…): `<module>.secrets.read`, quyền `secrets:read:<module>`,
- * POST /api/v1/secrets/<module>/read. Mỗi lần đọc (có hay không có giá trị) ghi một dòng audit_logs `secrets.read` — không giá trị.
+ * GET /secrets/read dưới tiền tố route của module (/api/v1/m/<module>/secrets/read — khoá app chỉ GET được ngoài cửa nạp). Mỗi lần đọc (có hay không có giá trị) ghi một dòng audit_logs `secrets.read` — không giá trị.
  * Người dùng đăng nhập bằng phiên giao diện bị chặn dù có quyền: giao diện không bao giờ thấy giá trị.
  */
 export function defineSecretsReadAction(moduleKey: string): AnyActionDef {
@@ -276,7 +294,7 @@ export function defineSecretsReadAction(moduleKey: string): AnyActionDef {
     permission: secretsReadPermission(moduleKey),
     effect: 'read',
     idempotency: 'none',
-    expose: { http: { method: 'POST', path: `/api/v1/secrets/${moduleKey}/read` }, mcp: false, ai: 'deny' },
+    expose: { http: { method: 'GET', path: '/secrets/read' }, mcp: false, ai: 'deny' },
     errors: ['FORBIDDEN', 'NOT_READY', 'VALIDATION_ERROR'],
     async handler(ctx, input) {
       if (ctx.actor.kind !== 'apikey') throw Errors.forbidden('Chỉ khoá API / khoá app đọc được giá trị bí mật; giao diện chỉ thấy đã đặt lúc nào, bởi ai');

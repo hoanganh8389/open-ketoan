@@ -8,6 +8,7 @@
 // [2026-10-30 08:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-009 — MCP ghi: lập nháp, đề xuất huỷ, luôn chờ duyệt; ADR-0009 đề xuất.
 // [2026-10-31 08:14 PM Johnny Chu - Chu Hoàng Anh] PHASE-012 — ledger.query (PHASES 3.7, S012-2): ctx.ledger.query trong giao dịch của action, Kernel đăng ký bằng registerLedgerReader ở app.ts
 // [2026-11-01 04:20 PM Johnny Chu - Chu Hoàng Anh] PHASE-010 — dời từ apps/api/src/core/actions.ts sang packages/platform (@bizcity/platform, D010-7 chặng 2); import tương đối viết lại theo chỗ mới
+// [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: ctx.secrets trong runtime action (đóng góp)
 /**
  * RUNTIME ACTION (bizcity_action@1, PHASES 2.5) — một khai báo `defineAction` sinh route HTTP + mô tả OpenAPI; registry dùng chung
  * cho MCP (2.12), CLI. Runtime làm thay handler các bước ACTION §4:
@@ -43,6 +44,7 @@ import { currentRequest } from './request-context.js';
 import { withSpan } from './tracing.js';
 import { documents } from './documents.js';
 import { readSetting } from './settings.js';
+import { moduleSecretDecls, secretsFor, type SecretsApi } from './secrets.js';
 // [2026-11-09 11:00 AM Johnny Chu - Chu Hoàng Anh] PHASE-030 — S030-51a (B5a, 26 §4.1 ①): ctx.libraries — kiểm theo thư viện dùng chung trong action
 import { flushLibraryUsageIfDue, makeLibraryContext, type ActionLibraries } from './libraries/context.js';
 import { isHighRiskPermission, isKnownPermission, type AuthContext, type Permission } from './auth.js';
@@ -120,6 +122,12 @@ export interface ActionContext {
   };
   /** Cấu hình đơn vị theo registry (settings.registry, core/settings.ts): chỉ khoá module sở hữu, khoá lạ là lỗi. */
   settings: { get<T = unknown>(key: string): Promise<T> };
+  // [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: ctx.secrets (BIZCITY-SECRETS-v1 §3) (đóng góp)
+  /**
+   * Bí mật mã hoá theo đơn vị của module (mật khẩu / khoá API tích hợp ngoài): chỉ tên `<module>.<tên>` khai ở manifest `secrets[]`.
+   * `get` chỉ phía máy chủ — không trả giá trị ra giao diện; `has` cho giao diện biết đã đặt lúc nào, bởi ai. set / delete chỉ trong action ghi.
+   */
+  secrets: SecretsApi;
   // [2026-11-02 10:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W4 (G4)
   /** Thông báo trong ứng dụng (notify.inapp): nguồn = module của action; trả id hoặc null khi trùng dedupeKey. */
   notify: { send(n: NotifyInput): Promise<string | null> };
@@ -535,6 +543,8 @@ async function runActionUntraced<I extends z.AnyZodObject, O extends z.ZodTypeAn
           },
         },
         settings: { get: (key) => readSetting(trx, tenantId, def.id.split('.')[0]!, key) },
+        // [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: ctx.secrets — module = tiền tố id action, chỉ tên đã khai, action đọc không ghi được (đóng góp)
+        secrets: secretsFor(trx, { tenantId, module: def.id.split('.')[0]!, actor: auth?.actor ?? 'public', declared: moduleSecretDecls(def.id.split('.')[0]!), readOnly: def.effect !== 'write' }),
         notify: { send: (n) => sendNotification(trx, tenantId, def.id.split('.')[0]!, n) },
         actions: {
           call: (id, input) => {

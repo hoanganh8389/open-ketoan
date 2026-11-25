@@ -1,9 +1,11 @@
 # BIZCITY-SECRETS-v1 · Lưu bí mật mã hoá theo đơn vị cho module (`platform.secrets`)
 <!-- [2026-11-25 08:30 PM Võ Hoàng] FLOW — chữ chốt R-FLOW-2 cho năng lực platform.secrets (1.0.0-draft); Võ Hoàng làm, chủ dự án duyệt PR code (đóng góp) -->
 
-Trạng thái: **1.0.0-draft — chữ chốt thiết kế** (R-FLOW-2). Năng lực mới ở Platform; code + test ở PR riêng sau khi bản này vào `main`, chủ dự án duyệt.
+Trạng thái: **1.0.0 — đã có** (chữ chốt R-FLOW-2 ngày 25/11/2026; mã + test ở nhánh `feat/platform-secrets`, chủ dự án duyệt PR). API cuối ở §6.
 <!-- [2026-11-25 09:05 PM Võ Hoàng] FLOW — lõi platform.secrets có mã (nhánh feat/platform-secrets): migration 0184, packages/platform/src/core/secrets.ts, test 10 ca; còn nối ctx / quyền khoá app ngoài phạm vi CLAIMS (đóng góp) -->
-Cập nhật 25/11/2026: **lõi đã có mã** (migration `0184`, `packages/platform/src/core/secrets.ts`, test `apps/api/test/secrets.test.ts`). Chưa chuyển "1.0.0 — đã có" vì còn bốn chỗ nối nằm ngoài phạm vi giữ chỗ — xem §6.3. API chốt ở §6.
+Cập nhật 25/11/2026: lõi có mã (migration `0184`, `packages/platform/src/core/secrets.ts`, test `apps/api/test/secrets.test.ts`).
+<!-- [2026-11-25 11:32 PM Võ Hoàng] FLOW — chuyển 1.0.0 — đã có: ctx.secrets trong runtime action, quyền khoá app secrets:read:<module>, action đọc tự gắn dưới route module, lược đồ manifest secrets, lệnh đổi khoá (đóng góp) -->
+Cập nhật 25/11/2026 (tối): **1.0.0 — đã có** — nối `ctx.secrets`, quyền khoá app, route đọc, lược đồ manifest, lệnh đổi khoá gốc (§6).
 Người đề xuất / làm: Võ Hoàng · Ngày: 25/11/2026.
 
 ## 1. Ca dùng
@@ -73,36 +75,51 @@ ctx.secrets.delete(name: string, scope?): Promise<void>
 - Module đọc khoá của module khác thì bị chặn.
 
 
-## 6. API đã có (bản mã)
+## 6. API đã có (1.0.0)
 <!-- [2026-11-25 09:05 PM Võ Hoàng] FLOW — API cuối của platform.secrets theo mã (đóng góp) -->
+<!-- [2026-11-25 11:32 PM Võ Hoàng] FLOW — §6 viết lại theo bản nối đủ: ctx.secrets, route đọc dưới tiền tố module, lệnh đổi khoá (đóng góp) -->
 
-### 6.1. Platform — `@bizcity/platform/core/secrets`
+### 6.1. Module — `ctx.secrets` (mọi action, `@bizcity/module-sdk`)
+
+```ts
+ctx.secrets.set(name, value, { scope?: { bookId? | branchCode? }, note? })   // chỉ trong action ghi
+ctx.secrets.get(name, scope?)      // string | null — chỉ phía máy chủ
+ctx.secrets.has(name, scope?)      // { set, updatedAt, updatedBy } — thứ duy nhất giao diện thấy
+ctx.secrets.delete(name, scope?)   // chỉ trong action ghi
+```
+
+- Module = tiền tố id action. Chỉ tên khai ở manifest `secrets: [{ name: '<key>.<tên>', scope: 'tenant' | 'book' | 'branch', label }]`, đúng phạm vi đã khai. Tên chưa khai / tên module khác → `FORBIDDEN`; sai phạm vi → `VALIDATION_ERROR`. Module không khai `secrets[]` thì mọi tên bị từ chối.
+- Phạm vi: không truyền = `tenant`; `{ bookId }` = `book`; `{ branchCode }` = `branch`; cả hai = lỗi.
+- `set` ghi đè theo (đơn vị, tên, phạm vi); nhật ký `secrets.set` / `secrets.delete` chỉ ghi `{ changed: true }` / `{ deleted: true }` (trong action ghi: vào ghi chú bằng chứng).
+- `defineModule` kiểm khai `secrets[]` (sai là không nạp module) và đăng ký tên vào sổ khai của Platform.
+
+### 6.2. Khoá app đọc bí mật
+
+- Module khai `secrets[]` thì `defineModule` tự thêm action `<key>.secrets.read`: `GET /secrets/read?name=&bookId=&branchCode=` dưới tiền tố route của module (`/api/v1/m/<key>/…`), quyền `secrets:read:<key>`, `mcp: false`, `ai: 'deny'`.
+- Chỉ khoá API / khoá app gọi được; phiên người dùng (kể cả chủ đơn vị) → 403. Không vai trò nào nhận sẵn quyền này.
+- App xin quyền ở manifest app: `app.scopes: ["secrets:read:<module>"]`; chủ đơn vị kết nối app là đồng ý. Quyền chỉ có hiệu lực khi module đó đang nạp và đã khai bí mật.
+- Mỗi lần đọc một dòng `audit_logs` `secrets.read` (người gọi `apikey:<id>`, `object_id` = `<tên>@<phạm vi>:<mã>`, `{ found }`) — không giá trị.
+- Trả `{ name, scope, scopeId, value, updatedAt }`.
+
+### 6.3. Platform — `@bizcity/platform/core/secrets`
 
 | Hàm | Việc |
 |---|---|
-| `secretsFor(conn, { tenantId, module, actor, declared? }): SecretsApi` | dựng `ctx.secrets` của một module trong một đơn vị, trên giao dịch của action |
-| `SecretsApi.set(name, value, { scope?, note? })` | mã AES-256-GCM, ghi đè theo (đơn vị, tên, phạm vi); nhật ký `secrets.set` chỉ ghi `{ changed: true }` |
-| `SecretsApi.get(name, scope?)` | giá trị hoặc `null`; chỉ phía máy chủ |
-| `SecretsApi.has(name, scope?)` | `{ set, updatedAt, updatedBy }` — thứ duy nhất giao diện thấy |
-| `SecretsApi.delete(name, scope?)` | xoá; nhật ký `secrets.delete` |
-| `defineSecretsReadAction(module)` | action `<module>.secrets.read`, `POST /api/v1/secrets/<module>/read` (đề xuất, chưa có trong mã: route sinh khi app.ts gắn action — §6.3 mục 3), quyền `secrets:read:<module>`; chỉ khoá API / khoá app (phiên người dùng → 403); mỗi lần đọc một dòng `audit_logs` `secrets.read` (`{ found }`, không giá trị); `mcp: false`, `ai: 'deny'` |
+| `secretsFor(conn, { tenantId, module, actor, declared?, readOnly? })` | dựng `SecretsApi` trên giao dịch (runtime dùng cho `ctx.secrets`) |
+| `registerModuleSecrets(key, decls)` / `moduleSecretDecls(key)` | sổ khai bí mật theo module; đăng ký quyền `secrets:read:<key>` |
+| `defineSecretsReadAction(key)` | action đọc cho khoá app (§6.2) |
 | `rotateSecretsMasterKey(conn, cũ, mới)` | mã lại khoá dữ liệu mọi đơn vị trong một giao dịch, giá trị không đụng; trả `{ rewrapped, skipped, foreign }` |
-| `secretDeclErrors(module, decls)` | kiểm khai `secrets[]` |
+| `secretDeclErrors(key, decls)` | kiểm khai `secrets[]` |
 
-- Phạm vi: không truyền = `tenant`; `{ bookId }` = `book`; `{ branchCode }` = `branch`; cả hai = lỗi.
-- Có `declared` thì tên phải khai và đúng phạm vi đã khai. Tên khác tiền tố module → `FORBIDDEN`.
-- Lỗi (đều `NOT_READY`, `details.reason`): `SECRETS_KEY_MISSING` (chưa đặt `BIZCITY_SECRETS_KEY`), `SECRETS_KEY_MISMATCH` (khoá gốc khác khoá đã mã), `SECRETS_CORRUPT` (bản mã bị sửa / chép từ dòng khác). Thông báo không bao giờ kèm giá trị.
-- Khoá gốc `BIZCITY_SECRETS_KEY`: hex hoặc base64, giải ra ≥ 32 byte; sai khuôn → cấu hình không hợp lệ lúc khởi động; trống → chỉ bí mật báo lỗi.
+Lỗi (đều `NOT_READY`, `details.reason`, khai ở `ERROR_REASONS`): `SECRETS_KEY_MISSING`, `SECRETS_KEY_INVALID`, `SECRETS_KEY_MISMATCH`, `SECRETS_KEY_CREATE`, `SECRETS_CORRUPT`. Thông báo không bao giờ kèm giá trị.
 
-### 6.2. Module SDK — `@bizcity/module-sdk`
+### 6.4. Vận hành
 
-- Kiểu: `SecretsApi`, `SecretScope`, `SecretScopeType`, `SecretDecl`, `SecretInfo`.
-- Manifest: `secrets: [{ name: '<key>.<tên>', scope: 'tenant' | 'book' | 'branch', label }]`; `defineModule` từ chối khai sai (`secretsErrors`, `moduleSecrets`).
+- `BIZCITY_SECRETS_KEY` (hex hoặc base64, giải ra ≥ 32 byte; `openssl rand -base64 32`): khai ở `.env`, `docker-compose.yml` chuyển vào api. Trống = chỉ bí mật báo `SECRETS_KEY_MISSING`; sai khuôn = cấu hình không hợp lệ lúc khởi động. Giữ bản sao ngoài máy: mất khoá là phải nhập lại bí mật.
+- Đổi khoá gốc: `BIZCITY_SECRETS_KEY_CU=<cũ> BIZCITY_SECRETS_KEY=<mới> node scripts/doi-khoa-bi-mat.mjs [--dry-run]` — khoá chỉ qua biến môi trường; xong thì đặt khoá mới trong `.env`, khởi động lại API.
+- Sao lưu (pg_dump) chỉ mang bản mã; không có đường xuất bản rõ.
 
-### 6.3. Còn nối (ngoài phạm vi giữ chỗ — cần mở thêm tệp)
+### 6.5. Còn để người giữ tệp khác làm
 
-1. `ctx.secrets` trong `ActionContext` + runtime: `packages/platform/src/core/actions.ts` (giữ chỗ ghi nhầm tệp chuyển tiếp `apps/api/src/core/actions.ts`).
-2. Khoá API / khoá app mang được `secrets:read:<module>`: `packages/platform/src/core/auth.ts` (lọc quyền khoá app chỉ giữ quyền Core), `packages/platform/src/core/apps.ts` (`APP_SCOPES`), chỗ tạo khoá API.
-3. Gắn `defineSecretsReadAction(key)` cho module khai `secrets[]`: `apps/api/src/app.ts`.
-4. Lược đồ manifest: thêm `secrets` vào `docs/contracts/BIZCITY-MODULE-v1.schema.json` (đang `additionalProperties: false`).
-5. Lệnh đổi khoá gốc (gọi `rotateSecretsMasterKey`): tệp lệnh mới ở `scripts/` hoặc `packages/cli`.
+1. Bảng mã lỗi `docs/contracts/BIZCITY-ERRORS-v1.md` §4c: thêm năm dòng `SECRETS_*` (người giữ: dòng NT-MH-011).
+2. Khoá API thường (không gắn app): `API_KEY_SCOPES` ở `apps/api/src/modules/access/access.schemas.ts` chưa nhận `secrets:read:<module>` — Platform đã ánh xạ phạm vi này nếu được mở.

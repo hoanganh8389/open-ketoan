@@ -205,6 +205,12 @@ export const ERROR_REASONS = {
   BLOG_REQUIRED: 'Khoá cài đặt open-pos không mang X-OKT-Blog chỉ gọi được route của bản cài (ADR-0037 §4)',
   POS_LINK_CODE_INVALID: 'Mã nối cửa hàng open-pos sai khuôn, không có, đã dùng, đã hết hạn hoặc khoá cài đặt đã thu hồi (ADR-0037)',
   TENANT_ALREADY_LINKED: 'Sổ đang đứng đã nối một cửa hàng open-pos khác — mỗi cửa hàng một sổ (ADR-0037, luật tối thượng P-0)',
+  // [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets (BIZCITY-SECRETS-v1 §6): mã chi tiết của bí mật mã hoá theo đơn vị; dòng bảng BIZCITY-ERRORS §4c nhờ người giữ tệp thêm (đóng góp)
+  SECRETS_KEY_MISSING: 'Bản cài chưa đặt khoá gốc BIZCITY_SECRETS_KEY: chưa lưu / đọc được bí mật (phần còn lại chạy bình thường)',
+  SECRETS_KEY_INVALID: 'Khoá gốc bí mật sai khuôn: cần hex hoặc base64 giải ra ít nhất 32 byte',
+  SECRETS_KEY_MISMATCH: 'Khoá gốc BIZCITY_SECRETS_KEY khác khoá đã mã bí mật của đơn vị (đổi khoá mà chưa chạy scripts/doi-khoa-bi-mat.mjs)',
+  SECRETS_KEY_CREATE: 'Không tạo được khoá dữ liệu bí mật của đơn vị (ghi đồng thời) — thử lại',
+  SECRETS_CORRUPT: 'Bản mã bí mật bị sửa hoặc chép từ dòng khác nên không giải được — nhập lại bí mật',
 } as const;
 export type ErrorReason = keyof typeof ERROR_REASONS;
 

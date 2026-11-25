@@ -23,6 +23,7 @@ import { env } from '../config/env.js';
 import type { Db } from '../db/client.js';
 import { currentSiteId, ticketSiteAccepted } from '../db/site.js';
 import { defineSubscriber, registerSubscribers, type EventEnvelope, type SubscriberDef } from './events.js';
+import { SECRETS_READ_RE } from './auth.js';
 
 /** Quyền Core cấp được cho khoá app. Quyền quản trị / duyệt / khoá kỳ / sửa phiếu người khác: không bao giờ (risk high). */
 // [2026-11-02 03:28 PM Johnny Chu - Chu Hoàng Anh] PHASE-011 — 3.14: bỏ catalog:write khỏi phạm vi app (app không ghi danh mục; cổng route chỉ mở cửa nạp)
@@ -58,7 +59,8 @@ export function appManifestProblems(m: AppManifest): string[] {
   if (m.kind !== 'app') bad.push(`kind "${m.kind}" ≠ "app"`);
   if (!KEY_RE.test(m.key ?? '')) bad.push(`key "${m.key}" sai khuôn`);
   if (!m.app || typeof m.app !== 'object') bad.push('thiếu app');
-  for (const s of m.app?.scopes ?? []) if (!(APP_SCOPES as readonly string[]).includes(s)) bad.push(`app.scopes "${s}" không cấp được cho app (chỉ ${APP_SCOPES.join(', ')})`);
+  // [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: app xin được secrets:read:<module> (đọc bí mật module qua action gác quyền, mỗi lần đọc ghi nhật ký) (đóng góp)
+  for (const s of m.app?.scopes ?? []) if (!(APP_SCOPES as readonly string[]).includes(s) && !SECRETS_READ_RE.test(s)) bad.push(`app.scopes "${s}" không cấp được cho app (chỉ ${APP_SCOPES.join(', ')}, secrets:read:<module>)`);
   const subs = m.events?.subscribes ?? [];
   if (subs.length && !m.app?.webhook?.url) bad.push('events.subscribes cần app.webhook.url');
   const checkUrl = (label: string, raw: string | undefined, originOnly: boolean) => {

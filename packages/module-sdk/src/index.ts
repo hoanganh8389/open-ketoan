@@ -15,7 +15,8 @@ import { DOC_REF_RE } from '@ketoan/contracts';
 import type { AnyActionDef } from '@bizcity/platform/core/actions';
 import type { SubscriberDef } from '@bizcity/platform/core/events';
 import type { ModuleManifestLike } from './manifest.js';
-import { screenErrors, secretsErrors } from './manifest.js';
+import { moduleSecrets, screenErrors, secretsErrors } from './manifest.js';
+import { defineSecretsReadAction, registerModuleSecrets } from '@bizcity/platform/core/secrets';
 
 // ── Khai báo ────────────────────────────────────────────────────────────────────────────────────────────────────────────
 export { defineAction } from '@bizcity/platform/core/actions';
@@ -99,5 +100,12 @@ export function defineModule(def: { manifest: ModuleManifestLike; actions?: AnyA
   // [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets: bí mật khai sai (tên ngoài tiền tố module, phạm vi lạ, thiếu nhãn) → không nạp module (đóng góp)
   bad.push(...secretsErrors(m));
   if (bad.length) throw new Error(`Module ${m.id ?? m.key}: ${bad.join('; ')}`);
-  return Object.freeze({ manifest: m, actions: def.actions ?? [], subscribers: def.subscribers ?? [], hooks: def.hooks ?? [] });
+  // [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: khai secrets[] → ctx.secrets nhận tên đã khai; tự thêm action đọc cho khoá app <key>.secrets.read (GET /api/v1/m/<key>/secrets/read, quyền secrets:read:<key>) (đóng góp)
+  const secrets = moduleSecrets(m);
+  const actions = [...(def.actions ?? [])];
+  if (secrets.length) {
+    registerModuleSecrets(m.key, secrets);
+    if (!actions.some((a) => a.id === `${m.key}.secrets.read`)) actions.push(defineSecretsReadAction(m.key));
+  }
+  return Object.freeze({ manifest: m, actions, subscribers: def.subscribers ?? [], hooks: def.hooks ?? [] });
 }

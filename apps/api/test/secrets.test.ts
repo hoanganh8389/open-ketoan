@@ -5,7 +5,9 @@
  *   - đổi khoá gốc vẫn đọc được; sai khoá gốc / thiếu khoá → lỗi rõ, không lộ gì;
  *   - module không chạm tên của module khác, không chạm tên chưa khai;
  *   - action đọc cho khoá app: thiếu quyền secrets:read:<module> → 403; có quyền → giá trị + một dòng nhật ký;
- *   - log, nhật ký, bản sao lưu (dòng CSDL) không chứa bản rõ.
+ *   - log, nhật ký, bản sao lưu (dòng CSDL) không chứa bản rõ;
+ *   - đầu-cuối: module SDK khai secrets[] (nạp bằng buildApp) ghi qua ctx.secrets; khoá app THẬT (kết nối app, manifest xin
+ *     secrets:read:<module>) đọc qua GET /api/v1/m/<module>/secrets/read; app không xin quyền / phiên người dùng → 403.
  */
 import { randomBytes } from 'node:crypto';
 import { Writable } from 'node:stream';
@@ -20,6 +22,12 @@ import { registerErrorHandler } from '@bizcity/platform/core/http';
 import { checkEnv, decodeSecretsKey } from '@bizcity/platform/config/env';
 import { defineSecretsReadAction, rotateSecretsMasterKey, secretsFor, secretsReadPermission, useSecretsMasterKey, type SecretDecl } from '@bizcity/platform/core/secrets';
 import { defineModule } from '@bizcity/module-sdk';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { registerAppManifests, type AppManifest } from '@bizcity/platform/core/apps';
+import { buildApp } from '../src/app.js';
+import { syncBundled } from '../src/core/module-lifecycle.js';
 import { auditRows, setupTenant, type TestCtx } from './helpers.js';
 
 const KEY1 = randomBytes(32).toString('base64');
@@ -47,8 +55,9 @@ const auths: Record<string, (t: string) => AuthContext> = {
   key: (t) => ({ tenantId: t, actor: 'apikey:7', actorName: 'Plugin Viettel', kind: 'apikey', role: null, permissions: new Set<Permission>([secretsReadPermission('hoa-don')]), app: 'viettel' }),
   'key-module-khac': (t) => ({ tenantId: t, actor: 'apikey:8', actorName: 'Khoá module khác', kind: 'apikey', role: null, permissions: new Set<Permission>([secretsReadPermission('zalo')]), app: 'zalo' }),
 };
-const read = (who: string, payload: Record<string, unknown>, tenant = tenantA) =>
-  readApp.inject({ method: 'POST', url: '/api/v1/secrets/hoa-don/read', payload, headers: { 'x-test-auth': who, 'x-test-tenant': tenant } });
+const qs = (q: Record<string, unknown>) => new URLSearchParams(Object.entries(q).map(([k, v]) => [k, String(v)])).toString();
+const read = (who: string, query: Record<string, unknown>, tenant = tenantA) =>
+  readApp.inject({ method: 'GET', url: `/secrets/read?${qs(query)}`, headers: { 'x-test-auth': who, 'x-test-tenant': tenant } });
 
 /** Chạy fn dưới vai trò ketoan_app, kết nối gắn đơn vị `tenant`; giao dịch luôn huỷ (khuôn tenant-isolation.test.ts). */
 class RollbackSignal extends Error {}
@@ -246,5 +255,114 @@ describe('platform.secrets', () => {
     expect(logLines.length).toBeGreaterThan(0);
     const all = [...logLines, ...captured].join('\n');
     expect(all).not.toContain(PLAIN);
+  });
+});
+
+
+// ── Đầu-cuối: module SDK thật + khoá app thật ─────────────────────────────────────────────────────────────────────────────
+const MOD = 'hoa-don-thu';
+const MOD_MANIFEST = {
+  contract: 'bizcity_module@1', id: `bizcity.${MOD}`, key: MOD, kind: 'module', version: '0.1.0', label: 'Hoá đơn (module thử bí mật)',
+  description: 'Module thử của platform.secrets: khai tài khoản Viettel theo sổ qua ctx.secrets. Chỉ dùng trong test.',
+  owners: ['@hoanganh8389'], standard: '^1.0', requires: { capabilities: ['platform.secrets'] },
+  permissions: [{ key: `${MOD}:cai-dat`, label: 'Khai tài khoản hoá đơn', roles: ['owner'], risk: 'low' }],
+  actions: [`${MOD}.tai-khoan.dat`, `${MOD}.tai-khoan.xem`],
+  secrets: [{ name: `${MOD}.viettel.password`, scope: 'book', label: 'Mật khẩu Viettel' }],
+};
+const MOD_CODE = [
+  "import { defineAction, defineModule, z } from '@bizcity/module-sdk';",
+  "import manifest from '../bizcity.module.json' with { type: 'json' };",
+  `const NAME = '${MOD}.viettel.password';`,
+  'const dat = defineAction({',
+  `  id: '${MOD}.tai-khoan.dat', title: 'Khai mật khẩu Viettel', permission: '${MOD}:cai-dat', effect: 'write', idempotency: 'required', sideEffects: ['settings'],`,
+  '  input: z.object({ bookId: z.string(), password: z.string().min(1) }), output: z.object({ ok: z.boolean() }),',
+  "  expose: { http: { method: 'POST', path: '/tai-khoan' }, mcp: false, ai: 'deny' },",
+  '  handler: async (ctx, i) => { await ctx.secrets.set(NAME, i.password, { scope: { bookId: i.bookId } }); return { ok: true }; },',
+  '});',
+  'const xem = defineAction({',
+  `  id: '${MOD}.tai-khoan.xem', title: 'Xem tài khoản Viettel', permission: '${MOD}:cai-dat', effect: 'read', idempotency: 'none',`,
+  '  input: z.object({ bookId: z.string() }), output: z.object({ set: z.boolean(), updatedAt: z.string().nullable(), updatedBy: z.string().nullable(), ghiTrongDoc: z.string() }),',
+  "  expose: { http: { method: 'GET', path: '/tai-khoan' }, mcp: false, ai: 'read' },",
+  '  handler: async (ctx, i) => {',
+  '    const info = await ctx.secrets.has(NAME, { bookId: i.bookId });',
+  "    const ghiTrongDoc = await ctx.secrets.set(NAME, 'x', { scope: { bookId: i.bookId } }).then(() => 'ghi-duoc', () => 'bi-chan');",
+  '    return { ...info, ghiTrongDoc };',
+  '  },',
+  '});',
+  'export default defineModule({ manifest: manifest as never, actions: [dat, xem] });',
+  '',
+].join('\n');
+const appManifest = (key: string, scopes: string[]): AppManifest => ({
+  contract: 'bizcity_module@1', id: `acme.${key}`, key, kind: 'app', version: '0.1.0', label: `App ${key}`, description: 'App thử đọc bí mật', app: { scopes },
+});
+
+describe('platform.secrets đầu-cuối (module SDK + khoá app thật)', () => {
+  const API_TEST = fileURLToPath(new URL('./', import.meta.url));
+  let mods = '';
+  let app: FastifyInstance;
+  const PLAIN2 = `Mk-Viettel-e2e-${randomBytes(6).toString('hex')}`;
+  const asOwner = <T>(fn: (trx: typeof db) => Promise<T>) => db.transaction().execute(async (trx) => {
+    await sql`SET LOCAL ROLE NONE`.execute(trx);
+    return fn(trx as unknown as typeof db);
+  });
+  const userReq = (method: 'GET' | 'POST', url: string, payload?: unknown) =>
+    app.inject({ method, url, payload: payload as never, headers: { authorization: `Bearer ${a.token}`, 'idempotency-key': `sec-${randomBytes(6).toString('hex')}` } });
+  let keyCo = '', keyKhong = '';
+
+  beforeAll(async () => {
+    mods = mkdtempSync(path.join(API_TEST, '.tmp-secrets-'));
+    mkdirSync(path.join(mods, MOD, 'api'), { recursive: true });
+    writeFileSync(path.join(mods, MOD, 'bizcity.module.json'), JSON.stringify(MOD_MANIFEST, null, 2));
+    writeFileSync(path.join(mods, MOD, 'api', 'index.ts'), MOD_CODE);
+    registerAppManifests([appManifest('viettel-thu', [`secrets:read:${MOD}`]), appManifest('khac-thu', ['documents:read'])]);
+    await asOwner((trx) => syncBundled('test:secrets', trx, mods));
+    app = await buildApp({ modulesDir: mods });
+    const i1 = await userReq('POST', '/api/v1/apps/viettel-thu/install');
+    expect(i1.statusCode, i1.body).toBeLessThan(300);
+    keyCo = i1.json().data.apiKey;
+    keyKhong = (await userReq('POST', '/api/v1/apps/khac-thu/install')).json().data.apiKey;
+  });
+  afterAll(async () => {
+    await app?.close();
+    await asOwner(async (trx) => {
+      await sql`DELETE FROM tenant_modules WHERE module_key = ${MOD}`.execute(trx);
+      await sql`DELETE FROM module_registry WHERE key = ${MOD}`.execute(trx);
+    });
+    if (mods) rmSync(mods, { recursive: true, force: true });
+  });
+
+  it('module ghi qua ctx.secrets (action ghi); giao diện chỉ thấy đã đặt; action đọc không ghi được', async () => {
+    const w = await userReq('POST', `/api/v1/m/${MOD}/tai-khoan`, { bookId: 'SO-01', password: PLAIN2 });
+    expect(w.statusCode, w.body).toBeLessThan(300);
+    const r = await userReq('GET', `/api/v1/m/${MOD}/tai-khoan?bookId=SO-01`);
+    expect(r.statusCode, r.body).toBe(200);
+    expect(r.json().data).toMatchObject({ set: true, ghiTrongDoc: 'bi-chan' });
+    expect(r.body).not.toContain(PLAIN2);
+    // bằng chứng của action ghi không có giá trị
+    const ev = (await sql<{ t: string }>`SELECT t::text AS t FROM audit_logs t WHERE tenant_id = ${tenantA} AND action = ${`${MOD}.tai-khoan.dat`}`.execute(db)).rows;
+    expect(ev.length).toBeGreaterThan(0);
+    expect(ev.map((x) => x.t).join(' ')).not.toContain(PLAIN2);
+  });
+
+  it('phiên người dùng (chủ đơn vị) gọi route đọc bí mật → 403', async () => {
+    const res = await userReq('GET', `/api/v1/m/${MOD}/secrets/read?name=${MOD}.viettel.password&bookId=SO-01`);
+    expect(res.statusCode).toBe(403);
+    expect(res.body).not.toContain(PLAIN2);
+  });
+
+  it('khoá app không xin secrets:read:<module> → 403; khoá app có quyền → giá trị + một dòng nhật ký', async () => {
+    const url = `/api/v1/m/${MOD}/secrets/read?name=${MOD}.viettel.password&bookId=SO-01`;
+    const no = await app.inject({ method: 'GET', url, headers: { 'x-api-key': keyKhong } });
+    expect(no.statusCode).toBe(403);
+    expect(no.body).not.toContain(PLAIN2);
+    const ok = await app.inject({ method: 'GET', url, headers: { 'x-api-key': keyCo } });
+    expect(ok.statusCode, ok.body).toBe(200);
+    expect(ok.json().data).toMatchObject({ name: `${MOD}.viettel.password`, scope: 'book', scopeId: 'SO-01', value: PLAIN2 });
+    const rows = (await sql<{ actor: string; object_id: string }>`SELECT actor, object_id FROM audit_logs WHERE tenant_id = ${tenantA} AND action = 'secrets.read' AND object_id LIKE ${`${MOD}.%`}`.execute(db)).rows;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.actor).toMatch(/^apikey:/);
+    // tên của module khác qua quyền module này → 403
+    const other = await app.inject({ method: 'GET', url: `/api/v1/m/${MOD}/secrets/read?name=hoa-don.zalo.token`, headers: { 'x-api-key': keyCo } });
+    expect(other.statusCode).toBe(403);
   });
 });
