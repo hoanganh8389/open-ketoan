@@ -12,6 +12,15 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### Bí mật mã hoá theo đơn vị — lõi platform.secrets (BIZCITY-SECRETS-v1) <!-- [2026-11-25 09:05 PM Võ Hoàng] FLOW — mục CHANGELOG platform.secrets (đóng góp) -->
+
+- **Thêm:** `packages/platform/src/core/secrets.ts` — mã hoá phong bì AES-256-GCM (khoá gốc của bản cài + khoá dữ liệu mỗi đơn vị); `secretsFor` (set / get / has / delete, tên `<module>.<tên>`, phạm vi tenant / book / branch, chỉ tên đã khai), `defineSecretsReadAction` (action đọc cho khoá app, quyền `secrets:read:<module>`, mỗi lần đọc một dòng nhật ký), `rotateSecretsMasterKey`. Module SDK: kiểu `SecretsApi`… và khai `secrets[]` trong manifest (`defineModule` kiểm). Test `apps/api/test/secrets.test.ts` (10 ca).
+- **Đổi:** migration 0184 — bảng `tenant_secret_keys`, `tenant_secrets` (RLS theo đơn vị, không cột bản rõ). Cấu hình mới `BIZCITY_SECRETS_KEY` (`packages/platform/src/config/env.ts`).
+- **Sửa:** —
+- **Thay đổi định khoản:** — (không chạm bảng sổ)
+- **Nâng cấp cần làm:** chạy migration (`npm run db:migrate` / `scripts/cap-nhat.sh`). Muốn dùng bí mật: đặt `BIZCITY_SECRETS_KEY` (`openssl rand -base64 32`) trong `.env` và giữ bản sao an toàn ngoài máy — mất khoá là phải nhập lại bí mật. Không đặt thì ứng dụng chạy như cũ. Chưa nối vào `ctx` của module và quyền khoá app (BIZCITY-SECRETS-v1 §6.3).
+- **Bảo mật:** giá trị không bao giờ vào log, nhật ký, bằng chứng, thông báo lỗi; nhật ký chỉ ghi "đã đổi" / "đã đọc". Bản sao lưu chỉ mang bản mã. Bản mã gắn đơn vị + tên + phạm vi (chép sang dòng khác không giải được). Sai khoá gốc báo `SECRETS_KEY_MISMATCH`, không giải ra rác.
+
 ### Người tạo đối tượng qua core.partner.upsert (NT-BH-035) <!-- [2026-11-25 04:45 PM Võ Hoàng] NT-BH-035 — mục CHANGELOG (đóng góp) -->
 
 - **Thêm:** `core.partner.upsert` (`POST /api/v1/partners/upsert`) nhận trường tuỳ chọn `createdBy` — tên người tạo ở hệ thống gửi sang (vd tài khoản website); chỉ dùng khi tạo mới.

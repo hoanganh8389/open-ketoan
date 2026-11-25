@@ -10,6 +10,19 @@
  */
 import { z } from 'zod';
 
+// [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets: khoá gốc BIZCITY_SECRETS_KEY (BIZCITY-SECRETS-v1 §4) — hex hoặc base64, giải ra ≥ 32 byte (đóng góp)
+/**
+ * Giải khoá gốc của bí mật (BIZCITY_SECRETS_KEY): hex (chỉ 0-9a-f, độ dài chẵn) hoặc base64 / base64url. Trả null khi sai khuôn
+ * hoặc ngắn hơn 32 byte. Không bao giờ đưa giá trị khoá vào thông báo lỗi.
+ */
+export function decodeSecretsKey(raw: string): Buffer | null {
+  const s = raw.trim();
+  if (/^[0-9a-fA-F]+$/.test(s) && s.length % 2 === 0 && s.length >= 64) return Buffer.from(s, 'hex');
+  if (!/^[A-Za-z0-9+/_-]+={0,2}$/.test(s)) return null;
+  const buf = Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+  return buf.length >= 32 ? buf : null;
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().default(4100),
@@ -142,6 +155,15 @@ const envSchema = z.object({
   // [2026-11-22 01:29 PM Johnny Chu - Chu Hoàng Anh] PHASE-039 — B5b: thư mục sao lưu của lệnh sao lưu gọi qua Provisioning API (tiến trình API)
   /** Thư mục gốc chứa bản sao lưu từng site (`<thư mục>/<slug>/…dump`) khi sao lưu qua Provisioning API. Trống = backups/sites. Phải gắn ra ngoài container. */
   SITE_BACKUP_DIR: z.string().min(1).optional(),
+  // [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets: khoá gốc mã hoá phong bì cho tenant_secrets (đóng góp)
+  /**
+   * Khoá gốc của bí mật mã hoá theo đơn vị (platform.secrets, BIZCITY-SECRETS-v1 §4): hex hoặc base64, giải ra ≥ 32 byte
+   * (tạo: `openssl rand -base64 32`). Không lưu trong CSDL. Trống = chưa bật: ctx.secrets / action đọc bí mật báo NOT_READY
+   * (SECRETS_KEY_MISSING), phần còn lại của ứng dụng chạy bình thường. Đổi khoá: lệnh mã lại khoá dữ liệu (rotateSecretsMasterKey).
+   */
+  BIZCITY_SECRETS_KEY: z.string().optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined))
+    .refine((v) => v === undefined || decodeSecretsKey(v) !== null, 'BIZCITY_SECRETS_KEY phải là hex hoặc base64 giải ra ít nhất 32 byte'),
 });
 
 export type Env = z.infer<typeof envSchema>;
