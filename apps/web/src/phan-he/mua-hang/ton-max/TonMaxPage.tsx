@@ -18,12 +18,11 @@ import { errorText } from '@/lib/api';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { ChonMatHang } from '../thanh-phan/ChonMatHang';
 import { num, qtyFmt, stockApi, useHierarchy, type MaxBoardRow } from './api';
-import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, KhoiSo, isOff } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
+import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, isOff } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { useThaoTac } from '@/lib/manHinh';
 
 type Draft = { max?: number; min?: number; mode?: TransferMode };
-type Filter = '' | 'below' | 'nomax' | 'diff' | 'set';
 const k = (r: { branchCode: string; warehouseCode: string; sku: string }) => `${r.branchCode}|${r.warehouseCode}|${r.sku}`;
 
 export function TonMaxPage() {
@@ -38,7 +37,6 @@ export function TonMaxPage() {
   const [sku, setSku] = useState(params.get('sku') ?? '');
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [extra, setExtra] = useState<MaxBoardRow[]>([]);
-  const [filter, setFilter] = useState<Filter>('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [imp, setImp] = useState(false);
@@ -59,15 +57,8 @@ export function TonMaxPage() {
   const ln = useLocNhomHang(nhom);
   const rows = useMemo(() => {
     const base = [...(q.data?.rows ?? []), ...extra.filter((x) => !(q.data?.rows ?? []).some((r) => k(r) === k(x)))];
-    return ln.loc(base).filter((r) => {
-      const d = drafts[k(r)], max = d?.max ?? r.max;
-      if (filter === 'below') return max > 0 && r.ton < max;
-      if (filter === 'nomax') return !max && (r.avgPerDay > 0 || (r.shopMaxSum ?? 0) > 0);
-      if (filter === 'diff') return r.suggested > 0 && Math.abs(max - r.suggested) / r.suggested > 0.3;
-      if (filter === 'set') return max > 0;
-      return true;
-    });
-  }, [q.data, extra, drafts, filter, ln]);
+    return ln.loc(base);
+  }, [q.data, extra, ln]);
   const all = q.data?.rows ?? [];
   const dirty = Object.keys(drafts).length;
   const setD = (r: MaxBoardRow, d: Draft) => setDrafts((x) => ({ ...x, [k(r)]: { ...x[k(r)], ...d } }));
@@ -123,10 +114,6 @@ export function TonMaxPage() {
     { key: 'cfg', header: '', width: 40, noFilter: true, noSort: true, render: (r) => <button className="btn btn-xs" title="Cài riêng mã: số ngày đo bán, số ngày đủ hàng" onClick={() => setCfgSku(r)}><Settings2 size={13} /></button> },
   ];
 
-  const stats = {
-    all: all.length, set: all.filter((r) => val(r, 'max') > 0).length, below: all.filter((r) => val(r, 'max') > 0 && r.ton < val(r, 'max')).length,
-    nomax: all.filter((r) => !val(r, 'max') && (r.avgPerDay > 0 || (r.shopMaxSum ?? 0) > 0)).length, diff: all.filter((r) => r.suggested > 0 && Math.abs(val(r, 'max') - r.suggested) / r.suggested > 0.3).length,
-  };
   const curWh = q.data?.warehouseCode || wh;
   const targetName = mode === 'sku' ? `mã ${sku}` : `kho ${curWh} của ${target ? targetNode?.name ?? target : parentNode?.name ?? parent}${targetNode && isOff(targetNode) ? ' (ngừng)' : ''}`;
 
@@ -159,13 +146,7 @@ export function TonMaxPage() {
           {dirty > 0 && <button className="btn btn-sm" onClick={() => { setDrafts({}); setExtra([]); }}>Bỏ ({dirty})</button>}
           {tt.sua && <button className="btn btn-primary" disabled={!dirty || busy} onClick={() => void save()}>Lưu{dirty ? ` (${dirty})` : ''}</button>}
         </div>
-        <div className="tm-stats">
-          <KhoiSo label="Số mã" value={stats.all} active={filter === ''} onClick={() => setFilter('')} />
-          <KhoiSo label="Đã có max" value={stats.set} tone="green" active={filter === 'set'} onClick={() => setFilter('set')} />
-          <KhoiSo label="Đang dưới max" value={stats.below} tone="orange" active={filter === 'below'} onClick={() => setFilter('below')} hint="Tồn nhỏ hơn max — sẽ được chia thêm / đặt thêm" />
-          <KhoiSo label="Có bán, chưa có max" value={stats.nomax} tone="red" active={filter === 'nomax'} onClick={() => setFilter('nomax')} hint="Nên khai max (bấm Gợi ý cho mã chưa có max)" />
-          <KhoiSo label="Max lệch gợi ý > 30%" value={stats.diff} tone="purple" active={filter === 'diff'} onClick={() => setFilter('diff')} />
-        </div>
+        {/* [2026-11-25 kiennt] NT-MH-007 — bỏ dải ô đếm Số mã / Đã có max / Đang dưới max / Có bán, chưa có max / Max lệch gợi ý; lọc ở các cột của lưới (đóng góp) */}
         {q.data && <div className="muted" style={{ padding: '0 12px 6px', fontSize: 12 }}>
           Đang xem <b>{targetName}</b> · bán / ngày đo trong <b>{q.data.formula.windowDays}</b> ngày, max shop gợi ý = bán / ngày × <b>{q.data.formula.coverDays}</b> ngày; max kho gợi ý = tổng max shop + <b>{q.data.formula.warehouseBufferPct}%</b> (đổi ở <Link to="/mua-hang/cong-thuc">Công thức đặt hàng</Link>; riêng mã: nút ⚙ cuối dòng).
         </div>}
