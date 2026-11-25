@@ -3,9 +3,9 @@
   "id": "bizcity.loyalty",
   "key": "loyalty",
   "kind": "module",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "label": "Điểm thành viên",
-  "description": "Sổ điểm thành viên (NT-BH-020): chính sách do website đẩy sang; tích / hoàn theo đơn máy bán; đổi quà / voucher; hết hạn lô hằng ngày; nạp số dư cũ; báo cáo BH19. Không nộp chứng từ — điểm chỉ hạch toán lúc đổi (trên chứng từ bán).",
+  "description": "Sổ điểm thành viên (NT-BH-020): chính sách khai và duyệt ở kế toán (NT-BH-039: nháp → duyệt → phát hành theo cửa hàng; website đẩy tay vẫn nhận nhưng bản kế toán mới hơn thắng); tích / hoàn theo đơn máy bán; đổi quà / voucher; điều chỉnh điểm tay có duyệt; hết hạn lô hằng ngày; nạp số dư cũ; báo cáo BH19. Không nộp chứng từ — điểm chỉ hạch toán lúc đổi (trên chứng từ bán).",
   "owners": [
     "@hoanganh8389"
   ],
@@ -35,6 +35,54 @@
         "viewer"
       ],
       "risk": "low"
+    },
+    {
+      "key": "loyalty:chinh-sach-lap",
+      "label": "Chính sách tích điểm — lập nháp (sửa từ bản hiện hành, áp cho nhiều cửa hàng) (NT-BH-039)",
+      "roles": [
+        "owner",
+        "chief_accountant",
+        "accountant"
+      ],
+      "risk": "low"
+    },
+    {
+      "key": "loyalty:chinh-sach-sua",
+      "label": "Chính sách tích điểm — sửa nháp, gửi duyệt (chương trình, đổi điểm, cài đặt + hạng) (NT-BH-039)",
+      "roles": [
+        "owner",
+        "chief_accountant",
+        "accountant"
+      ],
+      "risk": "low"
+    },
+    {
+      "key": "loyalty:chinh-sach-duyet",
+      "label": "Chính sách tích điểm — duyệt / từ chối, duyệt = phát hành cho máy bán; người lập không tự duyệt (NT-BH-039)",
+      "roles": [
+        "owner",
+        "chief_accountant"
+      ],
+      "risk": "high"
+    },
+    {
+      "key": "loyalty:dieu-chinh-lap",
+      "label": "Điều chỉnh điểm tay — lập yêu cầu cộng / trừ điểm kèm lý do (NT-BH-039)",
+      "roles": [
+        "owner",
+        "chief_accountant",
+        "accountant"
+      ],
+      "risk": "low"
+    },
+    {
+      "key": "loyalty:dieu-chinh-duyet",
+      "label": "Điều chỉnh điểm tay — duyệt / từ chối, duyệt = ghi sổ điểm; người lập không tự duyệt (NT-BH-039)",
+      "roles": [
+        "owner",
+        "chief_accountant"
+      ],
+      "risk": "high"
     }
   ],
   "data": {
@@ -42,11 +90,15 @@
     "tables": [
       "programs",
       "entries",
-      "vouchers"
+      "vouchers",
+      "program_drafts",
+      "adjustments",
+      "approval_log"
     ],
     "reads": [
       "bizcity_read.partners",
-      "bizcity_read.branches"
+      "bizcity_read.branches",
+      "bizcity_read.products"
     ]
   },
   "actions": [
@@ -57,7 +109,18 @@
     "loyalty.voucher.get",
     "loyalty.opening.import",
     "loyalty.report.get",
-    "loyalty.order.points"
+    "loyalty.order.points",
+    "loyalty.draft.list",
+    "loyalty.draft.get",
+    "loyalty.draft.create",
+    "loyalty.draft.update",
+    "loyalty.draft.approve",
+    "loyalty.draft.reject",
+    "loyalty.adjustment.list",
+    "loyalty.adjustment.get",
+    "loyalty.adjustment.create",
+    "loyalty.adjustment.approve",
+    "loyalty.adjustment.reject"
   ],
   "events": {
     "subscribes": [
@@ -79,5 +142,48 @@
     "icon": "Award",
     "color": "#b45309",
     "order": 31
+  },
+  "extensions": {
+    "screens": [
+      {
+        "key": "loyalty.diem",
+        "code": "BH19",
+        "group": "Bán hàng",
+        "label": "Điểm thành viên",
+        "path": "/app/loyalty/diem",
+        "operations": {
+          "xem": {
+            "permission": "loyalty:read",
+            "label": "Xem",
+            "kind": "xem"
+          },
+          "lapChinhSach": {
+            "permission": "loyalty:chinh-sach-lap",
+            "label": "Lập nháp chính sách",
+            "kind": "ghi"
+          },
+          "suaChinhSach": {
+            "permission": "loyalty:chinh-sach-sua",
+            "label": "Sửa / gửi duyệt chính sách",
+            "kind": "ghi"
+          },
+          "duyetChinhSach": {
+            "permission": "loyalty:chinh-sach-duyet",
+            "label": "Duyệt chính sách",
+            "kind": "ghi"
+          },
+          "lapDieuChinh": {
+            "permission": "loyalty:dieu-chinh-lap",
+            "label": "Lập điều chỉnh điểm",
+            "kind": "ghi"
+          },
+          "duyetDieuChinh": {
+            "permission": "loyalty:dieu-chinh-duyet",
+            "label": "Duyệt điều chỉnh điểm",
+            "kind": "ghi"
+          }
+        }
+      }
+    ]
   }
 }

@@ -37,7 +37,16 @@ export function quoteRedeem(program: LoyaltyProgram, history: readonly LedgerEnt
   const rewards: QuotedReward[] = [];
   for (const index of q.redeem) {
     const r: LoyaltyReward | undefined = list.find((x) => x.index === index);
-    if (!r) { problems.push(`Phần thưởng ${index} không đổi được (hết hạn, sai hạng hoặc đơn chưa đủ điều kiện)`); continue; }
+    if (!r) {
+      // [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039 ca 5: quà có trong danh mục nhưng khách chưa đủ hạng → nói rõ "chưa đủ hạng" (đóng góp)
+      const top = normalizeTiers(program.tiers).at(-1)?.key ?? tierKey;
+      const any = rewardsForCustomer(program, { storeId: q.storeId, now: wallClock(q.now), orderTotal: q.orderTotal, tierKey: top, points: available }).find((x) => x.index === index);
+      const need = any ? normalizeTiers(program.tiers).find((t) => t.key === any.minTier)?.name ?? any.minTier : '';
+      problems.push(any
+        ? `Phần thưởng ${any.productName} chưa đủ hạng: cần hạng ${need}, khách đang hạng ${tierName}`
+        : `Phần thưởng ${index} không đổi được (hết hạn, sai hạng hoặc đơn chưa đủ điều kiện)`);
+      continue;
+    }
     const n = rewards.filter((x) => x.index === index).length;
     if (r.rewardType === 'voucher' && r.voucher) {
       const days = r.voucher.expiresInDays;
