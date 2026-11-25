@@ -63,6 +63,7 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-MH-005](mua-hang/NT-MH-005-menu-danh-muc.md) | Menu Mua hàng: nhóm "Khai báo" đổi tên thành "Danh mục"; MH12, BH17 gom vào Phần riêng → Cấu hình | Đã chốt |
 | [NT-MH-006](mua-hang/NT-MH-006-mau-dang-ky-max-co-san-hang.md) | MH17 phiếu shop đăng ký max: nhập Excel, tệp mẫu có sẵn danh sách mặt hàng | Đã chốt |
 | [NT-MH-007](mua-hang/NT-MH-007-chi-nhanh-len-tieu-de.md) | MH17 phiếu hàng mới: chi nhánh lên tiêu đề cửa sổ, bỏ nhãn vàng; MH16 bỏ dải ô đếm | Đã chốt |
+| [NT-MH-008](mua-hang/NT-MH-008-mh16-bo-dong-chu-thich.md) | MH16: bỏ dòng chú thích "Đang xem … · bán / ngày đo trong …" | Đã chốt |
 | [NT-HT-001](he-thong/NT-HT-001-so-do-to-chuc.md) | Sơ đồ tổ chức làm gốc: cây 3 cấp, gắn chi nhánh, mua hàng theo cây, bộ lọc cây chi nhánh / kho | Chờ nghiệm thu |
 | [NT-KHO-001](kho/NT-KHO-001-ton-o-chon-hang-theo-kho-xuat.md) | Ô chọn mặt hàng ở phiếu chuyển kho hiện tồn theo kho xuất, ngày phiếu | Đã chốt |
 | [NT-KHO-002](kho/NT-KHO-002-kiem-ke-kho.md) | Kiểm kê kho theo lô / HSD: biên bản kiểm kê → xác minh → quyết định xử lý; chênh lệch vào 1381 / 3381, hàng kém phẩm chất sang kho cách ly, tất toán theo quyết định | Đã chốt |

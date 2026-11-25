@@ -148,9 +148,7 @@ export function TonMaxPage() {
           {tt.sua && <button className="btn btn-primary" disabled={!dirty || busy} onClick={() => void save()}>Lưu{dirty ? ` (${dirty})` : ''}</button>}
         </div>
         {/* [2026-11-25 kiennt] NT-MH-007 — bỏ dải ô đếm Số mã / Đã có max / Đang dưới max / Có bán, chưa có max / Max lệch gợi ý; lọc ở các cột của lưới (đóng góp) */}
-        {q.data && <div className="muted" style={{ padding: '0 12px 6px', fontSize: 12 }}>
-          Đang xem <b>{targetName}</b> · bán / ngày đo trong <b>{q.data.formula.windowDays}</b> ngày, max shop gợi ý = bán / ngày × <b>{q.data.formula.coverDays}</b> ngày; max kho gợi ý = tổng max shop + <b>{q.data.formula.warehouseBufferPct}%</b> (đổi ở <Link to="/mua-hang/cong-thuc">Công thức đặt hàng</Link>; riêng mã: nút ⚙ cuối dòng).
-        </div>}
+        {/* [2026-11-25 kiennt] NT-MH-008 — bỏ dòng chú thích "Đang xem … · bán / ngày đo trong … max kho gợi ý …" (cách tính gợi ý xem ở MH18; rê chuột cột Gợi ý max) (đóng góp) */}
         {q.data && mode === 'branch' && !q.data.mainWarehouse && <div className="alert alert-info" style={{ margin: '0 12px 8px', fontSize: 13 }}>
           Kho <b>{curWh}</b> là kho phụ: <b>không gợi ý max</b> (gợi ý chỉ ở kho chính để tồn max không bị tính trùng ở nhiều kho) — khai tay, Thêm mã hoặc Nhập Excel.
         </div>}
