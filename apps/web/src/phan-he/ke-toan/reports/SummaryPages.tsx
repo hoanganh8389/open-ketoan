@@ -120,21 +120,38 @@ export function CashBalancesPage() {
   const navigate = useNavigate();
   const { data: branchList = [] } = useBranches();
   const multi = branchList.length > 1;
-  const [f, setF] = useState({ to: defaultTo(), compare: false, days: 1, branchCodes: '' });
+  // [2026-11-25 Nguyễn Văn Thủy] #11 tab Test: thêm kiểu xem Theo kỳ — Đầu kỳ / Phát sinh / Cuối kỳ, mỗi cột Nợ, Có (đóng góp)
+  const [f, setF] = useState({ to: defaultTo(), compare: false, days: 1, branchCodes: '', xem: 'ngay' as 'ngay' | 'ky', from: defaultFrom() });
+  const theoKy = f.xem === 'ky';
   const set = (patch: Partial<typeof f>) => setF((x) => ({ ...x, ...patch }));
   const days = f.compare ? Array.from({ length: f.days + 1 }, (_, i) => addDays(f.to, i - f.days)) : [f.to];
-  const qs = useQueries({ queries: days.map((d) => ({
-    queryKey: ['cash-balances', d, f.branchCodes],
-    queryFn: () => api.get<{ rows: CashRow[] }>('/api/v1/reports/cash-balances', { from: d, to: d, branchCodes: f.branchCodes, accounts: '111,112,113' }),
+  const qs = useQueries({ queries: (theoKy ? [[f.from, f.to]] : days.map((d) => [d, d])).map(([a, b]) => ({
+    queryKey: ['cash-balances', a, b, f.branchCodes],
+    queryFn: () => api.get<{ rows: CashRow[] }>('/api/v1/reports/cash-balances', { from: a, to: b, branchCodes: f.branchCodes, accounts: '111,112,113' }),
   })) });
   const loading = qs.some((q) => q.isLoading);
   const error = qs.find((q) => q.error)?.error;
-  const lines = loading || error ? [] : buildCashLines(qs.map((q) => q.data?.rows ?? []), multi);
+  // Theo kỳ: dựng bằng cùng hàm, mỗi "cột" là một số của kỳ: [đầu kỳ, phát sinh Nợ, phát sinh Có, cuối kỳ].
+  const rowsKy = qs[0]?.data?.rows ?? [];
+  const lines = loading || error ? [] : theoKy
+    ? buildCashLines((['opening', 'debit', 'credit', 'closing'] as const).map((k) => rowsKy.map((r) => ({ ...r, closing: r[k] }))), multi)
+    : buildCashLines(qs.map((q) => q.data?.rows ?? []), multi);
   const branchText = f.branchCodes ? f.branchCodes.split(',').map((c) => branchList.find((b) => b.code === c)?.name ?? c).join(', ') : '';
+  /** Cột Theo kỳ: số dư tách Nợ / Có (dư Nợ dương, dư Có âm); phát sinh lấy thẳng. */
+  const ky = (key: string, band: string, header: string, pick: (v: number[]) => number): Column<CashBalanceLine> => ({
+    key, band, header, type: 'money', width: 140, noFilter: true, noSort: true, value: (r) => (r.kind === 'group' ? null : pick(r.values)), bold: (r) => r.kind !== 'data',
+    footerValue: (vis) => vis.reduce((t, r) => t + (r.kind === 'data' ? Math.round(pick(r.values) * 100) : 0), 0) / 100,
+  });
+  const no = (x = 0) => (x > 0 ? x : 0), co = (x = 0) => (x < 0 ? -x : 0);
   const columns: Column<CashBalanceLine>[] = [
     { key: 'label', header: 'Chỉ tiêu', width: 420, noFilter: true, noSort: true,
       render: (r) => <span style={{ paddingLeft: r.level * 18, fontWeight: r.kind === 'data' ? undefined : 700 }}>{r.label}</span> },
-    ...days.map((d, i): Column<CashBalanceLine> => ({ key: `d${i}`, header: `Ngày ${dmy(d)}`, type: 'money', width: 150, showZero: true, noFilter: true, noSort: true,
+    ...(theoKy ? [
+      ky('dkn', 'Số dư đầu kỳ', 'Nợ', (v) => no(v[0])), ky('dkc', 'Số dư đầu kỳ', 'Có', (v) => co(v[0])),
+      ky('psn', 'Phát sinh trong kỳ', 'Nợ', (v) => v[1] ?? 0), ky('psc', 'Phát sinh trong kỳ', 'Có', (v) => v[2] ?? 0),
+      ky('ckn', 'Số dư cuối kỳ', 'Nợ', (v) => no(v[3])), ky('ckc', 'Số dư cuối kỳ', 'Có', (v) => co(v[3])),
+    ] : []),
+    ...(theoKy ? [] : days).map((d, i): Column<CashBalanceLine> => ({ key: `d${i}`, header: `Ngày ${dmy(d)}`, type: 'money', width: 150, showZero: true, noFilter: true, noSort: true,
       footerValue: (vis) => vis.reduce((t, r) => t + (r.kind === 'data' ? Math.round((r.values[i] ?? 0) * 100) : 0), 0) / 100,
       value: (r) => (r.kind === 'group' ? null : r.values[i] ?? 0), bold: (r) => r.kind !== 'data' })),
   ];
@@ -145,28 +162,33 @@ export function CashBalancesPage() {
     <>
       <PageHeader title="Bảng kê số dư tiền theo ngày" code="ACC80" subtitle="Số dư tiền mặt, tiền gửi từng tài khoản tại cuối ngày, so sánh được với các ngày trước" helpKey="so-du-tien" />
       <FilterLayout boThamSo={{ value: f, onApply: setF }}
-        print={<PrintButton screen="ACC80" templates={CASH_BALANCE_TEMPLATES} disabled={!lines.length} getDocs={() => [{ to: f.to, days, branchText, lines }]} />}
+        print={<PrintButton screen="ACC80" templates={CASH_BALANCE_TEMPLATES} disabled={!lines.length || theoKy} getDocs={() => [{ to: f.to, days, branchText, lines }]} />}
         filters={
           <>
+            <div className="field"><label title="Theo ngày: số dư cuối từng ngày. Theo kỳ: số dư đầu kỳ, phát sinh, số dư cuối kỳ — mỗi cột Nợ, Có">Kiểu xem</label>
+              <select className="select input" value={f.xem} onChange={(e) => set({ xem: e.target.value as 'ngay' | 'ky' })}>
+                <option value="ngay">Theo ngày (số dư cuối ngày)</option><option value="ky">Theo kỳ (đầu kỳ – phát sinh – cuối kỳ)</option>
+              </select></div>
+            {theoKy ? <DateRange from={f.from} to={f.to} onChange={(from, to) => set({ from, to })} /> : <>
             <DenNgay value={f.to} onChange={(v) => set({ to: v })} />
             <label className="checkbox"><input type="checkbox" checked={f.compare} onChange={(e) => set({ compare: e.target.checked })} /> So sánh với ngày trước</label>
             <div className="field"><label>Số ngày trước</label>
               <select className="select input" value={f.days} disabled={!f.compare} onChange={(e) => set({ days: Number(e.target.value) })}>
                 {[1, 2, 3, 4, 5, 6, 7].map((k) => <option key={k} value={k}>{k} ngày trước</option>)}
               </select>
-            </div>
+            </div></>}
             {multi && <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} />}
           </>
         }
       >
         <div className="card">
           <div className="rp-tieu-de">
-            <h2>BẢNG KÊ SỐ DƯ TIỀN THEO NGÀY</h2>
-            <i>{branchText ? `Chi nhánh: ${branchText}; ` : ''}Loại tiền: VND; Đến ngày {dmy(f.to)}</i>
+            <h2>{theoKy ? 'BẢNG KÊ SỐ DƯ TIỀN THEO KỲ' : 'BẢNG KÊ SỐ DƯ TIỀN THEO NGÀY'}</h2>
+            <i>{branchText ? `Chi nhánh: ${branchText}; ` : ''}Loại tiền: VND; {theoKy ? `Từ ngày ${dmy(f.from)} đến ngày ${dmy(f.to)}` : `Đến ngày ${dmy(f.to)}`}</i>
           </div>
           <ErrorBox error={error ? errorText(error) : null} />
           {loading ? <Loading /> : !lines.length ? <Empty text="Không có số dư tiền đến ngày này" /> : (
-            <DataGrid storageKey="acc80-v2" rows={gridLines} rowKey={(r) => r.key} columns={columns} footerLabel={hasTotal ? 'Tổng cộng' : false}
+            <DataGrid storageKey={theoKy ? 'acc80-ky-v1' : 'acc80-v2'} rows={gridLines} rowKey={(r) => r.key} columns={columns} footerLabel={hasTotal ? 'Tổng cộng' : false}
               rowKind={(r) => (r.kind === 'group' ? 'group' : r.kind === 'subtotal' ? 'subtotal' : 'data')}
               groupLabel={(r) => <b>{r.label}</b>}
               onRowClick={(r) => { if (r.kind === 'data') navigate(`/bao-cao/so-chi-tiet?${new URLSearchParams({ account: r.label.split(' - ')[0]!, from: `${f.to.slice(0, 8)}01`, to: f.to }).toString()}`); }}

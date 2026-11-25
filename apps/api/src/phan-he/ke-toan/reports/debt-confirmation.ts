@@ -29,7 +29,7 @@ export async function debtConfirmation(auth: AuthContext, q: { from: string; to:
   const codes = [...new Set(rows.map((r) => r.partnerCode))];
   if (q.detail && codes.length > 200) throw Errors.validation('In chi tiết tối đa 200 đối tác một lần; chọn bớt đối tác');
   const [partners, accounts, tenant] = await Promise.all([
-    codes.length ? db.selectFrom('partners').select(['code', 'name', 'tax_code', 'address', 'phone', 'contact_name']).where('tenant_id', '=', auth.tenantId).where('code', 'in', codes).execute() : [],
+    codes.length ? db.selectFrom('partners').select(['code', 'name', 'company_name', 'company_address', 'tax_code', 'address', 'phone', 'contact_name']).where('tenant_id', '=', auth.tenantId).where('code', 'in', codes).execute() : [],
     db.selectFrom('accounts').select(['code', 'name']).where('tenant_id', '=', auth.tenantId).execute(),
     db.selectFrom('tenants').select(['name', 'tax_code', 'address', 'phone']).where('id', '=', auth.tenantId).executeTakeFirstOrThrow(),
   ]);
@@ -51,7 +51,8 @@ export async function debtConfirmation(auth: AuthContext, q: { from: string; to:
     }
     const sum = (k: 'opening' | 'debit' | 'credit' | 'closing') => fromCents(parts.reduce((s, x) => s + toCents(x[k]), 0));
     out.push({
-      partner: { code: p.code, name: p.name, taxCode: p.tax_code ?? '', address: p.address ?? '', phone: p.phone ?? '', contactName: p.contact_name ?? '' },
+      // [2026-11-25 Nguyễn Văn Thủy] #51 tab Test: Bên B ghi tên công ty, địa chỉ đúng như trên hoá đơn (không phải tên viết tắt / địa chỉ giao dịch) (đóng góp)
+      partner: { code: p.code, name: p.company_name?.trim() || p.name, taxCode: p.tax_code ?? '', address: p.company_address?.trim() || p.address || '', phone: p.phone ?? '', contactName: p.contact_name ?? '' },
       accounts: parts, opening: sum('opening'), debit: sum('debit'), credit: sum('credit'), closing: sum('closing'),
     });
   }
