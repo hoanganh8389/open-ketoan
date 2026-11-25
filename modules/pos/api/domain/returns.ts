@@ -34,6 +34,9 @@ export type SoldLine = {
   itemId: string | null;
   isGift: boolean;
   promotionId?: number;
+  // [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038: quà của khuyến mại Core nhóm theo mã chương trình (policyRef.key) (đóng góp)
+  /** Dòng quà của khuyến mại Core (BH18): mã chương trình (`policyRef.key`) khi không có `promotionId` số của khuyến mại website. */
+  policyKey?: string;
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-024 Q2: dòng quà đổi điểm (giftKey `lp:…`) không trả được (đóng góp)
   /** Dòng quà đổi bằng điểm (NT-BH-020, giftKey `lp:…`): không trả được, không tính vào quà vượt suất. */
   loyaltyGift?: boolean;
@@ -50,6 +53,8 @@ export type ReturnableLine = {
   unitRatio: number;
   isGift: boolean;
   promotionId?: number;
+  /** NT-BH-038: mã chương trình Core của dòng quà (không có `promotionId`). */
+  policyKey?: string;
   soldQty: number;
   returnedQty: number;
   returnableQty: number;
@@ -67,6 +72,7 @@ export function returnableLines(lines: readonly SoldLine[], done: ReadonlyMap<st
     return {
       lineId: l.lineId, sku: l.sku, name: l.name, unitName: l.unitName, unitRatio: l.unitRatio, isGift: l.isGift,
       ...(l.promotionId !== undefined ? { promotionId: l.promotionId } : {}),
+      ...(l.policyKey !== undefined ? { policyKey: l.policyKey } : {}),
       soldQty: l.soldQty, returnedQty: d.qty, returnableQty: l.loyaltyGift ? 0 : Math.max(0, l.soldQty - d.qty),
       lineTotal: l.net + l.tax, refundedAmount: d.refund,
       ...(l.loyaltyGift ? { loyaltyGift: true, notReturnable: 'LOYALTY_GIFT' as const } : {}),
@@ -103,17 +109,23 @@ export function returnDeadline(businessDate: string, days: number): string {
  * Quà phải trả kèm (giống pos-core requiredGiftReturns): suất quà được giữ = floor(quà × hàng chính khách giữ ÷ hàng chính
  * đã mua); quà khách đang giữ vượt suất thì phải trả. Trả về lineId quà → SL tối thiểu phải có trên phiếu này.
  */
-export function requiredGiftReturns(lines: readonly ReturnableLine[], qty: ReadonlyMap<string, number>, promoSkus: (id: number) => readonly string[] | null): Map<string, number> {
+export function requiredGiftReturns(
+  lines: readonly ReturnableLine[], qty: ReadonlyMap<string, number>, promoSkus: (id: number) => readonly string[] | null,
+  policySkus: (key: string) => readonly string[] | null = () => null,
+): Map<string, number> {
   const out = new Map<string, number>();
   // NT-BH-024 Q2: quà đổi điểm không phải quà chương trình — không thu lại, không tính suất.
-  const ids = [...new Set(lines.filter((l) => l.isGift && !l.loyaltyGift && l.promotionId !== undefined).map((l) => l.promotionId!))];
-  for (const id of ids) {
-    const skus = promoSkus(id);
+  // NT-BH-038: quà có promotionId (khuyến mại website) nhóm theo số; quà Core (không promotionId, có policyKey) nhóm theo mã chương trình.
+  const groupOf = (l: ReturnableLine): string | null =>
+    !l.isGift || l.loyaltyGift ? null : l.promotionId !== undefined ? `p:${l.promotionId}` : l.policyKey ? `k:${l.policyKey}` : null;
+  const groups = [...new Set(lines.map(groupOf).filter((g): g is string => g !== null))];
+  for (const group of groups) {
+    const skus = group.startsWith('p:') ? promoSkus(Number(group.slice(2))) : policySkus(group.slice(2));
     const mains = lines.filter((l) => !l.isGift && (!skus || skus.length === 0 || skus.includes(l.sku)));
     const sold = mains.reduce((t, l) => t + l.soldQty, 0);
     if (sold <= 0) continue;
     const kept = mains.reduce((t, l) => t + l.soldQty - l.returnedQty - (qty.get(l.lineId) ?? 0), 0);
-    const gifts = lines.filter((l) => l.isGift && !l.loyaltyGift && l.promotionId === id);
+    const gifts = lines.filter((l) => groupOf(l) === group);
     const entitled = Math.floor((gifts.reduce((t, l) => t + l.soldQty, 0) * Math.max(0, kept)) / sold);
     let excess = gifts.reduce((t, l) => t + l.soldQty - l.returnedQty - (qty.get(l.lineId) ?? 0), 0) - entitled;
     for (const g of gifts) {
@@ -126,6 +138,31 @@ export function requiredGiftReturns(lines: readonly ReturnableLine[], qty: Reado
   return out;
 }
 
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038 Q1: hàng chính của chương trình Core đọc từ nội dung chương trình (đóng góp)
+/** Một chương trình trong `core.policy.list` (các trường module dùng). */
+export type PolicyListItem = { policyKey: string; version: number; ruleContract: string; params: unknown };
+
+/**
+ * Mã hàng chính của một chương trình Core (NT-BH-038 Q1): `sale.promo.buy_x_get_y@1` → mã hàng mua; `sale.program.gift@1` (BH12) → `sku`; `sale.promo.order_gift@1` → `skus`
+ * (trống = cả đơn). Khuôn khác / không đọc được nội dung → null (mọi dòng không phải quà là hàng chính).
+ */
+export function policyMainSkus(item: Pick<PolicyListItem, 'ruleContract' | 'params'> | undefined): string[] | null {
+  if (!item || !item.params || typeof item.params !== 'object') return null;
+  const p = item.params as { buy?: { sku?: unknown }; skus?: unknown };
+  if (item.ruleContract.startsWith('sale.promo.buy_x_get_y@')) return typeof p.buy?.sku === 'string' && p.buy.sku ? [p.buy.sku] : null;
+  // Chương trình bán BH12 kiểu tặng quà: hàng mua là `sku`.
+  if (item.ruleContract.startsWith('sale.program.gift@')) return typeof (p as { sku?: unknown }).sku === 'string' && (p as { sku: string }).sku ? [(p as { sku: string }).sku] : null;
+  if (item.ruleContract.startsWith('sale.promo.order_gift@')) {
+    const skus = Array.isArray(p.skus) ? p.skus.filter((s): s is string => typeof s === 'string' && s !== '') : [];
+    return skus.length ? skus : null;
+  }
+  return null;
+}
+
+/** Mã chương trình Core có quà trên các dòng đơn (cần đọc nội dung để biết hàng chính). */
+export function giftPolicyKeys(lines: readonly Pick<SoldLine, 'isGift' | 'loyaltyGift' | 'promotionId' | 'policyKey'>[]): string[] {
+  return [...new Set(lines.filter((l) => l.isGift && !l.loyaltyGift && l.promotionId === undefined && l.policyKey).map((l) => l.policyKey!))];
+}
 
 /** Tình trạng hàng trả (NT-BH-024 Q3): nguyên vẹn → kho bán (kho mặc định); lỗi / hết hạn → kho KTL của cửa hàng. */
 export type ReturnCondition = 'good' | 'bad';
@@ -240,6 +277,8 @@ export type ReturnInput = {
   // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-035 Q2: quà khách trả (nguyên vẹn) về kho quà KKM của cửa hàng nhận trả (đóng góp)
   /** Kho quà KKM của cửa hàng nhận trả (khoá bizcity.pos.gift_warehouses, đã kiểm); null / trống = chưa khai → quà về kho bán như cũ. */
   giftWarehouse?: string | null;
+  /** NT-BH-038 Q1: mã hàng chính theo mã chương trình Core có quà trên đơn (null = mọi dòng không phải quà). Thiếu khoá → null. */
+  policySkus?: Readonly<Record<string, readonly string[] | null>>;
 };
 
 export type ComputedReturnLine = SoldLine & {
@@ -309,7 +348,7 @@ export function computeReturn(input: ReturnInput): ComputedReturn | { problem: O
     if (a.loyaltyGift) return fail('validation', 'POS_RETURN_LOYALTY_GIFT', `Dòng ${a.sku}: quà đổi bằng điểm không trả được`, { lineId, sku: a.sku });
     if (q > a.returnableQty) return fail('validation', 'POS_RETURN_QTY', `Dòng ${a.sku}: còn trả được ${a.returnableQty}, xin trả ${q}`, { lineId, returnableQty: a.returnableQty });
   }
-  const needGifts = requiredGiftReturns(avail, qty, () => null);
+  const needGifts = requiredGiftReturns(avail, qty, () => null, (key) => input.policySkus?.[key] ?? null);
   const missing = [...needGifts].filter(([id, need]) => (qty.get(id) ?? 0) < need).map(([lineId, need]) => ({ lineId, qty: need }));
   if (missing.length) return fail('validation', 'POS_GIFT_REQUIRED', 'Trả hàng chính thì phải trả kèm quà vượt suất', { gifts: missing });
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-024 Q3: hàng lỗi / hết hạn vào kho KTL của cửa hàng; chưa khai → không trả (đóng góp)

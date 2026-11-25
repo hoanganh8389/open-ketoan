@@ -42,9 +42,20 @@
 - Thử thật shop2: bán mua 2 tặng 1 → trả 2 hàng chính → quà tự điền, về `CN02-KKM`.
 
 ## 6. Kết quả chạy
-(điền khi code xong)
+<!-- [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038: kết quả code + kiểm (đóng góp) -->
+Nhánh `feat/nt-bh-038-qua-tra-km-core`, 25/11/2026.
+
+| Mục | Kết quả |
+|---|---|
+| Máy chủ | `domain/returns.ts`: dòng quà Core mang `policyKey`; `requiredGiftReturns` nhóm `p:<promotionId>` / `k:<mã chương trình>`; `policyMainSkus` đọc hàng mua theo khuôn: `sale.promo.buy_x_get_y@1` (`buy.sku`), `sale.program.gift@1` (chương trình bán BH12, `sku`), `sale.promo.order_gift@1` (`skus`); khuôn khác → mọi dòng không phải quà. `return-service.ts`: trước khi lập phiếu gọi `core.policy.list` (ngày bán, cửa hàng bán); không thấy chương trình / lệch bản → ghi vào bằng chứng của action (`ctx.evidence.note`, module chưa có logger) và lùi về mọi dòng không phải quà |
+| Khác §3 | `policySkus` **không** thêm vào đầu ra `orders/:id/returnable` (action đó ngoài phạm vi giữ chỗ): máy bán tự đọc `GET /api/v1/policies` (cùng `core.policy.list`) cho dòng quà có `policyKey`. Thêm khuôn `sale.program.gift@1` (BH12) vào Q1 — cũng là đọc nội dung chương trình |
+| test đơn vị `modules/pos/test/returns.test.ts` | 14 / 14 (5 ca NT-BH-038) |
+| test API `nt-bh-038-qua-tra-khuyen-mai-core` | 5 / 5: returnable có `policyKey`; trả hết hàng chính thiếu quà → `POS_GIFT_REQUIRED`; trả hàng ngoài chương trình → nhận; trả kèm quà → quà về KKM; trả 1 / 2 hàng chính → phải trả quà |
+| Hồi quy | nt-bh-003, 005, 019, 020, 024, 028, 030, 035, golden-tra-hang-doi-ma: 61 / 61; module pos 118 / 118; `module check pos` ĐẠT |
+| Máy bán React | PR riêng ở open-pos (luật I-0) |
 
 ## 7. Lịch sử thay đổi
 | Ngày | Thay đổi |
 |---|---|
 | 25/11/2026 | Tạo phiếu sau thử thật shop2 24/11; chốt Q1–Q3; giữ chỗ code |
+| 25/11/2026 | Code máy chủ xong, kết quả §6; nhả giữ chỗ |
