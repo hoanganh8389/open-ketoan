@@ -89,6 +89,8 @@ Ghi kết quả vào phần "Bằng chứng" của phiếu phát hành theo [DIA
 container. Không do phần mềm kế toán. Chỉ **khởi động lại máy** mới nhả hẳn.
 
 **Cách tránh: dùng `scripts/cap-nhat-cpanel.sh` thay `scripts/cap-nhat.sh`** trên máy đã từng gặp lỗi này.
+
+<!-- [2026-11-25 09:11 PM Johnny Chu - Chu Hoàng Anh] STD-12b --> Cả hai script cập nhật **tự ghép tệp giám sát** (`infrastructure/monitoring/docker-compose.monitoring.yml`, và tệp Docker Desktop khi chạy Docker Desktop) khi container `otel-collector` của dự án đang chạy. Nhờ vậy api giữ cấu hình gửi trace và nguồn của màn Tra mã sau cập nhật. Tệp giám sát không dựng được cấu hình (thiếu biến trong `.env`) thì script cập nhật như cũ và nhắc chạy `scripts/kiem-giam-sat.sh --sua` ([TRUY-LOI-BAN-DEV](TRUY-LOI-BAN-DEV.md)).
 Script không bao giờ để Compose xoá/tạo lại `web`:
 
 1. sao lưu → `git pull` → `docker compose build api web` (chưa đụng bản đang chạy);
