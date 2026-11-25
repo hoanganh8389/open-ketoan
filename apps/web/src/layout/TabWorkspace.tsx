@@ -83,6 +83,9 @@ export function TabWorkspace({ menu, strip }: { menu: MenuItem[]; strip?: ReactN
         // cũng dựng lại để màn chạy lại lệnh trong liên kết (mở phiếu mới…). Chuyển thẻ (state.tab) thì giữ nguyên màn.
         const relink = navType !== 'REPLACE' && found.search === search && Boolean(search) && !(location.state as { tab?: boolean } | null)?.tab;
         // Trang tự ghi trạng thái lên địa chỉ (navigate replace, vd thẻ con ?the=…): chỉ nhớ đường dẫn, KHÔNG dựng lại trang.
+        // [2026-11-25 Nguyễn Văn Thủy] chuyển sang thẻ đã mở (bấm thẻ, bấm ô hộp thoại ở thanh dưới): KHÔNG dựng lại màn dù địa chỉ còn tham số
+        // cũ (vd ?moi=order) — dựng lại làm mất phiếu đang nhập dở trong hộp thoại thu nhỏ (đóng góp)
+        if ((location.state as { tab?: boolean } | null)?.tab) return list;
         if (aliased) return list.map((t) => (t === found ? { ...t, search, key: ++seq } : t)); // đến từ liên kết cũ: chạy lại lệnh trong liên kết
         if (navType === 'REPLACE' && found.search !== search) return list.map((t) => (t === found ? { ...t, search } : t));
         return found.search === search && !relink ? list : list.map((t) => (t === found ? { ...t, search, key: ++seq } : t));

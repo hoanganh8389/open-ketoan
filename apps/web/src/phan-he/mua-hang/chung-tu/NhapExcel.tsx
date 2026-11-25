@@ -9,7 +9,8 @@
  */
 import { useRef, useState } from 'react';
 import { FileUp } from 'lucide-react';
-import { docsFromImport, importRows, type ImportResult, type PDoc } from '@bizcity/mua-hang-domain';
+import { TAX_RATE, docsFromImport, importRows, type ImportResult, type PDoc } from '@bizcity/mua-hang-domain';
+import { roundPrice } from '@/lib/format';
 import { Modal } from '@/components/ui';
 import { BranchPicker } from '@/components/filters';
 import { PartnerPicker } from '@/components/pickers';
@@ -82,10 +83,14 @@ export function NhapExcel({ data, partnerCode = '', onClose, onDone }: { data: M
   const missingSku = rows.filter((r) => !cat.has(r.sku));
   const noPartner = rows.some((r) => !r.partnerCode) && !partner;
   const noBranch = rows.some((r) => !r.branchCode) && !branch;
+// [2026-11-25 Nguyễn Văn Thủy] giá CHƯA THUẾ là chuẩn ở mọi khai báo / phiếu / báo cáo (đối chiếu, chênh lệch theo một chuẩn); gồm thuế chỉ là quy đổi phụ (đóng góp)
+  // Tệp ghi giá gồm thuế: quy ra đơn giá chưa thuế trước khi tạo phiếu — phiếu luôn lưu theo chưa thuế.
+  const veChuaThue = (d: PDoc): PDoc => (!d.priceIncludesVat ? d : { ...d, priceIncludesVat: false, lines: d.lines.map((l) => { const r = 1 + (TAX_RATE[l.taxCode] ?? 0) / 100;
+    return { ...l, price: roundPrice(l.price / r), ...(l.discountAmt ? { discountAmt: Math.round(l.discountAmt / r) } : {}) }; }) });
   const docs: PDoc[] = res ? docsFromImport(rows.filter((r) => !r.error), {
     kind, date: today(), partnerCode: partner, branchCode: branch, priceIncludesVat: incVat, policies: data.policies,
     taxOf: (sku) => cat.get(sku)?.taxInCode ?? thueMacDinh(), nameOf: (sku) => cat.get(sku),
-  }) : [];
+  }).map(veChuaThue) : [];
   const create = async () => {
     setBusy(true); setErr('');
     try {
@@ -100,7 +105,7 @@ export function NhapExcel({ data, partnerCode = '', onClose, onDone }: { data: M
       footer={<><button className="btn btn-primary" disabled={busy || !docs.length || noPartner || noBranch} onClick={() => void create()}>Tạo {docs.length || ''} {kind === 'order' ? 'đơn đặt' : 'phiếu nhập'} nháp</button><button className="btn" onClick={onClose}>Thoát</button></>}>
       <div className="full mh-head" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
         <div className="field"><label>Tạo thành</label><select className="select input" value={kind} onChange={(e) => setKind(e.target.value as 'order')}><option value="order">Đơn đặt hàng</option><option value="receipt">Phiếu nhập kho (gom theo số HĐ)</option></select></div>
-        <div className="field"><label>Đơn giá trong tệp là</label><select className="select input" value={incVat ? '1' : '0'} onChange={(e) => setIncVat(e.target.value === '1')}><option value="0">Giá chưa thuế</option><option value="1">Giá đã gồm thuế</option></select></div>
+        <div className="field"><label>Đơn giá trong tệp là</label><select className="select input" value={incVat ? '1' : '0'} onChange={(e) => setIncVat(e.target.value === '1')}><option value="0">Giá chưa thuế</option><option value="1">Giá đã gồm thuế (tự quy ra chưa thuế khi tạo phiếu)</option></select></div>
         <div className="field"><label>NCC (khi tệp không có cột Mã NCC)</label><PartnerPicker kind="supplier" value={partner} onChange={setPartner} activeOnly /></div>
         <div className="field"><label>Chi nhánh (khi tệp không có cột Chi nhánh)</label><BranchPicker value={branch} onChange={setBranch} activeOnly /></div>
       </div>

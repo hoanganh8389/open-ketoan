@@ -62,6 +62,12 @@ export function DienMatHang({ doc, data, onClose, onAdd, theoHopDong }: { doc: P
   });
   const q = (sku: string, suggest?: number) => qty[sku] ?? suggest ?? 0;
   const chosen = rows.filter((r) => (pick[r.sku] ?? q(r.sku, r.suggest) > 0) && q(r.sku, r.suggest) > 0);
+  // [2026-11-25 Nguyễn Văn Thủy] chọn hết / bỏ hết một lần: dòng chưa có SL thì lấy SL lần mua trước (không có thì 1) (đóng góp)
+  const hetChon = rows.length > 0 && rows.every((r) => (pick[r.sku] ?? q(r.sku, r.suggest) > 0) && q(r.sku, r.suggest) > 0);
+  const chonHet = (b: boolean) => {
+    setPick((x) => ({ ...x, ...Object.fromEntries(rows.map((r) => [r.sku, b])) }));
+    if (b) setQty((x) => ({ ...x, ...Object.fromEntries(rows.filter((r) => !q(r.sku, r.suggest)).map((r) => [r.sku, r.lastQtyU || 1])) }));
+  };
   const add = () => {
     onAdd(chosen.map((r, i) => ({ lineKey: `F${Date.now().toString(36)}${i}`, sku: r.sku, name: r.name, unit: r.unit, qty: q(r.sku, r.suggest), price: price[r.sku] ?? r.suggestedPrice, taxCode: r.tax, lineType: 'buy' })));
   };
@@ -73,6 +79,7 @@ export function DienMatHang({ doc, data, onClose, onAdd, theoHopDong }: { doc: P
       ) : <>
         <div className="full row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <input className="input" style={{ width: 240 }} placeholder="Tìm mã, tên, mã bên NCC" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <button className="btn btn-sm btn-primary" title="Chọn mọi mã đang hiện: mã chưa có số lượng lấy SL lần mua trước (chưa mua thì 1) — sửa lại được trước khi thêm" onClick={() => chonHet(true)}>Chọn hết ({rows.length} mã)</button>
           <button className="btn btn-sm" onClick={() => setQty(Object.fromEntries(rows.map((r) => [r.sku, r.lastQtyU ?? 0])))}>Điền SL lần mua trước</button>
           {doc.kind === 'order' && <button className="btn btn-sm" onClick={() => setQty(Object.fromEntries(rows.map((r) => [r.sku, r.suggest ?? 0])))}>Điền SL cần nhập (phân tích)</button>}
           <button className="btn btn-sm" onClick={() => { setQty({}); setPick({}); }}>Xoá số đã nhập</button>
@@ -80,7 +87,7 @@ export function DienMatHang({ doc, data, onClose, onAdd, theoHopDong }: { doc: P
         </div>
         <div className="full" style={{ maxHeight: 440, overflow: 'auto', marginTop: 6 }}>
           <table className="mh-mini">
-            <thead><tr><th /><th>Mã</th><th>Tên hàng</th><th>ĐVT</th><th className="num" title="Tồn kho chi nhánh cha · tồn các shop (ĐVT nhỏ nhất). Mã cha cộng dồn cả họ mã (mã con đuôi Z / Q / K…) — rê chuột xem chi tiết">Tồn (kho · shop)</th><th>Lần mua gần nhất</th>{doc.kind === 'order' && <th className="num">Đề xuất</th>}<th className="num">Số lượng</th><th className="num">Đơn giá</th><th>Giá lấy từ</th></tr></thead>
+            <thead><tr><th><input type="checkbox" title={hetChon ? 'Bỏ chọn hết' : 'Chọn hết'} checked={hetChon} onChange={(e) => chonHet(e.target.checked)} /></th><th>Mã</th><th>Tên hàng</th><th>ĐVT</th><th className="num" title="Tồn kho chi nhánh cha · tồn các shop (ĐVT nhỏ nhất). Mã cha cộng dồn cả họ mã (mã con đuôi Z / Q / K…) — rê chuột xem chi tiết">Tồn (kho · shop)</th><th>Lần mua gần nhất</th>{doc.kind === 'order' && <th className="num">Đề xuất</th>}<th className="num">Số lượng</th><th className="num">Đơn giá</th><th>Giá lấy từ</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.sku} className={q(r.sku, r.suggest) > 0 ? 'mh-row-pick' : ''}>

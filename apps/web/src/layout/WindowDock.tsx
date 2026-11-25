@@ -58,7 +58,8 @@ function useDockInner(onClose: () => void, dirty: boolean, top: boolean, key?: s
   const restore = useCallback(() => {
     // Hộp thoại khác đang mở cùng thẻ: thu nhỏ để không chồng lên nhau.
     for (const w of wins) if (w.id !== id && !w.minimized && w.tab.split('?')[0] === tab.split('?')[0]) w.minimize();
-    if (nav && here() !== tab.split('?')[0]) nav(tab);
+    // [2026-11-25 Nguyễn Văn Thủy] mở lại = chuyển thẻ (state.tab), không chạy lại liên kết của thẻ (?moi=… mở phiếu mới đè phiếu đang dở) (đóng góp)
+    if (nav && here() !== tab.split('?')[0]) nav(tab, { state: { tab: true } });
     setMin(false);
   }, [id, nav, tab]);
   useEffect(() => {

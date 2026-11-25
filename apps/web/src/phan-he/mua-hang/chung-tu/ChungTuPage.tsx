@@ -262,6 +262,8 @@ export function ChungTuPage({ embedPartner, embedGroup, command, report, formsOn
     // [2026-11-18 Nguyễn Văn Thủy] ?hd=<số hợp đồng>: lập phiếu theo hợp đồng (từ màn Hợp đồng mua hàng) (đóng góp)
     const hd = params.get('hd');
     setEditing({ ...newDoc(k, ncc ?? undefined), ...(hd ? { contractCode: hd } : {}) });
+    // [2026-11-25 Nguyễn Văn Thủy] lệnh ?moi đã chạy: bỏ khỏi địa chỉ (replace) — quay lại thẻ / bấm lại menu không mở phiếu mới đè phiếu đang dở (đóng góp)
+    if (!embedded) { const p = new URLSearchParams(params); p.delete('moi'); p.delete('hd'); const q = p.toString(); navigate({ search: q ? `?${q}` : '' }, { replace: true }); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params, navKey]);
 

@@ -127,7 +127,8 @@ function HopGia({ v: init, units, rate, onClose, onDone }: { v: Form; units: { u
     if (!v.unit) { setErr('Chọn ĐVT'); return; }
     setBusy(true); setErr('');
     try {
-      await purchaseApi.saveSupplierProducts([{ id: v.id, partnerCode: v.partnerCode, sku: v.sku, unit: v.unit, nccSku: v.nccSku ?? '', nccName: v.nccName ?? '', price: v.price ?? null, priceIncludesVat: Boolean(v.priceIncludesVat), warnPct: v.warnPct ?? 2, contractCode: v.contractCode ?? '', validFrom: v.validFrom || undefined, validTo: v.validTo || undefined, note: v.note ?? '', isActive: v.isActive ?? true }]);
+      // [2026-11-25 Nguyễn Văn Thủy] giá CHƯA THUẾ là chuẩn ở mọi khai báo / phiếu / báo cáo (đối chiếu, chênh lệch theo một chuẩn); gồm thuế chỉ là quy đổi phụ (đóng góp)
+      await purchaseApi.saveSupplierProducts([{ id: v.id, partnerCode: v.partnerCode, sku: v.sku, unit: v.unit, nccSku: v.nccSku ?? '', nccName: v.nccName ?? '', price: pAs(false), priceIncludesVat: false, warnPct: v.warnPct ?? 2, contractCode: v.contractCode ?? '', validFrom: v.validFrom || undefined, validTo: v.validTo || undefined, note: v.note ?? '', isActive: v.isActive ?? true }]);
       onDone();
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
@@ -159,7 +160,7 @@ function HopGia({ v: init, units, rate, onClose, onDone }: { v: Form; units: { u
       </Field>
       <Field label="Thuế suất"><input className="input" readOnly value={`${Math.round(rate * 100)}%`} /></Field>
       <Field label="Giá chưa thuế" tip="Gõ ô nào cũng được, ô kia tự quy đổi"><NumInput value={pAs(false)} onChange={(n) => set({ price: n, priceIncludesVat: false })} /></Field>
-      <Field label="Giá gồm thuế"><NumInput value={pAs(true)} onChange={(n) => set({ price: n, priceIncludesVat: true })} /></Field>
+      <Field label="Giá gồm thuế (quy đổi)" tip="Chỉ để đối chiếu với báo giá gồm thuế — lưu luôn là giá chưa thuế"><NumInput value={pAs(true)} onChange={(n) => set({ price: n, priceIncludesVat: true })} /></Field>
       <Field label="Hiệu lực từ"><input className="input" type="date" value={v.validFrom ?? ''} onChange={(e) => set({ validFrom: e.target.value || undefined })} /></Field>
       <Field label="Đến" tip="Trống = tới khi có giá mới"><input className="input" type="date" value={v.validTo ?? ''} onChange={(e) => set({ validTo: e.target.value || undefined })} /></Field>
       <Field label="Mã hàng bên NCC"><input className="input mono" value={v.nccSku ?? ''} onChange={(e) => set({ nccSku: e.target.value })} /></Field>

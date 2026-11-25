@@ -141,7 +141,7 @@ export function PhanKhoModal({ cc, code, donVi, onClose, onSaved }: { cc: CC; co
   );
 }
 
-export function BoPhanModal({ cc, code, donVi, cha, onClose, onSaved }: { cc: CC; code: string | null; donVi: string | null; cha: string | null; onClose: () => void; onSaved: (text: string) => void }) {
+export function BoPhanModal({ cc, code, donVi, cha, onClose, onSaved }: { cc: CC; code: string | null; donVi: string | null; cha: string | null; onClose: () => void; onSaved: (text: string, code?: string) => void }) {
   const lamMoi = useLamMoi();
   const d = code ? cc.departments.find((x) => x.code === code) ?? null : null;
   const [f, setF] = useState({ code: d?.code ?? '', name: d?.name ?? '', branchCode: d?.branchCode ?? donVi ?? '', parentCode: (d ? cc.chaBp(d)?.code : cha) ?? '', note: d?.note ?? '', isActive: d?.isActive ?? true });
@@ -162,7 +162,7 @@ export function BoPhanModal({ cc, code, donVi, cha, onClose, onSaved }: { cc: CC
   }
   const luu = useMutation({
     mutationFn: () => api.put(`/api/v1/co-cau/departments/${encodeURIComponent(f.code.trim())}`, { name: f.name.trim(), branchCode: f.branchCode, parentCode: f.parentCode, note: f.note, isActive: f.isActive }),
-    onSuccess: () => { lamMoi(); onSaved(`Đã lưu bộ phận ${f.code.trim()} · ${f.name.trim()}`); },
+    onSuccess: () => { lamMoi(); onSaved(`Đã lưu bộ phận ${f.code.trim()} · ${f.name.trim()}`, f.code.trim()); },
   });
   const ok = () => { setDaBam(true); if (f.code.trim() && f.name.trim() && f.branchCode && !trung) luu.mutate(); };
   return (

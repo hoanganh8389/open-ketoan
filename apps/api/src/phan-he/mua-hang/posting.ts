@@ -256,8 +256,13 @@ export async function postPurchase(trx: Db, auth: AuthContext, d: StoredDoc, cal
         // [2026-11-21 Nguyễn Văn Thủy] NHIỀU HOÁ ĐƠN: lõi nhận một hoá đơn cho một chứng từ kế toán → tách theo từng hoá đơn (dòng chia theo SL
         // từng mã trên hoá đơn ở MH22; tiền / thuế / chiết khấu theo tỷ lệ SL, phần lẻ dồn phần cuối); SL không trên hoá đơn nào → phần không hoá đơn (đóng góp)
         const q = await invoiceQtyForReceipt(trx, auth.tenantId, d, docs);
-        if (q.missing.length) throw Errors.validation(`Phiếu có ${invs.length} hoá đơn — cần dòng hàng của mọi hoá đơn ở MH22 để ghi sổ tách theo hoá đơn: ${q.missing.join('; ')}`);
-        const parts = splitLinesByInvoice(calc.lines, q.list, units);
+        // [2026-11-25 Nguyễn Văn Thủy] thiếu dòng hàng của hoá đơn (chỉ có tổng / chưa nhận diện mã): chia mọi dòng theo tỷ lệ tổng tiền từng hoá đơn (đóng góp)
+        const w = invs.map((i) => q.totals[invoiceKey(i)] ?? 0);
+        if (q.missing.length && !w.every((x) => x > 0)) throw Errors.validation(`Phiếu có ${invs.length} hoá đơn — cần dòng hàng của mọi hoá đơn ở MH22, hoặc Tổng tiền HĐ của từng hoá đơn, để ghi sổ tách theo hoá đơn: ${q.missing.join('; ')}`);
+        const tongW = w.reduce((s, x) => s + x, 0);
+        const parts = q.missing.length
+          ? invs.map((i, n) => ({ key: invoiceKey(i), lines: calc.lines.map((l) => ({ lineKey: l.lineKey, qty: Math.round(l.qty * (w[n]! / tongW) * 10000) / 10000, frac: w[n]! / tongW })) }))
+          : splitLinesByInvoice(calc.lines, q.list, units);
         const byKey = new Map(lines.map((l) => [l.lineKey, l]));
         const daChia = new Map<string, { qty: number; amountBeforeTax: number; discount: number; taxAmount: number; n: number }>();
         const tongPhan = new Map<string, number>();

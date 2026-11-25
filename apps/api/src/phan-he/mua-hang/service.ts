@@ -23,6 +23,26 @@ import { resolveWarehouse } from '../../modules/warehouses/default-warehouse.js'
 import { sameTx, type ActionTx } from '@bizcity/platform/core/actions';
 import { currentRequest } from '@bizcity/platform/core/request-context';
 
+// [2026-11-25 Nguyễn Văn Thủy] đơn đặt: kho giao / kho dòng được là kho của chính chi nhánh nhận HOẶC của mọi chi nhánh con cháu bên trong (đệ quy theo cây chi nhánh) (đóng góp)
+/** Kho của đơn đặt: phải đang dùng và thuộc một trong các chi nhánh `goc` hoặc chi nhánh con cháu của chúng. */
+async function khoTrongNhanh(trx: Db, tenantId: string, goc: string[], whCode: string): Promise<string> {
+  const w = await trx.selectFrom('warehouses as w').innerJoin('branches as b', 'b.id', 'w.branch_id').select(['w.code', 'w.is_active', 'b.id as bid', 'b.code as bcode'])
+    .where('w.tenant_id', '=', tenantId).where('w.code', '=', whCode).executeTakeFirst();
+  if (!w) throw Errors.validation(`Phân kho ${whCode} không có trong danh mục kho (DM12)`);
+  if (!w.is_active) throw Errors.validation(`Phân kho ${whCode} đang ngừng dùng`);
+  const goc1 = new Set(goc.filter(Boolean));
+  if (!goc1.size) return w.code;
+  // cây đơn vị DM16 = branches.unit_parent_id (cùng cây màn chọn chi nhánh / kho dùng)
+  const bs = (await sql<{ id: string; code: string; unit_parent_id: string | null }>`SELECT id, code, unit_parent_id FROM branches WHERE tenant_id = ${tenantId}`.execute(trx)).rows;
+  const byId = new Map(bs.map((b) => [String(b.id), b]));
+  const seen = new Set<string>();
+  for (let cur = byId.get(String(w.bid)); cur && !seen.has(String(cur.id)); cur = cur.unit_parent_id ? byId.get(String(cur.unit_parent_id)) : undefined) {
+    seen.add(String(cur.id));
+    if (goc1.has(cur.code)) return w.code;
+  }
+  throw Errors.validation(`Phân kho ${whCode} (thuộc chi nhánh ${w.bcode}) không nằm trong chi nhánh nhận ${[...goc1].join(', ')} hay chi nhánh con của nó`);
+}
+
 /** Phiếu mua có hàng ra / vào kho (đơn đặt chưa vào kho; chi phí, thưởng chỉ điều chỉnh giá trị). */
 const STOCK_KINDS: string[] = ['receipt', 'return', 'exchange', 'gift_in', 'gift_out'];
 
@@ -174,12 +194,14 @@ export const purchaseService = {
       const isOrder = doc.kind === 'order';
       // Đơn đặt: "Giao tại kho" có thể là kho của chi nhánh con → deliveryBranch = chi nhánh đó (phiếu nhập lập ở chi nhánh con).
       if (!isOrder || doc.deliveryBranch === doc.branchCode) delete doc.deliveryBranch;
-      if (isOrder && doc.deliveryWarehouse) doc.deliveryWarehouse = await resolveWarehouse(trx, auth.tenantId, doc.deliveryBranch ?? doc.branchCode, doc.deliveryWarehouse);
+      const nhanCuaDon = [doc.deliveryBranch ?? doc.branchCode, doc.branchCode, ...(doc.receiveBranches ?? []), ...doc.lines.map((l) => l.branchCode ?? '')];
+      if (isOrder && doc.deliveryWarehouse) doc.deliveryWarehouse = await khoTrongNhanh(trx, auth.tenantId, nhanCuaDon, doc.deliveryWarehouse);
       const nhanMacDinh = doc.deliveryBranch ?? doc.branchCode;
       for (const l of doc.lines) {
         if (!isOrder) delete l.branchCode;
         else if (l.branchCode === nhanMacDinh) delete l.branchCode;
-        if (l.warehouseCode && (isOrder || STOCK_KINDS.includes(doc.kind))) l.warehouseCode = await resolveWarehouse(trx, auth.tenantId, l.branchCode ?? (isOrder ? nhanMacDinh : doc.branchCode), l.warehouseCode);
+        if (l.warehouseCode && isOrder) l.warehouseCode = await khoTrongNhanh(trx, auth.tenantId, [l.branchCode ?? nhanMacDinh], l.warehouseCode);
+        else if (l.warehouseCode && STOCK_KINDS.includes(doc.kind)) l.warehouseCode = await resolveWarehouse(trx, auth.tenantId, l.branchCode ?? (isOrder ? nhanMacDinh : doc.branchCode), l.warehouseCode);
         else if (!isOrder && !STOCK_KINDS.includes(doc.kind)) delete l.warehouseCode;
         if (STOCK_KINDS.includes(doc.kind) && l.warehouseCode === doc.warehouseCode) delete l.warehouseCode;
       }
