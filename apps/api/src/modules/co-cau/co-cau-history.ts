@@ -37,6 +37,21 @@ const LABEL: Record<string, string> = {
 const ACTION: Record<string, string> = { create: 'Thêm', update: 'Sửa', delete: 'Xoá', save: 'Ghi', upsert: 'Ghi', assign: 'Gắn cửa hàng', restore_defaults: 'Quay về dữ liệu gốc' };
 const SKIP = new Set(['warn_ack', 'parent_uid', 'child_count', 'created_time', 'parent_name', 'id', 'tenant_id', 'uid', 'created_at', 'created_by', 'updated_at', 'updated_by', 'org_path', 'path', 'level', 'levels_changed', 'branch_codes', 'created_by_name']);
 const snake = (k: string) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+// [2026-11-25 05:20 PM Võ Hoàng] NT-BH-035 — lịch sử đối tượng: giá trị mã đổi ra nhãn như form Khách hàng / Nhà cung cấp (đóng góp, sửa tệp của Nguyễn Văn Thủy)
+type ValueLabels = Record<string, Record<string, string>>;
+const PARTNER_KIND: Record<string, string> = { customer: 'Khách hàng', supplier: 'Nhà cung cấp', employee: 'Nhân viên', internal: 'Nội bộ', other: 'Khác' };
+/** Nhãn giá trị của ô đối tượng — cùng chữ với PartnersPage (Vai trò, Loại khách, Giới tính). */
+export const PARTNER_VALUES: ValueLabels = {
+  kind: PARTNER_KIND, also_kinds: PARTNER_KIND,
+  customer_type: { personal: 'KH cá nhân', business: 'KH doanh nghiệp' },
+  gender: { male: 'Nam', female: 'Nữ' },
+};
+const label = (vals: ValueLabels | undefined, k: string, v: unknown): unknown => {
+  const m = vals?.[k];
+  if (!m) return v;
+  if (Array.isArray(v)) return v.map((x) => m[String(x)] ?? x).join(', ');
+  return typeof v === 'string' && m[v] ? m[v] : v;
+};
 const show = (v: unknown): string => (v === null || v === undefined || v === '' ? '(trống)' : v === true ? 'Có' : v === false ? 'Không' : typeof v === 'object' ? JSON.stringify(v) : String(v));
 const flat = (o: unknown): Record<string, unknown> => {
   const out: Record<string, unknown> = {};
@@ -45,7 +60,7 @@ const flat = (o: unknown): Record<string, unknown> => {
 };
 
 /** Các ô đổi giữa trước và sau: "Tên: A → B"; ô chỉ có ở sau (thêm mới) ghi "Tên: B". */
-export function diffText(before: unknown, after: unknown): string[] {
+export function diffText(before: unknown, after: unknown, vals?: ValueLabels): string[] {
   const b = flat(before), a = flat(after);
   const out: string[] = [];
   for (const [k, v] of Object.entries(a)) {
@@ -60,7 +75,7 @@ export function diffText(before: unknown, after: unknown): string[] {
     }
     if (k in b && JSON.stringify(b[k] ?? '') === JSON.stringify(v ?? '')) continue;
     if (!(k in b) && (v === '' || v === null || v === undefined)) continue;
-    out.push(k in b ? `${LABEL[k] ?? k}: ${show(b[k])} → ${show(v)}` : `${LABEL[k] ?? k}: ${show(v)}`);
+    out.push(k in b ? `${LABEL[k] ?? k}: ${show(label(vals, k, b[k]))} → ${show(label(vals, k, v))}` : `${LABEL[k] ?? k}: ${show(label(vals, k, v))}`);
   }
   return out;
 }
@@ -81,7 +96,22 @@ export async function coCauHistory(tenantId: string, kind: Kind, code: string): 
      ORDER BY created_at DESC, id DESC LIMIT 300`.execute(db);
   const userIds = [...new Set(rows.rows.map((r) => /^user:(\d+)$/.exec(r.actor)?.[1]).filter((x): x is string => Boolean(x)))];
   const users = userIds.length ? await db.selectFrom('users').select(['id', 'full_name', 'email']).where('tenant_id', '=', tenantId).where('id', 'in', userIds).execute() : [];
-  const names = new Map(users.map((u) => [`user:${u.id}`, u.full_name || u.email]));
+  const names = new Map<string, string>(users.map((u) => [`user:${u.id}`, u.full_name || u.email]));
+  // [2026-11-25 05:20 PM Võ Hoàng] NT-BH-035 — người làm là khoá API / khoá cài đặt máy bán: hiện tên khoá thay cho "apikey:1" (đóng góp, sửa tệp của Nguyễn Văn Thủy)
+  const keyIds = [...new Set(rows.rows.map((r) => /^apikey:([\w-]+)$/.exec(r.actor)?.[1]).filter((x): x is string => Boolean(x)))];
+  if (keyIds.length) {
+    const keys = await sql<{ id: string; name: string }>`SELECT id::text AS id, name FROM api_keys WHERE tenant_id = ${tenantId} AND id::text IN (${sql.join(keyIds.map((x) => sql`${x}`))})`.execute(db);
+    for (const k of keys.rows) names.set(`apikey:${k.id}`, `${k.name} (khoá API)`);
+  }
+  const instCodes = [...new Set(rows.rows.map((r) => /^install:([^:]+)/.exec(r.actor)?.[1]).filter((x): x is string => Boolean(x)))];
+  const insts = instCodes.length ? (await sql<{ code: string; name: string }>`SELECT code, name FROM pos_installations WHERE code IN (${sql.join(instCodes.map((x) => sql`${x}`))})`.execute(db)).rows : [];
+  const instName = new Map(insts.map((i) => [i.code, i.name]));
+  const who = (actor: string) => {
+    if (names.has(actor)) return names.get(actor)!;
+    const m = /^install:([^:]+)(?::blog:(\d+))?$/.exec(actor);
+    if (m && instName.has(m[1]!)) return `${instName.get(m[1]!)}${m[2] ? ` · blog ${m[2]}` : ''} (khoá cài đặt)`;
+    return actor;
+  };
   const out: HistoryLine[] = [];
   for (const r of rows.rows) {
     const after = (r.after_data ?? {}) as { input?: unknown; notes?: { audit?: { action?: string; before?: unknown; after?: unknown }[] } };
@@ -91,9 +121,9 @@ export async function coCauHistory(tenantId: string, kind: Kind, code: string): 
       : [{ action: r.action, before: r.before_data, after: after.input ?? r.after_data }];
     for (const p of pairs) {
       const verb = p.action.split('.').pop() ?? p.action;
-      const changes = verb === 'delete' ? [] : diffText(p.before, p.after);
+      const changes = verb === 'delete' ? [] : diffText(p.before, p.after, kind === 'partner' ? PARTNER_VALUES : undefined);
       if ((verb === 'update' || verb === 'upsert') && !changes.length) continue;
-      const line: HistoryLine = { at: r.created_at.toISOString(), by: names.get(r.actor) ?? r.actor, action: ACTION[verb] ?? verb, changes };
+      const line: HistoryLine = { at: r.created_at.toISOString(), by: who(r.actor), action: ACTION[verb] ?? verb, changes };
       // Bản qua action và bản ghi cũ của cùng một lần đổi: chỉ giữ một dòng.
       const prev = out[out.length - 1];
       if (prev && prev.at.slice(0, 19) === line.at.slice(0, 19) && prev.action === line.action && JSON.stringify(prev.changes) === JSON.stringify(line.changes)) continue;
