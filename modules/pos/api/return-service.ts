@@ -5,8 +5,8 @@
 import { Errors, sql, z, type ActionContext } from '@bizcity/module-sdk';
 import { loyaltyGiftIndex } from './domain/order.js';
 import {
-  buyerTaxCodeOf, computeReturn, daysOf, otherShopProblem, returnDeadline, returnDocKey, returnableLines, daysSince, taxInvoiceMessage, toSaleReturnDocument,
-  type ReturnedSoFar, type SoldLine,
+  buyerTaxCodeOf, computeReturn, daysOf, giftPolicyKeys, policyMainSkus, otherShopProblem, returnDeadline, returnDocKey, returnableLines, daysSince, taxInvoiceMessage, toSaleReturnDocument,
+  type PolicyListItem, type ReturnedSoFar, type SoldLine,
 } from './domain/returns.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-027: phiếu hoàn theo dạng của cửa hàng ({shop}.B{5 số} hoặc TH…) (đóng góp)
 import { issueCodes } from './codes.js';
@@ -63,7 +63,7 @@ export async function findOrder(tx: Tx, idOrCode: string, branch?: string): Prom
 
 /** Dòng bán của đơn: bản chụp đơn + dòng đơn đã lưu (mã thuế, định danh). Đơn trước khi có order_lines: mã thuế theo danh mục. */
 export async function soldLinesOf(tx: Tx, order: OrderRow): Promise<SoldLine[]> {
-  type SnapLine = { lineId: string; sku: string; name?: string; unitName: string; unitQty: number; unitRatio?: number; amount: number; taxAmount: number; taxRate: number; itemId?: string; isGift?: boolean; giftKey?: string; promotionId?: number };
+  type SnapLine = { lineId: string; sku: string; name?: string; unitName: string; unitQty: number; unitRatio?: number; amount: number; taxAmount: number; taxRate: number; itemId?: string; isGift?: boolean; giftKey?: string; promotionId?: number; policyRef?: { key?: string; version?: number } };
   // Dòng bill Z (NT-BH-019) nằm ở zBill của bản chụp nhưng vẫn là dòng của chứng từ bán: trả được như dòng quà.
   const snap = order.snapshot as { lines?: SnapLine[]; zBill?: { lines?: SnapLine[] } };
   const snapLines = [...(snap.lines ?? []), ...(snap.zBill?.lines ?? [])];
@@ -80,6 +80,8 @@ export async function soldLinesOf(tx: Tx, order: OrderRow): Promise<SoldLine[]> 
       taxCode: s?.tax_code ?? catalog.get(l.sku)?.taxCode ?? '', itemId: s?.item_id ?? l.itemId ?? null,
       // [2026-11-15 01:45 PM Võ Hoàng] POS-BILLZ — NT-BH-019 bước 2: dòng bill Z là dòng quà trên chứng từ bán → trả cũng là dòng quà (đóng góp)
       isGift: l.isGift === true || zIds.has(l.lineId), ...(l.promotionId !== undefined ? { promotionId: l.promotionId } : {}),
+      // [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038: quà khuyến mại Core (không promotionId) mang mã chương trình để ghép hàng chính (đóng góp)
+      ...(l.isGift === true && l.promotionId === undefined && typeof l.policyRef?.key === 'string' && l.policyRef.key ? { policyKey: l.policyRef.key } : {}),
       // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-024 Q2: quà đổi điểm (giftKey lp:…) không trả được (đóng góp)
       ...(loyaltyGiftIndex(l) !== null ? { loyaltyGift: true } : {}),
     };
@@ -153,6 +155,26 @@ export async function returnableOf(tx: Tx, order: OrderRow, here: Pick<BranchRow
   };
 }
 
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038 Q1: hàng chính của chương trình Core theo nội dung chương trình tại ngày bán (đóng góp)
+/**
+ * Mã hàng chính của các chương trình Core có quà trên đơn: đọc `core.policy.list` (action đọc của Core, ADR-0011 actions.call) tại ngày bán,
+ * cửa hàng bán. Không thấy chương trình / bản khác bản trên dòng quà → ghi log.warn; không thấy thì null (mọi dòng không phải quà).
+ */
+export async function policySkusOf(ctx: ActionContext, keys: readonly string[], versions: ReadonlyMap<string, number | undefined>, at: string, branch: string): Promise<Record<string, string[] | null>> {
+  const out: Record<string, string[] | null> = {};
+  if (!keys.length) return out;
+  const list = await ctx.actions.call<{ items?: PolicyListItem[] }>('core.policy.list', { at, branch, channel: 'pos', domain: 'sale' });
+  for (const key of keys) {
+    const item = (list.items ?? []).find((i) => i.policyKey === key);
+    const want = versions.get(key);
+    // Không thấy / lệch bản là tình huống nghiệp vụ đã lùi được (không phải lỗi hệ thống): ghi vào bằng chứng của action để tra lại.
+    if (!item) ctx.evidence.note(`giftPolicy.${key}`, { found: false, at, branch, fallback: 'mọi dòng không phải quà' });
+    else if (want !== undefined && item.version !== want) ctx.evidence.note(`giftPolicy.${key}`, { found: true, giftVersion: want, listVersion: item.version });
+    out[key] = policyMainSkus(item);
+  }
+  return out;
+}
+
 export type CreatedReturn = { snapshot: Record<string, unknown>; docKey: string; refundTotal: number; branchCode: string; replayed: boolean };
 
 /** Lập phiếu trả: kiểm → cấp mã TH → nộp sale_return → lưu phiếu + dòng. Đổi hàng: tiền hoàn thành đối trừ (không trả tiền). */
@@ -164,6 +186,14 @@ export async function createReturn(ctx: ActionContext, draft: ReturnDraft, opts:
   const badMap = await returnBadWarehouses(ctx);
   // NT-BH-035 Q2: kho quà KKM theo cửa hàng (BH17, khoá bizcity.pos.gift_warehouses — cùng khoá máy bán dùng khi bán quà).
   const giftMap = await giftWarehouses(ctx);
+  // NT-BH-038: đơn có quà khuyến mại Core → đọc hàng chính của chương trình (ngoài giao dịch của module, trước khi khoá đơn).
+  const pre = await ctx.data.module(async (tx) => {
+    const o = await findOrder(tx, draft.orderId);
+    const sold = await soldLinesOf(tx, o);
+    const snap = (o.snapshot as { lines?: { isGift?: boolean; policyRef?: { key?: string; version?: number } }[] }).lines ?? [];
+    return { order: o, keys: giftPolicyKeys(sold), versions: new Map(snap.filter((l) => l.isGift && l.policyRef?.key).map((l) => [l.policyRef!.key!, l.policyRef!.version])) };
+  });
+  const policySkus = await policySkusOf(ctx, pre.keys, pre.versions, pre.order.business_date, pre.order.branch_code);
   const prepared = await ctx.data.module(async (tx) => {
     await lockKey(tx, `pos:return:${draft.id}`);
     const old = (await sql<{ snapshot: Record<string, unknown>; same: boolean; doc_key: string; refund_total: string; branch_code: string }>`
@@ -192,7 +222,7 @@ export async function createReturn(ctx: ActionContext, draft: ReturnDraft, opts:
     const computed = computeReturn({
       draft, order: { status: order.status, branchCode: order.branch_code, businessDate: order.business_date, buyerTaxCode: buyerTaxCodeOf(order.snapshot), branchTaxCode: orderTax },
       lines, done, branchCode: branch.code, branchTaxCode: branch.taxCode, today, days, approved: Boolean(draft.approvalId), paymentMethods: await activePaymentMethods(tx), exchange,
-      badWarehouse: bad.code, ...(bad.issue ? { badWarehouseIssue: bad.issue } : {}), giftWarehouse: whs?.gift ?? null,
+      badWarehouse: bad.code, ...(bad.issue ? { badWarehouseIssue: bad.issue } : {}), giftWarehouse: whs?.gift ?? null, policySkus,
     });
     if ('problem' in computed) raise(computed.problem);
     // NT-BH-030 Q2: quá hạn → yêu cầu trả quá hạn phải đã duyệt, cùng đơn, cùng cửa hàng nhận, đúng dòng / SL / tình trạng.
