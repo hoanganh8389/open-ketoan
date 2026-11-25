@@ -61,6 +61,12 @@ export const DOC_STATUS: Record<string, { label: string; tone: string }> = {
   posted: { label: 'Đã ghi sổ', tone: 'ok' }, pending: { label: 'Chờ duyệt', tone: 'warn' }, pending_cancel: { label: 'Chờ huỷ', tone: 'warn' },
   failed: { label: 'Lỗi ghi sổ', tone: 'bad' }, held: { label: 'Đang giữ', tone: 'warn' },
 };
+// [2026-11-25 06:30 PM Võ Hoàng] NT-BH-034 — badge "Quà" dùng chung cho dòng hàng tặng (BH13, hồ sơ khách) (đóng góp)
+/** Dấu dòng quà (hàng tặng 0đ theo khuyến mại / đổi điểm) — nổi bật trong bảng dòng hàng. */
+export function GiftBadge() {
+  return <span className="badge badge-info" title="Hàng tặng (quà) — 0đ theo khuyến mại hoặc đổi điểm">🎁 Quà</span>;
+}
+
 export function Badge({ map, value }: { map: Record<string, { label: string; tone: string }>; value: string }) {
   const m = map[value] ?? { label: value || '—', tone: 'gray' };
   return <span className={`badge badge-${m.tone}`}>{m.label}</span>;
