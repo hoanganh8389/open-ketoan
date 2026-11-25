@@ -14,10 +14,10 @@ import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Field, Loading, Modal } from '@/components/ui';
 import { ItemPicker } from '@/components/pickers';
-import { errorText } from '@/lib/api';
+import { api, errorText } from '@/lib/api';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
-import { ChonMatHang } from '../thanh-phan/ChonMatHang';
-import { num, qtyFmt, stockApi, useHierarchy, type MaxBoardRow } from './api';
+import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
+import { docSo, num, qtyFmt, stockApi, useHierarchy, type MaxBoardRow } from './api';
 import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, isOff } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { useThaoTac } from '@/lib/manHinh';
@@ -172,20 +172,38 @@ export function TonMaxPage() {
           { name: 'Mã chi nhánh', required: true, aliases: 'Mã shop, Chi nhánh', example: target || shops[0]?.code || '08001', note: 'Mã chi nhánh (kho) hoặc mã shop' },
           { name: 'Mã kho', aliases: 'Kho', example: '', note: 'Trống = kho mặc định của chi nhánh (shop thường chỉ có một kho)' },
           { name: 'Mã hàng', required: true, aliases: 'Mã SP, SKU', example: '110154035', note: 'Mã trong danh mục mặt hàng' },
-          { name: 'Tồn max', required: true, aliases: 'Max', example: 24, note: 'Theo ĐVT nhỏ nhất (Lon, Hộp…)' },
-          { name: 'Tồn min', aliases: 'Min', example: 0, note: 'Tuỳ chọn (thường chỉ khai cho kho)' },
+          { name: 'Tên hàng', example: 'Sữa bột 800g', note: 'Chỉ để xem — nhập bỏ qua' },
+          { name: 'ĐVT', example: 'Lon', note: 'Chỉ để xem' },
+          { name: 'Tồn', example: 12, note: 'Tồn hiện tại — chỉ để xem' },
+          { name: 'Gợi ý max', example: 30, note: 'Chỉ để xem' },
+          { name: 'Tồn max', required: true, aliases: 'Max', example: 24, note: 'Theo ĐVT nhỏ nhất (Lon, Hộp…). Để trống = bỏ qua dòng (không đổi)' },
+          { name: 'Tồn min', aliases: 'Min', example: 0, note: 'Tuỳ chọn (thường chỉ khai cho kho). Trống = 0' },
         ],
+        // [2026-11-25 kiennt] NT-MH-008 — tệp mẫu có sẵn mặt hàng đang dùng CHƯA CÓ MAX ở kho / shop đang xem (mã chi nhánh, mã kho điền sẵn;
+        // kèm tồn, gợi ý nếu có) — chỉ nhập số Tồn max. Xem theo mã hàng: tệp mẫu một dòng ví dụ như cũ (đóng góp)
+        mau: mode === 'branch' ? async () => {
+          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 });
+          const br = target || parent, whc = q.data?.warehouseCode || wh;
+          const by = new Map((q.data?.rows ?? []).map((r) => [r.sku, r]));
+          const list = [...new Set([...(q.data?.rows ?? []).map((r) => r.sku), ...ds.map((p) => p.sku)])].filter((x) => !((by.get(x)?.max ?? 0) > 0)).sort((a, b) => a.localeCompare(b));
+          if (!list.length) throw new Error(`Mọi mặt hàng đang dùng đã có max ở ${br} kho ${whc} — sửa ngay trên lưới`);
+          const pBy = new Map(ds.map((p) => [p.sku, p]));
+          return list.map((x) => { const r = by.get(x), p = pBy.get(x); return [br, whc, x, r?.name ?? p?.name ?? '', r?.baseUnit ?? p?.unit ?? '', r ? r.ton : '', r?.suggested || '', '', '']; });
+        } : undefined,
         spec: [['branch', ['ma chi nhanh', 'ma shop', 'chi nhanh']], ['wh', ['ma kho', 'kho']], ['sku', ['ma hang', 'ma sp', 'sku']], ['max', ['ton max', 'max']], ['min', ['ton min', 'min']]],
         map: (r) => {
           const branch = String(r.branch).trim(), s = String(r.sku).trim();
-          if (!(h.data?.branches ?? []).some((b) => b.code === branch)) return { error: `không có chi nhánh ${branch}` };
-          const max = num(String(r.max ?? '')), min = num(String(r.min ?? ''));
-          if (max < 0 || min < 0) return { error: 'max / min không âm' };
-          if (min > 0 && max > 0 && min > max) return { error: 'min lớn hơn max' };
+          if (!(h.data?.branches ?? []).some((b) => b.code === branch)) return { error: `${s}: không có chi nhánh ${branch}` };
+          // [2026-11-25 kiennt] NT-MH-008 — Tồn max trống = bỏ qua dòng (trước ghi max = 0); số đọc "1.500" = nghìn, "1.5" = 1,5; chữ / âm báo lỗi (đóng góp)
+          const rawMax = String(r.max ?? '').trim(), rawMin = String(r.min ?? '').trim();
+          if (!rawMax) return { skip: true };
+          const max = docSo(rawMax), min = rawMin ? docSo(rawMin) : 0;
+          if (!Number.isFinite(max) || !Number.isFinite(min) || max < 0 || min < 0) return { error: `${s}: max / min phải là số ≥ 0 ("${rawMax}"${rawMin ? ` / "${rawMin}"` : ''})` };
+          if (min > 0 && max > 0 && min > max) return { error: `${s}: min lớn hơn max` };
           return { value: { branch, wh: String(r.wh ?? '').trim(), sku: s, max, min } };
         },
         head: ['Chi nhánh', 'Kho', 'Mã hàng', 'Max', 'Min'], cells: (x) => [x.branch, x.wh || '(mặc định)', x.sku, qtyFmt(x.max), qtyFmt(x.min)],
-        note: 'Ghi ngay khi bấm "Đưa vào": dòng đã có thì cập nhật. Mã chưa có trong danh mục bị báo lỗi.',
+        note: 'Tải file mẫu: có sẵn mặt hàng chưa có max ở kho / shop đang xem — chỉ điền cột Tồn max (dòng để trống được bỏ qua). Ghi ngay khi bấm "Đưa vào": dòng đã có thì cập nhật. Mã chưa có trong danh mục bị báo lỗi.',
       }} />}
     </>
   );
