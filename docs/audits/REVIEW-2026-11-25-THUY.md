@@ -1,5 +1,6 @@
 # Rà soát việc của người đóng góp — Nguyễn Văn Thủy · 2026-11-25 (HT20 Lỗi hệ thống, tự sửa lỗi)
 <!-- [2026-11-25 09:21 PM Johnny Chu - Chu Hoàng Anh] R-REV — biên bản rà 2 commit HT20 / TU-DONG-SUA-LOI của Nguyễn Văn Thủy (7a02302e, b9e1732b): KHÔNG ĐẠT; ghi chú của chủ dự án gửi Thủy kèm việc phải làm -->
+<!-- [2026-11-25 10:17 PM Johnny Chu - Chu Hoàng Anh] R-REV — chủ duyệt 22:16: lịch tự sửa được đẩy thẳng dev có điều kiện; việc e đổi; Thủy duyệt tạm thời -->
 
 > **Luật:** [RULE-REVIEW](../rules/RULE-REVIEW.md) · **Khoảng:** `7a02302e^..b9e1732b` (đã vào `main` và `dev`) · **Công cụ:** `node scripts/ra-soat-dong-gop.mjs --range 7a02302e^..b9e1732b --author "Nguyễn Văn Thủy"` + `node tests/conformance/selfcheck.mjs`
 > **Nội dung:** màn HT20 Lỗi hệ thống, API `/api/v1/system/loi*` và `/api/v1/ket-noi/*` (khoá kết nối), `scripts/loi/keo-loi.mjs`, `scripts/loi/dung-lai-theo-yeu-cau.sh` (cron dựng lại), [TU-DONG-SUA-LOI](../ops/TU-DONG-SUA-LOI.md) — 13 tệp, 754 dòng thêm
@@ -24,6 +25,23 @@ Những điều trên không phải để chặn Thủy làm — mình muốn t�
 
 — Johnny Chu (Chu Hoàng Anh)
 
+## 1b. Quyết định của chủ dự án sau biên bản (2026-11-25 22:16)
+
+Thủy thử một lỗi thật trên bản dev. Từ lúc có lỗi tới lúc AI sửa xong kèm test đạt mất khoảng **3 phút**; tính cả kiểm chuẩn đầy đủ khoảng **8 phút**. Thủy xin cho máy tự sửa và đẩy thẳng nhánh `dev`. Johnny Chu đồng ý ("ok") với các điều kiện Thủy tự nêu:
+
+- **`dev`**: lịch tự sửa được đẩy thẳng, nhưng **bắt buộc** test của chỗ sửa đạt và selfcheck **không đỏ mới** so với `origin/main`.
+  - Máy chạy lịch tự sửa phải bật hook trước khi đẩy (`node scripts/moi-truong-dev.mjs --sua`) và không dùng `--no-verify`. Như vậy điều kiện được máy chặn, không chỉ là lời hứa.
+- **`test` / `main`**: vẫn qua PR và người duyệt.
+  - Thủy được giao **duyệt tạm thời**.
+  - Tệp framework (RULE-SIGNATURE §3) vẫn cần Johnny Chu hoặc Nhóm Lõi duyệt theo `.github/CODEOWNERS`.
+- **Theo dõi**: HT20 → Nhật ký sửa trên bản dev.
+
+Việc **e** ở §2 đổi theo quyết định này. Các việc khác giữ nguyên, nhất là:
+- **a**: route `tra-ma` trả stack, mà D019-8 chưa mở;
+- **b**: không đẩy thẳng `main`;
+- **d**: khoá kết nối chuyển sang `api_keys`;
+- **f**: cron dùng `cap-nhat-cpanel.sh`.
+
 ## 2. Việc Thủy phải làm
 
 | # | Việc | Luật | Cách làm đúng · tệp mẫu | Mức |
@@ -32,7 +50,7 @@ Những điều trên không phải để chặn Thủy làm — mình muốn t�
 | b | Giữ chỗ ở CLAIMS cho HT20 rồi làm trên nhánh riêng + PR; chạy `node scripts/moi-truong-dev.mjs --sua` để có hook trước khi đẩy | R-FLOW, R-REV-1 | [AGENTS.md](../../AGENTS.md) "Đầu mỗi phiên", "Bước 0" | chặn |
 | c | Route ghi qua `defineAction` (quyền, zod, Idempotency-Key, bằng chứng); route đọc khai `requirePermission` | SC-ACT-1, SC-API-3 | `apps/api/src/modules/catalog/item.actions.ts` | chặn |
 | d | Bỏ khoá tự chế: máy ngoài dùng khoá của `api_keys` với phạm vi riêng (vd `loi:doc`, `loi:danh-dau`, `loi:dung-lai`); không trả khoá ở dạng rõ qua `GET /api/v1/system/cong-cu` | R-SEC, bizcity_users@1 | `packages/platform/src/core/auth.ts` (khoá API) | chặn |
-| e | Tự sửa bằng AI: đẩy nhánh `loi/<mã-mục>` + mở PR vào `dev`, không `git push origin HEAD:dev`; cron chỉ dựng lại sau khi PR đã gộp | R-REV-5, R-FLOW | — | chặn |
+| e | ~~Tự sửa bằng AI: đẩy nhánh riêng + mở PR vào `dev`~~ — **chủ đổi 22:16** (§1b): được đẩy thẳng `dev` khi test đạt + selfcheck không đỏ mới; máy tự sửa bật hook trước khi đẩy, không `--no-verify`; `test` / `main` vẫn qua PR | R-REV-5, R-FLOW | `scripts/moi-truong-dev.mjs` | chặn (điều kiện) |
 | f | Cron dựng lại gọi `scripts/cap-nhat-cpanel.sh` trên máy cPanel, không `cap-nhat.sh` | DEPLOY §5 | `scripts/cap-nhat-cpanel.sh` | chặn |
 | g | Test cho API mới: danh sách / đổi trạng thái / giữ chỗ 30 phút / từ chối khi máy khác giữ / khoá sai | R-QG-2 | `apps/api/test/helpers.ts` (`setupTenant`, `call`) | chặn |
 | h | Ghi tệp qua `appendRunLog` / `readRunLog` sẵn có thay vì tự viết JSONL; quét nền theo khuôn hẹn giờ của Platform | SC-EVD-1, SC-EVT-1, R-KER-8 | `packages/platform/src/core/run-log.ts` | cảnh báo |
