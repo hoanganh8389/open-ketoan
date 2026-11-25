@@ -3,10 +3,10 @@
  * Ô chọn chi nhánh / shop là ô gõ tìm (mã hoặc tên, không dấu); chi nhánh / shop đã ngừng ghi rõ "ngừng".
  */
 import { workBranch } from '@/lib/workBranch';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ListPicker } from '@/components/pickers';
-import { fold, lastParent, useHierarchy, type BranchNode } from './api';
+import { docSo, fold, lastParent, useHierarchy, type BranchNode } from './api';
 // [2026-11-03 10:39 AM Nguyễn Văn Thủy] SDTC — ô "Chi nhánh" theo sơ đồ tổ chức (PT · Chi nhánh Phú Thọ); giá trị vẫn là mã chi nhánh kho (08000)
 import { useOrgTree, usePurchaseUnits } from '@/lib/orgUnits';
 import './ton-max.css';
@@ -119,3 +119,19 @@ export function KhoiSo({ label, value, tone = 'blue', active, onClick, hint }: {
 }
 
 // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
+
+// [2026-11-25 kiennt] NT-MH-009 — ô số gõ tay: giữ nguyên chữ đang gõ (gõ được "1,5" / "1.5" — trước mỗi phím đọc lại số nên dấu bị nuốt,
+// "1.5" thành 15); đọc như nhập Excel: "1.500" / "1,500" = nghìn, "1.5" / "1,5" = 1,5; chữ / số âm → viền đỏ, không đổi giá trị (đóng góp)
+/** Ô nhập số lượng (max, min, max đề nghị…). Rời ô thì hiện lại số đã nhận (thập phân dấu phẩy); value trống (undefined / null) = ô trống. Xoá hết chữ = 0. */
+export function OSo({ value, onChange, className, style, ...rest }: { value: number | undefined | null; onChange: (v: number) => void } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
+  const [text, setText] = useState<string | null>(null);
+  const read = (t: string) => (t.trim() ? docSo(t.trim().replace(/[.,]$/, '')) : 0);
+  const bad = text !== null && !(read(text) >= 0);
+  const shown = text ?? (value === undefined || value === null ? '' : String(value).replace('.', ','));
+  return (
+    <input {...rest} className={className} inputMode="decimal" value={shown} title={bad ? 'Không phải số ≥ 0 — giá trị chưa đổi' : rest.title}
+      style={bad ? { ...style, borderColor: '#d92d20', background: '#fff1f0' } : style}
+      onChange={(e) => { const t = e.target.value; setText(t); const v = read(t); if (v >= 0) onChange(v); }}
+      onBlur={(e) => { setText(null); rest.onBlur?.(e); }} />
+  );
+}

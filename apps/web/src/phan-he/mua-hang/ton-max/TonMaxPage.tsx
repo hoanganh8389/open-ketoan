@@ -18,7 +18,7 @@ import { api, errorText } from '@/lib/api';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { docSo, num, qtyFmt, stockApi, useHierarchy, type MaxBoardRow } from './api';
-import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, isOff } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
+import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, isOff, OSo } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { useThaoTac } from '@/lib/manHinh';
 
@@ -106,9 +106,9 @@ export function TonMaxPage() {
     ]),
     { key: 'suggested', header: 'Gợi ý max', type: 'qty', width: 90, title: 'Gợi ý max', render: (r) => (r.suggested ? <button className="tm-opt" title={isKho || r.shopMaxSum !== undefined ? `Tổng max shop ${qtyFmt(r.shopMaxSum)} + ${q.data?.formula.warehouseBufferPct ?? 10}% dự phòng — bấm để dùng` : `${qtyFmt(r.avgPerDay)} / ngày × ${r.coverDays} ngày — bấm để dùng`} onClick={() => setD(r, { max: r.suggested })}><span className="tm-sug">{qtyFmt(r.suggested)}</span></button> : '') },
     { key: 'max', header: isKho ? 'Max của kho' : mode === 'sku' ? 'Max' : 'Max của shop', title: isKho ? 'Max của chính kho đang xem (khai ở đây) — dùng cho phân tích đặt hàng' : 'Max của shop — dùng cho chuyển hàng xuống shop', type: 'qty', width: 110, value: (r) => val(r, 'max'), sum: true, className: 'tm-max',
-      render: (r) => <input className={`tm-input${drafts[k(r)]?.max !== undefined ? ' dirty' : ''}`} value={val(r, 'max') || ''} placeholder="0" onChange={(e) => setD(r, { max: num(e.target.value) })} /> },
+      render: (r) => <OSo className={`tm-input${drafts[k(r)]?.max !== undefined ? ' dirty' : ''}`} value={val(r, 'max') || undefined} placeholder="0" onChange={(v) => setD(r, { max: v })} /> },
     { key: 'min', header: 'Min của kho', type: 'qty', width: 100, value: (r) => val(r, 'min'), hidden: !isKho,
-      render: (r) => <input className={`tm-input${drafts[k(r)]?.min !== undefined ? ' dirty' : ''}`} value={val(r, 'min') || ''} placeholder="0" onChange={(e) => setD(r, { min: num(e.target.value) })} /> },
+      render: (r) => <OSo className={`tm-input${drafts[k(r)]?.min !== undefined ? ' dirty' : ''}`} value={val(r, 'min') || undefined} placeholder="0" onChange={(v) => setD(r, { min: v })} /> },
     { key: 'gap', header: 'Thiếu so max', type: 'qty', width: 90, value: (r) => Math.max(0, val(r, 'max') - r.ton), render: (r) => { const g = val(r, 'max') - r.ton; return g > 0 ? <span className="tm-low">{qtyFmt(g)}</span> : g < 0 ? <span className="muted">dư {qtyFmt(-g)}</span> : ''; } },
     { key: 'transferMode', header: 'Chuyển xuống shop', width: 130, value: (r) => drafts[k(r)]?.mode ?? r.transferMode, hidden: isKho,
       render: (r) => <select className="select input" style={{ height: 26, fontSize: 12 }} value={drafts[k(r)]?.mode ?? r.transferMode} onChange={(e) => setD(r, { mode: e.target.value as TransferMode })}>{TRANSFER_MODES.map((m) => <option key={m.key} value={m.key} title={m.hint}>{m.label}</option>)}</select> },
@@ -219,7 +219,10 @@ function CaiRiengMa({ row, onClose, onSaved }: { row: MaxBoardRow; onClose: () =
   const [err, setErr] = useState('');
   const w = win ?? (s?.windowDays ? String(s.windowDays) : ''), c = cover ?? (s?.coverDays ? String(s.coverDays) : ''), m = mode ?? s?.transferMode ?? 'auto';
   const save = async (remove = false) => {
-    try { await stockApi.saveSkuSettings([{ sku: row.sku, windowDays: w ? Number(w) : null, coverDays: c ? num(c) : null, transferMode: m, remove }]); onSaved(); } catch (e) { setErr(errorText(e)); }
+    // [2026-11-25 kiennt] NT-MH-009 — số ngày đủ hàng đọc như ô số ("3,5" / "3.5" = 3,5; trước "3.5" thành 35) (đóng góp)
+    const cv = c ? docSo(c.trim()) : null;
+    if (cv !== null && !(cv > 0)) { setErr(`Số ngày cần đủ hàng "${c}" không phải số > 0`); return; }
+    try { await stockApi.saveSkuSettings([{ sku: row.sku, windowDays: w ? Number(w) : null, coverDays: cv, transferMode: m, remove }]); onSaved(); } catch (e) { setErr(errorText(e)); }
   };
   return (
     <Modal title={`Cài riêng mã ${row.sku} — ${row.name}`} onClose={onClose} footer={<>{s && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => void save(true)}>Bỏ cài riêng</button>}<button className="btn btn-primary" onClick={() => void save()}>Ghi</button><button className="btn" onClick={onClose}>Thoát</button></>}>
