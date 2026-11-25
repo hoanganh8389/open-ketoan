@@ -158,6 +158,7 @@ Dữ liệu chung:
 | 10 | Kế toán (`pos:report`) gọi `branch=CH02` | Trả số của CH02, có Giá vốn |
 | 11 | Đơn trước migration 0005 (không có `cashier_name`) | Nhân viên trống, Mã NV vẫn có (`created_by`) |
 | 12 | Khoảng ngày > 92 ngày | `VALIDATION_ERROR` "Khoảng ngày tối đa 92 ngày" (trừ `daily` theo tháng) |
+| 13 | Đơn đổi hàng khách trả 0 (đối trừ hết, vd CN02BT10040 — thử thật 25/11 mục k3) | Báo cáo thu tiền KHÔNG tính là thu tiền mặt; tổng thu theo hình thức khớp sổ Nợ 1111 + 112 trong ngày (trước đây lệch 325.000) |
 
 ## 5. Câu hỏi ngược R-REV-17 (đề xuất trả lời)
 
