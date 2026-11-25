@@ -137,18 +137,29 @@ node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầ
    - bị từ chối **đúng luật** (loại *Từ chối*) → sửa chỗ gửi: màn báo trước, đúng ô, sửa tại chỗ; thêm tình huống vào bản đồ lỗi
      của màn `<Tên form>.failure-map.json` kèm lời nhắc + test.
 6. `bash scripts/kiem-chuan.sh` + test của phân hệ + hook pre-push phải **ĐẠT**. Không đạt thì không đẩy.
-7. Commit `fix(<phân hệ>): … [loi <mã-mục>] errFp <errFp>`; `git fetch origin && git rebase origin/dev`; `git push origin HEAD:dev`.
+7. Làm trên nhánh `loi/<mã-mục>` tách từ `origin/dev`. Commit `fix(<phân hệ>): … [loi <mã-mục>] errFp <errFp>`; `git fetch origin && git rebase origin/dev`; `git push origin HEAD:dev`.
+   Hook pre-push: **chỉ đẩy vào `dev`** thì miễn giữ chỗ (R-FLOW-1 / 3) và "đứng sau main" (R-FLOW-5), **vẫn** chạy selfcheck và chặn
+   đỏ mới so với `origin/dev`. Đẩy `test` / `main` kiểm đủ như cũ, đi PR. Hook chặn thì sửa cho đạt — **không** `--no-verify`, **không** `--force`.
 8. `danh-dau <mã> da_sua --commit <sha>`; `nhat-ky "<sửa gì>" --commit <sha> --muc <mã> --chi-tiet "<nguyên nhân + test>"`; `dung-lai`.
    Lần dựng lại xong, mục nào tái phát sẽ hiện lại.
 
 Không chắc nguyên nhân / cần trace mà chưa có → **không đoán sửa**: `danh-dau <mã> moi --ghi-chu "cần trace DEV02 …"` để người xử lý
 theo đường TRUY-LOI-BAN-DEV.
 
-## 6. Lịch tự sửa (tuỳ chọn — mặc định TẮT)
-- Bật lịch khi cần (vd sát buổi demo); thường ngày để tắt, sửa có người theo dõi.
-- Chỉ chạy khi công tắc **Tự sửa** ở HT20 đang bật (`GET /api/v1/ket-noi/loi` trả `tuSua: true`).
-- Mỗi lượt: tối đa 3 mục, chỉ **Lỗi phần mềm** hoặc **Được yêu cầu sửa**, đúng từng bước mục 5; đẩy **dev**, không đụng test / main, không `--force`.
-- Chạy ở máy local có Claude Code (lịch ~10 phút / lượt, máy phải bật) hoặc lịch đám mây (tối thiểu 1 giờ / lượt).
+## 6. Lịch tự sửa — tự động hết cho `dev` (mặc định TẮT)
+Bật tự động: lỗi trên con dev tự sửa → tự đẩy `dev` → tự dựng lại, không ai phải động tay. `test` / `main` **không** tự động — đi PR, người duyệt.
+
+| Muốn | Làm |
+|---|---|
+| **Bật** | (1) Nhờ Claude Code ở máy local "bật lịch tự sửa" (đặt lịch ~10 phút / lượt); (2) HT20 → tick **Tự sửa**; (3) cron aaPanel `dung-lai-theo-yeu-cau.sh` đang chạy (§4.1) |
+| **Tạm dừng** (vd trước buổi demo muốn đóng băng) | HT20 → bỏ tick **Tự sửa** — lịch vẫn chạy nhưng mỗi lượt chỉ báo "đang tắt", không đụng code |
+| **Tắt hẳn** | Nhờ Claude Code "tắt lịch tự sửa" |
+
+- Mỗi lượt: tối đa 3 mục, chỉ **Lỗi phần mềm** hoặc **Được yêu cầu sửa**, đúng từng bước mục 5 (test tái hiện, kiểm chuẩn, hook ĐẠT); không chắc
+  nguyên nhân thì không sửa, trả mục về **Mới** kèm ghi chú.
+- Theo dõi: HT20 → **Kết nối** (máy nào đang chạy) và **Nhật ký sửa** (sửa gì, lỗi nào, commit nào); lịch sử nhánh `dev` trên GitHub
+  (commit có `[loi <mã>]`).
+- Lịch chạy trong phiên Claude Code ở máy local: tắt máy / đóng phiên là dừng; lịch tự hết hạn sau 7 ngày — nhờ bật lại.
 
 ## 7. Giao kèo API (khoá kết nối — header `x-ket-noi-key`)
 | Lệnh | Việc |
