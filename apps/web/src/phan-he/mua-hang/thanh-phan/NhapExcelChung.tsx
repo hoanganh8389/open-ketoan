@@ -15,12 +15,16 @@ export interface ExcelImportSpec<K extends string, T> {
   columns: GuideColumn[];
   spec: [K, string[]][];
   keyField: K;
-  map: (row: Record<K, string>) => { value?: T; error?: string };
+  /** skip = dòng bỏ qua lặng lẽ (vd tệp mẫu có sẵn mọi mặt hàng, dòng chưa điền) — không hiện, không tính là lỗi. */
+  map: (row: Record<K, string>) => { value?: T; error?: string; skip?: boolean };
   head: string[];
   cells: (t: T) => ReactNode[];
   note?: ReactNode;
   /** Kiểm thêm cần tra máy chủ (mã có trong danh mục, ĐVT đã khai…): trả lỗi theo từng dòng hợp lệ, undefined = đạt. */
   check?: (list: T[]) => Promise<(string | undefined)[]>;
+  // [2026-11-25 kiennt] NT-MH-006 — tệp mẫu có sẵn dòng dữ liệu (đóng góp)
+  /** Dòng có sẵn cho tệp mẫu (theo thứ tự `columns`); không có thì tệp mẫu là một dòng ví dụ. */
+  mau?: () => Promise<(string | number)[][]>;
 }
 
 export function NhapExcelChung<K extends string, T>({ s, onClose, onAdd }: { s: ExcelImportSpec<K, T>; onClose: () => void; onAdd: (list: T[]) => void }) {
@@ -39,7 +43,8 @@ export function NhapExcelChung<K extends string, T>({ s, onClose, onAdd }: { s: 
         if (t.rows.some((r) => r[s.keyField])) {
           // Dòng có dữ liệu mà trống cột khoá: báo đỏ, không lặng lẽ bỏ qua.
           const keyName = t.columns[s.keyField] ?? s.columns.find((c) => c.required)?.name ?? String(s.keyField);
-          const read = t.rows.map((r) => ({ row: r.row, ...(r[s.keyField] ? s.map(r as Record<K, string>) : { error: `thiếu ${keyName}` }) }));
+          const read = t.rows.map((r) => ({ row: r.row, ...(r[s.keyField] ? s.map(r as Record<K, string>) : { error: `thiếu ${keyName}` }) })).filter((r) => !('skip' in r && r.skip));
+          if (!read.length) setErr('Tệp chưa có dòng nào điền dữ liệu cần nhập');
           setRows(read);
           if (s.check) {
             const good = read.filter((r) => r.value && !r.error);
@@ -55,7 +60,7 @@ export function NhapExcelChung<K extends string, T>({ s, onClose, onAdd }: { s: 
   };
   return (
     <Modal wide title={s.title} onClose={onClose} footer={<><button className="btn btn-primary" disabled={!ok.length} onClick={() => onAdd(ok)}>Đưa {ok.length.toLocaleString('vi-VN')} dòng hợp lệ vào</button><button className="btn" onClick={onClose}>Thoát</button></>}>
-      <div className="full"><ExcelGuide columns={s.columns} file={s.file} defaultOpen={!rows.length} /></div>
+      <div className="full"><ExcelGuide columns={s.columns} file={s.file} defaultOpen={!rows.length} mau={s.mau} /></div>
       <div className="full mh-drop" style={{ marginTop: 8 }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void pick(f); }}>
         <FileUp size={18} /> <span>{file ? `Tệp: ${file}` : 'Kéo thả tệp Excel vào đây hoặc'}</span>
         <button type="button" className="btn btn-sm" onClick={() => input.current?.click()}>Chọn tệp…</button>

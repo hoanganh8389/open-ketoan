@@ -13,9 +13,9 @@ import { MAX_REQUEST_STATUS, type MaxRequestItem, type MaxRequestKind, type MaxR
 import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Loading, Modal } from '@/components/ui';
-import { errorText } from '@/lib/api';
+import { api, errorText } from '@/lib/api';
 import { monthStart, today } from '../du-lieu';
-import { ChonMatHang } from '../thanh-phan/ChonMatHang';
+import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
 import { ChonChiNhanhCha, ChuaPhanCap, KhoiSo, HaiCachMax } from './chung';
@@ -90,6 +90,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
   const [search, setSearch] = useState('');
   const [add, setAdd] = useState(false);
   const [imp, setImp] = useState(false);
+  const [impShop, setImpShop] = useState(false); // [2026-11-25 kiennt] NT-MH-006 — nhập Excel phiếu shop đăng ký max (đóng góp)
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const req = cur.data;
@@ -158,6 +159,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
           <input className="input" type="search" placeholder="Tìm mã / tên…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 180 }} />
           {kind === 'existing' && <label className="checkbox"><input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} /> Chỉ mã đổi max</label>}
           {!locked && kind === 'existing' && br && <button className="btn btn-sm" onClick={() => setAdd(true)}><Plus size={13} /> Thêm mã</button>}
+          {!locked && kind === 'existing' && br && <button className="btn btn-sm" onClick={() => setImpShop(true)}><FileUp size={13} /> Nhập Excel</button>}
           {!locked && kind === 'new_item' && <>
             <button className="btn btn-sm" onClick={() => setItems([...rows, { key: `n${Date.now().toString(36)}`, sku: '', name: '', maxByShop: {} }])}><Plus size={13} /> Thêm dòng</button>
             <button className="btn btn-sm" onClick={() => setImp(true)}><FileUp size={13} /> Nhập Excel (mẫu NCC / shop điền)</button>
@@ -203,6 +205,60 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
         {err && <div className="full alert alert-bad">{err}</div>}
       </>}
       {add && <ChonMatHang existing={new Map(rows.map((r) => [r.sku, '✓ đã có']))} onClose={() => setAdd(false)} onPick={(p) => setItems([...rows, { key: p.sku, sku: p.sku, name: p.name, unit: p.unit, currentMax: 0, proposedMax: 0 }])} />}
+      {impShop && <NhapExcelChung<'sku' | 'name' | 'max' | 'note', MaxRequestItem> onClose={() => setImpShop(false)} onAdd={(l) => {
+        // [2026-11-25 kiennt] NT-MH-006 — mã đã có trên phiếu: thay max đề nghị (và ghi chú); mã chưa có: thêm dòng (đóng góp)
+        setImpShop(false);
+        const by = new Map(l.map((x) => [x.sku, x]));
+        const merged = rows.map((r) => { const x = by.get(r.sku); if (!x) return r; by.delete(r.sku); return { ...r, proposedMax: x.proposedMax, ...(x.note ? { note: x.note } : {}) }; });
+        setItems([...merged, ...by.values()]);
+      }} s={{
+        title: `Nhập Excel max đề nghị — shop ${br}`, file: `mau-dang-ky-max-${br}.xlsx`, keyField: 'sku',
+        columns: [
+          { name: 'Mã hàng', required: true, aliases: 'Mã SP', example: 'SP001', note: 'Mã trong danh mục mặt hàng' },
+          { name: 'Tên hàng', example: 'Sữa bột 800g', note: 'Chỉ để xem — nhập bỏ qua' },
+          { name: 'ĐVT', example: 'Lon', note: 'Chỉ để xem' },
+          { name: 'Tồn', example: 12, note: 'Tồn của shop — chỉ để xem' },
+          { name: 'Bán / ngày', example: 1.5, note: 'Chỉ để xem' },
+          { name: 'Max hiện tại', example: 10, note: 'Chỉ để xem' },
+          { name: 'Max gợi ý', example: 11, note: 'Bán / ngày × số ngày đủ hàng — chỉ để xem' },
+          { name: 'Max đề nghị', aliases: 'Max', example: 12, note: 'Số ≥ 0 theo ĐVT nhỏ nhất. Để trống = bỏ qua dòng' },
+          { name: 'Ghi chú', example: '', note: '' },
+        ],
+        spec: [['sku', ['ma hang', 'ma sp']], ['name', ['ten hang']], ['max', ['max de nghi', 'max']], ['note', ['ghi chu']]],
+        mau: async () => {
+          // Mọi mặt hàng đang dùng; mã shop có max / tồn / bán kèm số của shop. Max đề nghị để trống cho shop điền.
+          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 });
+          const sugBy = new Map((sug.data ?? []).map((x) => [x.sku, x]));
+          const skus = [...new Set([...(sug.data ?? []).map((x) => x.sku), ...ds.map((p) => p.sku)])].sort((a, b) => a.localeCompare(b));
+          const pBy = new Map(ds.map((p) => [p.sku, p]));
+          return skus.map((k) => {
+            const x = sugBy.get(k); const p = pBy.get(k);
+            return [k, x?.name ?? p?.name ?? '', x?.unit ?? p?.unit ?? '', x ? x.ton : '', x?.avgPerDay ?? '', x?.currentMax ?? '', x?.suggestedMax ?? '', '', ''];
+          });
+        },
+        map: (r) => {
+          const sku = String(r.sku ?? '').trim();
+          const raw = String(r.max ?? '').trim();
+          if (!raw) return { skip: true };
+          const v = Number(raw.replace(/\s/g, '').replace(/\./g, '').replace(',', '.'));
+          if (!Number.isFinite(v) || v < 0) return { error: `Max đề nghị "${raw}" không phải số ≥ 0` };
+          return { value: { key: sku, sku, name: String(r.name ?? '').trim(), currentMax: 0, proposedMax: v, note: String(r.note ?? '').trim() || undefined } };
+        },
+        check: async (list) => {
+          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'all', pageSize: 1_000_000 });
+          const pBy = new Map(ds.map((p) => [p.sku, p]));
+          // Mã phải có trong danh mục; điền tên / ĐVT / max hiện tại theo phiếu (hoặc danh mục). Trùng mã: onAdd lấy dòng sau.
+          return list.map((x) => {
+            const p = pBy.get(x.sku);
+            if (!p) return `Mã ${x.sku} chưa có trong danh mục mặt hàng`;
+            const cur = rows.find((r) => r.sku === x.sku) ?? (sug.data ?? []).find((r) => r.sku === x.sku);
+            x.name = cur?.name || p.name; x.unit = cur?.unit ?? p.unit; x.currentMax = cur?.currentMax ?? 0;
+            return undefined;
+          });
+        },
+        head: ['Mã hàng', 'Tên hàng', 'Max hiện tại', 'Max đề nghị', 'Ghi chú'], cells: (x) => [x.sku, x.name, qtyFmt(x.currentMax), qtyFmt(x.proposedMax), x.note ?? ''],
+        note: 'Tải file mẫu: có sẵn mọi mặt hàng đang dùng, kèm tồn / bán / max của shop này. Chỉ điền cột Max đề nghị; dòng để trống được bỏ qua. Trùng mã trong tệp: lấy dòng sau.',
+      }} />}
       {imp && <NhapExcelChung<string, MaxRequestItem> onClose={() => setImp(false)} onAdd={(l) => { setImp(false); setItems([...rows, ...l]); }} s={{
         title: 'Nhập hàng mới từ Excel (mỗi shop một cột max)', file: `mau-dang-ky-max-hang-moi-${parent}.xlsx`, keyField: 'name',
         columns: [
