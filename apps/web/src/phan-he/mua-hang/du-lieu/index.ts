@@ -37,7 +37,7 @@ export interface Analysis {
   calc: DocCalc; checks: Check[]; credit: CreditStatus[]; entries: Entry[]; blocking: Check[]; prepayment: number;
   refOrder?: StoredDoc; priceHistory: Record<string, (PriceRow & { discountPct?: number })[]>; accounts: Accounts; priceWarnPct?: number;
   /** Phiếu nhập: SL theo các hoá đơn của phiếu (MH22, ĐVT nhỏ nhất theo mã); missing = hoá đơn chưa đối soát được; shared = hoá đơn dùng chung phiếu khác. */
-  invoiceQty?: { bySku: Record<string, number>; invoices: string[]; missing: string[]; shared: string[] };
+  invoiceQty?: { bySku: Record<string, number>; invoices: string[]; missing: string[]; shared: string[]; grossBySku?: Record<string, number> };
   /** Chính sách chưa đủ điều kiện kích hoạt trên phiếu này (docs/nghiep-vu/29). */
   blockedPolicies?: { code: string; name: string; reasons: string[]; wouldApply?: boolean }[];
 }
