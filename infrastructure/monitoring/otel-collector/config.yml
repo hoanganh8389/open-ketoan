@@ -35,6 +35,11 @@ processors:
       - name: giu-trace-loi
         type: status_code
         status_code: { status_codes: [ERROR] }
+      # [2026-11-25 Nguyễn Văn Thủy] giữ mọi yêu cầu bị từ chối (4xx: dữ liệu sai, trùng, thiếu quyền…) — 4xx không mang trạng thái ERROR
+      # theo quy ước OpenTelemetry nên trước đây chỉ còn ~10%; Tra mã cần đủ vết để sửa lỗi người dùng gặp (đóng góp)
+      - name: giu-yeu-cau-bi-tu-choi
+        type: numeric_attribute
+        numeric_attribute: { key: http.response.status_code, min_value: 400, max_value: 599 }
       - name: giu-trace-cham
         type: latency
         latency: { threshold_ms: 1000 }
