@@ -18,7 +18,7 @@ export const REASONS = {
   state: 'LOYALTY_DRAFT_STATE',
   /** Cửa hàng đã có nháp đang mở. */
   open: 'LOYALTY_DRAFT_OPEN',
-  /** Website đẩy bản cũ hơn bản kế toán đã phát hành (Q4). */
+  /** Website đẩy chính sách khi cửa hàng đã có bản kế toán phát hành (Q4 — chỉ nhận chính sách khai ở kế toán). */
   older: 'LOYALTY_PROGRAM_OLDER',
 } as const;
 
@@ -195,12 +195,15 @@ export async function rejectDrafts(tx: Tx, ctx: ActionContext, ids: string[], re
   return out;
 }
 
-/** Bản đang chạy của cửa hàng do kế toán phát hành (nháp đã phát hành có đúng phiên bản đó) — để chặn website đẩy bản cũ hơn (Q4). */
-export async function publishedByAccounting(tx: Tx, branch: string, version: string): Promise<{ at: Date; by: string } | null> {
-  const r = (await sql<{ approved_at: Date; approved_by_name: string | null; approved_by: string }>`
-    SELECT approved_at, approved_by_name, approved_by FROM mod_loyalty.program_drafts
-     WHERE branch_code = ${branch} AND status = 'published' AND published_version = ${version} ORDER BY approved_at DESC LIMIT 1`.execute(tx)).rows[0];
-  return r ? { at: r.approved_at, by: r.approved_by_name || r.approved_by } : null;
+/**
+ * Lần phát hành gần nhất của kế toán cho cửa hàng (bất kỳ bản nào) — có thì chính sách cửa hàng chỉ khai ở kế toán, website không đẩy đè
+ * được (Q4, chốt lại 25/11: "từ chối, chỉ nhận policy ở open-ketoan").
+ */
+export async function publishedByAccounting(tx: Tx, branch: string): Promise<{ at: Date; by: string; version: string } | null> {
+  const r = (await sql<{ approved_at: Date; approved_by_name: string | null; approved_by: string; published_version: string }>`
+    SELECT approved_at, approved_by_name, approved_by, published_version FROM mod_loyalty.program_drafts
+     WHERE branch_code = ${branch} AND status = 'published' ORDER BY approved_at DESC LIMIT 1`.execute(tx)).rows[0];
+  return r ? { at: r.approved_at, by: r.approved_by_name || r.approved_by, version: r.published_version } : null;
 }
 
 /** Chi nhánh của các nháp (branchOf — Core so phạm vi chi nhánh của người gọi trước khi chạy). */

@@ -16,7 +16,7 @@ Sổ điểm thành viên của khách mua ở máy bán và **chính sách tíc
 Menu trái → **Phần riêng** → **Điểm thành viên**. Cần quyền *Xem điểm thành viên* (`loyalty:read`) — mặc định có ở chủ đơn vị, kế toán trưởng, kế toán, người xem.
 
 ## Điểm đến từ đâu
-- **Chính sách tích điểm** khai và duyệt **ở màn này** (từ 25/11/2026, phiếu NT-BH-039). Website không còn tự gửi; lệnh tay `wp tgs-pos loyalty-push` vẫn gửi được, nhưng **bản kế toán đã phát hành mới hơn thì website không đè được** (báo "Kế toán có bản mới hơn").
+- **Chính sách tích điểm** khai và duyệt **ở màn này** (từ 25/11/2026, phiếu NT-BH-039). Website không còn tự gửi; cửa hàng nào đã có bản kế toán phát hành thì **mọi lần website đẩy (lệnh tay `wp tgs-pos loyalty-push`) đều bị từ chối** — báo "Chính sách tích điểm nay chỉ khai ở phần mềm kế toán — website không đẩy đè được".
 - **Tích**: đơn máy bán hoàn tất có khách → tự tích theo chính sách của cửa hàng. Mỗi lần tích là một **lô** có hạn dùng.
 - **Đổi**: khách đổi điểm lấy quà / voucher ở quầy → trừ lô hết hạn sớm nhất trước. Quà ra dòng quà 0đ, voucher dùng ở đơn sau (tiền giảm trên chứng từ bán).
 - **Hoàn**: trả hàng → trừ điểm đã tích của phần trả (theo tỉ lệ tiền trả).
@@ -27,13 +27,13 @@ Menu trái → **Phần riêng** → **Điểm thành viên**. Cần quyền *Xe
 | Quyền | Mặc định có | Làm gì |
 |---|---|---|
 | `loyalty:read` | chủ đơn vị, kế toán trưởng, kế toán, người xem | xem mọi thẻ |
-| `loyalty:chinh-sach-lap` | chủ đơn vị, kế toán trưởng, kế toán | Sửa từ bản hiện hành, Áp cho nhiều cửa hàng |
-| `loyalty:chinh-sach-sua` | chủ đơn vị, kế toán trưởng, kế toán | Lưu nháp, Gửi duyệt |
+| `loyalty:chinh-sach-lap` | chủ đơn vị, kế toán trưởng | Sửa từ bản hiện hành, Áp cho nhiều cửa hàng |
+| `loyalty:chinh-sach-sua` | chủ đơn vị, kế toán trưởng | Lưu nháp, Gửi duyệt |
 | `loyalty:chinh-sach-duyet` | chủ đơn vị, kế toán trưởng | Duyệt (= phát hành cho máy bán), Từ chối |
-| `loyalty:dieu-chinh-lap` | chủ đơn vị, kế toán trưởng, kế toán | Lập điều chỉnh điểm |
+| `loyalty:dieu-chinh-lap` | chủ đơn vị, kế toán trưởng | Lập điều chỉnh điểm |
 | `loyalty:dieu-chinh-duyet` | chủ đơn vị, kế toán trưởng | Duyệt / từ chối điều chỉnh |
 
-Không có quyền thì nút **ẩn**. **Người lập không tự duyệt** nháp hay điều chỉnh của mình (kể cả chủ đơn vị). Đổi mặc định ở *Hệ thống → Phân quyền* (HT12, màn BH19).
+Không có quyền thì nút **ẩn**. **Người lập không tự duyệt** nháp hay điều chỉnh của mình (kể cả chủ đơn vị). Người khác (vd kế toán) **không có sẵn** quyền lập / sửa: quản trị vào *Hệ thống → Phân quyền* (HT12), nhóm **Bán hàng**, màn **BH19 Điểm thành viên** — thao tác *Lập nháp chính sách*, *Sửa / gửi duyệt chính sách*, *Duyệt chính sách*, *Lập điều chỉnh điểm*, *Duyệt điều chỉnh điểm* — Cho quyền cho vai trò cần (vd lập vai trò "Kế toán điểm" Cho lập / sửa rồi gán cho người dùng).
 
 ## Khai chính sách tích điểm (thẻ Chương trình / Đổi điểm / Cài đặt + hạng)
 1. Chọn **Cửa hàng**. Dòng dưới cho biết máy bán đang tính theo bản nào.

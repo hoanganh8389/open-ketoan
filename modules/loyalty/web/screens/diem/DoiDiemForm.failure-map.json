@@ -18,7 +18,7 @@
     {
       "id": "Q-CHUNG-01",
       "ask": "Ai được thêm / sửa / xoá / duyệt ở màn này? Không đủ quyền thì màn ẩn nút hay báo gì?",
-      "answer": "Tách quyền: loyalty:chinh-sach-lap / -sua / -duyet, loyalty:dieu-chinh-lap / -duyet (mặc định: lập, sửa — kế toán, kế toán trưởng, chủ đơn vị; duyệt — kế toán trưởng, chủ đơn vị). Không quyền thì nút ẨN; máy chủ vẫn chặn 403. Người lập không tự duyệt (chốt 25/11 Võ Hoàng)."
+      "answer": "Tách quyền: loyalty:chinh-sach-lap / -sua / -duyet, loyalty:dieu-chinh-lap / -duyet (mặc định chỉ chủ đơn vị + kế toán trưởng; vai trò khác do quản trị Cho quyền ở HT12, màn BH19). Không quyền thì nút ẨN; máy chủ vẫn chặn 403. Người lập không tự duyệt (chốt 25/11 Võ Hoàng)."
     },
     {
       "id": "Q-CHUNG-02",

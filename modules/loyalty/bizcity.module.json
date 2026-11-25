@@ -38,21 +38,19 @@
     },
     {
       "key": "loyalty:chinh-sach-lap",
-      "label": "Chính sách tích điểm — lập nháp (sửa từ bản hiện hành, áp cho nhiều cửa hàng) (NT-BH-039)",
+      "label": "Chính sách tích điểm — lập nháp (sửa từ bản hiện hành, áp cho nhiều cửa hàng) — vai trò khác do quản trị gán ở HT12 (NT-BH-039)",
       "roles": [
         "owner",
-        "chief_accountant",
-        "accountant"
+        "chief_accountant"
       ],
       "risk": "low"
     },
     {
       "key": "loyalty:chinh-sach-sua",
-      "label": "Chính sách tích điểm — sửa nháp, gửi duyệt (chương trình, đổi điểm, cài đặt + hạng) (NT-BH-039)",
+      "label": "Chính sách tích điểm — sửa nháp, gửi duyệt (chương trình, đổi điểm, cài đặt + hạng) — vai trò khác do quản trị gán ở HT12 (NT-BH-039)",
       "roles": [
         "owner",
-        "chief_accountant",
-        "accountant"
+        "chief_accountant"
       ],
       "risk": "low"
     },
@@ -67,11 +65,10 @@
     },
     {
       "key": "loyalty:dieu-chinh-lap",
-      "label": "Điều chỉnh điểm tay — lập yêu cầu cộng / trừ điểm kèm lý do (NT-BH-039)",
+      "label": "Điều chỉnh điểm tay — lập yêu cầu cộng / trừ điểm kèm lý do — vai trò khác do quản trị gán ở HT12 (NT-BH-039)",
       "roles": [
         "owner",
-        "chief_accountant",
-        "accountant"
+        "chief_accountant"
       ],
       "risk": "low"
     },

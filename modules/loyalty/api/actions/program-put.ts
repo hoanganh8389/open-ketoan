@@ -1,12 +1,13 @@
 // [2026-11-15 03:45 PM Võ Hoàng] LOYALTY — NT-BH-020 bước 1: website đẩy chính sách tích điểm từng cửa hàng (đóng góp)
 // [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039 (Q4): bản kế toán phát hành thắng — website đẩy bản cũ hơn → CONFLICT LOYALTY_PROGRAM_OLDER (đóng góp)
+// [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039 (Q4 chốt lại): cửa hàng đã có bản kế toán phát hành → mọi bản website đẩy đều bị từ chối, bỏ ngoại lệ updatedAt (đóng góp)
 /**
  * POST /api/v1/m/loyalty/program — website (Cổng kế toán, khoá API; nay chỉ còn lệnh tay `wp tgs-pos loyalty-push`) đẩy LoyaltyProgram của một
  * cửa hàng. Lưu thành phiên bản mới; gửi lại đúng phiên bản đang chạy → không đổi gì. Không nhận từ máy bán: quyền catalog:write, không cấp
  * cho thu ngân. Đặt trạng thái theo phiên bản (idempotency natural): gửi lại bao nhiêu lần cũng vậy, không cần Idempotency-Key.
  *
- * NT-BH-039 Q4: bản đang chạy do kế toán phát hành (nháp đã duyệt) thì website chỉ đè được khi gửi `program.updatedAt` (ISO) MỚI HƠN lúc kế
- * toán duyệt; còn lại từ chối, báo "kế toán có bản mới hơn" (không ghi nhận).
+ * NT-BH-039 Q4 (chốt 25/11 "từ chối, chỉ nhận policy ở open-ketoan"): cửa hàng đã có bản kế toán phát hành (nháp đã duyệt) thì MỌI bản
+ * website đẩy khác bản đang chạy đều bị từ chối (CONFLICT LOYALTY_PROGRAM_OLDER, không ghi nhận); gửi lại đúng bản đang chạy vẫn changed: false.
  */
 import { Errors, defineAction, z } from '@bizcity/module-sdk';
 import type { LoyaltyProgram } from '../domain/engine.js';
@@ -28,13 +29,10 @@ export default defineAction({
     if (!(await branchExists(tx, i.branchCode))) throw Errors.validation(`Chưa có chi nhánh ${i.branchCode} ở danh mục chi nhánh`, { field: 'branchCode' });
     const cur = await latestProgram(tx, i.branchCode);
     if (cur && cur.version === i.program.version) return { branchCode: i.branchCode, version: i.program.version, changed: false };
-    const acc = cur ? await publishedByAccounting(tx, i.branchCode, cur.version) : null;
+    const acc = await publishedByAccounting(tx, i.branchCode);
     if (acc) {
-      const sent = typeof i.program.updatedAt === 'string' ? Date.parse(i.program.updatedAt) : NaN;
-      if (!(sent > acc.at.getTime())) {
-        throw Errors.conflict(`Kế toán có bản mới hơn cho cửa hàng ${i.branchCode} (bản ${cur!.version}, ${acc.by} phát hành lúc ${vnTime(acc.at)}) — không nhận bản website gửi`,
-          { reason: REASONS.older, current: cur!.version, publishedAt: acc.at.toISOString() });
-      }
+      throw Errors.conflict(`Chính sách tích điểm nay chỉ khai ở phần mềm kế toán — website không đẩy đè được (cửa hàng ${i.branchCode} đang chạy bản ${cur?.version ?? acc.version}, ${acc.by} phát hành lúc ${vnTime(acc.at)})`,
+        { reason: REASONS.older, current: cur?.version ?? acc.version, publishedAt: acc.at.toISOString() });
     }
     const changed = await saveProgram(tx, ctx.tenant.id, { branchCode: i.branchCode, version: i.program.version, storeId: i.storeId, program: i.program as unknown as LoyaltyProgram, by: ctx.actor.name });
     return { branchCode: i.branchCode, version: i.program.version, changed };

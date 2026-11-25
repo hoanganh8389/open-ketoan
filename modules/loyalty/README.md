@@ -10,8 +10,8 @@ bán của module `pos`, định khoản do kế toán đặt).
 - **Chính sách** (khuôn `LoyaltyProgram`: 4 loại tích — theo tiền, theo mã hàng, nhân điểm, thưởng theo mức đơn; hạng + hệ số; danh mục
   đổi quà / voucher) **khai và duyệt ở kế toán** từ NT-BH-039 (25/11): nháp theo cửa hàng (`program_drafts`, chép bản đang chạy) → gửi
   duyệt → người khác có quyền duyệt = **phát hành** (thêm dòng `programs`, phiên bản = băm nội dung `kt-…`, `received_by` = người duyệt).
-  Áp nhiều cửa hàng một lần = mỗi cửa hàng một nháp (chính sách gộp theo mã). Website chỉ còn đẩy tay `POST /program`; bản đang chạy do kế
-  toán phát hành thì website đẩy bản khác bị từ chối (`CONFLICT LOYALTY_PROGRAM_OLDER`) trừ khi gửi `program.updatedAt` mới hơn lúc duyệt.
+  Áp nhiều cửa hàng một lần = mỗi cửa hàng một nháp (chính sách gộp theo mã). Website chỉ còn đẩy tay `POST /program`; cửa hàng đã có bản
+  kế toán phát hành thì mọi bản website đẩy khác bản đang chạy bị từ chối (`CONFLICT LOYALTY_PROGRAM_OLDER`) — chỉ nhận chính sách khai ở kế toán.
   Module giữ mọi phiên bản, tính bằng bản mới nhất. Máy bán không gửi được chính sách.
 - **Điều chỉnh điểm tay** (`adjustments`): yêu cầu cộng / trừ + lý do → người khác duyệt → dòng `adjust` (ref manual). Trừ quá số điểm dùng
   được bị chặn (lúc lập và lúc duyệt). Nhật ký lập / sửa / gửi / duyệt / từ chối ở `approval_log`.
@@ -27,7 +27,7 @@ bán của module `pos`, định khoản do kế toán đặt).
 
 | Đường | Quyền | Việc |
 |---|---|---|
-| `POST /program` | `catalog:write` | website đẩy chính sách `{ branchCode, storeId, program }`; cùng phiên bản đang chạy → `changed: false` (đặt trạng thái, không cần Idempotency-Key); bản kế toán phát hành mới hơn → 409 `LOYALTY_PROGRAM_OLDER` |
+| `POST /program` | `catalog:write` | website đẩy chính sách `{ branchCode, storeId, program }`; cùng phiên bản đang chạy → `changed: false` (đặt trạng thái, không cần Idempotency-Key); cửa hàng đã có bản kế toán phát hành → 409 `LOYALTY_PROGRAM_OLDER` |
 | `GET /program-drafts?status=&branch=` · `GET /program-drafts/:id` | `loyalty:read` | nháp chính sách (kèm nhật ký) |
 | `POST /program-drafts` | `loyalty:chinh-sach-lap` | lập nháp `{ branchCodes, program?, submit? }`: không `program` = chép bản đang chạy; có = gộp theo mã (áp nhiều cửa hàng) |
 | `PUT /program-drafts/:id` | `loyalty:chinh-sach-sua` | sửa nháp `{ program, revision, submit? }`; revision lệch → 409 `LOYALTY_DRAFT_CHANGED` |

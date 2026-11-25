@@ -53,7 +53,7 @@ const TICH10K = policy(1, 'TICH10K', 1, { earn_rate: 1, earn_unit: 10000, point_
 
 describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế toán', () => {
   let owner: TestCtx;
-  let A: TestCtx; // kế toán: lập / sửa, không có quyền duyệt
+  let A: TestCtx; // kế toán: quản trị gán vai trò Cho quyền lập / sửa; không có quyền duyệt
   let B: TestCtx; // kế toán trưởng: duyệt
   let app: FastifyInstance;
   let tenantId = '';
@@ -79,8 +79,11 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     expect(r.statusCode, r.body).toBe(200);
     return r.json().data.items;
   };
+  const userIds: Record<string, string> = {};
   const login = async (email: string, fullName: string, role: string) => {
-    expect((await callCtx(owner, 'POST', '/api/v1/users', { email, fullName, role, password: 'Pass@12345' })).status).toBe(201);
+    const u = await callCtx(owner, 'POST', '/api/v1/users', { email, fullName, role, password: 'Pass@12345' });
+    expect(u.status).toBe(201);
+    userIds[email] = String(u.body.data.id);
     const r = await owner.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { tenantCode: owner.tenantCode, email, password: 'Pass@12345' } });
     return { ...owner, token: r.json().data.token as string };
   };
@@ -114,6 +117,32 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
   });
 
   let draftId = '';
+  it('HT12: màn BH19 hiện ở sổ màn với đủ quyền khai / duyệt chính sách và điều chỉnh; mặc định kế toán KHÔNG có quyền lập (quản trị tự gán)', async () => {
+    const ds = (await callCtx(owner, 'GET', '/api/v1/man-hinh')).body.data as { key: string; ma: string; nhom: string; thaoTac: Record<string, { quyen: string }> }[];
+    const bh19 = ds.find((m) => m.key === 'loyalty.diem');
+    expect(bh19).toMatchObject({ ma: 'BH19' });
+    expect(Object.fromEntries(Object.entries(bh19!.thaoTac).map(([k, v]) => [k, v.quyen]))).toEqual({
+      xem: 'loyalty:read', lapChinhSach: 'loyalty:chinh-sach-lap', suaChinhSach: 'loyalty:chinh-sach-sua', duyetChinhSach: 'loyalty:chinh-sach-duyet',
+      lapDieuChinh: 'loyalty:dieu-chinh-lap', duyetDieuChinh: 'loyalty:dieu-chinh-duyet',
+    });
+    const me = async (who: TestCtx) => (await req(who, 'GET', '/api/v1/auth/me')).json().data.permissions as string[];
+    expect(await me(B)).toEqual(expect.arrayContaining(['loyalty:chinh-sach-lap', 'loyalty:chinh-sach-sua', 'loyalty:chinh-sach-duyet', 'loyalty:dieu-chinh-lap', 'loyalty:dieu-chinh-duyet']));
+    expect(await me(A)).not.toContain('loyalty:chinh-sach-lap');
+    const denied = await req(A, 'POST', `${L}/program-drafts`, { branchCodes: ['CN02'] });
+    expect(denied.statusCode, denied.body).toBe(403);
+    // Quản trị (HT12) lập vai trò "Kế toán điểm" Cho quyền lập / sửa chính sách + lập điều chỉnh, gán cho A.
+    const role = await callCtx(owner, 'POST', '/api/v1/roles', { code: 'ke_toan_diem', label: 'Kế toán điểm thành viên', kind: 'privilege', reason: 'NT-BH-039 ca 1' });
+    expect(role.status, JSON.stringify(role.body)).toBe(201);
+    for (const permission of ['loyalty:chinh-sach-lap', 'loyalty:chinh-sach-sua', 'loyalty:dieu-chinh-lap']) {
+      const r = await callCtx(owner, 'POST', `/api/v1/roles/${role.body.data.id}/rules`, { permission, effect: 'allow', reason: 'NT-BH-039 ca 1' });
+      expect(r.status, JSON.stringify(r.body)).toBe(201);
+    }
+    const g = await callCtx(owner, 'POST', `/api/v1/users/${userIds['ketoan039@ketoan.local']}/roles`, { tenantRoleId: role.body.data.id, reason: 'NT-BH-039 ca 1' });
+    expect(g.status, JSON.stringify(g.body)).toBe(201);
+    expect(await me(A)).toEqual(expect.arrayContaining(['loyalty:chinh-sach-lap', 'loyalty:chinh-sach-sua', 'loyalty:dieu-chinh-lap']));
+    expect(await me(A)).not.toContain('loyalty:chinh-sach-duyet');
+  });
+
   it('ca 1: A sửa từ bản hiện hành CN02 (chép nguyên bản website), thêm "1 điểm / 10.000đ, hạn 365 ngày", gửi duyệt → chờ duyệt; máy bán vẫn bản cũ', async () => {
     const c = await req(A, 'POST', `${L}/program-drafts`, { branchCodes: ['CN02'] });
     expect(c.statusCode, c.body).toBe(200);
@@ -266,20 +295,22 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     expect((await current('CN02')).policies.map((p: Policy) => p.code)).toContain('SINHNHAT');
   });
 
-  it('ca 9: website đẩy tay bản cũ hơn bản kế toán đã phát hành → không đè, báo "kế toán có bản mới hơn"; gửi lại bản đang chạy vẫn không đổi', async () => {
+  it('ca 9: cửa hàng đã có bản kế toán phát hành → website đẩy bản nào khác cũng bị từ chối (chỉ khai ở kế toán); gửi lại bản đang chạy vẫn không đổi', async () => {
     const before = await current('CN02');
     const old = await req(owner, 'POST', `${L}/program`, { branchCode: 'CN02', storeId: 0, program: WEB });
     expect(old.statusCode, old.body).toBe(409);
     expect(old.json().error.details.reason).toBe('LOYALTY_PROGRAM_OLDER');
-    expect(old.json().error.message).toContain('Kế toán có bản mới hơn cho cửa hàng CN02');
+    expect(old.json().error.message).toContain('Chính sách tích điểm nay chỉ khai ở phần mềm kế toán — website không đẩy đè được');
     const other = await req(owner, 'POST', `${L}/program`, { branchCode: 'CN02', storeId: 0, program: { ...WEB, version: 'web-2', updatedAt: '2026-01-01T00:00:00Z' } });
     expect(other.json().error.details.reason).toBe('LOYALTY_PROGRAM_OLDER');
     expect((await current('CN02')).version).toBe(before.version);
     const same = await req(owner, 'POST', `${L}/program`, { branchCode: 'CN02', storeId: 0, program: before });
     expect(same.json().data).toEqual({ branchCode: 'CN02', version: before.version, changed: false });
-    // Website sửa SAU lúc kế toán duyệt (updatedAt mới hơn) → nhận.
+    // Kể cả bản website mới hơn (updatedAt sau lúc kế toán duyệt) → vẫn từ chối (Q4 chốt lại: chỉ nhận chính sách khai ở kế toán).
     const newer = await req(owner, 'POST', `${L}/program`, { branchCode: 'CN02', storeId: 0, program: { ...WEB, version: 'web-3', updatedAt: new Date(Date.now() + 60_000).toISOString() } });
-    expect(newer.json().data).toMatchObject({ version: 'web-3', changed: true });
+    expect(newer.statusCode).toBe(409);
+    expect(newer.json().error.details.reason).toBe('LOYALTY_PROGRAM_OLDER');
+    expect((await current('CN02')).version).toBe(before.version);
   });
 
   it('R-REV-17: gửi duyệt trả mọi lỗi một lần, chỉ đúng ô — trùng mã, bỏ chính sách đã phát hành, quà không có ở danh mục', async () => {
