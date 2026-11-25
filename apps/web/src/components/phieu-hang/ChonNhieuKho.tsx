@@ -8,8 +8,9 @@ import { useCayDonVi } from '@/lib/cayDonVi';
 
 const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
-export function ChonNhieuKho({ branchCode, value, khoa = [], onChange, disabled, placeholder = 'Chọn kho giao' }: {
-  branchCode: string; value: string[]; khoa?: string[]; onChange: (codes: string[]) => void; disabled?: boolean; placeholder?: string;
+// [2026-11-25 Nguyễn Văn Thủy] `branchCodes`: chỉ kho của các chi nhánh nhận đã chọn (và chi nhánh con đệ quy); ô đã chọn hiện mã kho (đóng góp)
+export function ChonNhieuKho({ branchCode, branchCodes, value, khoa = [], onChange, disabled, placeholder = 'Chọn kho giao' }: {
+  branchCode: string; branchCodes?: string[]; value: string[]; khoa?: string[]; onChange: (codes: string[]) => void; disabled?: boolean; placeholder?: string;
 }) {
   const cay = useCayDonVi();
   const [mo, setMo] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -24,18 +25,19 @@ export function ChonNhieuKho({ branchCode, value, khoa = [], onChange, disabled,
     return () => { document.removeEventListener('mousedown', dong); document.removeEventListener('keydown', esc, true); };
   }, [mo]);
   const chon = [...new Set([...value, ...khoa])];
-  const goc = cay.index.get(branchCode)?.depth ?? 0;
+  const d0 = Math.min(...(branchCodes?.length ? branchCodes : [branchCode]).map((b) => cay.index.get(b)?.depth ?? 0));
   // Chi nhánh + con (đệ quy) theo cây; thêm chi nhánh sở hữu kho đang chọn / đang dùng ở dòng mà nằm ngoài nhánh này (dòng chọn chi nhánh nhận khác).
-  const trongCay = [branchCode, ...cay.conCua(branchCode)];
+  const goc = branchCodes?.length ? branchCodes : [branchCode];
+  const trongCay = [...new Set(goc.flatMap((b) => [b, ...cay.conCua(b)]))];
   const ngoai = [...new Set(chon.map((c) => cay.khoChu(c)).filter((b) => b && !trongCay.includes(b)))];
   const nhom = [...trongCay, ...ngoai].map((b) => ({
-    b, ten: cay.index.get(b)?.name ?? b, sau: ngoai.includes(b) ? 0 : Math.max(0, (cay.index.get(b)?.depth ?? goc) - goc),
+    b, ten: cay.index.get(b)?.name ?? b, sau: ngoai.includes(b) ? 0 : Math.max(0, (cay.index.get(b)?.depth ?? d0) - d0), ngoaiPham: ngoai.includes(b),
     kho: cay.whOf(b).filter((w) => w.isActive || chon.includes(w.code)),
   })).filter((g) => g.kho.length);
   const k = boDau(q.trim());
   const loc = nhom.map((g) => ({ ...g, kho: k ? g.kho.filter((w) => boDau(`${w.code} ${w.name} ${g.ten}`).includes(k)) : g.kho })).filter((g) => g.kho.length);
   const doi = (c: string) => onChange(value.includes(c) ? value.filter((x) => x !== c) : [...value, c]);
-  const nhan = chon.length ? chon.map((c) => cay.khoTen(c) || c).join(', ') : '';
+  const nhan = chon.length ? <span className="mono">{chon.join(', ')}</span> : '';
   return (
     <>
       <button ref={nut} type="button" className="input select" disabled={disabled} style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}
@@ -49,13 +51,13 @@ export function ChonNhieuKho({ branchCode, value, khoa = [], onChange, disabled,
           {!loc.length && <div className="muted" style={{ padding: 6, fontSize: 12 }}>{nhom.length ? 'Không có kho khớp' : 'Chi nhánh chưa có phân kho'}</div>}
           {loc.map((g) => (
             <div key={g.b} style={{ marginLeft: g.sau * 12 }}>
-              <div className="muted" style={{ fontSize: 11, fontWeight: 600, padding: '4px 2px 1px' }}>{g.b} · {g.ten}</div>
+              <div className={g.ngoaiPham ? 'mh-bad' : 'muted'} style={{ fontSize: 11, fontWeight: 600, padding: '4px 2px 1px' }} title={g.ngoaiPham ? 'Chi nhánh này không thuộc chi nhánh nhận đã chọn — bỏ tích kho hoặc thêm chi nhánh nhận' : undefined}>{g.b} · {g.ten}{g.ngoaiPham ? ' — ngoài chi nhánh nhận' : ''}</div>
               {g.kho.map((w) => {
                 const theoDong = khoa.includes(w.code) && !value.includes(w.code);
                 return (
                   <label key={w.code} style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '2px 4px', cursor: theoDong ? 'default' : 'pointer', fontSize: 12.5 }} title={theoDong ? 'Kho đang dùng ở dòng hàng — đổi ở cột Phân kho của dòng' : `${w.code} · ${w.name}`}>
                     <input type="checkbox" checked={chon.includes(w.code)} disabled={theoDong} onChange={() => doi(w.code)} />
-                    <span>{w.name}</span>
+                    <span className="mono">{w.code}</span><span className="muted">{w.name}</span>
                     {w.isDefault && <span className="badge badge-gray" style={{ fontSize: 10 }}>mặc định</span>}
                     {theoDong && <span className="muted" style={{ fontSize: 10.5 }}>theo dòng</span>}
                     {chon[0] === w.code && <span className="badge badge-info" style={{ fontSize: 10, marginLeft: 'auto' }}>chính</span>}

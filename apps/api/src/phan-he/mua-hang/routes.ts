@@ -344,6 +344,19 @@ export const routesTsWriteActions: AnyActionDef[] = [
       return input;
     },
   }),
+  // [2026-11-25 Nguyễn Văn Thủy] lịch sử sắp xếp cột bảng hàng: thứ tự lưu ở máy người dùng; mỗi lần đổi ghi một dòng JSONL (ai, máy, loại phiếu, trước → sau)
+  //   chỉ để tham khảo chọn thứ tự mặc định — không dùng làm cấu hình (đóng góp)
+  defineAction({
+    id: 'mua-hang.purchase.line-columns-log', title: 'Ghi lịch sử đổi thứ tự cột bảng hàng (thứ tự lưu ở máy người dùng)', tags,
+    permission: 'documents:write', effect: 'write', sideEffects: ['documents'], idempotency: 'natural',
+    input: z.object({ kind: z.string().trim().min(1).max(20), order: z.array(z.string().trim().min(1).max(20)).max(60), before: z.array(z.string().trim().min(1).max(20)).max(60), machine: z.string().trim().max(80).default('') }), output: anyOut,
+    expose: { http: { method: 'POST', path: '/api/v1/purchase/line-columns-log' }, mcp: false, ai: 'deny' },
+    evidence: { objectType: 'purchase' },
+    handler: async (ctx, input) => {
+      await logEvents(ctx.legacyAuth.tenantId, [{ event: 'line_columns', docNo: '', user: ctx.legacyAuth.actorName, data: { kind: input.kind, order: input.order, before: input.before, machine: input.machine } }]);
+      return { ok: true };
+    },
+  }),
   defineAction({
     id: 'mua-hang.purchase.variants', title: 'Lưu đuôi mã tách riêng khi phân tích đặt hàng', tags,
     permission: 'settings:write', effect: 'write', sideEffects: ['documents'], idempotency: 'natural',
