@@ -24,7 +24,7 @@ import { DockScope, MinimizeButton, useDockWindow } from '@/layout/WindowDock';
 import { ChuoiChungTu } from '../thanh-phan/ChuoiChungTu';
 import { refOf } from '@ketoan/contracts';
 import {
-  COST_TYPES, TAX_RATE, amountTax, autoLineType, baseUnitOf, brandMix, ckttFor, computeDoc, defaultUnitFor, deliveryBranchOf, deliveryBranches, invoiceKey, invoicePlanText, invoicesOf, orderProgress, orderProgressByBranch, orderReconcile, priceFor, promoBoard, ratioOf, receiptFromOrder, skuInfo, syncGifts, termFromRule, termText,
+  COST_TYPES, TAX_RATE, amountTax, ctkmCuaDong, autoLineType, baseUnitOf, brandMix, ckttFor, computeDoc, defaultUnitFor, deliveryBranchOf, deliveryBranches, invoiceKey, invoicePlanText, invoicesOf, orderProgress, orderProgressByBranch, orderReconcile, priceFor, promoBoard, ratioOf, receiptFromOrder, skuInfo, syncGifts, termFromRule, termText,
   type DocInvoice, type InvoicePlan, type LineType, type PDoc, type PLine, type ProductUnit, type PromoRow, type SupplierProduct,
   type Check, type TraceItem,
 } from '@bizcity/mua-hang-domain';
@@ -147,14 +147,14 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   };
   // Ẩn / hiện cột bảng hàng theo người dùng (nhớ theo loại phiếu).
   const [anCot, setAnCot] = useState<string[]>(() => {
-    // [2026-11-25 10:50 PM Nguyễn Văn Thủy] MH-KM — Mã CTKM hiện mặc định; máy đã lưu cột ẩn cũ thì mở cột này một lần (đóng góp)
+    // [2026-11-26 12:25 AM Nguyễn Văn Thủy] MH-KM — Mã CTKM ẨN mặc định (người cần thì bật ở nút Cột); máy chủ vẫn lưu mã vào từng dòng (đóng góp)
     try {
-      const ds = JSON.parse(localStorage.getItem(`mh.cot-an.${value.kind}`) ?? '["km","gv","giagom","giasau","giahd"]') as string[];
+      const ds = JSON.parse(localStorage.getItem(`mh.cot-an.${value.kind}`) ?? '["km","gv","giagom","giasau","giahd","ctkm"]') as string[];
       // [2026-11-25 11:15 PM Nguyễn Văn Thủy] MH-GIA — Giá hợp đồng chưa thuế ẩn mặc định (đơn luôn lấy giá hợp đồng; lệch thì Kiểm tra cảnh báo) (đóng góp)
       if (localStorage.getItem(`mh.giahd-an.${value.kind}`) !== '1') { localStorage.setItem(`mh.giahd-an.${value.kind}`, '1'); if (!ds.includes('giahd')) ds.push('giahd'); localStorage.setItem(`mh.cot-an.${value.kind}`, JSON.stringify(ds)); }
-      if (localStorage.getItem(`mh.ctkm-hien.${value.kind}`) !== '1') { localStorage.setItem(`mh.ctkm-hien.${value.kind}`, '1'); const n = ds.filter((k) => k !== 'ctkm'); localStorage.setItem(`mh.cot-an.${value.kind}`, JSON.stringify(n)); return n; }
+      if (localStorage.getItem(`mh.ctkm-an.${value.kind}`) !== '1') { localStorage.setItem(`mh.ctkm-an.${value.kind}`, '1'); const n = ds.includes('ctkm') ? ds : [...ds, 'ctkm']; localStorage.setItem(`mh.cot-an.${value.kind}`, JSON.stringify(n)); return n; }
       return ds;
-    } catch { return ['km', 'gv', 'giagom', 'giasau', 'giahd']; }
+    } catch { return ['km', 'gv', 'giagom', 'giasau', 'giahd', 'ctkm']; }
   });
   const [moCot, setMoCot] = useState<{ top: number; right: number } | null>(null);
   const [thuTuCot, setThuTuCot] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(`mh.cot-thu-tu.${value.kind}`) ?? '[]') as string[]; } catch { return []; } });
@@ -981,13 +981,22 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
       buy: t((l) => (l.lineType === 'buy' ? l.qty : 0)), gs: t((l) => (l.lineType === 'gift_seller' ? l.qty : 0)), gc: t((l) => (l.lineType === 'gift_consumer' ? l.qty : 0)) };
   })();
   /** Bỏ một chi nhánh nhận (tab): dòng của chi nhánh đó về nơi nhận chính — hỏi trước khi còn dòng hàng. */
-  const boCn = (b: string) => {
-    const n = v.lines.filter((l) => l.sku && branchOfLine(l) === b).length;
-    const con = cnTabs.filter((x) => x !== b);
-    if (n && !window.confirm(`Bỏ chi nhánh nhận ${b}? ${n} dòng hàng của chi nhánh này chuyển về ${con[0] ?? v.branchCode}.`)) return;
-    doiNhan(con.length === 1 && con[0] === v.branchCode ? [] : con);
-    if (tabCn === b) setTabCn('');
+  // [2026-11-25 11:45 PM Nguyễn Văn Thủy] MH-NHAN — đặt lại danh sách chi nhánh nhận (tab): chi nhánh bị bỏ thì bỏ HẲN cả dòng hàng của nó (hỏi trước);
+  // bỏ hết → đơn về bước chọn chi nhánh nhận (đóng góp)
+  const datNhan = (ds: string[]) => {
+    const bo = cnTabs.filter((c) => !ds.includes(c));
+    const xoa = v.lines.filter((l) => bo.includes(branchOfLine(l)));
+    const coHang = xoa.filter((l) => l.sku);
+    if (coHang.length && !window.confirm(`Bỏ chi nhánh nhận ${bo.join(', ')} — xoá luôn ${coHang.length} dòng hàng của ${bo.length > 1 ? 'các chi nhánh này' : 'chi nhánh này'}?`)) return;
+    const cl = v.lines.filter((l) => !bo.includes(branchOfLine(l))).map((l) => ({ l, b: branchOfLine(l) }));
+    if (!ds.length) { set({ receiveBranches: undefined, deliveryBranch: undefined, deliveryWarehouses: undefined, deliveryWarehouse: undefined, lines: cl.map((x) => x.l) }); setTabCn(''); return; }
+    const chinh = ds[0]!;
+    set({ receiveBranches: ds, deliveryBranch: chinh !== v.branchCode ? chinh : undefined, deliveryWarehouses: undefined, deliveryWarehouse: undefined,
+      lines: cl.map(({ l, b }) => ({ ...l, branchCode: b !== chinh ? b : undefined })) });
+    const moi = ds.find((c) => !cnTabs.includes(c));
+    if (moi) setTabCn(moi); else if (bo.includes(tabCn)) setTabCn('');
   };
+  const boCn = (b: string) => datNhan(cnTabs.filter((x) => x !== b));
   // Kho chọn được ở dòng: đơn đặt = kho của chi nhánh và mọi chi nhánh con (chọn kho chi nhánh con → dòng giao về chi nhánh đó); phiếu kho = kho của chi nhánh phiếu.
   const khoDong = (() => { if (!isOrder) return cay.whOf(v.branchCode).map((w) => ({ ...w, branchCode: v.branchCode })); const i = cay.list.findIndex((u) => u.code === v.branchCode); const ds = [v.branchCode]; if (i >= 0) for (let j = i + 1; j < cay.list.length && cay.list[j]!.depth > cay.list[i]!.depth; j++) ds.push(cay.list[j]!.code); return ds.flatMap((b) => cay.whOf(b).map((w) => ({ ...w, branchCode: b }))); })();
   const refReceipt = receipts.find((r) => (v.refIds ?? []).includes(r.id));
@@ -1420,17 +1429,16 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   {chuaChonNhan && <span className="muted" style={{ fontSize: 13, marginRight: 8 }}>{v.branchCode ? `chưa chọn — chọn ${v.branchCode} hoặc chi nhánh con của nó, chọn xong mới nhập hàng` : 'Bước 1: chọn Chi nhánh lập chứng từ (*) ở đầu đơn — chi nhánh nhận là chi nhánh đó hoặc chi nhánh con.'}</span>}
                   {cnTabs.map((b) => <button key={b} type="button" className={`tab ${cnTab === b ? 'active' : ''}`} onClick={() => setTabCn(b)} title={`Dòng giao cho ${names.branchName(b)} (${b}) — thêm hàng ở tab này thì hàng thuộc chi nhánh này`}>
                     {b} · {names.branchName(b)} <span className="badge badge-gray">{v.lines.filter((l) => l.sku && branchOfLine(l) === b).length}</span>
-                    {!readOnly && cnTabs.length > 1 && <span role="button" aria-label={`Bỏ chi nhánh nhận ${b}`} title="Bỏ chi nhánh nhận này" style={{ marginLeft: 6, color: '#b91c1c', fontWeight: 700 }} onClick={(e) => { e.stopPropagation(); boCn(b); }}>×</span>}
+                    {!readOnly && <span role="button" aria-label={`Bỏ chi nhánh nhận ${b}`} title="Bỏ hẳn chi nhánh nhận này (cả các dòng hàng của nó) — bỏ hết thì chọn lại chi nhánh nhận" style={{ marginLeft: 6, color: '#b91c1c', fontWeight: 700 }} onClick={(e) => { e.stopPropagation(); boCn(b); }}>×</span>}
                   </button>)}
                   {!readOnly && v.branchCode && <span style={{ marginLeft: 6 }} title={`Chi nhánh nhận hàng: ${v.branchCode} (chi nhánh lập chứng từ) hoặc chi nhánh con của nó (đệ quy) — tích nhiều chi nhánh thành nhiều tab`}>
-                    <ChonNhieuChiNhanh goc={v.branchCode} value={nhanDs} nutXanh placeholder={chuaChonNhan ? 'Chọn chi nhánh nhận hàng' : '+ Thêm / bớt chi nhánh nhận'}
-                      onChange={(ds) => { const moi = ds.find((c) => !cnTabs.includes(c)); doiNhan(ds); if (moi) setTabCn(moi); }} /></span>}
+                    <ChonNhieuChiNhanh goc={v.branchCode} value={cnTabs} nutXanh placeholder={chuaChonNhan ? 'Chọn chi nhánh nhận hàng' : '+ Thêm / bớt chi nhánh nhận'} onChange={datNhan} /></span>}
                 </div>
                 {cnTab && (() => {
                   const khos = [...new Set(v.lines.filter((l) => branchOfLine(l) === cnTab).map((l) => l.warehouseCode ?? '').filter(Boolean))];
                   const n = benNhan(cnTab, khos);
                   return <div className="muted" data-view-ok style={{ fontSize: 12.5, margin: '0 0 6px' }} title="Thông tin bên nhận in trên mẫu đơn gửi NCC của chi nhánh này">
-                    Đơn vị nhận: <b>{n.donVi}</b>{n.tenHd ? <> · tên trên HĐ: {n.tenHd}</> : null}{n.mst ? <> · MST <b>{n.mst}</b></> : null}{n.diaChi ? <> · {n.diaChi}</> : null}{n.dienThoai ? <> · ĐT {n.dienThoai}</> : null}{khos.length ? <> · giao tại kho {khos.join(', ')}</> : null}
+                    Đơn vị nhận: <b>{n.donVi}</b>{n.mst ? <> · MST <b>{n.mst}</b></> : null}{n.diaChi ? <> · {n.diaChi}</> : null}{n.dienThoai ? <> · ĐT {n.dienThoai}</> : null}{khos.length ? <> · giao tại kho {khos.join(', ')}</> : null}
                   </div>;
                 })()}
               </>}
@@ -1624,7 +1632,8 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                           ['ctkm', <>
                             {co('ctkm') && <td style={{ whiteSpace: 'nowrap' }}>{(() => {
                               // [2026-11-25 10:55 PM Nguyễn Văn Thủy] MH-KM — dòng quà mang mã chương trình của nó; dòng mua: mọi chương trình đang áp, mỗi mã một dòng (đóng góp)
-                              const ds = [...new Set([...(l.lineType !== 'buy' && l.program ? [l.program] : []), ...(l.lineType === 'buy' ? board.filter((r) => r.status === 'applied' && r.policy && r.policy !== 'Trên phiếu' && (r.lineKey ? r.lineKey === l.lineKey : Boolean(r.sku) && r.sku === l.sku)).map((r) => r.policy) : [])])];
+                              // [2026-11-26 12:10 AM Nguyễn Văn Thủy] MH-KM — cùng luật với máy chủ (ctkmCuaDong); phiếu chỉ xem đọc mã đã lưu trong dòng (đóng góp)
+                              const ds = readOnly && l.ctkm?.length ? l.ctkm : ctkmCuaDong(board, l);
                               return ds.length ? <span className="mono" title={ds.map((c) => `${c} — ${board.find((r) => r.policy === c)?.name ?? data.policies.find((p) => p.code === c)?.name ?? ''}`).join('\n')}>{ds.map((c) => <div key={c}>{c}</div>)}</span> : null;
                             })()}</td>}
                           </>],

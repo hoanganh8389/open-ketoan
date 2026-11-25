@@ -43,6 +43,8 @@ export interface PLine {
   mfgDate?: string;
   /** Chương trình KM của dòng quà (đối chiếu quà theo chương trình). */
   program?: string;
+  /** [2026-11-25 11:55 PM Nguyễn Văn Thủy] MH-KM — mã các chương trình khuyến mại / chiết khấu đang áp vào dòng, máy chủ ghi lúc lưu (ctkmCuaDong) — mở lại phiếu, báo cáo đọc lại (đóng góp) */
+  ctkm?: string[];
   /** Dòng quà phần mềm tự thêm theo chương trình: SL tự chạy theo hàng mua; người dùng sửa SL thì thôi tự chạy (false). */
   autoGift?: boolean;
   /** Nhãn hàng của mặt hàng — luôn lấy từ danh mục mặt hàng (máy chủ ghi lại khi lưu), không nhập tay. */
@@ -638,13 +640,16 @@ export function computeDoc(doc: PDoc, policies: Policy[], opts: { holidays?: str
   const ex = exclusiveBySku(doc, policies);
   const all = policies;
   // 1. CK dòng: % nhập tay → bảng chiết khấu theo mã hàng (item_discount) → bậc số lượng theo mã.
+  // [2026-11-26 12:05 AM Nguyễn Văn Thủy] MH-KM — ngưỡng SL (bậc số lượng, CK theo mã "mua từ N") xét TỔNG SL các dòng mua cùng mã + cùng ĐVT của phiếu:
+  // đơn giao nhiều chi nhánh (HDG 60 + AGG 40) vẫn là một đơn → được trọn bậc; tiền CK vẫn tính trên từng dòng theo đơn giá trước CK (đóng góp)
+  const slCaPhieu = (l: PLine) => doc.lines.filter((x) => x.lineType === 'buy' && x.sku === l.sku && x.unit.toLowerCase() === l.unit.toLowerCase()).reduce((t, x) => t + x.qty, 0);
   const lines = doc.lines.map((l) => {
     const policies = policiesForSku(ex, all, l.sku);
     const gross = l.lineType === 'buy' ? Math.round(l.qty * l.price) : 0;
     let pct = l.discountPct;
     let amt = l.discountAmt;
     if (pct === undefined && amt === undefined && l.lineType === 'buy') {
-      const hit = itemDiscountFor(policies, { ...ctxBase, brandCode: l.brandCode ?? doc.brandCode, sku: l.sku, unit: l.unit, qty: l.qty, units: opts.units?.[l.sku] });
+      const hit = itemDiscountFor(policies, { ...ctxBase, brandCode: l.brandCode ?? doc.brandCode, sku: l.sku, unit: l.unit, qty: slCaPhieu(l), units: opts.units?.[l.sku] });
       if (hit) {
         if (hit.item.pct) pct = hit.item.pct; else amt = Math.round((hit.item.amount ?? 0) * hit.factor * l.qty);
         trace.push({ policy: hit.policy.code, kind: 'item_discount', text: `${l.sku}: ${hit.item.pct ? `CK ${Number(hit.item.pct).toLocaleString('vi-VN')}%` : `giảm ${(hit.item.amount ?? 0).toLocaleString('vi-VN')}đ / ${hit.item.unit || l.unit}`}${hit.item.minQty ? ` (mua từ ${hit.item.minQty})` : ''} — ${hit.policy.name}` });
@@ -652,8 +657,9 @@ export function computeDoc(doc: PDoc, policies: Policy[], opts: { holidays?: str
     }
     if (pct === undefined && amt === undefined && l.lineType === 'buy') {
       const tier = findPolicy(policies, 'qty_tier', { ...ctxBase, brandCode: l.brandCode ?? doc.brandCode, sku: l.sku });
-      const t = tier ? pickTier((tier.rule.tiers as { from: number; pct: number }[]) ?? [], l.qty) : undefined;
-      if (tier && t && t.pct) { pct = t.pct; trace.push({ policy: tier.code, kind: 'qty_tier', text: `${l.sku}: SL ${l.qty} → bậc từ ${t.from}, CK ${Number(t.pct).toLocaleString('vi-VN')}%` }); }
+      const tong = slCaPhieu(l);
+      const t = tier ? pickTier((tier.rule.tiers as { from: number; pct: number }[]) ?? [], tong) : undefined;
+      if (tier && t && t.pct) { pct = t.pct; trace.push({ policy: tier.code, kind: 'qty_tier', text: `${l.sku}: SL ${tong !== l.qty ? `${l.qty} (cả phiếu ${tong})` : l.qty} → bậc từ ${t.from}, CK ${Number(t.pct).toLocaleString('vi-VN')}%` }); }
     }
     // CK trên đơn khai cho RIÊNG một mã (phạm vi có mã hàng): áp vào dòng mã đó như CK dòng (sau CK tay, bảng CK theo mã, bậc SL
     // — không cộng trùng). CK trên đơn không ghi mã vẫn áp cả đơn ở bước 2. Ghi vết là item_discount để không lẫn với CK đơn.

@@ -33,7 +33,7 @@ export function useHopTha(rong: number) {
 
 export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder = 'Chọn chi nhánh nhận', nutXanh }: {
   goc: string; value: string[]; /** (giữ cho tương thích, không dùng) */ khoa?: string[]; onChange: (codes: string[]) => void; disabled?: boolean; placeholder?: string;
-  /** [2026-11-25 11:35 PM Nguyễn Văn Thủy] MH-NHAN — hiện thành nút xanh "+ …" (cạnh dãy tab chi nhánh nhận của đơn đặt) thay cho ô ghi mã (đóng góp) */
+  /** [2026-11-25 11:35 PM Nguyễn Văn Thủy] MH-NHAN — hiện thành nút chính (màu xanh của hệ thống) "+ …" (cạnh dãy tab chi nhánh nhận của đơn đặt) thay cho ô ghi mã (đóng góp) */
   nutXanh?: boolean;
 }) {
   const cay = useCayDonVi();
@@ -66,8 +66,8 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
   const togg = (b: string) => setDong((s) => { const n = new Set(s); if (n.has(b)) n.delete(b); else n.add(b); return n; });
   return (
     <>
-      <button ref={nut} type="button" className={nutXanh ? 'btn btn-sm' : 'input select'} disabled={disabled}
-        style={nutXanh ? { background: '#16a34a', borderColor: '#16a34a', color: '#fff', fontWeight: 600, whiteSpace: 'nowrap' } : { textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}
+      <button ref={nut} type="button" className={nutXanh ? 'btn btn-sm btn-primary' : 'input select'} disabled={disabled}
+        style={nutXanh ? { whiteSpace: 'nowrap' } : { textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}
         title={value.length ? value.map((c, i) => `${i === 0 ? '★ ' : ''}${c} · ${cay.index.get(c)?.name ?? ''}`).join('\n') : `Chưa tích — đơn nhận tại chi nhánh lập chứng từ ${goc}. Tích một hoặc nhiều chi nhánh nhận (chi nhánh lập và các chi nhánh con)`}
         onClick={moHop}>
         {nutXanh ? placeholder : value.length ? <span className="mono">{value.join(', ')}</span> : <span className="muted">{placeholder}</span>}

@@ -6,7 +6,7 @@
  * (documents.workflow, PHASES 3.5) — runtime core/workflow.ts.
  */
 import { sql } from 'kysely';
-import { computeDoc, invoiceKey, invoicesOf, type PDoc, type PLine } from '@bizcity/mua-hang-domain';
+import { computeDoc, ganCtkm, invoiceKey, invoicesOf, promoBoard, type PDoc, type PLine } from '@bizcity/mua-hang-domain';
 import { db, type Db } from '../../db/client.js';
 import type { AuthContext } from '../../core/auth.js';
 import { Errors } from '../../core/errors.js';
@@ -208,6 +208,12 @@ export const purchaseService = {
       doc.docNo = input.docNo || cur?.docNo || (await nextDocNo(trx, auth.tenantId, input.kind, input.docDate));
       const ctx = await loadCtx(trx, auth.tenantId, docs);
       const a = await analyze(trx, auth.tenantId, doc, ctx);
+      // [2026-11-26 12:10 AM Nguyễn Văn Thủy] MH-KM — ghi mã CTKM đang áp vào từng dòng (nhiều chương trình chồng nhau → đủ mã), cùng bộ chính sách đã tính
+      // phiếu (bỏ chính sách chưa qua điều kiện kích hoạt): mở lại phiếu, báo cáo đọc thẳng dòng (đóng góp)
+      if (doc.kind === 'order' || doc.kind === 'receipt') {
+        const chan = new Set((a.blockedPolicies ?? []).map((b) => b.code));
+        doc.lines = ganCtkm(doc, promoBoard(doc, ctx.policies.filter((x) => !chan.has(x.code)), a.calc));
+      }
       const extra: Record<string, unknown> = { checks: checksOf(a), policyTrace: a.calc.trace };
       if (doc.kind === 'cost' || (doc.kind === 'rebate' && !doc.rebate && doc.refIds?.length)) {
         const receipts = refReceipts(doc, docs);

@@ -77,10 +77,12 @@ export function promoBoard(doc: PDoc, policies: Policy[], calc: DocCalc): PromoR
     const src = doc.lines.find((x) => x.lineKey === l.lineKey);
     const policies = policiesForSku(ex, pol, l.sku);
     const ctx = { ...ctxBase, brandCode: l.brandCode ?? doc.brandCode, sku: l.sku };
-    const hit = itemDiscountFor(policies, { ...ctx, unit: l.unit, qty: l.qty });
+    // [2026-11-26 12:05 AM Nguyễn Văn Thủy] MH-KM — ngưỡng SL theo TỔNG các dòng cùng mã + ĐVT của phiếu (khớp computeDoc) (đóng góp)
+    const slTong = doc.lines.filter((x) => x.lineType === 'buy' && x.sku === l.sku && x.unit.toLowerCase() === l.unit.toLowerCase()).reduce((a, x) => a + x.qty, 0);
+    const hit = itemDiscountFor(policies, { ...ctx, unit: l.unit, qty: slTong });
     const tier = findPolicy(policies, 'qty_tier', ctx);
     const tiers = ((tier?.rule.tiers as { from: number; pct: number }[] | undefined) ?? []).filter((t) => t.pct);
-    const t = tier ? pickTier(tiers, l.qty) : undefined;
+    const t = tier ? pickTier(tiers, slTong) : undefined;
     const manual = src?.discountPct !== undefined || src?.discountAmt !== undefined;
     // CK trên đơn khai riêng mã này (đứng sau bảng CK theo mã và bậc SL, như bộ tính computeDoc).
     const own = !hit && !t ? policies.filter((p) => p.kind === 'trade_discount' && p.scope.sku === l.sku && policyApplies(p, ctx))
@@ -96,13 +98,13 @@ export function promoBoard(doc: PDoc, policies: Policy[], calc: DocCalc): PromoR
     }
     // Gợi ý: bậc kế tiếp (bậc SL của chính sách hoặc dòng bảng mã có SL tối thiểu lớn hơn).
     if (!manual) {
-      const nextTier = tiers.filter((x) => x.from > l.qty).sort((a, b) => a.from - b.from)[0];
+      const nextTier = tiers.filter((x) => x.from > slTong).sort((a, b) => a.from - b.from)[0];
       const items = hit || !tier ? (((itemDiscountFor(policies, { ...ctx, unit: l.unit, qty: Number.MAX_SAFE_INTEGER })?.policy.rule.items as ItemDiscount[] | undefined) ?? [])
-        .filter((i) => i.sku === l.sku && (!i.unit || i.unit.toLowerCase() === l.unit.toLowerCase()) && (i.minQty ?? 0) > l.qty)) : [];
+        .filter((i) => i.sku === l.sku && (!i.unit || i.unit.toLowerCase() === l.unit.toLowerCase()) && (i.minQty ?? 0) > slTong)) : [];
       const nextItem = items.sort((a, b) => (a.minQty ?? 0) - (b.minQty ?? 0))[0];
       const next = nextItem ? { from: nextItem.minQty!, text: nextItem.pct ? `CK ${Number(nextItem.pct).toLocaleString('vi-VN')}%` : `giảm ${vn(nextItem.amount ?? 0)}đ`, p: itemDiscountFor(policies, { ...ctx, unit: l.unit, qty: nextItem.minQty! })?.policy }
         : nextTier ? { from: nextTier.from, text: `CK ${Number(nextTier.pct).toLocaleString('vi-VN')}%`, p: tier } : undefined;
-      if (next?.p) rows.push({ key: `next|${l.lineKey}`, status: 'hint', kind: next.p.kind, policy: next.p.code, name: next.p.name, sku: l.sku, lineKey: l.lineKey, text: `${l.sku}: mua thêm ${vn(next.from - l.qty)} ${l.unit} (đủ ${vn(next.from)}) để được ${next.text}`, action: { label: `Lên ${vn(next.from)}`, type: 'add_qty', qty: next.from } });
+      if (next?.p) rows.push({ key: `next|${l.lineKey}`, status: 'hint', kind: next.p.kind, policy: next.p.code, name: next.p.name, sku: l.sku, lineKey: l.lineKey, text: `${l.sku}: mua thêm ${vn(next.from - slTong)} ${l.unit} (đủ ${vn(next.from)}) để được ${next.text}`, action: { label: `Lên ${vn(next.from)}`, type: 'add_qty', qty: next.from } });
     }
   }
   // 2. CK đơn, hạn trả, CKTT: theo vết bộ máy tính.
@@ -158,6 +160,29 @@ export function promoBoard(doc: PDoc, policies: Policy[], calc: DocCalc): PromoR
   }
   const order: Record<PromoStatus, number> = { fix: 0, applied: 1, hint: 2, blocked: 3, off: 4 };
   return rows.sort((a, b) => order[a.status] - order[b.status]);
+}
+
+/**
+ * [2026-11-25 11:55 PM Nguyễn Văn Thủy] MH-KM — MÃ CTKM CỦA MỘT DÒNG (cột Mã CTKM, lưu vào dòng): mọi chương trình ĐANG ÁP vào dòng, nhiều chương trình
+ * chồng nhau thì đủ mọi mã (đóng góp):
+ *   - dòng quà: mã chương trình tặng (program);
+ *   - dòng mua: CK theo mã / bậc SL / áp riêng (theo dòng hoặc theo mã) · quà mua X tặng Y của mã (mọi dòng cùng mã, kể cả giao nhiều chi nhánh) ·
+ *     CK trên đơn + CK thanh toán (áp cả đơn → mọi dòng mua). CK ghi tay "Trên phiếu" không có mã.
+ */
+const CA_DON: string[] = ['trade_discount', 'payment_discount'];
+export function ctkmCuaDong(rows: PromoRow[], l: Pick<PLine, 'lineKey' | 'sku' | 'lineType' | 'program'>): string[] {
+  if (l.lineType !== 'buy') return l.program ? [l.program] : [];
+  const out: string[] = [];
+  for (const r of rows) {
+    if (r.status !== 'applied' || !r.policy || r.policy === 'Trên phiếu' || out.includes(r.policy)) continue;
+    const trung = r.kind === 'promo_gift' ? r.sku === l.sku : r.lineKey ? r.lineKey === l.lineKey : r.sku ? r.sku === l.sku : CA_DON.includes(r.kind);
+    if (trung) out.push(r.policy);
+  }
+  return out;
+}
+/** Ghi mã CTKM vào từng dòng của phiếu (máy chủ gọi lúc lưu). */
+export function ganCtkm(doc: PDoc, rows: PromoRow[]): PLine[] {
+  return doc.lines.map((l) => { const c = ctkmCuaDong(rows, l); const { ctkm: _bo, ...x } = l; void _bo; return c.length ? { ...x, ctkm: c } : x; });
 }
 
 let seq = 0;

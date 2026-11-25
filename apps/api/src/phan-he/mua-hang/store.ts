@@ -34,6 +34,8 @@ export const lineSchema = z.object({
   expDate: day.optional(),
   mfgDate: day.optional(),
   program: z.string().trim().max(64).optional(),
+  /** [2026-11-26 12:10 AM Nguyễn Văn Thủy] MH-KM — mã CTKM đang áp vào dòng, máy chủ ghi lúc lưu (đóng góp) */
+  ctkm: z.array(z.string().trim().max(64)).max(30).optional(),
   dir: z.enum(['out', 'in']).optional(),
   autoGift: z.boolean().optional(),
   /** Nhãn của mặt hàng — máy chủ ghi lại theo danh mục khi lưu (giá trị gửi lên chỉ dùng khi mã chưa có trong danh mục). */
