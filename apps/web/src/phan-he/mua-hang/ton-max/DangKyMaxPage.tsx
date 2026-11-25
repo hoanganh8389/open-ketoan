@@ -137,12 +137,14 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
       : await chuaCoMax().then((ds) => ds.map((x) => [x.name, '', x.sku, x.unit, '', daCo(x.co) ? `Đã có max — ${daCo(x.co)}` : '', ...shops.map(() => '')]), (e: Error) => { window.alert(e.message); return null; });
     if (!body) return;
     const ws = XLSX.utils.aoa_to_sheet([head, shops.length ? ['', '', '', '', '', 'Tên shop →', ...shops.map((s) => s.name)] : [], ...body]);
-    ws['!cols'] = [{ wch: 36 }, { wch: 14 }, { wch: 12 }, { wch: 8 }, { wch: 9 }, { wch: 18 }, ...shops.map(() => ({ wch: 9 }))];
+    ws.headerRows = shops.length ? [0, 1] : [0]; // [2026-11-25 kiennt] NT-MH-006 — chỉ rõ dòng tiêu đề (dòng 2 = tên shop), không để tự đoán (đóng góp)
+    ws['!cols'] = [{ wch: Math.min(60, Math.max(36, ...body.map((r) => String(r[0] ?? '').length + 2))) }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 9 }, { wch: 24 }, ...shops.map(() => ({ wch: 12 }))];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dang ky max'); XLSX.writeFile(wb, `dang-ky-max-hang-moi-${parent}.xlsx`);
   };
   const exportExisting = async () => {
     const XLSX = await import('@/lib/excelChuan').then((m) => m.xlsxChuan()); // [2026-11-11 Nguyễn Văn Thủy] xuất Excel định dạng chuẩn (đóng góp)
     const ws = XLSX.utils.aoa_to_sheet([['Mã hàng', 'Tên hàng', 'Tồn', 'Bán / ngày', 'Max hiện tại', 'Max gợi ý', 'Max đề nghị', 'Ghi chú'], ...rows.map((r) => [r.sku, r.name, tonOf.get(r.sku) ?? '', r.avgPerDay ?? '', r.currentMax ?? 0, r.suggestedMax ?? 0, r.proposedMax ?? 0, r.note ?? ''])]);
+    ws.headerRows = [0]; // [2026-11-25 kiennt] NT-MH-006 — dòng 1 là tiêu đề cột (đóng góp)
     ws['!cols'] = [{ wch: 12 }, { wch: 40 }, { wch: 8 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 11 }, { wch: 24 }];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Dang ky max'); XLSX.writeFile(wb, `dang-ky-max-${br}.xlsx`);
   };

@@ -17,7 +17,10 @@ export function ExcelGuide({ columns, file, sheet = 'Mau', defaultOpen = true, m
       const XLSX = await import('@/lib/excelChuan').then((m) => m.xlsxChuan()); // [2026-11-11 Nguyễn Văn Thủy] xuất Excel định dạng chuẩn (đóng góp)
       const body = mau ? await mau() : [columns.map((c) => c.example)];
       const ws = XLSX.utils.aoa_to_sheet([columns.map((c) => c.name), ...body]);
-      ws['!cols'] = columns.map((c) => ({ wch: Math.max(12, c.name.length + 4) }));
+      // [2026-11-25 kiennt] NT-MH-006 — dòng 1 luôn là tiêu đề cột (không để bộ định dạng tự đoán: tiêu đề "08001" trông như số,
+      // dòng hàng toàn chữ bị nhận nhầm là tiêu đề); độ rộng cột theo nội dung (tên hàng dài không bị xuống dòng) (đóng góp)
+      ws.headerRows = [0];
+      ws['!cols'] = columns.map((c, i) => ({ wch: Math.min(60, Math.max(12, c.name.length + 4, ...body.map((r) => String(r[i] ?? '').length + 2))) }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, sheet);
       XLSX.writeFile(wb, file);
