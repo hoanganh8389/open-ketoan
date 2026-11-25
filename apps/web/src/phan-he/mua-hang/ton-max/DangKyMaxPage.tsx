@@ -17,17 +17,9 @@ import { api, errorText } from '@/lib/api';
 import { monthStart, today } from '../du-lieu';
 import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
-import { fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
-import { ChonChiNhanhCha, ChuaPhanCap } from './chung';
+import { docSo, fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
+import { ChonChiNhanhCha, ChuaPhanCap, OSo } from './chung'; // [2026-11-25 kiennt] NT-MH-009 — ô số gõ tay (đóng góp)
 import { useThaoTac } from '@/lib/manHinh';
-
-// [2026-11-25 kiennt] NT-MH-006 — đọc số trong ô Excel: "1.500" / "1,500" = nghìn; "1.5" / "1,5" = thập phân; không phải số → NaN (đóng góp)
-function docSo(raw: string): number {
-  const t = raw.replace(/\s/g, '');
-  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) return Number(t.replace(/\./g, '').replace(',', '.'));
-  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) return Number(t.replace(/,/g, ''));
-  return /^\d+([.,]\d+)?$/.test(t) ? Number(t.replace(',', '.')) : Number.NaN;
-}
 
 const TONE: Record<MaxRequestStatus, string> = { draft: 'info', submitted: 'warn', approved: 'ok', cancelled: 'bad' };
 
@@ -150,7 +142,8 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
   };
 
   return (
-    <Modal wide title={req ? `${req.code} · ${kind === 'new_item' ? 'Đăng ký max hàng mới' : 'Shop đăng ký tồn max'} — ${MAX_REQUEST_STATUS[req.status]}` : kind === 'new_item' ? 'Phiếu đăng ký max hàng mới (mặt hàng × shop)' : 'Phiếu shop đăng ký tồn max'} onClose={onClose}
+    // [2026-11-25 kiennt] NT-MH-007 — phiếu hàng mới: chi nhánh + số shop lên tiêu đề cửa sổ, bỏ nhãn vàng trong phiếu (đóng góp)
+    <Modal wide title={`${req ? `${req.code} · ` : ''}${kind === 'new_item' ? `Phiếu đăng ký max hàng mới — ${branches.find((b) => b.code === parent)?.name ?? parent} (${parent}) · ${shops.length} shop` : 'Phiếu shop đăng ký tồn max'}${req ? ` — ${MAX_REQUEST_STATUS[req.status]}` : ''}`} onClose={onClose}
       footer={<>
         {req && req.status !== 'cancelled' && !(req.status === 'approved' && kind === 'existing') && tt.huy && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => void cancel()}>Huỷ phiếu</button>}
         {!locked && <>
@@ -170,7 +163,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
             <label className="tm-parent"><span>Shop</span><select className="select input" disabled={Boolean(req)} value={br} onChange={(e) => { setBranch(e.target.value); setItems(null); }}>
               <option value="">— chọn shop —</option><option value={parent}>★ Kho chi nhánh {parent}</option>
               {shops.map((s) => <option key={s.code} value={s.code}>{s.code} · {s.name}</option>)}</select></label>
-          ) : <span className="tm-chip warn" style={{ whiteSpace: 'nowrap' }}>Chi nhánh {parent} · {shops.length} shop</span>}
+          ) : null}
           <label className="tm-parent" style={{ flex: 1 }}><span>Tiêu đề</span><input className="input" style={{ flex: 1 }} placeholder="vd Đăng ký max kỳ 2 tháng 10" value={title ?? req?.title ?? ''} disabled={locked} onChange={(e) => setTitle(e.target.value)} /></label>
         </div>
         <div className="full row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -192,7 +185,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
                   <td className="mono">{r.sku}</td><td style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.name}>{r.name}</td>
                   <td className="num tm-stock">{qtyFmt(tonOf.get(r.sku))}</td><td className="num">{qtyFmt(r.avgPerDay)}</td><td className="num">{qtyFmt(r.currentMax)}</td>
                   <td className="num">{r.suggestedMax ? <button className="tm-opt" disabled={locked} onClick={() => set(r.key, { proposedMax: r.suggestedMax })}><span className="tm-sug">{qtyFmt(r.suggestedMax)}</span></button> : ''}</td>
-                  <td className="num"><input className={`tm-input${d ? ' dirty' : ''}`} disabled={locked} value={r.proposedMax ?? ''} onChange={(e) => set(r.key, { proposedMax: num(e.target.value) })} /></td>
+                  <td className="num"><OSo className={`tm-input${d ? ' dirty' : ''}`} disabled={locked} value={r.proposedMax} onChange={(v) => set(r.key, { proposedMax: v })} /></td>
                   <td className="num">{d ? <span className={d > 0 ? 'tm-sug' : 'tm-low'}>{d > 0 ? '+' : ''}{qtyFmt(d)}{r.currentMax ? ` (${Math.round((d / r.currentMax) * 100)}%)` : ''}</span> : ''}</td>
                   <td><input className="input" style={{ height: 26, width: 160 }} disabled={locked} value={r.note ?? ''} onChange={(e) => set(r.key, { note: e.target.value })} /></td>
                 </tr>;
@@ -212,7 +205,7 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
               <td><input className="input" style={{ height: 26, width: 60 }} disabled={locked} value={r.unit ?? ''} onChange={(e) => set(r.key, { unit: e.target.value })} /></td>
               <td><input className="tm-input" style={{ width: 54 }} disabled={locked} value={r.pack ?? ''} onChange={(e) => set(r.key, { pack: num(e.target.value) || undefined })} /></td>
               <td className="num"><b>{qtyFmt(Object.values(r.maxByShop ?? {}).reduce((s, x) => s + x, 0))}</b></td>
-              {shops.map((s) => <td key={s.code}><input className="tm-input" style={{ width: 54 }} disabled={req?.status === 'cancelled' || (req?.status === 'approved' && Boolean(r.sku))} value={r.maxByShop?.[s.code] ?? ''} onChange={(e) => set(r.key, { maxByShop: { ...(r.maxByShop ?? {}), [s.code]: num(e.target.value) } })} /></td>)}
+              {shops.map((s) => <td key={s.code}><OSo className="tm-input" style={{ width: 54 }} disabled={req?.status === 'cancelled' || (req?.status === 'approved' && Boolean(r.sku))} value={r.maxByShop?.[s.code]} onChange={(v) => set(r.key, { maxByShop: { ...(r.maxByShop ?? {}), [s.code]: v } })} /></td>)}
               <td>{!locked && <button className="btn btn-xs" onClick={() => setItems(rows.filter((x) => x.key !== r.key))}>✕</button>}</td>
             </tr>)}
             {!shown.length && <tr><td colSpan={7 + shops.length} className="muted">Bấm "Thêm dòng" hoặc "Nhập Excel" (tệp NCC gửi / shop đã điền theo mẫu — nút Xuất Excel tải mẫu có sẵn cột từng shop).</td></tr>}
