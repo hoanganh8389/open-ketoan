@@ -20,7 +20,7 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 |---|---|---|
 | Mã hàng | có | khoá dòng |
 | Tên hàng · ĐVT · Tồn · Bán / ngày · Max hiện tại · Max gợi ý | — | chỉ để xem (theo shop đang chọn); nhập vào bỏ qua |
-| Max đề nghị | — | số ≥ 0 (theo ĐVT nhỏ nhất). **Trống = dòng bỏ qua** (không báo lỗi) |
+| Max đề nghị | — | số ≥ 0 (theo ĐVT nhỏ nhất). **Trống = dòng bỏ qua** (không báo lỗi). "1.500" / "1,500" = một nghìn năm trăm; "1.5" / "1,5" = một phẩy năm |
 | Ghi chú | — | |
 
 - Nhập: mã đã có trên phiếu → thay Max đề nghị (và ghi chú nếu có); mã chưa có → thêm dòng. Mã không có trong danh mục / max không phải số → dòng đỏ, không đưa vào. Trùng mã trong tệp → lấy dòng sau.
@@ -50,7 +50,7 @@ Phiếu shop đăng ký max hiện chỉ điền sẵn các mã shop đang có m
 |---|---|
 | Ngày chạy | 25/11/2026 (máy dev, DB local `ketoan_otchuong`, trình duyệt tự động) |
 | Bản code (commit) | nhánh `feat/nt-mh-006-mau-dang-ky-max` |
-| Kết quả | Bước 1: tệp mẫu shop 08001 có đủ 4 mặt hàng đang dùng, Max đề nghị trống. Bước 2: điền 2 dòng → 2 dòng vào phiếu (12; "1.500" = 1500, kèm ghi chú), 2 dòng trống không hiện. Bước 3: mã KHONGCO99 và max "abc" đỏ, ghi lý do. Bước 4 (Lưu & duyệt) chưa chạy — không ghi vào DB test. Typecheck web sạch |
+| Kết quả | Bước 1: tệp mẫu shop 08001 có đủ 4 mặt hàng đang dùng, Max đề nghị trống. Bước 2: điền 2 dòng → 2 dòng vào phiếu (12; "1.500" = 1500, kèm ghi chú), 2 dòng trống không hiện. Bước 3: mã KHONGCO99 và max "abc" đỏ, ghi lý do. Bước 4 (Lưu & duyệt) chưa chạy — không ghi vào DB test. Kiểm lại (giả lập shop đã có max 1 mã, không ghi DB): tệp mẫu bỏ mã đã có max (3 / 4 mã); "1.5" = 1,5; "-3" đỏ; thêm tay mã đã có max vào tệp vẫn nhận (5 → 8). Bước 6, 7: chụp màn MH16, MH17. Typecheck web sạch |
 
 ## 5. Biên bản nghiệm thu
 | Ngày | Bộ phận | Kết quả | Ghi chú |

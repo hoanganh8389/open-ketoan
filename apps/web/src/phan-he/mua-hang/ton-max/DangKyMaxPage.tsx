@@ -21,6 +21,14 @@ import { fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxReq
 import { ChonChiNhanhCha, ChuaPhanCap } from './chung';
 import { useThaoTac } from '@/lib/manHinh';
 
+// [2026-11-25 kiennt] NT-MH-006 — đọc số trong ô Excel: "1.500" / "1,500" = nghìn; "1.5" / "1,5" = thập phân; không phải số → NaN (đóng góp)
+function docSo(raw: string): number {
+  const t = raw.replace(/\s/g, '');
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) return Number(t.replace(/\./g, '').replace(',', '.'));
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) return Number(t.replace(/,/g, ''));
+  return /^\d+([.,]\d+)?$/.test(t) ? Number(t.replace(',', '.')) : Number.NaN;
+}
+
 const TONE: Record<MaxRequestStatus, string> = { draft: 'info', submitted: 'warn', approved: 'ok', cancelled: 'bad' };
 
 export function DangKyMaxPage() {
@@ -32,7 +40,6 @@ export function DangKyMaxPage() {
   const [open, setOpen] = useState<{ id?: string; kind: MaxRequestKind; branchCode?: string } | null>(null);
   const q = useQuery({ queryKey: ['ton-max', 'max-requests', parent, from, to], enabled: Boolean(parent), queryFn: () => stockApi.maxRequests({ from, to, branchCode: parent }) });
   const all = q.data ?? [];
-  const rows = all;
   const cols: Column<MaxRequest>[] = [
     { key: 'code', header: 'Số phiếu', type: 'code', width: 120 },
     { key: 'createdAt', header: 'Ngày lập', width: 130, value: (r) => r.createdAt, render: (r) => new Date(r.createdAt).toLocaleString('vi-VN') },
@@ -61,7 +68,7 @@ export function DangKyMaxPage() {
         </div>
         {/* [2026-11-25 kiennt] NT-MH-006 — bỏ dải ô đếm Tất cả / Chờ duyệt / Nháp / Đã duyệt / Hàng mới chờ gắn mã; lọc trạng thái ở cột Trạng thái của lưới (đóng góp) */}
         <ErrorBox error={q.error ? errorText(q.error) : null} />
-        {q.isLoading ? <Loading /> : <DataGrid rows={rows} columns={cols} rowKey={(r) => r.id} storageKey="dang-ky-max" onRowClick={(r) => setOpen({ id: r.id, kind: r.kind })} exportName={`phieu-dang-ky-max-${parent}`} emptyText="Chưa có phiếu nào trong khoảng ngày này." />}
+        {q.isLoading ? <Loading /> : <DataGrid rows={all} columns={cols} rowKey={(r) => r.id} storageKey="dang-ky-max" onRowClick={(r) => setOpen({ id: r.id, kind: r.kind })} exportName={`phieu-dang-ky-max-${parent}`} emptyText="Chưa có phiếu nào trong khoảng ngày này." />}
       </div>
       {open && parent && <PhieuDangKy key={open.id ?? open.kind} parent={parent} init={open} branches={h.data?.branches ?? []} onClose={() => setOpen(null)} />}
     </>
@@ -219,9 +226,10 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
         spec: [['sku', ['ma hang', 'ma sp']], ['name', ['ten hang']], ['max', ['max de nghi', 'max']], ['note', ['ghi chu']]],
         mau: async () => {
           // Mặt hàng đang dùng CHƯA CÓ MAX ở shop này (mã đã có max nằm sẵn trên phiếu); mã có tồn / bán kèm số của shop. Max đề nghị để trống cho shop điền.
-          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 });
-          const sugBy = new Map((sug.data ?? []).map((x) => [x.sku, x]));
-          const skus = [...new Set([...(sug.data ?? []).map((x) => x.sku), ...ds.map((p) => p.sku)])].filter((k) => !((sugBy.get(k)?.currentMax ?? 0) > 0)).sort((a, b) => a.localeCompare(b));
+          // Lấy số của shop ngay lúc tải (phiếu nháp mở lại không có sẵn gợi ý) — để lọc đúng mã đã có max.
+          const [ds, sg] = await Promise.all([api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 }), stockApi.maxSuggest(br)]);
+          const sugBy = new Map(sg.map((x) => [x.sku, x]));
+          const skus = [...new Set([...sg.map((x) => x.sku), ...ds.map((p) => p.sku)])].filter((k) => !((sugBy.get(k)?.currentMax ?? 0) > 0)).sort((a, b) => a.localeCompare(b));
           if (!skus.length) throw new Error('Mọi mặt hàng đang dùng đã có max ở shop này — sửa max ngay trên phiếu');
           const pBy = new Map(ds.map((p) => [p.sku, p]));
           return skus.map((k) => {
@@ -233,18 +241,18 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
           const sku = String(r.sku ?? '').trim();
           const raw = String(r.max ?? '').trim();
           if (!raw) return { skip: true };
-          const v = Number(raw.replace(/\s/g, '').replace(/\./g, '').replace(',', '.'));
-          if (!Number.isFinite(v) || v < 0) return { error: `Max đề nghị "${raw}" không phải số ≥ 0` };
+          const v = docSo(raw);
+          if (!Number.isFinite(v) || v < 0) return { error: `${sku}: Max đề nghị "${raw}" không phải số ≥ 0` };
           return { value: { key: sku, sku, name: String(r.name ?? '').trim(), currentMax: 0, proposedMax: v, note: String(r.note ?? '').trim() || undefined } };
         },
         check: async (list) => {
-          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'all', pageSize: 1_000_000 });
+          const [ds, sg] = await Promise.all([api.get<CatalogItem[]>('/api/v1/products', { status: 'all', pageSize: 1_000_000 }), stockApi.maxSuggest(br)]);
           const pBy = new Map(ds.map((p) => [p.sku, p]));
           // Mã phải có trong danh mục; điền tên / ĐVT / max hiện tại theo phiếu (hoặc danh mục). Trùng mã: onAdd lấy dòng sau.
           return list.map((x) => {
             const p = pBy.get(x.sku);
             if (!p) return `Mã ${x.sku} chưa có trong danh mục mặt hàng`;
-            const cur = rows.find((r) => r.sku === x.sku) ?? (sug.data ?? []).find((r) => r.sku === x.sku);
+            const cur = rows.find((r) => r.sku === x.sku) ?? sg.find((r) => r.sku === x.sku);
             x.name = cur?.name || p.name; x.unit = cur?.unit ?? p.unit; x.currentMax = cur?.currentMax ?? 0;
             return undefined;
           });
