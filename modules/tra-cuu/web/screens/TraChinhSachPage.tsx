@@ -33,7 +33,8 @@ export function TraChinhSachPage() {
     { key: 'name', header: 'Tên chính sách', width: 220 },
     { key: 'kindLabel', header: 'Loại', width: 190 },
     { key: 'exclusive', header: 'Áp riêng', type: 'check', width: 70 },
-    { key: 'priority', header: 'Ưu tiên', type: 'number', width: 65 },
+    // [2026-11-25 Nguyễn Văn Thủy] #29 tab Test: hiện Thứ tự áp (1 = áp trước) thay số ưu tiên (đóng góp)
+    { key: 'priority', header: 'Thứ tự áp', type: 'number', width: 75, title: '1 = áp trước; trống = áp sau cùng', value: (r) => (r.priority ? (r.priority >= 100 ? 1 : r.priority < 0 ? 99 : 100 - r.priority) : null) },
     { key: 'amount', header: 'Đang giảm', type: 'money', width: 110, sum: true },
     { key: 'alone', header: 'Nếu chỉ mình nó', width: 140, value: (r) => r.alone.amount || r.alone.gift,
       render: (r) => (r.alone.gift ? <span>tặng {r.alone.gift}</span> : r.alone.amount ? <Money value={-r.alone.amount} /> : <span className="muted">—</span>) },
@@ -88,7 +89,7 @@ export function TraChinhSachPage() {
           <DataGrid storageKey="tra-cuu.chinh-sach" rows={d.rows} rowKey={(r) => r.code} columns={columns} footerLabel="Cộng"
             exportName={`tra-chinh-sach-${d.item.sku}`} exportTitle={`TRA CHÍNH SÁCH — MÃ ${d.item.sku}`}
             emptyText="Không có chính sách chiết khấu / khuyến mại nào khớp mã này với NCC, chi nhánh, ngày đã chọn"
-            note={<span>Áp riêng: mã nhận chương trình áp riêng thì không nhận chương trình nào khác; nhiều chương trình áp riêng cùng khớp thì ưu tiên cao hơn thắng, bằng nhau lấy cái lợi hơn. Sửa chính sách ở <a href="/mua-hang/chinh-sach">MH04 Chính sách mua hàng</a>.</span>} />
+            note={<span>Áp riêng: mã nhận chương trình áp riêng thì không nhận chương trình nào khác; nhiều chương trình áp riêng cùng khớp thì chương trình có thứ tự áp nhỏ hơn (áp trước) được áp, cùng thứ tự lấy cái lợi hơn. Sửa chính sách ở <a href="/mua-hang/chinh-sach">MH04 Chính sách mua hàng</a>.</span>} />
           {d.other.length > 0 && (
             <div className="card" style={{ padding: 12 }}>
               <b>Chính sách khác áp cho mã / NCC này</b> <span className="muted">(không tính theo dòng lúc lập phiếu, không xét áp riêng)</span>

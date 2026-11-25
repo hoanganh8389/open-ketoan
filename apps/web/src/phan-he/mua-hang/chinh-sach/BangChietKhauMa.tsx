@@ -7,6 +7,7 @@
  *   - cuộn trong khung, tiêu đề đứng yên, hiện 200 dòng mỗi lần (bấm "Hiện thêm") — nhẹ cả khi có hàng nghìn mã.
  * Một mã nhiều dòng (khác SL tối thiểu) = bậc chiết khấu theo số lượng của riêng mã đó.
  */
+import { docThuTu, priorityOf, thuTuOf } from './thuTu';
 import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, FileUp, Plus } from 'lucide-react';
@@ -26,20 +27,20 @@ const COLS: GuideColumn[] = [
   { name: 'Ghi chú', example: 'CTKM tháng 11', note: 'Tuỳ ý' },
   // [2026-11-20 khanhtd] TRA-CUU — áp riêng + ưu tiên theo từng dòng (đóng góp)
   { name: 'Áp riêng', aliases: 'Ap rieng', example: 'có', note: '"có" = mã nhận dòng này thì không nhận chương trình chiết khấu / khuyến mại nào khác. Trống = theo ô Áp riêng của chính sách' },
-  { name: 'Ưu tiên', example: '', note: 'Chỉ dùng khi dòng áp riêng tranh với chương trình áp riêng khác ở cùng mã: số lớn thắng. Trống = ưu tiên của chính sách' },
+  { name: 'Thứ tự áp', aliases: 'Thu tu ap', example: '', note: 'Chỉ dùng khi dòng áp riêng tranh với chương trình áp riêng khác ở cùng mã: 1 = áp trước. Trống = theo thứ tự áp của chính sách' },
 ];
 const SPEC: ['sku' | 'pct' | 'amount' | 'unit' | 'minQty' | 'note' | 'apply' | 'priority', string[]][] = [
   ['sku', ['ma hang', 'ma sp', 'sku']], ['pct', ['% chiet khau', 'ck %', 'chiet khau', 'ck']], ['amount', ['giam tien', 'giam gia', 'so tien giam']],
   ['unit', ['dvt', 'don vi tinh']], ['minQty', ['sl toi thieu', 'mua tu', 'so luong tu']], ['note', ['ghi chu']],
-  ['apply', ['ap rieng']], ['priority', ['uu tien']],
+  ['apply', ['ap rieng']], ['priority', ['thu tu ap', 'thu tu', 'uu tien']],
 ];
 const n = (v: unknown) => { const t = String(v ?? '').replace(/\./g, '').replace(',', '.').replace('%', '').trim(); return t === '' ? undefined : Number(t) || undefined; };
 const clean = (i: ItemDiscount): ItemDiscount => ({ sku: i.sku.trim(), ...(i.pct ? { pct: i.pct } : {}), ...(i.amount ? { amount: i.amount } : {}), ...(i.unit?.trim() ? { unit: i.unit.trim() } : {}), ...(i.minQty ? { minQty: i.minQty } : {}), ...(i.note?.trim() ? { note: i.note.trim() } : {}),
   ...(i.apply === 'exclusive' ? { apply: 'exclusive' as const } : {}), ...(i.priority != null && Number.isInteger(i.priority) ? { priority: i.priority } : {}) });
 /** Ô "Áp riêng" của Excel / dán: có, x, 1, true, áp riêng → áp riêng. */
 const yes = (v: unknown) => (/^(c[oó]|x|1|true|yes|a[pá]p ri[eê]ng)$/i.test(String(v ?? '').trim()) ? ('exclusive' as const) : undefined);
-/** Ưu tiên là số nguyên, có thể âm. */
-const int = (v: unknown) => { const t = String(v ?? '').trim(); return /^-?d+$/.test(t) ? Number(t) : undefined; };
+/** Ô Thứ tự áp của dòng (1 = áp trước) → priority lưu (số lớn thắng); trống = theo chính sách. Trước đây biểu thức thiếu "\\d" nên không đọc được số nào. */
+const int = (v: unknown) => { const t = docThuTu(v); return t === null ? undefined : priorityOf(t); };
 const PAGE = 200;
 
 // [2026-11-19 Nguyễn Văn Thủy] khoanh vùng theo hàng hoá của hợp đồng + nút điền nhanh các mã đã khai (đóng góp)
@@ -67,7 +68,7 @@ export function BangChietKhauMa({ items, onChange: onChange0, prefer, brands, on
   const set = (idx: number, p: Partial<ItemDiscount>) => onChange(items.map((x, j) => (j === idx ? { ...x, ...p } : x)));
   const exportXlsx = async () => {
     const XLSX = await import('@/lib/excelChuan').then((m) => m.xlsxChuan()); // [2026-11-11 Nguyễn Văn Thủy] xuất Excel định dạng chuẩn (đóng góp)
-    const ws = XLSX.utils.json_to_sheet(items.map((i) => ({ 'Mã hàng': i.sku, 'Tên hàng': nameOf(i.sku) ?? '', '% chiết khấu': i.pct ?? '', 'Giảm tiền': i.amount ?? '', 'ĐVT': i.unit ?? '', 'SL tối thiểu': i.minQty ?? '', 'Ghi chú': i.note ?? '', 'Áp riêng': i.apply === 'exclusive' ? 'có' : '', 'Ưu tiên': i.priority ?? '' })));
+    const ws = XLSX.utils.json_to_sheet(items.map((i) => ({ 'Mã hàng': i.sku, 'Tên hàng': nameOf(i.sku) ?? '', '% chiết khấu': i.pct ?? '', 'Giảm tiền': i.amount ?? '', 'ĐVT': i.unit ?? '', 'SL tối thiểu': i.minQty ?? '', 'Ghi chú': i.note ?? '', 'Áp riêng': i.apply === 'exclusive' ? 'có' : '', 'Thứ tự áp': i.priority === undefined ? '' : thuTuOf(i.priority) ?? '' })));
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Chiet khau theo ma'); XLSX.writeFile(wb, 'chiet-khau-theo-ma-hang.xlsx');
   };
   const applyBulk = () => {
@@ -100,7 +101,7 @@ export function BangChietKhauMa({ items, onChange: onChange0, prefer, brands, on
         <table className="mh-mini ckma-table">
           <thead><tr><th style={{ width: 50 }}>STT</th><th style={{ width: 130 }}>Mã hàng</th><th>Tên hàng</th><th style={{ width: 90 }} className="num">% CK</th><th style={{ width: 120 }} className="num">Giảm tiền / ĐVT</th><th style={{ width: 90 }}>ĐVT</th><th style={{ width: 100 }} className="num">SL tối thiểu</th><th style={{ width: 160 }}>Ghi chú</th>
             <th style={{ width: 66 }} title="Mã nhận dòng này thì không nhận chương trình chiết khấu / khuyến mại nào khác (mã khác vẫn áp). Trống = theo ô Áp riêng của chính sách">Áp riêng</th>
-            <th style={{ width: 66 }} className="num" title="Chỉ dùng khi dòng áp riêng tranh với chương trình áp riêng khác ở cùng mã: số lớn thắng. Trống = ưu tiên của chính sách">Ưu tiên</th><th style={{ width: 40 }} /></tr></thead>
+            <th style={{ width: 66 }} className="num" title="Chỉ dùng khi dòng áp riêng tranh với chương trình áp riêng khác ở cùng mã: 1 = áp trước. Trống = theo thứ tự áp của chính sách">Thứ tự áp</th><th style={{ width: 40 }} /></tr></thead>
           <tbody>
             {rows.slice(0, limit).map(({ it, idx }, k) => {
               const nm = nameOf(it.sku);
@@ -126,8 +127,8 @@ export function BangChietKhauMa({ items, onChange: onChange0, prefer, brands, on
                   <td style={{ textAlign: 'center' }}><input type="checkbox" checked={allExclusive || it.apply === 'exclusive'} disabled={allExclusive}
                     title={allExclusive ? 'Chính sách đang tích Áp riêng: mọi dòng áp riêng — bỏ tích ở "Cách áp" để chọn theo từng dòng' : 'Áp riêng riêng dòng này'}
                     onChange={(e) => set(idx, { apply: e.target.checked ? 'exclusive' : undefined, ...(e.target.checked ? {} : { priority: undefined }) })} /></td>
-                  <td><input className="input num" value={it.priority ?? ''} disabled={!allExclusive && it.apply !== 'exclusive'} placeholder={allExclusive || it.apply === 'exclusive' ? 'theo CS' : ''}
-                    title={allExclusive || it.apply === 'exclusive' ? 'Ưu tiên của dòng khi tranh áp riêng (số lớn thắng). Trống = ưu tiên của chính sách' : 'Tích Áp riêng ở dòng này mới đặt được ưu tiên dòng'}
+                  <td><input className="input num" value={it.priority === undefined ? '' : thuTuOf(it.priority) ?? ''} disabled={!allExclusive && it.apply !== 'exclusive'} placeholder={allExclusive || it.apply === 'exclusive' ? 'theo CS' : ''}
+                    title={allExclusive || it.apply === 'exclusive' ? 'Thứ tự áp của dòng khi tranh áp riêng (1 = áp trước). Trống = theo chính sách' : 'Tích Áp riêng ở dòng này mới đặt được thứ tự áp của dòng'}
                     onChange={(e) => set(idx, { priority: int(e.target.value) })} /></td>
                   <td><button type="button" className="btn btn-xs" title="Bỏ dòng" onClick={() => onChange(items.filter((_, j) => j !== idx))}>×</button></td>
                 </tr>
@@ -141,7 +142,7 @@ export function BangChietKhauMa({ items, onChange: onChange0, prefer, brands, on
         </table>
         {rows.length > limit && <button type="button" className="btn btn-sm ckma-more" onClick={() => setLimit((x) => x + PAGE)}>Hiện thêm {Math.min(PAGE, rows.length - limit)} dòng (còn {(rows.length - limit).toLocaleString('vi-VN')})</button>}
       </div>
-      <div className="muted" style={{ fontSize: 12 }}>Dòng phiếu đúng mã (và đúng ĐVT nếu có ghi, SL đạt mức tối thiểu) tự được chiết khấu. Một mã ghi nhiều dòng khác "SL tối thiểu" = bậc chiết khấu theo số lượng của mã đó. Tích <b>Áp riêng</b> ở dòng: mã nhận dòng đó thì không nhận chương trình nào khác; <b>Ưu tiên</b> dòng chỉ dùng khi tranh áp riêng.</div>
+      <div className="muted" style={{ fontSize: 12 }}>Dòng phiếu đúng mã (và đúng ĐVT nếu có ghi, SL đạt mức tối thiểu) tự được chiết khấu. Một mã ghi nhiều dòng khác "SL tối thiểu" = bậc chiết khấu theo số lượng của mã đó. Tích <b>Áp riêng</b> ở dòng: mã nhận dòng đó thì không nhận chương trình nào khác; <b>Thứ tự áp</b> của dòng chỉ dùng khi tranh áp riêng.</div>
       {pick !== null && (() => {
         const v = n(val), isPct = val.trim().endsWith('%') || (v !== undefined && v <= 100);
         const make = (sku: string) => clean({ sku, ...(v ? (isPct ? { pct: v } : { amount: v }) : {}) });
@@ -168,8 +169,8 @@ function usePreview(list: ItemDiscount[]) {
 function Preview({ list, p }: { list: (ItemDiscount & { row?: number })[]; p: ReturnType<typeof usePreview> }) {
   return (
     <div className="full ckma-scroll" style={{ maxHeight: 320 }}>
-      <table className="mh-mini"><thead><tr><th>Dòng</th><th>Mã</th><th>Tên theo danh mục</th><th className="num">% CK</th><th className="num">Giảm tiền</th><th>ĐVT</th><th className="num">SL tối thiểu</th><th>Áp riêng</th><th className="num">Ưu tiên</th><th>Kiểm tra</th></tr></thead>
-        <tbody>{list.slice(0, 500).map((i, k) => { const c = p.check(i, k); return <tr key={k} className={c && c !== '…' ? 'mh-row-bad' : ''}><td>{i.row ?? k + 1}</td><td className="mono">{i.sku}</td><td>{p.name(i.sku)}</td><td className="num">{i.pct ?? ''}</td><td className="num">{i.amount?.toLocaleString('vi-VN') ?? ''}</td><td>{i.unit ?? ''}</td><td className="num">{i.minQty ?? ''}</td><td>{i.apply === 'exclusive' ? 'có' : ''}</td><td className="num">{i.priority ?? ''}</td><td>{c ? <span className="mh-bad">{c}</span> : '✓'}</td></tr>; })}</tbody>
+      <table className="mh-mini"><thead><tr><th>Dòng</th><th>Mã</th><th>Tên theo danh mục</th><th className="num">% CK</th><th className="num">Giảm tiền</th><th>ĐVT</th><th className="num">SL tối thiểu</th><th>Áp riêng</th><th className="num">Thứ tự áp</th><th>Kiểm tra</th></tr></thead>
+        <tbody>{list.slice(0, 500).map((i, k) => { const c = p.check(i, k); return <tr key={k} className={c && c !== '…' ? 'mh-row-bad' : ''}><td>{i.row ?? k + 1}</td><td className="mono">{i.sku}</td><td>{p.name(i.sku)}</td><td className="num">{i.pct ?? ''}</td><td className="num">{i.amount?.toLocaleString('vi-VN') ?? ''}</td><td>{i.unit ?? ''}</td><td className="num">{i.minQty ?? ''}</td><td>{i.apply === 'exclusive' ? 'có' : ''}</td><td className="num">{i.priority === undefined ? '' : thuTuOf(i.priority) ?? ''}</td><td>{c ? <span className="mh-bad">{c}</span> : '✓'}</td></tr>; })}</tbody>
       </table>
       {list.length > 500 && <div className="muted" style={{ fontSize: 12 }}>Xem trước 500 dòng đầu — cả {list.length.toLocaleString('vi-VN')} dòng vẫn được kiểm.</div>}
     </div>
@@ -181,7 +182,7 @@ function DanNhieuDong({ onClose, onAdd }: { onClose: () => void; onAdd: (l: Item
   const p = usePreview(list);
   return (
     <Modal wide title="Dán nhiều dòng chiết khấu theo mã" onClose={onClose} footer={<><button className="btn btn-primary" disabled={!p.ok.length} onClick={() => onAdd(p.ok)}>Thêm {p.ok.length} dòng hợp lệ</button><button className="btn" onClick={onClose}>Thoát</button></>}>
-      <div className="full muted" style={{ fontSize: 12 }}>Copy từ Excel theo thứ tự cột: <b>Mã hàng | % chiết khấu | Giảm tiền | ĐVT | SL tối thiểu | Ghi chú | Áp riêng | Ưu tiên</b> (chỉ cần 2 cột đầu; Áp riêng ghi "có"). Mỗi dòng một mã.</div>
+      <div className="full muted" style={{ fontSize: 12 }}>Copy từ Excel theo thứ tự cột: <b>Mã hàng | % chiết khấu | Giảm tiền | ĐVT | SL tối thiểu | Ghi chú | Áp riêng | Thứ tự áp</b> (chỉ cần 2 cột đầu; Áp riêng ghi "có"). Mỗi dòng một mã.</div>
       <div className="full"><textarea className="input" rows={6} style={{ width: '100%' }} placeholder={'130181002\t3\n140181001\t\t500\tHộp\t48'} value={text} onChange={(e) => setText(e.target.value)} /></div>
       {list.length > 0 && <Preview list={list} p={p} />}
     </Modal>

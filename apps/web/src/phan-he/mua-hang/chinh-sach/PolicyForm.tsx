@@ -3,6 +3,7 @@
  * Đi từ NCC: ô Nhà cung cấp đứng đầu; mã tự đặt "<mã NCC>-<loại>" (ví dụ NC100227-HANMUC), tên tự đặt theo NCC + nội dung.
  * Mở từ hồ sơ NCC thì NCC khoá sẵn và chỉ chọn các loại thuộc thẻ đang mở.
  */
+import { docThuTu, priorityOf, thuTuOf, thuTuText } from './thuTu';
 import { useEffect, useRef, useState } from 'react';
 import { ACTIVATION_KINDS, POLICY_LABEL, STACK_KINDS, activationOf, activationText, type Activation, type ActivationPeriod, apRiengChong, canRepeat, coApRieng, giftItemsOf, isRepeat, scopeBranches, uuTienDeThang, type ApRiengChong, type Policy, type PolicyKind } from '@bizcity/mua-hang-domain';
 import { Link } from 'react-router-dom';
@@ -143,7 +144,9 @@ export function PolicyForm({ value, all, kinds = ALL_KINDS, lockPartner, lockCon
       <Field label="Tên chính sách" tip="Tự đặt theo NCC + nội dung; sửa được"><input className="input" value={p.name} onChange={(e) => { setTouched({ ...touched, name: true }); setP({ ...p, name: e.target.value }); }} /></Field>
       <Field label="Hiệu lực từ"><input className="input" type="date" value={p.validFrom ?? ''} onChange={(e) => setP({ ...p, validFrom: e.target.value || undefined })} /></Field>
       <Field label="Đến (trống = không thời hạn)"><input className="input" type="date" value={p.validTo ?? ''} onChange={(e) => setP({ ...p, validTo: e.target.value || undefined })} /></Field>
-      <Field label="Ưu tiên (2 chính sách cùng phạm vi, hoặc 2 chương trình áp riêng: số lớn thắng)"><input className="input num" value={p.priority ?? 0} onChange={(e) => setP({ ...p, priority: Number(e.target.value) || 0 })} /></Field>
+      {/* [2026-11-25 Nguyễn Văn Thủy] #29 tab Test: "Thứ tự áp" 1, 2, 3… (1 = áp trước) thay cho số ưu tiên — cách tính giữ nguyên (đóng góp) */}
+      <Field label="Thứ tự áp (1 = áp trước; trống = áp sau cùng)" tip="Hai chính sách cùng phạm vi, hoặc hai chương trình áp riêng cùng khớp một mã: thứ tự nhỏ hơn được áp, chương trình sau chỉ áp khi chương trình trước không khớp. Hết chương trình thì theo giá hợp đồng / giá niêm yết">
+        <input className="input num" value={thuTuOf(p.priority) ?? ''} placeholder="trống" onChange={(e) => setP({ ...p, priority: priorityOf(docThuTu(e.target.value)) })} /></Field>
       {/* [2026-11-10 05:00 PM Nguyễn Văn Thủy] PHASE-026 — loại chương trình (đóng góp) */}
       {!lockContract && <Field label="Loại chương trình"><select className="select input" value={(p as Policy & { programKind?: string | null }).programKind ?? ''} onChange={(e) => setP({ ...p, programKind: e.target.value || null } as Policy)}>
         <option value="">— không —</option>
@@ -213,7 +216,7 @@ function CachAp({ p, onChange }: { p: Policy; onChange: (rule: Policy['rule']) =
         <span><b>Áp riêng</b> — mã hàng nhận chương trình này thì <u>không nhận</u> chương trình chiết khấu / khuyến mại nào khác (mã khác vẫn áp bình thường).
           {/* [2026-11-20 khanhtd] TRA-CUU — bảng CK theo mã: tích theo từng dòng (đóng góp) */}
           {p.kind === 'item_discount' && r.apply !== 'exclusive' && <span className="muted"> Muốn chỉ một số mã áp riêng: để trống ô này, tích cột <b>Áp riêng</b> ở các dòng đó trong bảng{(() => { const n = ((r.items ?? []) as { apply?: string }[]).filter((i) => i.apply === 'exclusive').length; return n ? ` (đang ${n} dòng áp riêng)` : ''; })()}.</span>}
-          <span className="muted"> Bỏ tích = áp đồng thời, cộng với các chương trình khác. Ví dụ: CK 7% riêng mã A tích "Áp riêng" + CK 2% chung → mã A chỉ 7%, mã B được 2%. Hai chương trình áp riêng cùng khớp một mã: lấy ưu tiên cao hơn, bằng nhau lấy cái lợi hơn.</span></span>
+          <span className="muted"> Bỏ tích = áp đồng thời, cộng với các chương trình khác. Ví dụ: CK 7% riêng mã A tích "Áp riêng" + CK 2% chung → mã A chỉ 7%, mã B được 2%. Hai chương trình áp riêng cùng khớp một mã: lấy chương trình có thứ tự áp nhỏ hơn (áp trước), cùng thứ tự lấy cái lợi hơn.</span></span>
       </label>
       <label className={`mh-tick ${repeatable ? '' : 'muted'}`} title={repeatable ? '' : why}>
         <input type="checkbox" disabled={!repeatable} checked={repeatable && isRepeat(p)} onChange={(e) => onChange({ ...r, repeat: e.target.checked })} />
@@ -228,9 +231,9 @@ function CachAp({ p, onChange }: { p: Policy; onChange: (rule: Policy['rule']) =
 
 // [2026-11-20 khanhtd] TRA-CUU — chồng áp riêng theo mã (apRiengChong ở @bizcity/mua-hang-domain): ai thắng theo ưu tiên, mã nào bị chặn (đóng góp)
 const KET_QUA: Record<ApRiengChong['result'], (mine: number, other: number) => string> = {
-  thua: (m, o) => `chính sách này THUA (ưu tiên ${m} < ${o})`,
-  thang: (m, o) => `chính sách này thắng (ưu tiên ${m} > ${o})`,
-  ngang: (m) => `cùng ưu tiên ${m}: phiếu nào lợi hơn thì thắng`,
+  thua: (m, o) => `chính sách này áp SAU (${thuTuText(m)}, bên kia ${thuTuText(o)})`,
+  thang: (m, o) => `chính sách này áp TRƯỚC (${thuTuText(m)}, bên kia ${thuTuText(o)})`,
+  ngang: (m) => `cùng ${thuTuText(m)}: phiếu nào lợi hơn thì áp`,
   'bi-chan': () => 'chính sách này BỊ CHẶN ở các mã này (nó không tích Áp riêng)',
 };
 /**
@@ -254,15 +257,15 @@ function ChongApRieng({ p, all, onPriority }: { p: Policy; all: Policy[]; onPrio
       <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
         {chong.slice(0, 8).map((c, k) => (
           <li key={`${c.other.id}-${k}`}>
-            <b className="mono">{c.other.code}</b> {c.other.name} — {KET_QUA[c.result](c.myPriority, c.otherPriority)}{c.myRowPriority ? ' — ưu tiên ở dòng bảng' : ''},{' '}
+            <b className="mono">{c.other.code}</b> {c.other.name} — {KET_QUA[c.result](c.myPriority, c.otherPriority)}{c.myRowPriority ? ' — thứ tự ghi ở dòng bảng' : ''},{' '}
             {c.skus === null ? 'trên cả phạm vi (hai bên không ghi mã cụ thể)' : <>ở {c.skus.length} mã: {c.skus.slice(0, 6).map((s, i) => <span key={s}>{i ? ', ' : ''}<Link to={`/app/tra-cuu/chinh-sach?sku=${encodeURIComponent(s)}`} className="mono">{s}</Link></span>)}{c.skus.length > 6 ? ` … và ${c.skus.length - 6} mã` : ''}</>}
           </li>
         ))}
         {chong.length > 8 && <li className="muted">… và {chong.length - 8} chương trình nữa</li>}
       </ul>
-      {chong.some((c) => c.myRowPriority && (c.result === 'thua' || c.result === 'ngang')) && <div className="muted" style={{ marginTop: 4 }}>Mã có ưu tiên ghi ở dòng bảng: sửa ô Ưu tiên của dòng đó (ô Ưu tiên của chính sách không áp cho các mã này).</div>}
-      {n !== undefined && <button type="button" className="btn btn-sm" style={{ marginTop: 6 }} title="Đặt ưu tiên lớn hơn mọi chương trình áp riêng đang thua / ngang — bấm Ghi để lưu" onClick={() => onPriority(n)}>Đặt ưu tiên = {n} để thắng</button>}
-      {!mine && <div className="muted" style={{ marginTop: 4 }}>Muốn chính sách này áp ở các mã đó: bỏ tích Áp riêng của chương trình kia, hoặc tích Áp riêng ở đây và đặt ưu tiên cao hơn.</div>}
+      {chong.some((c) => c.myRowPriority && (c.result === 'thua' || c.result === 'ngang')) && <div className="muted" style={{ marginTop: 4 }}>Mã có thứ tự ghi ở dòng bảng: sửa ô Thứ tự áp của dòng đó (ô Thứ tự áp của chính sách không áp cho các mã này).</div>}
+      {n !== undefined && <button type="button" className="btn btn-sm" style={{ marginTop: 6 }} title="Đưa chính sách này lên trước mọi chương trình áp riêng đang chồng — bấm Ghi để lưu" onClick={() => onPriority(n)}>Đặt thứ tự áp = {thuTuOf(n) ?? 1} để áp trước</button>}
+      {!mine && <div className="muted" style={{ marginTop: 4 }}>Muốn chính sách này áp ở các mã đó: bỏ tích Áp riêng của chương trình kia, hoặc tích Áp riêng ở đây và đặt thứ tự áp nhỏ hơn (áp trước).</div>}
     </div>
   );
 }
