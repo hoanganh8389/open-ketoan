@@ -127,8 +127,9 @@ export function useTrace(traceId: string | null, on = true) {
   return useQuery({ queryKey: ['devtools', 'trace', traceId], queryFn: () => api.get<TraceView>(`${BASE}/traces/${traceId}`), enabled: on && Boolean(traceId), staleTime: 300_000, ...OPTS });
 }
 
-export function useRequest(requestId: string | null) {
-  return useQuery({ queryKey: ['devtools', 'request', requestId], queryFn: () => api.get<RequestView>(`${BASE}/requests/${encodeURIComponent(requestId!)}`), enabled: Boolean(requestId), staleTime: 300_000, ...OPTS });
+// [2026-11-25 Nguyễn Văn Thủy] `at`: lúc xảy ra lỗi — tìm log trong 24 giờ quanh mốc đó (lỗi cũ hơn 24 giờ vẫn tra được) (đóng góp)
+export function useRequest(requestId: string | null, at?: string | null) {
+  return useQuery({ queryKey: ['devtools', 'request', requestId, at ?? ''], queryFn: () => api.get<RequestView>(`${BASE}/requests/${encodeURIComponent(requestId!)}`, at ? { at } : {}), enabled: Boolean(requestId), staleTime: 300_000, ...OPTS });
 }
 
 export function useEvidence(by: { traceId?: string | null; requestId?: string | null }, enabled = true) {

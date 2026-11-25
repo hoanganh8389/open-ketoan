@@ -76,7 +76,7 @@ export function ChiTietLoi({ r }: { r: DongLoi }) {
       <div className="row" style={{ gap: 6, marginTop: 6 }}>
         <button type="button" className="btn btn-xs" onClick={() => { void navigator.clipboard?.writeText(vanBanLoi(r, ruleOf)); setDaChep(true); setTimeout(() => setDaChep(false), 1500); }}><Copy size={12} /> {daChep ? 'Đã chép' : 'Chép đủ thông tin'}</button>
         {/* [2026-11-25 Nguyễn Văn Thủy] xem lỗi ở Loki: mở thẳng Tra mã (DEV02 — đọc Loki qua máy chủ, không cần mở cổng Grafana); Grafana là bảng biểu đồ, mở thêm nếu đã khai địa chỉ (đóng góp) */}
-        {d.requestId && d.source !== 'form' && <a className="btn btn-xs" href={`/dev/tra-ma?ma=${encodeURIComponent(d.requestId)}`} target="_blank" rel="noreferrer" title="Log máy chủ (Loki) của lần lưu này theo mã tra cứu — xem ngay trong phần mềm (Bàn điều tra → Tra mã DEV02: log, trace, bằng chứng)"><ExternalLink size={12} /> Log máy chủ (Loki)</a>}
+        {d.requestId && d.source !== 'form' && <a className="btn btn-xs" href={`/dev/tra-ma?ma=${encodeURIComponent(d.requestId)}&at=${encodeURIComponent(r.at)}`} target="_blank" rel="noreferrer" title="Log máy chủ (Loki) của lần lưu này theo mã tra cứu — xem ngay trong phần mềm (Bàn điều tra → Tra mã DEV02: log, trace, bằng chứng)"><ExternalLink size={12} /> Log máy chủ (Loki)</a>}
         {d.requestId && d.source !== 'form' && links?.grafanaUrl && <a className="btn btn-xs" href={grafanaLink(d.requestId, r.at, links.grafanaUrl)} target="_blank" rel="noreferrer" title="Mở cùng log trong Grafana Explore (nguồn Loki) — tài khoản đăng nhập xem ở HT13 → Công cụ & giám sát"><ExternalLink size={12} /> Mở trong Grafana</a>}
       </div>
     </div>

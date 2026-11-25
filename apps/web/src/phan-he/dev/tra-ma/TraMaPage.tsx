@@ -7,7 +7,7 @@
  *   - Phím `/` đưa con trỏ vào ô tra mã (U9).
  * Không có nút ghi nào (U8). Trace của đơn vị khác → "không tìm thấy" (D019-5).
  */
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { noiDungChoAI } from '@ketoan/contracts';
 import { PageHeader } from '@/components/PageHeader';
@@ -62,24 +62,82 @@ export function TraMaPage() {
 }
 
 function RequestResult({ requestId }: { requestId: string }) {
-  const q = useRequest(requestId);
-  if (q.isLoading) return <Loading text="Đang tìm yêu cầu trong nhật ký 24 giờ…" />;
-  if (q.error) return <ErrorBox error={errorText(q.error)} />;
+  const [params, setParams] = useSearchParams();
+  const at = params.get('at');
+  const q = useRequest(requestId, at);
+  // Lúc lỗi (giờ máy) để tìm quanh mốc đó — mặc định tìm 24 giờ gần nhất.
+  const [luc, setLuc] = useState(() => (at ? new Date(new Date(at).getTime() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16) : ''));
+  const chonMoc = (
+    <form className="row" style={{ gap: 6, alignItems: 'center', margin: '6px 0' }} onSubmit={(e) => { e.preventDefault(); const n = new URLSearchParams(params); if (luc) n.set('at', new Date(luc).toISOString()); else n.delete('at'); setParams(n); }}>
+      <span className="muted" style={{ fontSize: 12.5 }}>{at ? `Đang tìm trong 24 giờ quanh ${new Date(at).toLocaleString('vi-VN', { hour12: false })}` : 'Đang tìm trong 24 giờ gần nhất'} — lỗi cũ hơn thì chọn lúc xảy ra lỗi:</span>
+      <input className="input" type="datetime-local" style={{ width: 210 }} value={luc} onChange={(e) => setLuc(e.target.value)} />
+      <button className="btn btn-sm" type="submit">Tìm quanh mốc này</button>
+    </form>
+  );
+  if (q.isLoading) return <><>{chonMoc}</><Loading text="Đang tìm yêu cầu trong nhật ký…" /></>;
+  if (q.error) return <>{chonMoc}<ErrorBox error={errorText(q.error)} /></>;
   const r = q.data!;
   return (
     <>
-      {r.trace
-        ? <TraceBody key={r.trace.traceId} t={r.trace} tab="cay" onTab={() => undefined} logsOverride={r.logs} />
-        : (
-          <>
-            <Answer level="warn" title="Có log, không có trace">
-              <p>{r.traceMissing}</p>
-              {r.traceId && <p>traceId của yêu cầu: <CopyCode value={r.traceId} short={32} /></p>}
-            </Answer>
-            <div className="card"><LogTable lines={r.logs} /></div>
-          </>
-        )}
+      {chonMoc}
+      <TomTatLoi requestId={requestId} logs={r.logs} />
+      {/* [2026-11-25 Nguyễn Văn Thủy] phần kỹ thuật (trace, log thô) thu gọn — dev mở khi cần (đóng góp) */}
+      <details className="card" style={{ padding: '6px 10px', marginTop: 8 }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Chi tiết kỹ thuật cho dev (log từng bước{r.trace ? ', vết xử lý' : ''})</summary>
+        {r.trace
+          ? <TraceBody key={r.trace.traceId} t={r.trace} tab="cay" onTab={() => undefined} logsOverride={r.logs} />
+          : <>
+            <p className="muted" style={{ fontSize: 12 }}>Không có vết xử lý (trace) cho yêu cầu này{r.traceMissing ? ` — ${r.traceMissing}` : ''}. Log bên dưới vẫn đủ để biết lỗi.</p>
+            <LogTable lines={r.logs} />
+          </>}
+      </details>
     </>
+  );
+}
+
+// [2026-11-25 Nguyễn Văn Thủy] TÓM TẮT LỖI dễ đọc: chuyện gì, lúc nào, ở chức năng nào, câu báo, mã lỗi nghĩa là gì, ai cần sửa; nút chép để báo dev (đóng góp)
+const NGHIA_MA: Record<string, [string, string]> = {
+  VALIDATION_ERROR: ['Dữ liệu nhập chưa hợp lệ', 'Người nhập sửa theo câu báo (ô, danh mục, số liệu) rồi lưu lại'],
+  CONFLICT: ['Trùng hoặc vướng chứng từ / danh mục khác', 'Người nhập xử lý chỗ bị vướng theo câu báo (đổi số, bỏ duyệt phiếu liên quan…)'],
+  NOT_FOUND: ['Không tìm thấy dữ liệu được nhắc tới', 'Kiểm tra mã / số có đúng và còn dùng không; nếu đúng mà vẫn báo thì gửi dev'],
+  FORBIDDEN: ['Không có quyền hoặc tính năng đang tắt', 'Quản trị cấp quyền / bật tính năng theo câu báo'],
+  UNAUTHORIZED: ['Phiên đăng nhập hết hạn', 'Đăng nhập lại'],
+  NOT_READY: ['Dịch vụ phụ trợ chưa sẵn sàng / chưa cấu hình', 'Quản trị khai cấu hình (HT13) theo câu báo'],
+  PERIOD_LOCKED: ['Kỳ kế toán đã khoá sổ', 'Mở khoá kỳ hoặc ghi vào kỳ đang mở'],
+  RATE_LIMITED: ['Thao tác quá nhanh / quá nhiều lần', 'Chờ một lát rồi thử lại'],
+  INTERNAL_ERROR: ['Lỗi trong phần mềm (máy chủ)', 'Gửi dev — chép thông tin bên dưới'],
+};
+function TomTatLoi({ requestId, logs }: { requestId: string; logs: LogLine[] }) {
+  const [daChep, setDaChep] = useState(false);
+  const goc = logs.find((l) => l.route) ?? logs[0];
+  if (!goc) return <Answer level="warn" title="Không có log của yêu cầu này"><p>Thử chọn đúng lúc xảy ra lỗi ở ô phía trên.</p></Answer>;
+  const status = goc.status ?? 0;
+  const ma = logs.find((l) => l.errCode)?.errCode ?? (status >= 500 ? 'INTERNAL_ERROR' : '');
+  const cau = logs.find((l) => l.errCode && !l.route && l.msg)?.msg ?? logs.find((l) => l.err?.message)?.err?.message ?? (ma ? '' : goc.msg);
+  const loiMay = status >= 500 || ma === 'INTERNAL_ERROR';
+  const ok = status > 0 && status < 400;
+  const [nghia, cachSua] = NGHIA_MA[ma] ?? (ma ? [ma, 'Đọc câu báo; chưa rõ thì gửi dev'] : ['', '']);
+  const stack = logs.find((l) => l.err?.stack)?.err?.stack;
+  const vanBan = [`Mã tra cứu: ${requestId}`, `Lúc: ${new Date(goc.time).toLocaleString('vi-VN', { hour12: false })}`, goc.route ? `Chức năng: ${goc.method ?? ''} ${goc.route} → ${status || ''}` : '',
+    ma ? `Mã lỗi: ${ma} (${nghia})` : '', cau ? `Câu báo: ${cau}` : '', goc.docType ? `Chứng từ: ${goc.docType} ${goc.docKey ?? ''}` : '', stack ? `Stack:\n${stack}` : ''].filter(Boolean).join('\n');
+  const row = (k: string, v: ReactNode) => v ? <tr><td className="muted" style={{ width: 150, verticalAlign: 'top' }}>{k}</td><td>{v}</td></tr> : null;
+  return (
+    <div className="card" style={{ padding: 12, borderLeft: `4px solid ${ok ? 'var(--ok, #16a34a)' : loiMay ? '#dc2626' : '#d97706'}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <b style={{ fontSize: 15 }}>{ok ? 'Yêu cầu chạy thành công' : loiMay ? 'Lỗi trong phần mềm — cần dev sửa' : 'Máy chủ từ chối lưu — do dữ liệu / thao tác'}</b>
+        <button type="button" className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { void navigator.clipboard?.writeText(vanBan); setDaChep(true); setTimeout(() => setDaChep(false), 1500); }}>{daChep ? 'Đã chép' : 'Chép để báo dev'}</button>
+      </div>
+      <table className="mh-mini" style={{ width: '100%' }}><tbody>
+        {row('Câu báo lỗi', cau && <b style={{ color: ok ? undefined : '#b91c1c' }}>{cau}</b>)}
+        {row('Mã lỗi', ma && <><code>{ma}</code> — {nghia}</>)}
+        {row('Cách sửa', cachSua)}
+        {row('Lúc', new Date(goc.time).toLocaleString('vi-VN', { hour12: false }))}
+        {row('Chức năng (API)', goc.route && <><code>{goc.method} {goc.route}</code>{status ? <> → {status}</> : null}{goc.ms !== undefined ? <span className="muted"> · {goc.ms} ms</span> : null}</>)}
+        {row('Chứng từ', goc.docType && <>{goc.docType} {goc.docKey && <code>{goc.docKey}</code>}</>)}
+        {row('Mã tra cứu', <code>{requestId}</code>)}
+        {row('Chỗ lỗi trong mã', stack && <pre style={{ whiteSpace: 'pre-wrap', fontSize: 11, margin: 0, maxHeight: 220, overflow: 'auto' }}>{stack}</pre>)}
+      </tbody></table>
+    </div>
   );
 }
 

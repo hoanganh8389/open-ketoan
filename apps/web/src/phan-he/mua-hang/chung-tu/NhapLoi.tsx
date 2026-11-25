@@ -45,7 +45,7 @@ export function NhapLoi({ onOpen }: { onOpen: (d: PDoc) => void }) {
                   <td className="mono">{r.branchCode}</td>
                   <td>{r.action}</td>
                   <td style={{ maxWidth: 420 }}>{r.error.code && <span className="mono mh-bad">{r.error.code} </span>}{r.error.message}</td>
-                  <td className="mono" style={{ fontSize: 11 }}>{r.error.requestId ? <Link to={`/dev/tra-ma?ma=${encodeURIComponent(r.error.requestId)}`} target="_blank" title="Log máy chủ (Loki) của lần lưu lỗi này">{r.error.requestId}</Link> : ''}</td>
+                  <td className="mono" style={{ fontSize: 11 }}>{r.error.requestId ? <Link to={`/dev/tra-ma?ma=${encodeURIComponent(r.error.requestId)}&at=${encodeURIComponent(r.ts)}`} target="_blank" title="Log máy chủ (Loki) của lần lưu lỗi này">{r.error.requestId}</Link> : ''}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <button type="button" className="btn btn-xs btn-primary" title="Mở lại phiếu đúng như lúc lưu lỗi — sửa rồi Ghi" onClick={() => { nhapLoiDangMo.add(r.key); setMo(false); onOpen(r.doc); }}>Mở</button>{' '}
                     <button type="button" className="btn btn-xs" onClick={() => void bo(r)}>Bỏ</button>
