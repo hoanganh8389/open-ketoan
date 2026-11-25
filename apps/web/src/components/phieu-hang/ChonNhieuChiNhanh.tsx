@@ -10,7 +10,8 @@ import { Building2, ChevronDown, ChevronRight, MapPin, Store } from 'lucide-reac
 import { useAuth } from '@/lib/auth';
 import { useCayDonVi } from '@/lib/cayDonVi';
 
-const BranchForm = lazy(() => import('@/features/catalog/BranchesPage').then((m) => ({ default: m.BranchForm })));
+// [2026-11-26 12:40 AM Nguyễn Văn Thủy] MH-NHAN — + Thêm chi nhánh mở hộp Thêm đơn vị của sơ đồ tổ chức, Thuộc = chi nhánh gốc của cây (đóng góp)
+const ThemDonViTheoCay = lazy(() => import('@/components/phieu-hang/ThemTheoCoCau').then((m) => ({ default: m.ThemDonViTheoCay })));
 const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 export const POP_STYLE = { position: 'fixed', maxHeight: 380, overflow: 'auto', zIndex: 80, background: 'var(--surface, #fff)', border: '1px solid var(--line)', borderRadius: 6, boxShadow: '0 6px 24px rgba(15,34,61,.18)', padding: 6 } as const;
 
@@ -31,10 +32,12 @@ export function useHopTha(rong: number) {
   return { mo, setMo, nut, hop, bat, giu };
 }
 
-export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder = 'Chọn chi nhánh nhận', nutXanh }: {
+export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder = 'Chọn chi nhánh nhận', nutXanh, mot }: {
   goc: string; value: string[]; /** (giữ cho tương thích, không dùng) */ khoa?: string[]; onChange: (codes: string[]) => void; disabled?: boolean; placeholder?: string;
   /** [2026-11-25 11:35 PM Nguyễn Văn Thủy] MH-NHAN — hiện thành nút chính (màu xanh của hệ thống) "+ …" (cạnh dãy tab chi nhánh nhận của đơn đặt) thay cho ô ghi mã (đóng góp) */
   nutXanh?: boolean;
+  /** [2026-11-26 12:45 AM Nguyễn Văn Thủy] MH-NHAN — chọn MỘT đơn vị (chi nhánh lập chứng từ): bấm là chọn + đóng; goc rỗng = cả cây công ty, mọi cấp (đóng góp) */
+  mot?: boolean;
 }) {
   const cay = useCayDonVi();
   const { can } = useAuth();
@@ -42,13 +45,12 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
   const [q, setQ] = useState('');
   const [dong, setDong] = useState<Set<string>>(new Set());
   const [them, setThem] = useState(false);
-  const d0 = cay.index.get(goc)?.depth ?? 0;
-  const ds = useMemo(() => [goc, ...cay.conCua(goc)].map((b) => { const u = cay.index.get(b); return { b, ten: u?.name ?? b, cap: u?.levelLabel ?? '', sau: Math.max(0, (u?.depth ?? d0) - d0), cha: u?.parentCode ?? null, con: Boolean(u?.hasKids), active: u?.isActive ?? true }; })
+  const d0 = goc ? cay.index.get(goc)?.depth ?? 0 : 0;
+  const ds = useMemo(() => (goc ? [goc, ...cay.conCua(goc)] : cay.list.map((u) => u.code)).map((b) => { const u = cay.index.get(b); return { b, ten: u?.name ?? b, cap: u?.levelLabel ?? '', sau: Math.max(0, (u?.depth ?? d0) - d0), cha: u?.parentCode ?? null, con: Boolean(u?.hasKids), active: u?.isActive ?? true }; })
     .filter((x) => x.active || value.includes(x.b))
-    // [2026-11-25 Nguyễn Văn Thủy] chỉ tới cấp chi nhánh (đơn vị có cấp dưới) — cửa hàng / kho chọn ở ô Giao tại kho (đóng góp)
-    .filter((x) => x.con || x.b === goc || value.includes(x.b))
+    // [2026-11-26 Nguyễn Văn Thủy] MH-NHAN — đủ mọi cấp con đệ quy (chi nhánh → cửa hàng…), không chặn ở cấp chi nhánh; kho vẫn chọn ở dòng (đóng góp)
     // Chi nhánh đang tích nhưng ngoài cây của chi nhánh lập (phiếu cũ / đổi chi nhánh lập): hiện cuối, chữ đỏ để bỏ.
-    .concat(value.filter((b) => b !== goc && !cay.conCua(goc).includes(b)).map((b) => ({ b, ten: cay.index.get(b)?.name ?? b, cap: 'ngoài chi nhánh lập', sau: 0, cha: null, con: false, active: true, ngoai: true }))), [goc, cay, d0, value]);
+    .concat((goc ? value : []).filter((b) => b !== goc && !cay.conCua(goc).includes(b)).map((b) => ({ b, ten: cay.index.get(b)?.name ?? b, cap: 'ngoài chi nhánh lập', sau: 0, cha: null, con: false, active: true, ngoai: true }))), [goc, cay, d0, value]);
   const coTrong = useMemo(() => new Set(ds.map((x) => x.b)), [ds]);
   const chaCua = (b: string) => { const out: string[] = []; for (let c = cay.index.get(b)?.parentCode ?? null, n = 0; c && coTrong.has(c) && n < 30; c = cay.index.get(c)?.parentCode ?? null, n++) out.push(c); return out; };
   // Mở hộp: thu gọn từ cấp 2 trở xuống, trừ đường tới chi nhánh đang tích.
@@ -62,7 +64,7 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
   const khop = k ? new Set(ds.filter((x) => boDau(`${x.b} ${x.ten}`).includes(k)).flatMap((x) => [x.b, ...chaCua(x.b)])) : null;
   const coConHien = (b: string) => ds.some((y) => y.cha === b);
   const hien = ds.filter((x) => (khop ? khop.has(x.b) : !chaCua(x.b).some((c) => dong.has(c))));
-  const doi = (c: string) => onChange(value.includes(c) ? value.filter((x) => x !== c) : [...value, c]);
+  const doi = (c: string) => { if (mot) { onChange([c]); setMo(null); return; } onChange(value.includes(c) ? value.filter((x) => x !== c) : [...value, c]); };
   const togg = (b: string) => setDong((s) => { const n = new Set(s); if (n.has(b)) n.delete(b); else n.add(b); return n; });
   return (
     <>
@@ -70,7 +72,7 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
         style={nutXanh ? { whiteSpace: 'nowrap' } : { textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}
         title={value.length ? value.map((c, i) => `${i === 0 ? '★ ' : ''}${c} · ${cay.index.get(c)?.name ?? ''}`).join('\n') : `Chưa tích — đơn nhận tại chi nhánh lập chứng từ ${goc}. Tích một hoặc nhiều chi nhánh nhận (chi nhánh lập và các chi nhánh con)`}
         onClick={moHop}>
-        {nutXanh ? placeholder : value.length ? <span className="mono">{value.join(', ')}</span> : <span className="muted">{placeholder}</span>}
+        {nutXanh ? placeholder : mot && value[0] ? <><span className="mono">{value[0]}</span> <span>{cay.index.get(value[0])?.name ?? ''}</span></> : value.length ? <span className="mono">{value.join(', ')}</span> : <span className="muted">{placeholder}</span>}
       </button>
       {mo && (
         <div ref={hop} className="mh-col-pop" style={{ ...POP_STYLE, top: mo.top, left: mo.left, width: mo.width }}>
@@ -85,16 +87,16 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
                   {coConHien(x.b) ? (o ? <ChevronDown size={13} /> : <ChevronRight size={13} />) : null}
                 </button>
                 <label style={{ display: 'flex', gap: 5, alignItems: 'center', cursor: 'pointer', minWidth: 0, flex: 1 }}>
-                  <input type="checkbox" checked={value.includes(x.b)} onChange={() => doi(x.b)} />
+                  <input type={mot ? 'radio' : 'checkbox'} checked={value.includes(x.b)} onChange={() => doi(x.b)} />
                   <Ic size={13} style={{ color: 'var(--muted)', flex: 'none' }} />
                   <span className="mono">{x.b}</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: x.con ? 600 : undefined }}>{x.ten}</span>
                 </label>
-                {value[0] === x.b && <span className="badge badge-info" style={{ fontSize: 10 }}>chính</span>}
+                {!mot && value[0] === x.b && <span className="badge badge-info" style={{ fontSize: 10 }}>chính</span>}
               </div>
             );
           })}
           <div style={{ borderTop: '1px solid var(--line)', marginTop: 4, paddingTop: 4, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-xs" disabled={!value.length} title="Bỏ hết — đơn nhận tại chi nhánh lập chứng từ" onClick={() => onChange([])}>Bỏ chọn hết</button>
+            {!mot && <button type="button" className="btn btn-xs" disabled={!value.length} title="Bỏ hết — đơn nhận tại chi nhánh lập chứng từ" onClick={() => onChange([])}>Bỏ chọn hết</button>}
             {can('catalog:write') && <button type="button" className="btn btn-xs" title="Thêm chi nhánh mới (Cơ cấu tổ chức)" onClick={() => { giu.current = true; setThem(true); }}>+ Thêm chi nhánh</button>}
             <button type="button" className="btn btn-xs btn-ghost" onClick={() => setDong(new Set())}>Mở hết</button>
             <button type="button" className="btn btn-xs btn-ghost" onClick={() => setDong(new Set(ds.filter((x) => x.con && x.sau >= 1).map((x) => x.b)))}>Thu gọn</button>
@@ -104,7 +106,7 @@ export function ChonNhieuChiNhanh({ goc, value, onChange, disabled, placeholder 
       )}
       {them && (
         <Suspense fallback={null}>
-          <BranchForm value={{ isNew: true, isActive: true }} onSaved={(c) => { if (c && !value.includes(c)) onChange([...value, c]); }} onClose={() => { setThem(false); giu.current = false; }} />
+          <ThemDonViTheoCay cha={goc || value[0] || null} onSaved={(c) => { if (c && !value.includes(c)) onChange(mot ? [c] : [...value, c]); }} onClose={() => { setThem(false); giu.current = false; }} />
         </Suspense>
       )}
     </>

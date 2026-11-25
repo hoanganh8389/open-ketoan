@@ -10,7 +10,7 @@ import { api } from '@/lib/api';
 import { useCoCau } from '@/features/catalog/co-cau/du-lieu';
 
 const BoPhanModal = lazy(() => import('@/features/catalog/co-cau/HopThoai').then((m) => ({ default: m.BoPhanModal })));
-const WarehouseForm = lazy(() => import('@/features/catalog/WarehousesPage').then((m) => ({ default: m.WarehouseForm })));
+const ThemKhoTheoCay = lazy(() => import('@/components/phieu-hang/ThemTheoCoCau').then((m) => ({ default: m.ThemKhoTheoCay })));
 const DimensionForm = lazy(() => import('@/features/catalog/DimensionsPage').then((m) => ({ default: m.DimensionForm })));
 
 export function ThemDanhMucNhanh({ kind, text, onClose, onSaved }: { kind: DimensionKind; text: string; onClose: () => void; onSaved: (code: string) => void }) {
@@ -37,7 +37,8 @@ export function ThemKhoNhanh({ branchCode, onClose, onSaved }: { branchCode: str
   const qc = useQueryClient();
   return (
     <Suspense fallback={null}>
-      <WarehouseForm value={{ isNew: true, isActive: true, branchCode }} onClose={onClose}
+      {/* [2026-11-26 12:40 AM Nguyễn Văn Thủy] MH-NHAN — hộp Phân kho của sơ đồ tổ chức (gắn sẵn đơn vị) thay form kho rời (đóng góp) */}
+      <ThemKhoTheoCay donVi={branchCode || null} onClose={onClose}
         onSaved={(c) => { void qc.invalidateQueries({ queryKey: ['co-cau'] }); void qc.invalidateQueries({ queryKey: ['warehouses'] }); if (c) onSaved(c); }} />
     </Suspense>
   );

@@ -112,15 +112,15 @@ export function BranchPicker({ value, onChange, placeholder = 'Gõ mã hoặc t�
         onAdd={canAdd ? (t) => setAdding(t) : undefined} addLabel="Thêm chi nhánh" />
       {adding !== null && (
         <Suspense fallback={null}>
-          <BranchForm value={{ isNew: true, isActive: true, ...(/^[0-9A-Za-z_-]{2,20}$/.test(adding.trim()) ? { code: adding.trim() } : adding.trim() ? { name: adding.trim() } : {}) }}
-            onSaved={(code) => code && onChange(code)} onClose={() => setAdding(null)} />
+          {/* [2026-11-26 12:40 AM Nguyễn Văn Thủy] MH-NHAN — thêm theo sơ đồ tổ chức (hộp Thêm đơn vị, Thuộc = chi nhánh đang chọn) (đóng góp) */}
+          <ThemDonViTheoCay cha={value || null} onSaved={(code) => code && onChange(code)} onClose={() => setAdding(null)} />
         </Suspense>
       )}
     </>
   );
 }
 // [2026-11-11 Nguyễn Văn Thủy] thêm nhanh chi nhánh ngay ở ô chọn (đóng góp)
-const BranchForm = lazy(() => import('@/features/catalog/BranchesPage').then((m) => ({ default: m.BranchForm })));
+const ThemDonViTheoCay = lazy(() => import('@/components/phieu-hang/ThemTheoCoCau').then((m) => ({ default: m.ThemDonViTheoCay })));
 
 // [2026-11-19 Nguyễn Văn Thủy] thẻ "Cây": tích nút cơ cấu tổ chức = chọn mọi chi nhánh (shop) bên dưới; không tới kho (đóng góp)
 export function BranchMultiSelect({ value, onChange, label, branches, emptyText = 'Tất cả chi nhánh' }: { value: string; onChange: (v: string) => void; label: string; branches: BranchOption[]; /** Chữ khi chưa chọn chi nhánh nào. */ emptyText?: string }) {

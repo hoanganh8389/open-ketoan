@@ -10,7 +10,8 @@ import { useCayDonVi } from '@/lib/cayDonVi';
 import { ListPicker } from '@/components/pickers';
 
 // [2026-11-11 Nguyễn Văn Thủy] nút + cạnh ô kho: thêm kho cho chi nhánh ngay trên phiếu (đóng góp)
-const WarehouseForm = lazy(() => import('@/features/catalog/WarehousesPage').then((m) => ({ default: m.WarehouseForm })));
+// [2026-11-26 12:40 AM Nguyễn Văn Thủy] MH-NHAN — nút + thêm phân kho bằng hộp Phân kho của sơ đồ tổ chức, gắn sẵn đơn vị (đóng góp)
+const ThemKhoTheoCay = lazy(() => import('@/components/phieu-hang/ThemTheoCoCau').then((m) => ({ default: m.ThemKhoTheoCay })));
 
 export interface KhoOption { code: string; branchCode: string; name: string; isActive: boolean; isDefault: boolean; isPromo?: boolean; typeCode?: string; typeName?: string }
 
@@ -51,7 +52,7 @@ export function ChonKho(props: { branchCode: string; value: string; onChange: (c
       <button type="button" className="picker-add" title={`Thêm kho cho chi nhánh ${props.branchCode}`} onClick={() => setAdding(true)}>+</button>
       {adding && (
         <Suspense fallback={null}>
-          <WarehouseForm value={{ isNew: true, isActive: true, branchCode: props.branchCode }} onSaved={(code) => code && props.onChange(code)} onClose={() => setAdding(false)} />
+          <ThemKhoTheoCay donVi={props.branchCode || null} onSaved={(code) => code && props.onChange(code)} onClose={() => setAdding(false)} />
         </Suspense>
       )}
     </span>

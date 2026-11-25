@@ -103,7 +103,8 @@ export function CayDoiTuong<T extends PartnerNode>({ rows, selected, onSelect, o
 export function ODonViCha({ value, onChange, self, isNew, disabled, groupCode, kind }: { value: string | null | undefined; onChange: (code: string | null) => void; self?: string; isNew: boolean; disabled?: boolean;
   /** Nhóm để tìm đơn vị cha (form truyền nhóm cha của nhóm đang chọn); trống thì khoá ô. */ groupCode?: string | null;
   /** Chỉ đối tượng có vai trò này; trống = mọi vai trò (tích cả khách hàng và nhà cung cấp). */ kind?: 'customer' | 'supplier' }) {
-  const chuaNhom = !groupCode && !value;
+  // [2026-11-26 12:55 AM Nguyễn Văn Thủy] PART-CHA — không khoá chờ nhóm; groupCode (nếu truyền) chỉ là lọc thêm (đóng góp)
+  const chuaNhom = false;
   return (
     <div className="field full">
       <label>Thuộc đơn vị cha <Hoi text={'Chọn khi đối tượng này là chi nhánh / đơn vị con của một nhà cung cấp hoặc khách hàng lớn (vd Công ty mẹ → Chi nhánh Hà Nội). '

@@ -346,9 +346,13 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   // [2026-11-25 Nguyễn Văn Thủy] Điều chỉnh hoá đơn chỉ hiện khi đang lập bản điều chỉnh phiếu đã duyệt (hoặc phiếu đã có dữ liệu điều chỉnh);
   // phiếu thường chỉ thêm / bỏ hoá đơn. Gợi ý hoá đơn NCC ở MH22 chưa gán phiếu nhập nào (đóng góp)
   const dangDieuChinhHd = Boolean(stored?.adjust) || invs.some((h) => h.adjusts) || Boolean(v.invoiceFix);
-  const [timHd, setTimHd] = useState('');
+  // [2026-11-26 Nguyễn Văn Thủy] MH-HD — một ô thêm hoá đơn: gõ / bấm vào ô Số HĐ là hiện gợi ý hoá đơn NCC ở MH22 chưa gán phiếu nhập,
+  // lọc theo chữ đang gõ (ký hiệu, số, ngày, tiền), bấm gợi ý là thêm; không có ở MH22 thì điền đủ rồi bấm Thêm (đóng góp)
+  const [goiYHdMo, setGoiYHdMo] = useState(false);
+  const tuHd = `${hdMoi.serial} ${hdMoi.no}`.toLowerCase().split(/s+/).filter(Boolean);
   const hdGoiY = nccInvoices.filter((x) => !x.receipts.length && !invs.some((h) => sameInvoice(x, { no: h.no, series: h.serial })))
-    .filter((x) => !timHd.trim() || `${x.series} ${x.no} ${x.date} ${x.total}`.toLowerCase().includes(timHd.trim().toLowerCase()));
+    .filter((x) => { const t = `${x.series} ${x.no} ${x.date} ${dmy(x.date)} ${x.total}`.toLowerCase(); return tuHd.every((w) => t.includes(w)); });
+  const themHdMh22 = (x: (typeof nccInvoices)[number]) => { themHd({ no: x.no, ...(x.series ? { serial: x.series } : {}), date: x.date, ...(x.total ? { total: x.total } : {}), ...(x.id ? { supplierInvoiceId: x.id } : {}) }); setHdMoi({ serial: '', no: '', date: '' }); setGoiYHdMo(false); };
   const themHd = (h: DocInvoice) => {
     if (!h.no.trim()) return;
     if (invs.some((x) => invoiceKey(x).toLowerCase() === invoiceKey(h).toLowerCase())) { window.alert(`Hoá đơn ${invoiceKey(h)} đã có trên phiếu`); return; }
@@ -1206,7 +1210,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   // Ngày nhận hoá đơn đang bằng ngày phiếu (hoá đơn giao kèm, chưa sửa riêng) thì chạy theo ngày phiếu — không để hạn thanh toán tính từ ngày cũ.
                   ...(v.receivedDate && v.receivedDate === v.docDate ? { receivedDate: e.target.value } : {}) })} /></div>
                 {/* [2026-11-21 Nguyễn Văn Thủy] đầu phiếu gọn: chi nhánh (cây cha – con) · nơi giao / phân kho · bộ phận cùng một hàng (đóng góp) */}
-                <div className="field span2"><label title="Chi nhánh của chứng từ (nhận hàng, ghi công nợ). Danh sách xếp theo cây cơ cấu: chi nhánh cha trước, con thụt vào. Đơn giao nhiều nơi: chọn chi nhánh nhận ở từng dòng">Chi nhánh lập chứng từ (*){v.workBranchCode && v.workBranchCode !== v.branchCode ? <span className="muted" style={{ fontWeight: 400 }} title="Chi nhánh đang làm việc của người lập phiếu (nút chi nhánh trên cùng)"> · người lập làm việc tại {v.workBranchCode}</span> : null}</label><BranchPicker value={v.branchCode} onChange={(c) => { set({ branchCode: c, deliveryBranch: undefined, ...(isOrder ? { receiveBranches: undefined, deliveryWarehouse: undefined, deliveryWarehouses: undefined, lines: v.lines.map((l) => ({ ...l, branchCode: undefined, warehouseCode: undefined })) } : {}) }); if (c) lastUsed.set({ branchCode: c }); }} activeOnly disabled={readOnly} /></div>
+                <div className="field span2"><label title="Chi nhánh của chứng từ (nhận hàng, ghi công nợ). Danh sách xếp theo cây cơ cấu: chi nhánh cha trước, con thụt vào. Đơn giao nhiều nơi: chọn chi nhánh nhận ở từng dòng">Chi nhánh lập chứng từ (*){v.workBranchCode && v.workBranchCode !== v.branchCode ? <span className="muted" style={{ fontWeight: 400 }} title="Chi nhánh đang làm việc của người lập phiếu (nút chi nhánh trên cùng)"> · người lập làm việc tại {v.workBranchCode}</span> : null}</label>{/* [2026-11-26 12:45 AM Nguyễn Văn Thủy] MH-NHAN — chi nhánh lập chứng từ chọn trên cây thu gọn / mở (như chi nhánh nhận) (đóng góp) */}<ChonNhieuChiNhanh mot goc="" value={v.branchCode ? [v.branchCode] : []} placeholder="Chọn chi nhánh lập chứng từ" disabled={readOnly} onChange={(ds) => { const c = ds[0] ?? ''; set({ branchCode: c, deliveryBranch: undefined, ...(isOrder ? { receiveBranches: undefined, deliveryWarehouse: undefined, deliveryWarehouses: undefined, lines: v.lines.map((l) => ({ ...l, branchCode: undefined, warehouseCode: undefined })) } : {}) }); if (c) lastUsed.set({ branchCode: c }); }} /></div>
                 {/* [2026-11-21 Nguyễn Văn Thủy] Giao tại kho: tích NHIỀU kho (của chi nhánh + chi nhánh con) làm tham chiếu cho dòng; phân kho thật lưu ở từng dòng (đóng góp) */}
                 {/* [2026-11-25 Nguyễn Văn Thủy] Bộ phận, Khoản mục lên hàng đầu cạnh chi nhánh lập chứng từ (đóng góp) */}
                 <div className="field"><label title="Bộ phận thuộc chi nhánh của phiếu (DM16) — mặc định bộ phận mặc định của chi nhánh">Bộ phận</label>
@@ -1274,7 +1278,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   </div>
                 )}
                 {v.kind === 'receipt' && !readOnly && v.partnerCode && (
-                  <div className="field span2"><label title="Hoá đơn NCC đã nhập ở MH22 (Excel / quét / gõ tay): chọn là điền dòng hàng (mã, ĐVT, SL, giá chưa thuế, CK, thuế suất) và số / ngày hoá đơn">Lấy từ hoá đơn NCC <Link to={`/mua-hang/hoa-don-ncc`} className="muted" style={{ fontWeight: 400 }} title="Mở MH22 Hoá đơn đầu vào của NCC">(MH22)</Link></label>
+                  <div className="field span2"><label title="Hoá đơn NCC đã nhập ở MH22 (Excel / quét / gõ tay): chọn là điền dòng hàng (mã, ĐVT, SL, giá chưa thuế, CK, thuế suất) và số / ngày hoá đơn. Chỉ để gán thêm hoá đơn (không đổi dòng hàng) thì dùng thẻ Hoá đơn &amp; đối soát">Lấy dòng hàng từ hoá đơn NCC <Link to={`/mua-hang/hoa-don-ncc`} className="muted" style={{ fontWeight: 400 }} title="Mở MH22 Hoá đơn đầu vào của NCC">(MH22)</Link></label>
                     <OChonChungTu disabled={fromInv.busy} count={nccInvoices.length} onOpen={() => setChon('hoa-don')}
                       text={(() => { const x = v.invoice?.no ? nccInvoices.find((i) => sameInvoice(i, { no: v.invoice!.no, series: v.invoice!.serial })) : undefined; return x ? `Đã lấy ${invoiceLabel(x)} · ${dmy(x.date)} · ${vnd(x.total)}` : undefined; })()}
                       placeholder={fromInv.busy ? 'Đang lấy…' : nccInvoices.length ? 'Chọn hoá đơn để điền dòng hàng, giá, thuế…' : 'NCC chưa có hoá đơn ở MH22'} />
@@ -1840,31 +1844,27 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                     {!readOnly && <tr>
                       <td className="muted">+</td>
                       <td><input className="input mono" style={{ width: 90 }} placeholder="Ký hiệu" value={hdMoi.serial} onChange={(e) => setHdMoi({ ...hdMoi, serial: e.target.value.trim() })} /></td>
-                      <td><input className="input mono" style={{ width: 100 }} placeholder="Số HĐ" value={hdMoi.no} onChange={(e) => setHdMoi({ ...hdMoi, no: e.target.value.trim() })} /></td>
+                      <td style={{ position: 'relative' }}><input className="input mono" style={{ width: 160 }} placeholder="Gõ / chọn số HĐ" value={hdMoi.no}
+                        onFocus={() => setGoiYHdMo(true)} onBlur={() => setTimeout(() => setGoiYHdMo(false), 150)}
+                        onChange={(e) => { setHdMoi({ ...hdMoi, no: e.target.value.trim() }); setGoiYHdMo(true); }}
+                        onKeyDown={(e) => { if (e.key === 'Escape') setGoiYHdMo(false); if (e.key === 'Enter') { e.preventDefault(); if (hdGoiY.length === 1) themHdMh22(hdGoiY[0]!); } }}
+                        title="Gõ ký hiệu / số / ngày / tiền để tìm hoá đơn NCC đã có ở MH22 (chưa gán phiếu nhập nào) — bấm để thêm" />
+                        {goiYHdMo && <div className="mh-col-pop" style={{ position: 'absolute', left: 0, top: '100%', zIndex: 30, width: 460, maxHeight: 260, overflow: 'auto', padding: 4 }} onMouseDown={(e) => e.preventDefault()}>
+                          <div className="muted" style={{ fontSize: 11.5, padding: '2px 4px' }}>{!v.partnerCode ? 'Chọn nhà cung cấp trước để hiện hoá đơn của NCC ở MH22' : invQ.isLoading ? 'đang tải…' : hdGoiY.length ? `Hoá đơn của NCC ở MH22 chưa gán phiếu nhập (${hdGoiY.length}) — bấm để thêm` : 'Không có hoá đơn MH22 khớp — điền ký hiệu, ngày, tiền rồi bấm Thêm'}</div>
+                          {v.partnerCode && hdGoiY.slice(0, 50).map((x) => <button type="button" key={x.id} className="mh-goi-y-hd" style={{ display: 'flex', gap: 10, width: '100%', textAlign: 'left', padding: '4px 6px', border: 0, background: 'none', cursor: 'pointer', fontSize: 12.5 }} onClick={() => themHdMh22(x)}
+                            title={x.unmatched ? `${x.unmatched} dòng chưa nhận diện mã — nhận diện ở MH22 để đối soát SL` : undefined}>
+                            <span className="mono" style={{ minWidth: 130 }}>{invoiceLabel(x)}</span><span>{dmy(x.date)}</span><span className="num" style={{ marginLeft: 'auto' }}>{vnd(x.total)}</span><span className="muted">{x.lineCount} dòng{x.unmatched ? <span className="mh-warn"> ({x.unmatched} chưa mã)</span> : null}</span>
+                          </button>)}
+                        </div>}</td>
                       <td><input className="input" type="date" value={hdMoi.date || v.docDate} onChange={(e) => setHdMoi({ ...hdMoi, date: e.target.value })} /></td>
                       <td><NumInput style={{ width: 110 }} value={hdMoi.total} onChange={(n) => setHdMoi({ ...hdMoi, total: n || undefined })} /></td>
-                      <td colSpan={dangDieuChinhHd ? 5 : 4}><div className="row" style={{ gap: 4, flexWrap: 'wrap' }}><button type="button" className="btn btn-xs btn-primary" disabled={!hdMoi.no} onClick={() => { themHd({ no: hdMoi.no, ...(hdMoi.serial ? { serial: hdMoi.serial } : {}), date: hdMoi.date || v.docDate, ...(hdMoi.total ? { total: hdMoi.total } : {}) }); setHdMoi({ serial: '', no: '', date: '' }); }}>Thêm hoá đơn</button>
-                        <button type="button" className="btn btn-xs" disabled={!nccInvoices.length} onClick={() => { setThemHdTuMh22(true); setChon('hoa-don'); }} title="Chọn hoá đơn đã lưu ở MH22 để THÊM vào phiếu (không đổi dòng hàng)">+ Thêm từ hoá đơn NCC (MH22)</button></div></td>
+                      <td colSpan={dangDieuChinhHd ? 5 : 4}><button type="button" className="btn btn-xs btn-primary" disabled={!hdMoi.no} title="Thêm hoá đơn gõ tay (chưa có ở MH22)" onClick={() => { themHd({ no: hdMoi.no, ...(hdMoi.serial ? { serial: hdMoi.serial } : {}), date: hdMoi.date || v.docDate, ...(hdMoi.total ? { total: hdMoi.total } : {}) }); setHdMoi({ serial: '', no: '', date: '' }); }}>Thêm</button></td>
                     </tr>}
                     {!invs.length && readOnly && <tr><td colSpan={10} className="muted">Phiếu chưa có hoá đơn{v.invoicePlan?.mode === 'none' ? ' (hàng không có hoá đơn)' : ''}.</td></tr>}
                   </tbody></table>
                   {a?.invoiceQty?.missing.length ? <div className="mh-warn" style={{ fontSize: 12, marginTop: 4 }}>Chưa đối soát SL được: {a.invoiceQty.missing.join('; ')}</div> : null}
                   {v.status === 'approved' && !stored?.adjust && <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>Hoá đơn sai / NCC xuất hoá đơn điều chỉnh: bấm <b>Lập điều chỉnh</b> (cuối phiếu) rồi sửa hoá đơn ở đây — có cột "Điều chỉnh cho HĐ" và ngày báo HĐ sai; mọi lần thêm / bỏ / điều chỉnh xem ở <b>Lịch sử hoá đơn</b>.</div>}
-                  {!readOnly && v.partnerCode && <div style={{ marginTop: 8, borderTop: '1px dashed var(--line)', paddingTop: 6 }}>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <b style={{ fontSize: 12.5 }}>Hoá đơn của NCC chưa gán phiếu nhập (MH22)</b>
-                      <span className="muted" style={{ fontSize: 12 }}>{invQ.isLoading ? 'đang tải…' : `${hdGoiY.length} hoá đơn`} — bấm Thêm để gán vào phiếu này (thêm được nhiều)</span>
-                      <input className="input" style={{ width: 220, marginLeft: 'auto' }} placeholder="Tìm ký hiệu, số, ngày, tiền" value={timHd} onChange={(e) => setTimHd(e.target.value)} />
-                    </div>
-                    {hdGoiY.length > 0 && <div className="scroll-box" style={{ maxHeight: 200, marginTop: 4 }}><table className="mh-mini"><thead><tr><th>Ký hiệu - Số HĐ</th><th>Ngày HĐ</th><th className="num">Tổng tiền</th><th className="num">Số dòng</th><th>Mã NCC trên HĐ</th><th /></tr></thead><tbody>
-                      {hdGoiY.slice(0, 50).map((x) => <tr key={x.id}>
-                        <td className="mono">{invoiceLabel(x)}</td><td>{dmy(x.date)}</td><td className="num">{vnd(x.total)}</td>
-                        <td className="num" title={x.unmatched ? `${x.unmatched} dòng chưa nhận diện mã — nhận diện ở MH22 để đối soát SL` : undefined}>{x.lineCount}{x.unmatched ? <span className="mh-warn"> ({x.unmatched} chưa mã)</span> : null}</td>
-                        <td className="mono" style={{ fontSize: 11 }}>{x.partnerCode !== v.partnerCode ? <span title="Hoá đơn gắn mã NCC khác nhưng cùng MST người bán">{x.partnerCode}</span> : ''}</td>
-                        <td><button type="button" className="btn btn-xs btn-primary" onClick={() => themHd({ no: x.no, ...(x.series ? { serial: x.series } : {}), date: x.date, ...(x.total ? { total: x.total } : {}), ...(x.id ? { supplierInvoiceId: x.id } : {}) })}>Thêm</button></td>
-                      </tr>)}
-                    </tbody></table></div>}
-                  </div>}
+                  {!readOnly && <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>Thêm hoá đơn: bấm vào ô <b>Số HĐ</b> ở dòng cuối — hiện hoá đơn của NCC đã có ở MH22 (chưa gán phiếu nhập), gõ để tìm, bấm là thêm. Hoá đơn chưa có ở MH22 thì điền đủ rồi bấm <b>Thêm</b>. Một phiếu thêm được nhiều hoá đơn.</div>}
                   {a?.invoiceQty?.shared.length ? <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>Hoá đơn dùng chung với phiếu nhập khác (NCC giao nhiều lần một hoá đơn): {a.invoiceQty.shared.join(', ')} — không so SL phiếu này với cả hoá đơn.</div> : null}
                 </div>}
                 {/* [2026-11-25 Nguyễn Văn Thủy] ngày báo HĐ sai / nhận HĐ điều chỉnh: chỉ khi đang lập bản điều chỉnh phiếu (Sửa sau duyệt) (đóng góp) */}
@@ -1973,7 +1973,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
           {anTroLy && <button type="button" className="mh-side-mo" onClick={() => doiTroLy(false)} title="Mở khung Trợ lý mua hàng (kiểm tra, tiến độ, công nợ, lịch sử giá)"><span>‹ Trợ lý</span></button>}
           {!anTroLy && <div className="mh-side-keo" style={{ right: rongTroLy - 4 }} onMouseDown={keoTroLy} onDoubleClick={() => { setRongTroLy(400); try { localStorage.removeItem('mh.tro-ly.w'); } catch { /* bỏ qua */ } }} title="Kéo để đổi bề rộng khung Trợ lý (bấm đúp: về mặc định)" />}
           <aside className="mh-side" hidden={anTroLy}>
-            <div className="row" style={{ marginBottom: 6, alignItems: 'center', gap: 6 }}><b style={{ fontSize: 14 }}>Trợ lý mua hàng</b><button type="button" className="btn btn-xs" style={{ marginLeft: 'auto' }} onClick={() => doiTroLy(true)} title="Thu gọn khung trợ lý — bảng hàng rộng hết màn">Thu gọn ›</button><span className="muted" style={{ fontSize: 11 }}>{analyzing ? 'đang kiểm tra…' : 'số liệu thật theo sổ'}</span></div>
+            <div className="row" style={{ marginBottom: 6, alignItems: 'center', gap: 6 }}><b style={{ fontSize: 14 }}>Trợ lý mua hàng</b><button type="button" className="btn btn-xs" style={{ marginLeft: 'auto' }} onClick={() => doiTroLy(true)} title="Thu gọn khung trợ lý — bảng hàng rộng hết màn">Thu gọn ›</button><span className="muted" style={{ fontSize: 11 }}>{analyzing ? 'đang kiểm tra…' : ''}</span></div>
             {/* [2026-11-25 Nguyễn Văn Thủy] bỏ khối Chuỗi chứng từ ở Trợ lý cho gọn — giá / SL từng bên đã có cột ở bảng hàng (đóng góp) */}
             {prog && (
               <div className="mh-panel">
