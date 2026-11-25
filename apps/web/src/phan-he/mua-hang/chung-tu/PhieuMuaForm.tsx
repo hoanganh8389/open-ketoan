@@ -748,6 +748,8 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const khoGiaoCua = (d: PDoc) => [...new Set([...(d.deliveryWarehouses ?? []), d.deliveryWarehouse ?? '', ...d.lines.map((l) => l.warehouseCode ?? '')].filter(Boolean))];
   /** Kho gợi ý cho dòng giao chi nhánh b: kho đã tích ở đầu đơn thuộc b; không có thì kho mặc định của b. */
   // [2026-11-25 Nguyễn Văn Thủy] kho của dòng phải thuộc chi nhánh nhận của dòng hoặc chi nhánh con (đệ quy) (đóng góp)
+  /** Hợp đồng áp cho chi nhánh b: b có trong danh sách của hợp đồng, hoặc một cấp trên của b có. */
+  const hdApCho = (ds: string[], b: string) => { let x: string | null | undefined = b; for (let n = 0; x && n < 30; n++) { if (ds.includes(x)) return true; x = cay.index.get(x)?.parentCode; } return false; };
   const trongNhanh = (kho: string, b: string) => [b, ...cay.conCua(b)].includes(cay.khoChu(kho));
   const goiY = (ds: string[], b: string) => ds.find((c) => cay.khoChu(c) === b) || ds.find((c) => trongNhanh(c, b)) || cay.khoMacDinh(b);
   const khoGoiY = (b: string) => goiY(khoGiao, b);
@@ -1111,7 +1113,9 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                       {!readOnly && (v.kind === 'order' || v.kind === 'receipt') && <button type="button" className="btn btn-xs btn-primary" title="Chọn mặt hàng của hợp đồng, giá lấy theo hợp đồng" onClick={() => setFillHd(true)}>Lấy từ hợp đồng</button>}
                     </span>; })()}
                     {hd && hd.statusText !== 'Đang hiệu lực' && !readOnly && <span className="mh-warn" style={{ fontSize: 11 }}>Hợp đồng {hd.statusText.toLowerCase()}{hd.endDate ? ` (đến ${dmy(hd.endDate)})` : ''}</span>}
-                    {hd && hd.branchCodes.length > 0 && v.branchCode && !hd.branchCodes.includes(v.branchCode) && !readOnly && <span className="mh-warn" style={{ fontSize: 11 }}>Hợp đồng không áp cho chi nhánh {v.branchCode}</span>}
+                    {/* [2026-11-25 Nguyễn Văn Thủy] hợp đồng áp cho chi nhánh khai hoặc chi nhánh con của nó; đơn đặt xét các chi nhánh NHẬN (không xét chi nhánh lập chứng từ) (đóng góp) */}
+                    {hd && hd.branchCodes.length > 0 && !readOnly && (() => { const ngoai = (isOrder ? nhanDs : [v.branchCode]).filter((b) => b && !hdApCho(hd.branchCodes, b));
+                      return ngoai.length ? <span className="mh-warn" style={{ fontSize: 11 }} title={`Hợp đồng ${hd.code} khai ${hd.branchCodes.length} chi nhánh — sửa ở hợp đồng (bước Thông tin hợp đồng) nếu cần áp thêm`}>Hợp đồng không áp cho chi nhánh {isOrder ? 'nhận ' : ''}{ngoai.join(', ')}</span> : null; })()}
                   </div>
                 )}
                 {/* [2026-11-20 Nguyễn Văn Thủy] kế hoạch hoá đơn đầu vào: khai ở đơn đặt, phiếu nhập kế thừa; quá hạn chưa nhận hoá đơn → Bàn làm việc báo (đóng góp) */}

@@ -42,7 +42,7 @@ export function ChonNhieuKho({ branchCode, branchCodes, value, khoa = [], onChan
     <>
       <button ref={nut} type="button" className="input select" disabled={disabled} style={{ textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}
         title={chon.length ? chon.map((c, i) => `${i === 0 ? '★ ' : ''}${c} · ${cay.khoTen(c)}${khoa.includes(c) && !value.includes(c) ? ' (theo dòng hàng)' : ''}`).join('\n') : 'Tích một hoặc nhiều phân kho NCC giao tới'}
-        onClick={() => { if (mo) { setMo(null); return; } const r = nut.current!.getBoundingClientRect(); setMo({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 300) }); setQ(''); }}>
+        onClick={() => { if (mo) { setMo(null); return; } const r = nut.current!.getBoundingClientRect(); setMo({ top: r.bottom + 2, left: r.left, width: Math.max(r.width, 380) }); setQ(''); }}>
         {nhan || <span className="muted">{placeholder}</span>}{chon.length > 1 ? <span className="badge badge-info" style={{ marginLeft: 4 }}>{chon.length} kho</span> : null}
       </button>
       {mo && (
@@ -51,16 +51,15 @@ export function ChonNhieuKho({ branchCode, branchCodes, value, khoa = [], onChan
           {!loc.length && <div className="muted" style={{ padding: 6, fontSize: 12 }}>{nhom.length ? 'Không có kho khớp' : 'Chi nhánh chưa có phân kho'}</div>}
           {loc.map((g) => (
             <div key={g.b} style={{ marginLeft: g.sau * 12 }}>
-              <div className={g.ngoaiPham ? 'mh-bad' : 'muted'} style={{ fontSize: 11, fontWeight: 600, padding: '4px 2px 1px' }} title={g.ngoaiPham ? 'Chi nhánh này không thuộc chi nhánh nhận đã chọn — bỏ tích kho hoặc thêm chi nhánh nhận' : undefined}>{g.b} · {g.ten}{g.ngoaiPham ? ' — ngoài chi nhánh nhận' : ''}</div>
+              <div className={g.ngoaiPham ? 'mh-bad' : 'muted'} style={{ fontSize: 11, fontWeight: 600, padding: '6px 2px 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', borderTop: '1px solid var(--line)' }} title={g.ngoaiPham ? 'Chi nhánh này không thuộc chi nhánh nhận đã chọn — bỏ tích kho hoặc thêm chi nhánh nhận' : undefined}>{g.b} · {g.ten}{g.ngoaiPham ? ' — ngoài chi nhánh nhận' : ''}</div>
               {g.kho.map((w) => {
                 const theoDong = khoa.includes(w.code) && !value.includes(w.code);
                 return (
-                  <label key={w.code} style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '2px 4px', cursor: theoDong ? 'default' : 'pointer', fontSize: 12.5 }} title={theoDong ? 'Kho đang dùng ở dòng hàng — đổi ở cột Phân kho của dòng' : `${w.code} · ${w.name}`}>
+                  // [2026-11-25 Nguyễn Văn Thủy] mỗi kho đúng một dòng: ô tích · mã · tên (cắt bớt, rê chuột xem đủ) · dấu mặc định / chính gọn (đóng góp)
+                  <label key={w.code} style={{ display: 'grid', gridTemplateColumns: '18px 72px minmax(0, 1fr) auto', gap: 6, alignItems: 'center', padding: '2px 4px', cursor: theoDong ? 'default' : 'pointer', fontSize: 12.5, whiteSpace: 'nowrap' }} title={theoDong ? 'Kho đang dùng ở dòng hàng — đổi ở cột Phân kho của dòng' : `${w.code} · ${w.name}`}>
                     <input type="checkbox" checked={chon.includes(w.code)} disabled={theoDong} onChange={() => doi(w.code)} />
-                    <span className="mono">{w.code}</span><span className="muted">{w.name}</span>
-                    {w.isDefault && <span className="badge badge-gray" style={{ fontSize: 10 }}>mặc định</span>}
-                    {theoDong && <span className="muted" style={{ fontSize: 10.5 }}>theo dòng</span>}
-                    {chon[0] === w.code && <span className="badge badge-info" style={{ fontSize: 10, marginLeft: 'auto' }}>chính</span>}
+                    <span className="mono" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.code}</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.name}</span>
+                    <span className="muted" style={{ fontSize: 10.5 }}>{[chon[0] === w.code ? 'chính' : '', w.isDefault ? 'mặc định' : '', theoDong ? 'theo dòng' : ''].filter(Boolean).join(' · ')}</span>
                   </label>
                 );
               })}
