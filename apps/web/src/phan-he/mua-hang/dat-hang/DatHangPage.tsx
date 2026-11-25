@@ -18,7 +18,7 @@ import { errorText } from '@/lib/api';
 import { purchaseApi, today, useMuaHang, useNames, type SupplierRow } from '../du-lieu';
 import { PhieuMuaForm } from '../chung-tu/PhieuMuaForm';
 import { factsText, fold, num, qtyFmt, stockApi, stockSnapshot, useHierarchy, type AnalysisRow } from '../ton-max/api';
-import { ChonChiNhanhCha, ChuaPhanCap, KhoiSo } from '../ton-max/chung';
+import { ChonChiNhanhCha, ChuaPhanCap } from '../ton-max/chung';
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { roundPrice } from '@/lib/format';
 import '../mua-hang.css';
@@ -170,18 +170,19 @@ export function DatHangPage() {
         <div className="tm-bar">
           <ChonChiNhanhCha multiple value={parent} onChange={(v) => { setParent(v); setSel({}); setBuy({}); }} />
           <ChonNhomHang value={nhom} onChange={setNhom} />
+          <label className="tm-parent" title="Lọc nhanh theo SL cần nhập (công thức MH18)"><span>Hiện</span><select className="select input" value={quick} onChange={(e) => setQuick(e.target.value as Quick)}>
+            <option value="need">Mã cần nhập ({stats.need.toLocaleString('vi-VN')})</option>
+            <option value="over">Mã đang dư ({stats.over.toLocaleString('vi-VN')})</option>
+            <option value="pending">Đang có đơn chưa về ({stats.pending.toLocaleString('vi-VN')})</option>
+            <option value="nopartner">Chưa rõ NCC ({stats.nopartner.toLocaleString('vi-VN')})</option>
+            <option value="">Tất cả mã ({stats.all.toLocaleString('vi-VN')})</option>
+          </select></label>
           <input className="input" type="search" placeholder="Tìm mã, tên, mã vạch, NCC…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 1, minWidth: 260 }} />
           <Link className="btn btn-sm" to="/mua-hang/cong-thuc">Công thức (MH18)</Link>
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}><FileSpreadsheet size={14} /> Xuất Excel</button>
           <button className="btn btn-primary" disabled={!chosen.length || busy || parent.includes(',')} title={parent.includes(',') ? 'Đang xem gộp nhiều chi nhánh — chọn một chi nhánh để lập đơn đặt (hàng về kho của chi nhánh đó)' : undefined} onClick={() => void makeOrders()}><ShoppingCart size={15} /> Lập đơn đặt ({chosen.length} mã{money ? ` · ${Math.round(money).toLocaleString('vi-VN')}đ` : ''})</button>
         </div>
-        <div className="tm-stats">
-          <KhoiSo label="Tổng mã đang phân tích" value={stats.all.toLocaleString('vi-VN')} active={quick === ''} onClick={() => setQuick('')} hint="Mọi mã có max, tồn, bán, hàng đi đường hoặc đơn đang về trong chi nhánh — bấm để hiện tất cả" />
-          <KhoiSo label="Mã cần nhập" value={stats.need.toLocaleString('vi-VN')} tone="orange" active={quick === 'need'} onClick={() => setQuick('need')} hint="Mã có SL cần nhập dương (theo công thức MH18) — bấm để lọc" />
-          <KhoiSo label="Mã đang dư" value={stats.over.toLocaleString('vi-VN')} tone="yellow" active={quick === 'over'} onClick={() => setQuick('over')} hint="Mã có SL cần nhập âm: hàng hiện có nhiều hơn mức cần — không đặt thêm; bấm để lọc" />
-          <KhoiSo label="Đang có đơn chưa về" value={stats.pending.toLocaleString('vi-VN')} tone="blue" active={quick === 'pending'} onClick={() => setQuick('pending')} hint="Mã đang có đơn đặt chưa về hết (SL mua chưa nhập kho > 0) — bấm để lọc" />
-          <KhoiSo label="Chưa rõ NCC" value={stats.nopartner.toLocaleString('vi-VN')} tone="red" active={quick === 'nopartner'} onClick={() => setQuick('nopartner')} hint="Mã chưa nhập lần nào và chưa khai NCC bán" />
-        </div>
+        {/* [2026-11-25 kiennt] NT-MH-010 — bỏ dải ô đếm (Tổng mã / Cần nhập / Đang dư / Đơn chưa về / Chưa rõ NCC); lọc nhanh chuyển thành ô chọn "Hiện" trên hàng công cụ, có số mã từng loại (đóng góp) */}
         {msg && <div className={`alert ${msg.ok ? 'alert-ok' : 'alert-bad'}`} style={{ margin: '0 12px 8px' }}>{msg.text}</div>}
         <ErrorBox error={q.error ? errorText(q.error) : null} />
         {q.isLoading ? <Loading text="Đang tính tồn, bán, đi đường của mọi shop…" /> : (
