@@ -67,3 +67,25 @@ Mỗi form ghi (bản nháp chính sách, danh mục đổi, cài đặt + hạn
 - câu hỏi ngược đã trả lời;
 - mỗi dòng chặn có mã lỗi và test;
 - dán `loi.mjs` + `failure-check --report` vào bằng chứng PR.
+
+## 6. Kết quả thực hiện
+<!-- [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: ghi kết quả thực hiện, nhánh feat/nt-bh-039-tich-diem (đóng góp) -->
+
+| Ca | Kết quả | Test |
+|---|---|---|
+| 1 | Đạt — quản trị gán vai trò Cho quyền lập / sửa cho kế toán A (HT12); nháp chép bản hiện hành, gửi duyệt; máy bán vẫn bản cũ | `apps/api/test/nt-bh-039-tich-diem.test.ts` HT12 + ca 1 |
+| 2 | Đạt — phiên bản `kt-…` (băm nội dung), `received_by` = người duyệt; đơn 325.000 → +32 | ca 2 |
+| 3 | Đạt — người không có quyền duyệt 403; người lập (kể cả chủ đơn vị) tự duyệt 403 | ca 3 |
+| 4 | Đạt — +38,4 (bộ tính không đổi) | ca 4; `modules/loyalty/test/program-draft.test.ts` |
+| 5 | Đạt — "… chưa đủ hạng: cần hạng Bạc, khách đang hạng Thành viên" | ca 5; test module |
+| 6 | Đạt — dòng `adjust` +50, nhật ký A lập / B duyệt | ca 6 |
+| 7 | Đạt — tự duyệt bị chặn; trừ quá số dư bị chặn lúc lập và lúc duyệt | ca 7 |
+| 8 | Đạt — hai nháp cùng lần áp, duyệt cùng lúc; cửa hàng có nháp mở bị chặn | ca 8 |
+| 9 | Đạt — mọi bản website đẩy (kể cả mới hơn) 409 `LOYALTY_PROGRAM_OLDER` "Chính sách tích điểm nay chỉ khai ở phần mềm kế toán — website không đẩy đè được"; gửi lại bản đang chạy vẫn `changed: false` | ca 9 |
+
+Ghi chú cách làm:
+<!-- [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: anh Hoàng chốt lại quyền theo vai trò (HT12) và Q4 chỉ nhận chính sách ở kế toán (đóng góp) -->
+- Quyền (chốt lại 25/11): lập / sửa / duyệt mặc định chỉ chủ đơn vị + kế toán trưởng; vai trò khác do quản trị gán ở HT12 — nhóm **Bán hàng**, màn **BH19 Điểm thành viên**, thao tác Lập nháp chính sách / Sửa, gửi duyệt chính sách / Duyệt chính sách / Lập điều chỉnh điểm / Duyệt điều chỉnh điểm. Ca 1: test lập vai trò "Kế toán điểm" Cho `loyalty:chinh-sach-lap|sua`, `loyalty:dieu-chinh-lap` rồi gán cho kế toán A, như quản trị làm.
+- Q4 (chốt lại 25/11 "từ chối, chỉ nhận policy ở open-ketoan"): cửa hàng đã có bản kế toán phát hành thì mọi bản website đẩy khác bản đang chạy đều bị từ chối, không có ngoại lệ.
+- Áp nhiều cửa hàng: cài đặt + bảng hạng lấy theo nội dung áp; chính sách gộp theo mã vào bản đang chạy của từng cửa hàng (chính sách riêng giữ nguyên, Q-DM-01).
+- Bản đồ lỗi R-REV-17: `modules/loyalty/web/screens/diem/*.failure-map.json` (6 form, 37 tình huống, đủ mã + test).

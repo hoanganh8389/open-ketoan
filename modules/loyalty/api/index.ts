@@ -11,8 +11,21 @@ import reportGet from './actions/report-get.js';
 // [2026-11-19 Võ Hoàng] NGHIEM-THU — NT-BH-034: điểm theo đơn cho báo cáo khách hàng (đóng góp)
 import orderPoints from './actions/order-points.js';
 import voucherGet from './actions/voucher-get.js';
+// [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: nháp / duyệt chính sách tích điểm, điều chỉnh điểm tay (đóng góp)
+import adjustmentApprove from './actions/adjustment-approve.js';
+import adjustmentCreate from './actions/adjustment-create.js';
+import adjustmentGet from './actions/adjustment-get.js';
+import adjustmentList from './actions/adjustment-list.js';
+import adjustmentReject from './actions/adjustment-reject.js';
+import draftApprove from './actions/draft-approve.js';
+import draftCreate from './actions/draft-create.js';
+import draftGet from './actions/draft-get.js';
+import draftList from './actions/draft-list.js';
+import draftReject from './actions/draft-reject.js';
+import draftUpdate from './actions/draft-update.js';
 import expireDaily from './subscribers/expire-daily.js';
 import orderEarn from './subscribers/order-recorded.js';
 import returnReverse from './subscribers/return-recorded.js';
 
-export default defineModule({ manifest, actions: [programPut, programGet, customerGet, redeemQuote, voucherGet, openingImport, reportGet, orderPoints], subscribers: [orderEarn, returnReverse, expireDaily] });
+export default defineModule({ manifest, actions: [programPut, programGet, customerGet, redeemQuote, voucherGet, openingImport, reportGet, orderPoints,
+  draftList, draftGet, draftCreate, draftUpdate, draftApprove, draftReject, adjustmentList, adjustmentGet, adjustmentCreate, adjustmentApprove, adjustmentReject], subscribers: [orderEarn, returnReverse, expireDaily] });
