@@ -436,7 +436,7 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
         <>
           <div style={{ ...half, display: 'grid', gap: 8 }}>
             <Field label="Ngày tạo KH"><input className="input" value={v.createdAt ? new Date(v.createdAt).toLocaleDateString('vi-VN') : todayText()} disabled /></Field>
-            <Field label="Thuộc nhóm (*)"><ListPicker items={choices.map((g) => ({ code: g.code, name: g.name }))} value={v.groupCode ?? ''} onChange={(g) => changeGroup(g || null)} placeholder="Bấm để chọn" emptyText={`Chưa có nhóm cho ${noun}`} /></Field>
+            <Field label="Thuộc nhóm (*)"><ChonNhomDoiTuong kind={kind} choices={choices} value={v.groupCode ?? ''} onChange={changeGroup} noun={noun} /></Field>
             <Field label={`Mã ${noun} (*)`} hint={isNew ? codeHint : undefined}>
               <div className="row" style={{ gap: 6 }}>
                 <input className="input mono" style={{ flex: 1 }} value={v.code ?? ''} disabled={!isNew} onChange={(e) => { set({ code: e.target.value }); setCodeTouched(true); }} />
@@ -551,7 +551,7 @@ function NccFields({ v, set, txt, choices, isNew, codeHint, noun, changeGroup, f
   return <>
     <fieldset className="fgroup full">
       <legend>Thông tin nhà cung cấp (đúng như trên hoá đơn)</legend>
-      <Field label="Thuộc nhóm (*)"><ListPicker items={choices.map((g) => ({ code: g.code, name: g.name }))} value={v.groupCode ?? ''} onChange={(g) => changeGroup(g || null)} placeholder="Bấm để chọn" emptyText={`Chưa có nhóm cho ${noun}`} /></Field>
+      <Field label="Thuộc nhóm (*)"><ChonNhomDoiTuong kind="supplier" choices={choices} value={v.groupCode ?? ''} onChange={changeGroup} noun={noun} /></Field>
       <Field label={`Mã ${noun} (*)`} hint={isNew ? codeHint : undefined}>
         <div className="row" style={{ gap: 6 }}>
           <input className="input mono" style={{ flex: 1 }} value={v.code ?? ''} disabled={!isNew} onChange={(e) => setCode(e.target.value)} />
@@ -673,5 +673,36 @@ export function PartnerGroupsPage() {
         </Modal>
       )}
     </>
+  );
+}
+
+// [2026-11-25 Nguyễn Văn Thủy] #9 tab Test: ô Thuộc nhóm có + thêm nhanh nhóm (lưu DM08) rồi chọn luôn (đóng góp)
+function ChonNhomDoiTuong({ kind, choices, value, onChange, noun }: { kind: string; choices: Group[]; value: string; onChange: (g: string | null) => void; noun: string }) {
+  const [them, setThem] = useState<string | null>(null);
+  return <>
+    <ListPicker items={choices.map((g) => ({ code: g.code, name: g.name }))} value={value} onChange={(g) => onChange(g || null)} placeholder="Bấm để chọn" emptyText={`Chưa có nhóm cho ${noun}`}
+      onAdd={(t) => setThem(t)} addLabel="Thêm nhóm" />
+    {them !== null && <NhomNhanh kind={kind} goiY={them} onClose={() => setThem(null)} onSaved={(code) => { setThem(null); onChange(code); }} />}
+  </>;
+}
+
+/** Hộp thêm nhóm đối tượng nhanh: mã + tên, dùng cho đúng loại đối tượng đang nhập; ghi vào Nhóm đối tượng (DM08). */
+function NhomNhanh({ kind, goiY, onClose, onSaved }: { kind: string; goiY: string; onClose: () => void; onSaved: (code: string) => void }) {
+  const qc = useQueryClient();
+  const laMa = /^[0-9A-Za-z_.-]{2,20}$/.test(goiY.trim());
+  const [code, setCode] = useState(laMa ? goiY.trim() : '');
+  const [name, setName] = useState(laMa ? '' : goiY.trim());
+  const ghi = useMutation({
+    mutationFn: () => api.put(`/api/v1/partner-groups/${encodeURIComponent(code.trim())}`, { name: name.trim(), kind, note: '', isActive: true }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['partner-groups'] }); onSaved(code.trim()); },
+  });
+  const thieu = !code.trim() ? 'Mã nhóm' : !name.trim() ? 'Tên nhóm' : '';
+  return (
+    <Modal title={kind === 'supplier' ? 'Thêm nhóm nhà cung cấp' : kind === 'customer' ? 'Thêm nhóm khách hàng' : 'Thêm nhóm đối tượng'} onClose={onClose}
+      footer={<><button className="btn btn-primary" disabled={Boolean(thieu) || ghi.isPending} title={thieu ? `Chưa nhập ${thieu}` : 'Ghi vào Nhóm đối tượng (DM08) và chọn luôn'} onClick={() => ghi.mutate()}>Ghi</button><button className="btn" onClick={onClose}>Thoát</button></>}>
+      <Field label="Mã nhóm (*)"><input className="input mono" value={code} autoFocus onChange={(e) => setCode(e.target.value.trim())} /></Field>
+      <Field label="Tên nhóm (*)"><input className="input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
+      <ErrorBox error={ghi.error ? errorText(ghi.error) : null} />
+    </Modal>
   );
 }
