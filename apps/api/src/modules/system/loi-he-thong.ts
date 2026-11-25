@@ -17,7 +17,7 @@ import { db } from '@bizcity/platform/db/client';
 import { authOf, requireAuthenticated, requirePermission } from '@bizcity/platform/core/auth';
 import { Errors } from '@bizcity/platform/core/errors';
 import { ok } from '@bizcity/platform/core/http';
-import { getJson } from './devtools.sources.js';
+import { getJson, LOGQL, logWindow, queryLogs } from './devtools.sources.js';
 
 const tags = ['Lỗi hệ thống'];
 const DIR = () => path.resolve(process.env.DATA_DIR ?? './data', 'he-thong', 'loi');
@@ -47,10 +47,11 @@ type TrangThai = (typeof TRANG_THAI)[number];
 
 type Gap = { t: 'gap'; ts: string; fp: string; phanHe: string; loai: 'phan-mem' | 'tu-choi'; errCode: string; status: number; method: string; route: string; msg: string; reqId: string; traceId?: string; actor?: string };
 type Ev = Gap
-  | { t: 'trang_thai'; ts: string; fp: string; status: TrangThai; by: string; note?: string; commit?: string }
+  | { t: 'trang_thai'; ts: string; fp: string; status: TrangThai; by: string; note?: string; commit?: string; may?: string; ip?: string }
   | { t: 'dung_lai_yc'; ts: string; id: string; by: string; note?: string }
   | { t: 'dung_lai_nhan'; ts: string; id: string }
-  | { t: 'dung_lai_kq'; ts: string; id: string; ok: boolean; log: string; by: string };
+  | { t: 'dung_lai_kq'; ts: string; id: string; ok: boolean; log: string; by: string }
+  | { t: 'sua_xong'; ts: string; tomTat: string; commit?: string; fps: string[]; chiTiet?: string; by: string; may?: string; ip?: string };
 
 let hang: Promise<unknown> = Promise.resolve();
 async function ghi(tenantId: string, evs: Ev[]) {
@@ -67,6 +68,9 @@ async function doc(tenantId: string): Promise<Ev[]> {
   return out;
 }
 
+/** Một máy nhận "Đang sửa" thì giữ chỗ 30 phút (báo lại để gia hạn); quá hạn thì máy khác được nhận. */
+const GIU_CHO_MS = 30 * 60_000;
+
 /** Câu báo bỏ số → gom các lần lỗi chỉ khác số (số phiếu, số tiền…) vào một mục. */
 const chuanHoa = (s: string) => s.replace(/\d+([.,]\d+)*/g, '#').replace(/\s+/g, ' ').trim().slice(0, 200);
 const vanTay = (g: Pick<Gap, 'phanHe' | 'errCode' | 'method' | 'route' | 'msg'>) => createHash('sha1').update([g.phanHe, g.errCode, g.method, g.route, chuanHoa(g.msg)].join('|')).digest('hex').slice(0, 12);
@@ -74,11 +78,14 @@ const vanTay = (g: Pick<Gap, 'phanHe' | 'errCode' | 'method' | 'route' | 'msg'>)
 export interface MucLoi {
   fp: string; phanHe: string; tenPhanHe: string; loai: 'phan-mem' | 'tu-choi'; errCode: string; status: number; method: string; route: string; msg: string;
   count: number; first: string; last: string; lastReqId: string; lastTraceId?: string;
-  trangThai: TrangThai | 'tai_phat'; nguoi?: string; ghiChu?: string; commit?: string; doiLuc?: string;
+  trangThai: TrangThai | 'tai_phat'; nguoi?: string; ghiChu?: string; commit?: string; doiLuc?: string; may?: string; ip?: string;
+  /** Đang sửa và còn trong hạn giữ chỗ — máy khác né ra. */
+  giuDen?: string;
 }
 function gom(evs: Ev[]) {
   const m = new Map<string, MucLoi>();
   const tt = new Map<string, Extract<Ev, { t: 'trang_thai' }>>();
+  const nhatKy: Extract<Ev, { t: 'sua_xong' }>[] = [];
   let yc: Extract<Ev, { t: 'dung_lai_yc' }> | null = null; let nhan: string | null = null; let kq: Extract<Ev, { t: 'dung_lai_kq' }> | null = null;
   for (const e of evs) {
     if (e.t === 'gap') {
@@ -89,16 +96,18 @@ function gom(evs: Ev[]) {
     else if (e.t === 'dung_lai_yc') { yc = e; nhan = null; kq = null; }
     else if (e.t === 'dung_lai_nhan') { if (yc?.id === e.id) nhan = e.ts; }
     else if (e.t === 'dung_lai_kq') { if (yc?.id === e.id) kq = e; }
+    else if (e.t === 'sua_xong') nhatKy.push(e);
   }
   for (const [fp, s] of tt) {
     const x = m.get(fp); if (!x) continue;
-    x.trangThai = s.status; x.nguoi = s.by; x.ghiChu = s.note; x.commit = s.commit; x.doiLuc = s.ts;
+    x.trangThai = s.status; x.nguoi = s.by; x.ghiChu = s.note; x.commit = s.commit; x.doiLuc = s.ts; x.may = s.may; x.ip = s.ip;
+    if (s.status === 'dang_sua') { const den = new Date(Date.parse(s.ts) + GIU_CHO_MS).toISOString(); if (den > new Date().toISOString()) x.giuDen = den; }
     // Đã sửa / bỏ qua mà lỗi lại xảy ra sau lúc đó → tái phát.
     if ((s.status === 'da_sua') && x.last > s.ts) x.trangThai = 'tai_phat';
   }
   const items = [...m.values()].sort((a, b) => b.last.localeCompare(a.last));
   const dungLai = yc ? { id: yc.id, yeuCauLuc: yc.ts, yeuCauBoi: yc.by, ghiChu: yc.note, nhanLuc: nhan, ketQua: kq ? { ok: kq.ok, luc: kq.ts, log: kq.log } : null } : null;
-  return { items, dungLai };
+  return { items, dungLai, nhatKy: nhatKy.reverse().slice(0, 50) };
 }
 
 /* ------------------------------------------------------------------ máy quét */
@@ -165,6 +174,25 @@ export function batMayQuet() {
   henGio.unref();
 }
 
+/* ------------------------------------------------------------------ nhịp kết nối */
+/** Lần ghé cuối của từng bên dùng khoá: cron máy chủ (mỗi phút) và lịch tự sửa (mỗi ~10 phút) — để HT20 biết còn chạy không. */
+type May = { luc: string; viec: string; ip: string; may: string };
+type Nhip = { cron?: { luc: string; ip?: string }; may?: Record<string, May> };
+const nhipFile = (tenantId: string) => path.join(DIR(), `nhip-${String(tenantId).replace(/[^0-9a-zA-Z_-]/g, '')}.json`);
+async function docNhip(tenantId: string): Promise<Nhip> {
+  try { return JSON.parse(await readFile(nhipFile(tenantId), 'utf8')) as Nhip; } catch { return {}; }
+}
+async function ghiNhip(tenantId: string, ai: Ai, viec: string) {
+  const n = await docNhip(tenantId); const luc = new Date().toISOString();
+  if (!ai.may) n.cron = { luc, ip: ai.ip };
+  else {
+    n.may = { ...(n.may ?? {}), [ai.may]: { luc, viec: viec.slice(0, 300), ip: ai.ip, may: ai.may } };
+    // Bỏ máy im quá 7 ngày cho gọn.
+    for (const [k, v] of Object.entries(n.may)) if (Date.now() - Date.parse(v.luc) > 7 * 86_400_000) delete n.may[k];
+  }
+  await mkdir(DIR(), { recursive: true }); await writeFile(nhipFile(tenantId), JSON.stringify(n), 'utf8');
+}
+
 /* ------------------------------------------------------------------ đọc / ghi chung */
 async function tuSuaOf(tenantId: string): Promise<boolean> {
   const r = (await sql<{ v: string | null }>`SELECT settings->'cong_cu'->>'tuSua' AS v FROM tenants WHERE id = ${tenantId}`.execute(db)).rows[0];
@@ -172,18 +200,26 @@ async function tuSuaOf(tenantId: string): Promise<boolean> {
 }
 const locQuery = z.object({ phanHe: z.string().optional(), loai: z.enum(['phan-mem', 'tu-choi']).optional(), status: z.string().optional() });
 async function danhSach(tenantId: string, q: z.infer<typeof locQuery>) {
-  const { items, dungLai } = gom(await doc(tenantId));
+  const { items, dungLai, nhatKy } = gom(await doc(tenantId));
   const loc = items.filter((x) => (!q.phanHe || x.phanHe === q.phanHe) && (!q.loai || x.loai === q.loai) && (!q.status || q.status.split(',').includes(x.trangThai)));
-  return { items: loc, tong: items.length, dungLai, tuSua: await tuSuaOf(tenantId), lanQuet, phanHe: TEN_PHAN_HE };
+  return { items: loc, tong: items.length, dungLai, tuSua: await tuSuaOf(tenantId), lanQuet, phanHe: TEN_PHAN_HE, nhatKy, nhip: await docNhip(tenantId) };
 }
 const ttInput = z.object({ fp: z.string().regex(/^[0-9a-f]{12}$/), status: z.enum(TRANG_THAI), note: z.string().max(1000).optional(), commit: z.string().max(80).optional() });
 
-/** Khoá kết nối (HT13 → Công cụ & giám sát) → đơn vị. */
+type Ai = { tenant: string; may: string; ip: string };
+const ipOf = (req: FastifyRequest) => String(req.headers['x-forwarded-for'] ?? '').split(',')[0]?.trim() || req.ip;
+/** Khoá kết nối (HT13 → Công cụ & giám sát) → đơn vị + máy gọi (keo-loi.mjs gửi x-ket-noi-may = "<người git>@<tên máy>"; cron máy chủ không gửi). */
+async function aiGoi(req: FastifyRequest): Promise<Ai> {
+  const tenant = await donViTheoKhoa(req);
+  return { tenant, may: decodeURIComponent(String(req.headers['x-ket-noi-may'] ?? '')).slice(0, 120), ip: ipOf(req) };
+}
 async function donViTheoKhoa(req: FastifyRequest): Promise<string> {
   const key = String(req.headers['x-ket-noi-key'] ?? '').trim();
   if (key.length < 20) throw Errors.unauthorized();
   const r = (await sql<{ id: string }>`SELECT id::text AS id FROM tenants WHERE settings->'cong_cu'->>'ketNoiKey' = ${key} LIMIT 1`.execute(db)).rows[0];
   if (!r) throw Errors.unauthorized();
+  const ai = { tenant: r.id, may: decodeURIComponent(String(req.headers['x-ket-noi-may'] ?? '')).slice(0, 120), ip: ipOf(req) };
+  await ghiNhip(r.id, ai, decodeURIComponent(String(req.headers['x-ket-noi-viec'] ?? req.url.split('?')[0]))).catch(() => undefined); // nuot-loi: nhịp chỉ để hiển thị
   return r.id;
 }
 
@@ -194,7 +230,7 @@ export async function loiHeThongRoutes(app: FastifyInstance): Promise<void> {
     async (req) => ok(await danhSach(authOf(req).tenantId, req.query as z.infer<typeof locQuery>)));
   app.post('/api/v1/system/loi/trang-thai', { preHandler: requireAuthenticated(), schema: { tags, summary: 'Đổi trạng thái một mục lỗi (Sửa lỗi này / Bỏ qua / Đã sửa…)', body: ttInput } }, async (req) => {
     const a = authOf(req); const b = req.body as z.infer<typeof ttInput>;
-    await ghi(a.tenantId, [{ t: 'trang_thai', ts: new Date().toISOString(), fp: b.fp, status: b.status, by: a.actorName, ...(b.note ? { note: b.note } : {}), ...(b.commit ? { commit: b.commit } : {}) }]);
+    await ghi(a.tenantId, [{ t: 'trang_thai', ts: new Date().toISOString(), fp: b.fp, status: b.status, by: a.actorName, ip: ipOf(req), ...(b.note ? { note: b.note } : {}), ...(b.commit ? { commit: b.commit } : {}) }]);
     return ok({ ok: true });
   });
   app.post('/api/v1/system/loi/quet', { preHandler: requirePermission('settings:write'), schema: { tags, summary: 'Quét lỗi mới ngay (không đợi 60 giây)' } }, async () => {
@@ -216,13 +252,18 @@ export async function loiHeThongRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/v1/ket-noi/loi', { ...pub, schema: { tags, summary: 'Khoá kết nối: danh sách mục lỗi', querystring: locQuery } },
     async (req) => ok(await danhSach(await donViTheoKhoa(req), req.query as z.infer<typeof locQuery>)));
   app.post('/api/v1/ket-noi/loi/trang-thai', { ...pub, schema: { tags, summary: 'Khoá kết nối: đổi trạng thái một mục lỗi', body: ttInput } }, async (req) => {
-    const t = await donViTheoKhoa(req); const b = req.body as z.infer<typeof ttInput>;
-    await ghi(t, [{ t: 'trang_thai', ts: new Date().toISOString(), fp: b.fp, status: b.status, by: 'tự sửa (khoá kết nối)', ...(b.note ? { note: b.note } : {}), ...(b.commit ? { commit: b.commit } : {}) }]);
+    const ai = await aiGoi(req); const t = ai.tenant; const b = req.body as z.infer<typeof ttInput>;
+    const x = gom(await doc(t)).items.find((i) => i.fp === b.fp);
+    if (!x) throw Errors.notFound('mục lỗi');
+    // Máy khác đang giữ chỗ → né (trừ khi chính máy đó, hoặc người đổi trên HT20).
+    if (x.giuDen && x.may && x.may !== ai.may && (b.status === 'dang_sua' || b.status === 'da_sua'))
+      throw Errors.conflict(`Máy ${x.may} (${x.ip ?? '?'}) đang sửa mục này tới ${x.giuDen} — bỏ qua mục này`);
+    await ghi(t, [{ t: 'trang_thai', ts: new Date().toISOString(), fp: b.fp, status: b.status, by: ai.may || 'tự sửa (khoá kết nối)', may: ai.may || undefined, ip: ai.ip, ...(b.note ? { note: b.note } : {}), ...(b.commit ? { commit: b.commit } : {}) }]);
     return ok({ ok: true });
   });
   app.post('/api/v1/ket-noi/dung-lai/yeu-cau', { ...pub, schema: { tags, summary: 'Khoá kết nối: yêu cầu dựng lại', body: z.object({ note: z.string().max(500).optional() }).optional() } }, async (req) => {
     const t = await donViTheoKhoa(req); const id = randomUUID();
-    await ghi(t, [{ t: 'dung_lai_yc', ts: new Date().toISOString(), id, by: 'tự sửa (khoá kết nối)', ...((req.body as { note?: string } | undefined)?.note ? { note: (req.body as { note: string }).note } : {}) }]);
+    await ghi(t, [{ t: 'dung_lai_yc', ts: new Date().toISOString(), id, by: String(req.headers['x-ket-noi-may'] ? decodeURIComponent(String(req.headers['x-ket-noi-may'])) : 'tự sửa (khoá kết nối)'), ...((req.body as { note?: string } | undefined)?.note ? { note: (req.body as { note: string }).note } : {}) }]);
     return ok({ id });
   });
   app.get('/api/v1/ket-noi/dung-lai', { ...pub, schema: { tags, summary: 'Cron máy chủ: yêu cầu dựng lại đang chờ (nhận xong thì không trả lại lần nữa)' } }, async (req) => {
@@ -236,5 +277,16 @@ export async function loiHeThongRoutes(app: FastifyInstance): Promise<void> {
     const t = await donViTheoKhoa(req); const b = req.body as { id: string; ok: boolean; log: string };
     await ghi(t, [{ t: 'dung_lai_kq', ts: new Date().toISOString(), id: b.id, ok: b.ok, log: b.log.slice(-8000), by: 'cron máy chủ' }]);
     return ok({ ok: true });
+  });
+  app.post('/api/v1/ket-noi/nhat-ky', { ...pub, schema: { tags, summary: 'Lịch tự sửa: ghi nhật ký một lần sửa xong (hiện ở HT20)', body: z.object({ tomTat: z.string().min(1).max(500), commit: z.string().max(80).optional(), fps: z.array(z.string().regex(/^[0-9a-f]{12}$/)).max(20).default([]), chiTiet: z.string().max(4000).optional() }) } }, async (req) => {
+    const ai = await aiGoi(req); const t = ai.tenant; const b = req.body as { tomTat: string; commit?: string; fps: string[]; chiTiet?: string };
+    await ghi(t, [{ t: 'sua_xong', ts: new Date().toISOString(), tomTat: b.tomTat, fps: b.fps, by: ai.may || 'tự sửa (khoá kết nối)', may: ai.may || undefined, ip: ai.ip, ...(b.commit ? { commit: b.commit } : {}), ...(b.chiTiet ? { chiTiet: b.chiTiet } : {}) }]);
+    return ok({ ok: true });
+  });
+  app.get('/api/v1/ket-noi/tra-ma', { ...pub, schema: { tags, summary: 'Lịch tự sửa: log của một mã tra cứu (gồm chỗ lỗi trong mã)', querystring: z.object({ ma: z.string().min(6).max(80), at: z.string().optional() }) } }, async (req) => {
+    const t = await donViTheoKhoa(req); const q = req.query as { ma: string; at?: string };
+    const logs = await queryLogs(LOGQL.byRequest(q.ma, t), t, logWindow(q.at), { ops: true });
+    if (!logs.length) throw Errors.notFound('mã tra cứu trong 24 giờ quanh mốc đã chọn');
+    return ok({ ma: q.ma, logs });
   });
 }

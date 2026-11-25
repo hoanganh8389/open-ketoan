@@ -92,9 +92,20 @@ KET_NOI_URL=https://ketoan-dev.quantri.thegioisua.com
 KET_NOI_KEY=<khoá>
 node scripts/loi/keo-loi.mjs danh-sach --phan-he mua-hang          # lỗi mới của Mua hàng
 node scripts/loi/keo-loi.mjs danh-dau <mã-mục> da_sua --commit <sha> # sau khi đẩy dev
+node scripts/loi/keo-loi.mjs tra-ma <mã-tra-cứu> [mốc-giờ]          # log + chỗ lỗi trong mã (stack)
+node scripts/loi/keo-loi.mjs nhat-ky "Sửa …" --commit <sha> --muc <mã-mục>   # ghi Nhật ký sửa ở HT20
 node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầu dựng lại con dev
 ```
-`danh-sach` còn ghi `.loi/danh-sach.json` (đã bỏ qua trong git) để AI / người đọc.
+`danh-sach` còn ghi `.loi/danh-sach.json` (đã bỏ qua trong git) để AI / người đọc. Khoá + địa chỉ có thể ghi vào `.loi/ket-noi.env` (không vào git).
+
+### 4.3 Nhiều máy cùng sửa — nhận diện và né nhau
+- Mỗi lệnh `keo-loi.mjs` gửi tên máy **`<người git>@<tên máy>`** (đổi bằng biến `KET_NOI_MAY`); máy chủ ghi thêm **IP**.
+  HT20 → khối **Kết nối** hiện cron máy chủ và từng máy sửa: ghé lần cuối, việc gần nhất (chấm xanh = đang chạy).
+- **Giữ chỗ**: `danh-dau <mã> dang_sua` giữ mục đó **30 phút** cho máy vừa nhận (đánh dấu lại để gia hạn). Máy khác xin `dang_sua` / `da_sua`
+  mục đó bị từ chối (lệnh thoát **mã 3**) → bỏ qua mục, làm mục khác. `danh-sach --co-the-nhan` chỉ liệt kê mục chưa ai giữ.
+  Người trên HT20 vẫn đổi được trạng thái bất kỳ lúc nào (vd Mở lại khi máy treo).
+- **Đẩy code**: luôn `git fetch origin && git rebase origin/dev` ngay trước `git push origin HEAD:dev`. Rebase xung đột → `git rebase --abort`,
+  trả mục về `moi` kèm ghi chú, **không** ép đẩy (`--force` cấm).
 
 ## 5. Quy trình sửa một lỗi (người hoặc AI đều theo)
 1. Kéo danh sách: `keo-loi.mjs danh-sach` (hoặc xem HT20). Chọn mục **Lỗi phần mềm** / **Được yêu cầu sửa** của phân hệ mình.
@@ -102,7 +113,8 @@ node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầ
 3. Mở **Tra mã** với mã tra cứu của mục: câu báo, chức năng, chỗ lỗi trong mã (stack), vết xử lý.
 4. Sửa code trên nhánh làm việc, chạy `bash scripts/kiem-chuan.sh` + test của phân hệ. **Không đạt thì không đẩy.**
 5. Commit (tiêu đề nêu mã mục lỗi, vd `fix(mua-hang): … [loi a1b2c3d4e5f6]`), đẩy **`git push origin HEAD:dev`**.
-6. `danh-dau <mã> da_sua --commit <sha>` rồi `dung-lai`. Lần dựng lại xong, mục lỗi nào tái phát sẽ hiện lại.
+6. `danh-dau <mã> da_sua --commit <sha>`, `nhat-ky "<sửa gì>" --commit <sha> --muc <mã>` (hiện ở HT20 → **Nhật ký sửa** cho cả nhóm biết),
+   rồi `dung-lai`. Lần dựng lại xong, mục lỗi nào tái phát sẽ hiện lại.
 
 ## 6. Lịch tự sửa (tuỳ chọn)
 - Chỉ chạy khi công tắc **Tự sửa** ở HT20 đang bật (`GET /api/v1/ket-noi/loi` trả `tuSua: true`).
@@ -115,12 +127,15 @@ node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầ
 | `GET  /api/v1/ket-noi/loi?phanHe=&status=&loai=` | danh sách mục lỗi + `tuSua` + tình trạng dựng lại |
 | `POST /api/v1/ket-noi/loi/trang-thai` `{fp, status, note?, commit?}` | đổi trạng thái một mục |
 | `POST /api/v1/ket-noi/dung-lai/yeu-cau` `{note?}` | yêu cầu dựng lại con dev |
+| `GET  /api/v1/ket-noi/tra-ma?ma=&at=` | log của một mã tra cứu (gồm stack) |
+| `POST /api/v1/ket-noi/nhat-ky` `{tomTat, commit?, fps[], chiTiet?}` | ghi Nhật ký sửa |
+| header `x-ket-noi-may` | tên máy gọi (nhận diện + giữ chỗ); không gửi = cron máy chủ |
 | `GET  /api/v1/ket-noi/dung-lai` | (cron máy chủ) lấy yêu cầu dựng lại đang chờ — trả `{id}` hoặc `{id: null}` |
 | `POST /api/v1/ket-noi/dung-lai` `{id, ok, log}` | (cron máy chủ) báo kết quả dựng lại |
 
 Màn HT20 dùng các lệnh tương ứng dưới `/api/v1/system/loi…` (đăng nhập bình thường).
 
 ## 8. Lưu ý an toàn
-- Khoá kết nối chỉ đọc danh sách lỗi, đổi trạng thái, yêu cầu dựng lại — **không** đọc / ghi chứng từ, không chạy lệnh tuỳ ý.
+- Khoá kết nối chỉ đọc danh sách lỗi + log lỗi, đổi trạng thái, ghi nhật ký sửa, yêu cầu dựng lại — **không** đọc / ghi chứng từ, không chạy lệnh tuỳ ý.
 - Dựng lại luôn qua `cap-nhat.sh` (có sao lưu CSDL + kiểm bản sao lưu trước khi đổi code).
 - Tắt công tắc **Tự sửa** khi không muốn máy tự đẩy code (vd trước buổi demo quan trọng muốn "đóng băng").

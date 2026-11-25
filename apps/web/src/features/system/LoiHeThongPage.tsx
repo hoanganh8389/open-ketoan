@@ -12,10 +12,15 @@ type TrangThai = 'moi' | 'yeu_cau' | 'dang_sua' | 'da_sua' | 'bo_qua' | 'tai_pha
 interface MucLoi {
   fp: string; phanHe: string; tenPhanHe: string; loai: 'phan-mem' | 'tu-choi'; errCode: string; status: number; method: string; route: string; msg: string;
   count: number; first: string; last: string; lastReqId: string; trangThai: TrangThai; nguoi?: string; ghiChu?: string; commit?: string; doiLuc?: string;
+  may?: string; ip?: string; giuDen?: string;
 }
+interface May { luc: string; viec: string; ip: string; may: string }
+interface SuaXong { ts: string; tomTat: string; commit?: string; fps: string[]; chiTiet?: string; by: string; may?: string; ip?: string }
 interface DuLieu {
   items: MucLoi[]; tong: number; tuSua: boolean; phanHe: Record<string, string>;
   lanQuet: { luc: string; moi: number; loi?: string } | null;
+  nhatKy: SuaXong[];
+  nhip: { cron?: { luc: string; ip?: string }; may?: Record<string, May> };
   dungLai: { id: string; yeuCauLuc: string; yeuCauBoi: string; ghiChu?: string; nhanLuc: string | null; ketQua: { ok: boolean; luc: string; log: string } | null } | null;
 }
 const TT: Record<TrangThai, [string, string]> = {
@@ -38,6 +43,7 @@ export function LoiHeThongPage() {
   const tuSua = useMutation({ mutationFn: (bat: boolean) => api.post('/api/v1/system/loi/tu-sua', { bat }), onSuccess: lamMoi });
   const dungLai = useMutation({ mutationFn: () => api.post('/api/v1/system/loi/dung-lai', {}), onSuccess: lamMoi });
   const [xemLog, setXemLog] = useState(false);
+  const [moNhatKy, setMoNhatKy] = useState(true);
   const d = q.data;
   const tatCa = d?.items ?? [];
   const ds = tatCa.filter((x) => (!phanHe || x.phanHe === phanHe) && (!loai || x.loai === loai) && (!trangThai || trangThai.split(',').includes(x.trangThai)));
@@ -70,6 +76,24 @@ export function LoiHeThongPage() {
         </div>
         {xemLog && dl?.ketQua && <pre className="card card-body" style={{ marginTop: 0, maxHeight: 260, overflow: 'auto', fontSize: 11.5, whiteSpace: 'pre-wrap' }}>{dl.ketQua.log || '(không có log)'}</pre>}
         {(quet.error || doiTT.error || tuSua.error || dungLai.error) && <ErrorBox error={errorText(quet.error ?? doiTT.error ?? tuSua.error ?? dungLai.error)} />}
+
+        <KetNoi d={d} />
+        <div className="card" style={{ marginTop: 0, marginBottom: 10 }}>
+          <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', paddingBottom: moNhatKy && d.nhatKy.length ? 0 : undefined }} onClick={() => setMoNhatKy((v) => !v)}>
+            <b>Nhật ký sửa</b><span className="muted" style={{ fontSize: 12.5 }}>{d.nhatKy.length ? `${d.nhatKy.length} lần gần nhất — máy nào sửa gì, commit nào (đã đẩy nhánh dev)` : 'chưa có lần sửa nào'}</span>
+            <span className="muted" style={{ marginLeft: 'auto' }}>{moNhatKy ? '▾' : '▸'}</span>
+          </div>
+          {moNhatKy && d.nhatKy.length > 0 && <div className="table-wrap"><table className="grid">
+            <thead><tr><th title="Lúc ghi nhật ký (sau khi đẩy code)">Lúc</th><th title="Người git @ tên máy · IP">Máy sửa</th><th>Đã sửa gì</th><th title="Mã mục lỗi được sửa">Mục lỗi</th><th title="Commit trên nhánh dev">Commit</th></tr></thead>
+            <tbody>{d.nhatKy.slice(0, 20).map((n, i) => <tr key={i}>
+              <td style={{ whiteSpace: 'nowrap' }}>{luc(n.ts)}<div className="muted" style={{ fontSize: 11 }}>{truoc(n.ts)}</div></td>
+              <td style={{ whiteSpace: 'nowrap' }}>{n.may ?? n.by}{n.ip && <div className="muted mono" style={{ fontSize: 11 }}>{n.ip}</div>}</td>
+              <td style={{ maxWidth: 520 }} title={n.chiTiet}>{n.tomTat}{n.chiTiet && <div className="muted" style={{ fontSize: 11.5, whiteSpace: 'pre-wrap' }}>{n.chiTiet}</div>}</td>
+              <td className="mono" style={{ fontSize: 11.5 }}>{n.fps.join(', ') || '—'}</td>
+              <td>{n.commit ? <code title={n.commit}>{n.commit.slice(0, 8)}</code> : '—'}</td>
+            </tr>)}</tbody>
+          </table></div>}
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8, marginBottom: 10 }}>
           {the.map((x) => <button key={x.t} type="button" className="card card-body" style={{ marginTop: 0, textAlign: 'left', cursor: 'pointer', borderLeft: `4px solid ${x.mau}` }} onClick={x.loc}>
@@ -105,7 +129,8 @@ export function LoiHeThongPage() {
                   <td style={{ textAlign: 'right' }}>{x.count}</td>
                   <td style={{ whiteSpace: 'nowrap' }} title={`Lần đầu ${luc(x.first)}`}>{truoc(x.last)}<div className="muted" style={{ fontSize: 11 }}>{luc(x.last)}</div></td>
                   <td><span className={`badge ${TT[x.trangThai][1]}`}>{TT[x.trangThai][0]}</span>
-                    {(x.nguoi || x.commit) && <div className="muted" style={{ fontSize: 11 }} title={x.ghiChu}>{x.nguoi}{x.commit ? <> · <code>{x.commit.slice(0, 8)}</code></> : null}</div>}</td>
+                    {(x.nguoi || x.commit) && <div className="muted" style={{ fontSize: 11 }} title={[x.ghiChu, x.ip && `IP ${x.ip}`].filter(Boolean).join(' · ')}>{x.nguoi}{x.commit ? <> · <code>{x.commit.slice(0, 8)}</code></> : null}</div>}
+                    {x.giuDen && <div style={{ fontSize: 11, color: '#2457B3' }} title="Máy này giữ chỗ — máy khác né mục này để khỏi sửa trùng">giữ tới {new Date(x.giuDen).toLocaleTimeString('vi-VN', { hour12: false, hour: '2-digit', minute: '2-digit' })}</div>}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <Link className="btn btn-xs" to={`/dev/tra-ma?ma=${encodeURIComponent(x.lastReqId)}&at=${encodeURIComponent(x.last)}`} target="_blank" title="Chi tiết lần lỗi gần nhất: câu báo, chức năng, chỗ lỗi trong mã, vết xử lý">Tra mã</Link>{' '}
                     {x.trangThai !== 'yeu_cau' && x.trangThai !== 'da_sua' && <button type="button" className="btn btn-xs btn-primary" title="Đánh dấu cần sửa — lịch tự sửa / người phụ trách phân hệ xử lý trước" onClick={() => doiTT.mutate({ fp: x.fp, status: 'yeu_cau' })}>Sửa lỗi này</button>}{' '}
@@ -119,6 +144,27 @@ export function LoiHeThongPage() {
         </div>
         <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>Quy trình sửa, khoá kết nối cho máy local / cron, bảng phân hệ ↔ người phụ trách: <code>docs/ops/TU-DONG-SUA-LOI.md</code>. Khoá kết nối tạo ở <Link to="/he-thong/cau-hinh">Cấu hình hệ thống (HT13)</Link>.</p>
       </>}
+    </div>
+  );
+}
+
+/** Ai đang kết nối bằng khoá: cron máy chủ (ghé mỗi phút) và các máy sửa lỗi (mỗi lượt tự sửa / mỗi lệnh keo-loi). */
+function KetNoi({ d }: { d: DuLieu }) {
+  const tuoi = (s?: string) => (s ? (Date.now() - new Date(s).getTime()) / 60_000 : Infinity);
+  const den = (phut: number, han: number) => <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 4, marginRight: 5, background: phut <= han ? '#16a34a' : phut <= han * 6 ? '#d97706' : '#9ca3af' }} />;
+  const cron = d.nhip?.cron; const may = Object.values(d.nhip?.may ?? {}).sort((a, b) => b.luc.localeCompare(a.luc));
+  return (
+    <div className="card card-body" style={{ marginTop: 0, marginBottom: 10, display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 12.5, alignItems: 'flex-start' }}>
+      <b style={{ fontSize: 13 }}>Kết nối</b>
+      <span title="Cron aaPanel trên máy chủ gọi mỗi phút để nhận yêu cầu Dựng lại. Xanh = vừa ghé (≤ 2 phút).">
+        {den(tuoi(cron?.luc), 2)}Cron máy chủ: {cron ? <>{truoc(cron.luc)}{cron.ip ? <span className="muted mono"> · {cron.ip}</span> : null}</> : <span className="muted">chưa thấy ghé (xem docs §4.1)</span>}
+      </span>
+      {!may.length ? <span className="muted">{den(Infinity, 1)}Máy sửa lỗi: chưa có máy nào kết nối</span> : may.map((m) => (
+        <span key={m.may} title={`Việc gần nhất: ${m.viec}
+Lúc ${luc(m.luc)}`}>
+          {den(tuoi(m.luc), 15)}<b>{m.may}</b> <span className="muted mono">{m.ip}</span> · {truoc(m.luc)}<div className="muted" style={{ fontSize: 11, marginLeft: 13, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.viec}</div>
+        </span>
+      ))}
     </div>
   );
 }
