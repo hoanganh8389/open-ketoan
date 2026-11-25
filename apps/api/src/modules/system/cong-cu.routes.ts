@@ -16,6 +16,7 @@ import { ok } from '@bizcity/platform/core/http';
 import { env } from '@bizcity/platform/config/env';
 import { congCuOf, type CongCuConfig } from '@bizcity/platform/core/security/tool-password';
 import { defineAction, mountActions } from '@bizcity/platform/core/actions';
+import { nguonGhiDe } from './devtools.sources.js';
 import { writeAudit } from '../../core/audit.js';
 
 const tags = ['Cấu hình'];
@@ -23,8 +24,15 @@ const s = (n = 500) => z.string().trim().max(n).optional();
 const input = z.object({
   wipePassword: s(200), seedPassword: s(200), costingPassword: s(200),
   grafanaUrl: s(), grafanaUser: s(200), grafanaPassword: s(200),
-  prometheusUrl: s(), alertmanagerUrl: s(), note: s(2000),
+  prometheusUrl: s(), alertmanagerUrl: s(), note: s(2000), lokiUrl: s(), tempoUrl: s(),
 });
+
+/** Nạp địa chỉ Loki / Tempo khai ở HT13 vào Bàn điều tra (đơn vị nào khai trước thì dùng — đây là địa chỉ hạ tầng chung của máy chủ). */
+export async function napNguonGiamSat(): Promise<void> {
+  const rows = (await sql<{ c: CongCuConfig | null }>`SELECT settings->'cong_cu' AS c FROM tenants WHERE settings ? 'cong_cu' ORDER BY id`.execute(db)).rows;
+  const lay = (k: 'lokiUrl' | 'tempoUrl') => rows.map((r) => r.c?.[k]?.trim()).find(Boolean) ?? '';
+  nguonGhiDe.loki = lay('lokiUrl'); nguonGhiDe.tempo = lay('tempoUrl');
+}
 
 /** Đường dẫn Grafana dùng thật: khai ở HT13, chưa khai thì biến môi trường DEVTOOLS_GRAFANA_URL. */
 export async function grafanaUrlOf(tenantId: string): Promise<string | null> {
@@ -48,12 +56,16 @@ const luu = defineAction({
     // Nhật ký: ghi tên trường đã đổi (không ghi mật khẩu vào nhật ký).
     const doi = (Object.keys({ ...truoc, ...moi }) as (keyof CongCuConfig)[]).filter((k) => (truoc[k] ?? '') !== (moi[k] ?? ''));
     await writeAudit(tx, { tenantId: ctx.tenant.id, actor: ctx.legacyAuth.actor, action: 'system.cong_cu.save', objectType: 'tenant_settings', objectId: 'cong_cu', after: { changed: doi } });
+    // Áp ngay cho Bàn điều tra (giao dịch chưa xong nên không đọc lại CSDL)
+    nguonGhiDe.loki = moi.lokiUrl ?? ''; nguonGhiDe.tempo = moi.tempoUrl ?? '';
     return { saved: true };
   },
 });
 
 export async function congCuRoutes(app: FastifyInstance): Promise<void> {
   mountActions(app, [luu]);
+  // nuot-loi: chưa có cột / CSDL chưa sẵn lúc khởi động — Bàn điều tra vẫn dùng biến môi trường
+  void napNguonGiamSat().catch(() => undefined);
   app.get('/api/v1/system/cong-cu', {
     preHandler: requirePermission('settings:write'),
     schema: { tags, summary: 'Cấu hình công cụ & giám sát (có mật khẩu) + giá trị biến môi trường đang dùng thay khi chưa khai' },

@@ -49,6 +49,8 @@ export interface CongCuConfig {
   wipePassword?: string; seedPassword?: string; costingPassword?: string;
   grafanaUrl?: string; grafanaUser?: string; grafanaPassword?: string;
   prometheusUrl?: string; alertmanagerUrl?: string; note?: string;
+  /** Địa chỉ máy chủ API gọi tới để đọc log / trace (Bàn điều tra, Tra mã): vd http://loki:3100, http://tempo:3200. */
+  lokiUrl?: string; tempoUrl?: string;
 }
 type Q = { selectFrom: (t: 'tenants') => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 /** Đọc cấu hình công cụ của đơn vị (rỗng nếu chưa khai). */

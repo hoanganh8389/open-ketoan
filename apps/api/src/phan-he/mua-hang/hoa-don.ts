@@ -125,11 +125,13 @@ const toInvoice = (r: InvRow, lines: InvoiceLine[]): SupplierInvoice => ({
   createdBy: r.created_by, updatedBy: r.updated_by, createdAt: ts(r.created_at), updatedAt: ts(r.updated_at), cancelledBy: r.cancelled_by, cancelledAt: ts(r.cancelled_at) ?? null, cancelReason: r.cancel_reason,
 });
 
-export async function loadInvoices(trx: Db, tenantId: string, f: { id?: string; ids?: string[]; partnerCode?: string; from?: string; to?: string; status?: string; withLines?: boolean } = {}): Promise<SupplierInvoice[]> {
+export async function loadInvoices(trx: Db, tenantId: string, f: { id?: string; ids?: string[]; partnerCode?: string; from?: string; to?: string; status?: string; withLines?: boolean; sellerMst?: string } = {}): Promise<SupplierInvoice[]> {
   let q = trx.selectFrom('supplier_invoices').selectAll().where('tenant_id', '=', tenantId);
   if (f.id) q = q.where('id', '=', f.id);
   if (f.ids) q = q.where('id', 'in', f.ids.length ? f.ids : ['0']);
-  if (f.partnerCode) q = q.where('partner_code', '=', f.partnerCode);
+  // [2026-11-25 Nguyễn Văn Thủy] sellerMst: thêm hoá đơn cùng MST người bán (bỏ đuôi chi nhánh) dù gắn mã NCC khác (đóng góp)
+  if (f.partnerCode && f.sellerMst) { const pc = f.partnerCode, m = f.sellerMst; q = q.where((eb) => eb.or([eb('partner_code', '=', pc), eb(sql<string>`split_part(seller_tax_code, '-', 1)`, '=', m)])); }
+  else if (f.partnerCode) q = q.where('partner_code', '=', f.partnerCode);
   if (f.from) q = q.where('invoice_date', '>=', f.from);
   if (f.to) q = q.where('invoice_date', '<=', f.to);
   if (f.status) q = q.where('status', '=', f.status);
@@ -221,7 +223,11 @@ export interface InvoiceFileRef { id: string; kind: string; fileName: string; mi
 
 /** Danh sách hoá đơn + tình trạng: chưa nhận diện mã / chưa có phiếu nhập / lệch phiếu / khớp. */
 export async function listInvoices(trx: Db, tenantId: string, docs: StoredDoc[], policies: Policy[], f: { partnerCode?: string; from?: string; to?: string; status?: string } = {}): Promise<InvoiceListRow[]> {
-  const list = await loadInvoices(trx, tenantId, f);
+  // Theo một NCC: gồm cả hoá đơn cùng MST người bán gắn mã NCC khác (cầu nối gắn theo MST chi nhánh người bán).
+  const ncc = f.partnerCode ? await trx.selectFrom('partners').select('tax_code').where('tenant_id', '=', tenantId).where('code', '=', f.partnerCode).executeTakeFirst() : undefined;
+  const sellerMst = (ncc?.tax_code ?? '').trim().split('-')[0] || undefined;
+  const list = await loadInvoices(trx, tenantId, { ...f, sellerMst });
+  const nccLoc = f.partnerCode;
   // Tệp của hoá đơn: đính kèm chung (0046), docRef mua-hang.invoice:<id>.
   const atts = list.length ? await trx.selectFrom('document_attachments').select(['id', 'doc_ref', 'kind', 'file_name', 'content_type', 'size_bytes']).where('tenant_id', '=', tenantId).where('archived_at', 'is', null)
     .where('doc_ref', 'in', list.map((x) => `mua-hang.invoice:${x.id!}`)).orderBy('id').execute() : [];
@@ -239,7 +245,7 @@ export async function listInvoices(trx: Db, tenantId: string, docs: StoredDoc[],
   }
   const out: InvoiceListRow[] = [];
   for (const inv of list) {
-    const recs = receiptsOfInvoice(inv, docs);
+    const recs = [...receiptsOfInvoice(inv, docs), ...(nccLoc && inv.partnerCode !== nccLoc ? receiptsOfInvoice({ ...inv, partnerCode: nccLoc }, docs) : [])];
     const unmatched = inv.lines.filter((l) => !l.sku).length;
     let state: InvoiceState, issues: string[] = [];
     if (inv.status === 'cancelled') state = 'da_huy';

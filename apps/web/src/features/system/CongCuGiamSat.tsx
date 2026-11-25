@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 interface CongCu {
   wipePassword?: string; seedPassword?: string; costingPassword?: string;
   grafanaUrl?: string; grafanaUser?: string; grafanaPassword?: string;
-  prometheusUrl?: string; alertmanagerUrl?: string; note?: string;
+  prometheusUrl?: string; alertmanagerUrl?: string; note?: string; lokiUrl?: string; tempoUrl?: string;
   envDefaults?: { grafanaUrl: string; wipeFromEnv: boolean; seedFromEnv: boolean };
 }
 type K = Exclude<keyof CongCu, 'envDefaults'>;
@@ -42,7 +42,7 @@ export function CongCuGiamSat() {
     </div>
   );
   const grafana = (v.grafanaUrl || env?.grafanaUrl || `${window.location.protocol}//${window.location.hostname}:3000`).replace(/\/+$/, '');
-  const loki = `${grafana}/explore?schemaVersion=1&orgId=1&panes=${encodeURIComponent(JSON.stringify({ a: { datasource: 'loki', queries: [{ refId: 'A', expr: '{service="api"} |= "ERROR"', datasource: { type: 'loki', uid: 'loki' } }], range: { from: 'now-6h', to: 'now' } } }))}`;
+  const loki = `${grafana}/explore?schemaVersion=1&orgId=1&panes=${encodeURIComponent(JSON.stringify({ a: { datasource: 'loki', queries: [{ refId: 'A', expr: '{service="api", level=~"error|warn"}', datasource: { type: 'loki', uid: 'loki' } }], range: { from: 'now-6h', to: 'now' } } }))}`;
   return (
     <div className="card card-body" style={{ marginTop: 0, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -61,6 +61,8 @@ export function CongCuGiamSat() {
           {o('grafanaUrl', 'Địa chỉ Grafana (xem log Loki, biểu đồ)', 'Vd http://ketoan-dev.quantri.thegioisua.com:3000 — trình duyệt phải mở được địa chỉ này', env?.grafanaUrl || `${window.location.protocol}//${window.location.hostname}:3000`)}
           {o('grafanaUser', 'Tài khoản Grafana', 'Tên đăng nhập Grafana', 'admin')}
           {o('grafanaPassword', 'Mật khẩu Grafana', 'Mật khẩu đăng nhập Grafana (GRAFANA_ADMIN_PASSWORD lúc dựng)')}
+          {o('lokiUrl', 'Địa chỉ Loki (máy chủ đọc log lỗi)', 'Máy chủ API gọi tới để Tra mã / Nhật ký đọc log lỗi. Cùng máy docker: http://loki:3100', 'http://loki:3100')}
+          {o('tempoUrl', 'Địa chỉ Tempo (máy chủ đọc vết)', 'Máy chủ API gọi tới để xem vết (trace) một yêu cầu. Cùng máy docker: http://tempo:3200', 'http://tempo:3200')}
           {o('prometheusUrl', 'Địa chỉ Prometheus', 'Số đo, luật cảnh báo', 'http://127.0.0.1:9090')}
           {o('alertmanagerUrl', 'Địa chỉ Alertmanager', 'Cảnh báo đang bật', 'http://127.0.0.1:9093')}
         </div>

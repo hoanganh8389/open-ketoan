@@ -331,6 +331,12 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const [hdMoi, setHdMoi] = useState<{ serial: string; no: string; date: string; total?: number }>({ serial: '', no: '', date: '' });
   const [themHdTuMh22, setThemHdTuMh22] = useState(false);
   const [lsHd, setLsHd] = useState(false);
+  // [2026-11-25 Nguyễn Văn Thủy] Điều chỉnh hoá đơn chỉ hiện khi đang lập bản điều chỉnh phiếu đã duyệt (hoặc phiếu đã có dữ liệu điều chỉnh);
+  // phiếu thường chỉ thêm / bỏ hoá đơn. Gợi ý hoá đơn NCC ở MH22 chưa gán phiếu nhập nào (đóng góp)
+  const dangDieuChinhHd = Boolean(stored?.adjust) || invs.some((h) => h.adjusts) || Boolean(v.invoiceFix);
+  const [timHd, setTimHd] = useState('');
+  const hdGoiY = nccInvoices.filter((x) => !x.receipts.length && !invs.some((h) => sameInvoice(x, { no: h.no, series: h.serial })))
+    .filter((x) => !timHd.trim() || `${x.series} ${x.no} ${x.date} ${x.total}`.toLowerCase().includes(timHd.trim().toLowerCase()));
   const themHd = (h: DocInvoice) => {
     if (!h.no.trim()) return;
     if (invs.some((x) => invoiceKey(x).toLowerCase() === invoiceKey(h).toLowerCase())) { window.alert(`Hoá đơn ${invoiceKey(h)} đã có trên phiếu`); return; }
@@ -1727,9 +1733,9 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
             {tab === 'hoa-don' && (
               <fieldset disabled={readOnly} style={{ border: 0, padding: 0, margin: 0 }}>
                 {v.kind === 'receipt' && <div className="mh-panel">
-                  <h4 style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>Hoá đơn của phiếu ({invs.length})<span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>một phiếu nhập có thể nhiều hoá đơn — SL đối soát = cộng dồn các hoá đơn</span>
+                  <h4 style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>Hoá đơn của phiếu <span className={`badge ${invs.length > 1 ? 'badge-info' : 'badge-gray'}`}>{invs.length ? `${invs.length} hoá đơn` : 'chưa có'}</span><span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>{invs.length > 1 ? `phiếu này gồm ${invs.length} hoá đơn — SL, tiền đối soát cộng dồn các hoá đơn` : 'một phiếu nhập có thể gồm nhiều hoá đơn'}</span>
                     <button type="button" className="btn btn-xs" data-view-ok style={{ marginLeft: 'auto' }} disabled={!v.docNo || v.id.startsWith('new-')} onClick={() => setLsHd(true)} title="Ai thêm / bỏ hoá đơn nào, lúc nào; hoá đơn điều chỉnh cho hoá đơn nào">Lịch sử hoá đơn</button></h4>
-                  <table className="mh-mini"><thead><tr><th>#</th><th>Ký hiệu</th><th>Số hoá đơn</th><th>Ngày HĐ</th><th className="num">Tổng tiền HĐ</th><th title="Hoá đơn điều chỉnh / thay thế: chọn hoá đơn bị điều chỉnh — xem chuỗi gốc → điều chỉnh">Điều chỉnh cho HĐ</th><th>Ghi chú</th><th title="Hoá đơn đã lưu ở MH22 (có dòng hàng để đối soát SL)">MH22</th><th>Người thêm</th><th /></tr></thead><tbody>
+                  <table className="mh-mini"><thead><tr><th>#</th><th>Ký hiệu</th><th>Số hoá đơn</th><th>Ngày HĐ</th><th className="num">Tổng tiền HĐ</th>{dangDieuChinhHd && <th title="Hoá đơn điều chỉnh / thay thế: chọn hoá đơn bị điều chỉnh — xem chuỗi gốc → điều chỉnh">Điều chỉnh cho HĐ</th>}<th>Ghi chú</th><th title="Hoá đơn đã lưu ở MH22 (có dòng hàng để đối soát SL)">MH22</th><th>Người thêm</th><th /></tr></thead><tbody>
                     {invs.map((h, i) => { const k = invoiceKey(h); const o22 = nccInvoices.some((x) => sameInvoice(x, { no: h.no, series: h.serial })); const chuoi = chuoiDieuChinh(h); const dc = hdDieuChinhDuoc(k); return (
                       <tr key={`${i}-${k}`}>
                         <td>{i + 1}{i === 0 && invs.length > 1 && <span className="badge badge-gray" style={{ fontSize: 10, marginLeft: 3 }} title="Hoá đơn đầu: dùng cho hạn thanh toán, số hoá đơn ở danh sách chứng từ">chính</span>}</td>
@@ -1737,8 +1743,8 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                         <td><input className="input mono" style={{ width: 100 }} value={h.no} onChange={(e) => { const x = e.target.value.trim(); if (x) doiHd(i, { no: x }); }} /></td>
                         <td><input className="input" type="date" value={h.date} onChange={(e) => { if (e.target.value) doiHd(i, { date: e.target.value }); }} /></td>
                         <td><NumInput style={{ width: 110 }} value={h.total} onChange={(n) => doiHd(i, { total: n || undefined })} /></td>
-                        <td><select className="select input" style={{ width: 150 }} value={h.adjusts ?? ''} onChange={(e) => doiHd(i, { adjusts: e.target.value || undefined })}><option value="">— hoá đơn gốc —</option>{dc.map((x) => <option key={x} value={x}>{x}</option>)}{h.adjusts && !dc.includes(h.adjusts) && <option value={h.adjusts}>{h.adjusts}</option>}</select>
-                          {chuoi.length > 1 && <div className="muted" style={{ fontSize: 10.5 }} title="Chuỗi điều chỉnh: hoá đơn gốc → các lần điều chỉnh">{chuoi.join(' → ')}</div>}</td>
+                        {dangDieuChinhHd && <td><select className="select input" style={{ width: 150 }} value={h.adjusts ?? ''} onChange={(e) => doiHd(i, { adjusts: e.target.value || undefined })}><option value="">— hoá đơn gốc —</option>{dc.map((x) => <option key={x} value={x}>{x}</option>)}{h.adjusts && !dc.includes(h.adjusts) && <option value={h.adjusts}>{h.adjusts}</option>}</select>
+                          {chuoi.length > 1 && <div className="muted" style={{ fontSize: 10.5 }} title="Chuỗi điều chỉnh: hoá đơn gốc → các lần điều chỉnh">{chuoi.join(' → ')}</div>}</td>}
                         <td><input className="input" style={{ width: 140 }} value={h.note ?? ''} onChange={(e) => doiHd(i, { note: e.target.value || undefined })} /></td>
                         <td>{o22 ? <span className="mh-ok" title="Có ở MH22">✓</span> : <span className="mh-warn" title="Chưa có ở MH22 — nhập / quét hoá đơn ở MH22 để đối soát SL từng dòng">chưa</span>}</td>
                         <td className="muted" style={{ fontSize: 11 }}>{h.by ? <>{h.by}{h.at ? <><br />{new Date(h.at).toLocaleString('vi-VN', { hour12: false })}</> : null}</> : 'chưa ghi'}</td>
@@ -1750,15 +1756,32 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                       <td><input className="input mono" style={{ width: 100 }} placeholder="Số HĐ" value={hdMoi.no} onChange={(e) => setHdMoi({ ...hdMoi, no: e.target.value.trim() })} /></td>
                       <td><input className="input" type="date" value={hdMoi.date || v.docDate} onChange={(e) => setHdMoi({ ...hdMoi, date: e.target.value })} /></td>
                       <td><NumInput style={{ width: 110 }} value={hdMoi.total} onChange={(n) => setHdMoi({ ...hdMoi, total: n || undefined })} /></td>
-                      <td colSpan={5}><div className="row" style={{ gap: 4, flexWrap: 'wrap' }}><button type="button" className="btn btn-xs btn-primary" disabled={!hdMoi.no} onClick={() => { themHd({ no: hdMoi.no, ...(hdMoi.serial ? { serial: hdMoi.serial } : {}), date: hdMoi.date || v.docDate, ...(hdMoi.total ? { total: hdMoi.total } : {}) }); setHdMoi({ serial: '', no: '', date: '' }); }}>Thêm hoá đơn</button>
+                      <td colSpan={dangDieuChinhHd ? 5 : 4}><div className="row" style={{ gap: 4, flexWrap: 'wrap' }}><button type="button" className="btn btn-xs btn-primary" disabled={!hdMoi.no} onClick={() => { themHd({ no: hdMoi.no, ...(hdMoi.serial ? { serial: hdMoi.serial } : {}), date: hdMoi.date || v.docDate, ...(hdMoi.total ? { total: hdMoi.total } : {}) }); setHdMoi({ serial: '', no: '', date: '' }); }}>Thêm hoá đơn</button>
                         <button type="button" className="btn btn-xs" disabled={!nccInvoices.length} onClick={() => { setThemHdTuMh22(true); setChon('hoa-don'); }} title="Chọn hoá đơn đã lưu ở MH22 để THÊM vào phiếu (không đổi dòng hàng)">+ Thêm từ hoá đơn NCC (MH22)</button></div></td>
                     </tr>}
                     {!invs.length && readOnly && <tr><td colSpan={10} className="muted">Phiếu chưa có hoá đơn{v.invoicePlan?.mode === 'none' ? ' (hàng không có hoá đơn)' : ''}.</td></tr>}
                   </tbody></table>
                   {a?.invoiceQty?.missing.length ? <div className="mh-warn" style={{ fontSize: 12, marginTop: 4 }}>Chưa đối soát SL được: {a.invoiceQty.missing.join('; ')}</div> : null}
+                  {v.status === 'approved' && !stored?.adjust && <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>Hoá đơn sai / NCC xuất hoá đơn điều chỉnh: bấm <b>Lập điều chỉnh</b> (cuối phiếu) rồi sửa hoá đơn ở đây — có cột "Điều chỉnh cho HĐ" và ngày báo HĐ sai; mọi lần thêm / bỏ / điều chỉnh xem ở <b>Lịch sử hoá đơn</b>.</div>}
+                  {!readOnly && v.partnerCode && <div style={{ marginTop: 8, borderTop: '1px dashed var(--line)', paddingTop: 6 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <b style={{ fontSize: 12.5 }}>Hoá đơn của NCC chưa gán phiếu nhập (MH22)</b>
+                      <span className="muted" style={{ fontSize: 12 }}>{invQ.isLoading ? 'đang tải…' : `${hdGoiY.length} hoá đơn`} — bấm Thêm để gán vào phiếu này (thêm được nhiều)</span>
+                      <input className="input" style={{ width: 220, marginLeft: 'auto' }} placeholder="Tìm ký hiệu, số, ngày, tiền" value={timHd} onChange={(e) => setTimHd(e.target.value)} />
+                    </div>
+                    {hdGoiY.length > 0 && <div className="scroll-box" style={{ maxHeight: 200, marginTop: 4 }}><table className="mh-mini"><thead><tr><th>Ký hiệu - Số HĐ</th><th>Ngày HĐ</th><th className="num">Tổng tiền</th><th className="num">Số dòng</th><th>Mã NCC trên HĐ</th><th /></tr></thead><tbody>
+                      {hdGoiY.slice(0, 50).map((x) => <tr key={x.id}>
+                        <td className="mono">{invoiceLabel(x)}</td><td>{dmy(x.date)}</td><td className="num">{vnd(x.total)}</td>
+                        <td className="num" title={x.unmatched ? `${x.unmatched} dòng chưa nhận diện mã — nhận diện ở MH22 để đối soát SL` : undefined}>{x.lineCount}{x.unmatched ? <span className="mh-warn"> ({x.unmatched} chưa mã)</span> : null}</td>
+                        <td className="mono" style={{ fontSize: 11 }}>{x.partnerCode !== v.partnerCode ? <span title="Hoá đơn gắn mã NCC khác nhưng cùng MST người bán">{x.partnerCode}</span> : ''}</td>
+                        <td><button type="button" className="btn btn-xs btn-primary" onClick={() => themHd({ no: x.no, ...(x.series ? { serial: x.series } : {}), date: x.date, ...(x.total ? { total: x.total } : {}), ...(x.id ? { supplierInvoiceId: x.id } : {}) })}>Thêm</button></td>
+                      </tr>)}
+                    </tbody></table></div>}
+                  </div>}
                   {a?.invoiceQty?.shared.length ? <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>Hoá đơn dùng chung với phiếu nhập khác (NCC giao nhiều lần một hoá đơn): {a.invoiceQty.shared.join(', ')} — không so SL phiếu này với cả hoá đơn.</div> : null}
                 </div>}
-                {v.kind === 'receipt' && <div className="mh-head">
+                {/* [2026-11-25 Nguyễn Văn Thủy] ngày báo HĐ sai / nhận HĐ điều chỉnh: chỉ khi đang lập bản điều chỉnh phiếu (Sửa sau duyệt) (đóng góp) */}
+                {v.kind === 'receipt' && dangDieuChinhHd && <div className="mh-head">
                   <div className="field"><label title="Hoá đơn sai phải điều chỉnh: hạn thanh toán lùi đúng số ngày NCC sửa hoá đơn">HĐ sai — ngày báo NCC</label><input className="input" type="date" value={v.invoiceFix?.from ?? ''} onChange={(e) => set({ invoiceFix: e.target.value ? { from: e.target.value, to: v.invoiceFix?.to ?? e.target.value } : undefined })} /></div>
                   <div className="field"><label>Ngày nhận HĐ điều chỉnh</label><input className="input" type="date" value={v.invoiceFix?.to ?? ''} disabled={!v.invoiceFix} onChange={(e) => v.invoiceFix && set({ invoiceFix: { ...v.invoiceFix, to: e.target.value || v.invoiceFix.from } })} /></div>
                 </div>}
@@ -1767,8 +1790,10 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   <div className="field"><label>Ký hiệu</label><input className="input mono" value={v.invoice?.serial ?? ''} disabled={!v.invoice} onChange={(e) => v.invoice && set({ invoice: { ...v.invoice, serial: e.target.value } })} /></div>
                   <div className="field"><label>Ngày hoá đơn</label><input className="input" type="date" value={v.invoice?.date ?? ''} disabled={!v.invoice} onChange={(e) => v.invoice && set({ invoice: { ...v.invoice, date: e.target.value } })} /></div>
                   <div className="field"><label>Tổng tiền trên hoá đơn</label><input className="input num" value={fmt(v.invoice?.total)} disabled={!v.invoice} onChange={(e) => v.invoice && set({ invoice: { ...v.invoice, total: num(e.target.value) || undefined } })} /></div>
+                  {dangDieuChinhHd && <>
                   <div className="field"><label title="Hoá đơn sai phải điều chỉnh: hạn thanh toán lùi đúng số ngày NCC sửa hoá đơn">HĐ sai — ngày báo NCC</label><input className="input" type="date" value={v.invoiceFix?.from ?? ''} onChange={(e) => set({ invoiceFix: e.target.value ? { from: e.target.value, to: v.invoiceFix?.to ?? e.target.value } : undefined })} /></div>
                   <div className="field"><label>Ngày nhận HĐ điều chỉnh</label><input className="input" type="date" value={v.invoiceFix?.to ?? ''} disabled={!v.invoiceFix} onChange={(e) => v.invoiceFix && set({ invoiceFix: { ...v.invoiceFix, to: e.target.value || v.invoiceFix.from } })} /></div>
+                  </>}
                 </div>}
                 <div className="mh-panel">
                   <h4>Đối soát tự động</h4>

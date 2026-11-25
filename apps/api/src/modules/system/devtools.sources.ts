@@ -20,14 +20,17 @@ const PING_TIMEOUT_MS = 2_000;
 
 export const LIMITS = { logHours: 24, logLines: 200, traceDays: 7, traces: 50, perMinute: 30 } as const;
 
+// [2026-11-25 Nguyễn Văn Thủy] địa chỉ nguồn khai ở HT13 → Công cụ & giám sát (nạp lúc khởi động và mỗi lần lưu) đè biến môi trường (đóng góp)
+/** Địa chỉ nguồn khai ở HT13 (máy chủ API gọi tới) — ưu tiên hơn biến môi trường DEVTOOLS_*_URL. */
+export const nguonGhiDe: Partial<Record<Backend, string>> = {};
 function baseUrl(b: Backend): string {
-  const raw = { tempo: env.DEVTOOLS_TEMPO_URL, loki: env.DEVTOOLS_LOKI_URL, prometheus: env.DEVTOOLS_PROMETHEUS_URL, alertmanager: env.DEVTOOLS_ALERTMANAGER_URL }[b];
+  const raw = nguonGhiDe[b] || { tempo: env.DEVTOOLS_TEMPO_URL, loki: env.DEVTOOLS_LOKI_URL, prometheus: env.DEVTOOLS_PROMETHEUS_URL, alertmanager: env.DEVTOOLS_ALERTMANAGER_URL }[b];
   return raw.trim().replace(/\/+$/, '');
 }
 
 const unavailable = (backend: Backend, reason: 'off' | 'down' | 'bad-response') =>
   Errors.notReady(
-    reason === 'off' ? `Chưa bật ${backend} cho Bàn điều tra (DEVTOOLS_${backend.toUpperCase()}_URL) — xem Sổ tay điều tra lỗi §0`
+    reason === 'off' ? `Chưa khai địa chỉ ${backend} cho Bàn điều tra — khai ở Cấu hình hệ thống (HT13) → Công cụ & giám sát (vd http://${backend === 'tempo' ? 'tempo:3200' : backend === 'loki' ? 'loki:3100' : backend === 'prometheus' ? 'prometheus:9090' : 'alertmanager:9093'})`
       : reason === 'down' ? `${backend} không trả lời — xem Sổ tay điều tra lỗi TH-14`
         : `${backend} trả lời không đúng khuôn — xem Sổ tay điều tra lỗi TH-14`,
     { backend, reason },
