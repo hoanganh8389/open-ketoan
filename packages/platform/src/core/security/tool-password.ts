@@ -51,6 +51,8 @@ export interface CongCuConfig {
   prometheusUrl?: string; alertmanagerUrl?: string; note?: string;
   /** Địa chỉ máy chủ API gọi tới để đọc log / trace (Bàn điều tra, Tra mã): vd http://loki:3100, http://tempo:3200. */
   lokiUrl?: string; tempoUrl?: string;
+  /** Khoá kết nối cho máy ngoài (lịch tự sửa, cron dựng lại) — docs/ops/TU-DONG-SUA-LOI.md. tuSua: công tắc lịch tự sửa (HT20). */
+  ketNoiKey?: string; tuSua?: boolean;
 }
 type Q = { selectFrom: (t: 'tenants') => any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 /** Đọc cấu hình công cụ của đơn vị (rỗng nếu chưa khai). */
