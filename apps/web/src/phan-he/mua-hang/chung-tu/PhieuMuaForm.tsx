@@ -71,9 +71,10 @@ const ADJUST_KINDS: string[] = ['receipt', 'return', 'exchange', 'gift_in', 'gif
 
 type Tab = 'hang' | 'tien-do' | 'thanh-toan' | 'hoa-don' | 'hach-toan' | 'gia-von' | 'tep' | 'tep-ncc' | 'lich-su';
 // [2026-11-25 Nguyễn Văn Thủy] thứ tự cột mặc định của bảng hàng (do code quy định) + tên cột ở hộp Sắp xếp cột (đóng góp)
-const COT_MAC_DINH = ['#', 'chieu', 'loai', 'ma', 'ten', 'dvt', 'cn', 'kho', 'km', 'sl', 'sldat', 'theohd', 'ton', 'conlai', 'gia', 'giahd', 'giadon', 'giahdon', 'ck', 'ctkm', 'thue', 'tien', 'vat', 'gom', 'giasau', 'gv', 'ct', 'lo', 'gc', 'xoa'];
+// [2026-11-25 Nguyễn Văn Thủy] mặc định Chi nhánh nhận, Phân kho, Phân tích tồn xuống cuối bảng; thêm cột đơn giá gồm thuế (quy đổi) cạnh đơn giá (đóng góp)
+const COT_MAC_DINH = ['#', 'chieu', 'loai', 'ma', 'ten', 'dvt', 'km', 'sl', 'sldat', 'theohd', 'conlai', 'gia', 'giagom', 'giahd', 'giadon', 'giahdon', 'ck', 'ctkm', 'thue', 'tien', 'vat', 'gom', 'giasau', 'gv', 'ct', 'lo', 'gc', 'cn', 'kho', 'ton', 'xoa'];
 const COT_NHAN: Record<string, string> = { chieu: 'Chiều', loai: 'Loại hàng', ma: 'Mã hàng', ten: 'Tên hàng', dvt: 'ĐVT', cn: 'Chi nhánh nhận', kho: 'Phân kho', km: 'Khoản mục', sl: 'SL', ton: 'Phân tích tồn',
-  conlai: 'Còn phải nhập (đơn)', theohd: 'SL hoá đơn', gia: 'Đơn giá', sldat: 'SL đơn đặt', giahd: 'Giá hợp đồng', giadon: 'Giá đơn đặt', giahdon: 'Giá hoá đơn', ck: 'CK % · CK (đ)', ctkm: 'Mã CTKM', thue: 'Thuế suất', tien: 'Thành tiền chưa thuế', vat: 'Tiền thuế', gom: 'Thành tiền (gồm thuế)',
+  conlai: 'Còn phải nhập (đơn)', theohd: 'SL hoá đơn', gia: 'Đơn giá chưa thuế', giagom: 'Đơn giá gồm thuế (quy đổi)', sldat: 'SL đơn đặt', giahd: 'Giá hợp đồng', giadon: 'Giá đơn đặt', giahdon: 'Giá hoá đơn', ck: 'CK % · CK (đ)', ctkm: 'Mã CTKM', thue: 'Thuế suất', tien: 'Thành tiền chưa thuế', vat: 'Tiền thuế', gom: 'Thành tiền (gồm thuế)',
   giasau: 'Đơn giá sau CK, gồm VAT', gv: 'Giá vốn / ĐVT', ct: 'Chương trình', lo: 'Số lô · NSX · Hạn dùng', gc: 'Ghi chú' };
 
 /** Mã máy (ngẫu nhiên, lưu ở máy) — phân biệt các máy trong lịch sử sắp xếp cột. */
@@ -143,7 +144,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
   };
   // Ẩn / hiện cột bảng hàng theo người dùng (nhớ theo loại phiếu).
-  const [anCot, setAnCot] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(`mh.cot-an.${value.kind}`) ?? '["km"]') as string[]; } catch { return ['km']; } });
+  const [anCot, setAnCot] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(`mh.cot-an.${value.kind}`) ?? '["km","gv","giagom"]') as string[]; } catch { return ['km', 'gv', 'giagom']; } });
   const [moCot, setMoCot] = useState<{ top: number; right: number } | null>(null);
   const [thuTuCot, setThuTuCot] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(`mh.cot-thu-tu.${value.kind}`) ?? '[]') as string[]; } catch { return []; } });
   const [xepMo, setXepMo] = useState(false);
@@ -851,6 +852,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
     // [2026-11-25 Nguyễn Văn Thủy] #45 tab Test: mã chương trình KM áp vào dòng + đơn giá sau CK gồm VAT (đóng góp)
     ['ctkm', 'Mã CTKM của dòng', !isGiftDoc], ['giasau', 'Đơn giá sau CK, gồm VAT', !isGiftDoc],
     // [2026-11-25 Nguyễn Văn Thủy] chuỗi hợp đồng → đơn đặt → phiếu nhập → hoá đơn: SL và đơn giá từng bên đặt cạnh nhau (đóng góp)
+    ['giagom', 'Đơn giá gồm thuế (quy đổi)', !isGiftDoc && !v.priceIncludesVat],
     ['sldat', 'SL đơn đặt', v.kind === 'receipt' && Boolean(donGoc)], ['giahd', 'Giá hợp đồng', isOrder || v.kind === 'receipt'],
     ['giadon', 'Giá đơn đặt', v.kind === 'receipt' && Boolean(donGoc)], ['giahdon', 'Giá hoá đơn', v.kind === 'receipt' && invs.length > 0],
   ];
@@ -858,7 +860,7 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   // [2026-11-25 Nguyễn Văn Thủy] THỨ TỰ CỘT bảng hàng: mặc định theo code (COT_MAC_DINH); người dùng kéo thả ở nút "Sắp xếp cột" — lưu riêng máy đó
   //   theo loại phiếu (localStorage). Cột # luôn đầu, cột nút dòng luôn cuối (đóng góp)
   const cotHien: Record<string, boolean> = { '#': true, chieu: v.kind === 'exchange', loai: co('loai'), ma: true, ten: true, dvt: true, cn: co('cn'), kho: co('kho'), km: co('km'), sl: true, ton: co('ton'), conlai: co('conlai'), theohd: co('theohd'),
-    gia: true, sldat: co('sldat'), giahd: co('giahd'), giadon: co('giadon'), giahdon: co('giahdon'), ck: co('ck'), ctkm: co('ctkm'), thue: co('thue'), tien: co('tien'), vat: co('vat'), gom: co('gom'), giasau: co('giasau'), gv: co('gv'), ct: isGiftDoc, lo: co('lo'), gc: co('gc'), xoa: true };
+    gia: true, giagom: co('giagom'), sldat: co('sldat'), giahd: co('giahd'), giadon: co('giadon'), giahdon: co('giahdon'), ck: co('ck'), ctkm: co('ctkm'), thue: co('thue'), tien: co('tien'), vat: co('vat'), gom: co('gom'), giasau: co('giasau'), gv: co('gv'), ct: isGiftDoc, lo: co('lo'), gc: co('gc'), xoa: true };
   const thuTu = [...thuTuCot.filter((k) => COT_MAC_DINH.includes(k) && k !== '#' && k !== 'xoa'), ...COT_MAC_DINH.filter((k) => k !== '#' && k !== 'xoa' && !thuTuCot.includes(k))];
   const cotTheoThuTu = ['#', ...thuTu, 'xoa'];
   /** Xếp các ô (tiêu đề / dòng) theo thứ tự cột đang dùng; ô false / null (cột không áp cho loại phiếu) bỏ qua. */
@@ -1190,7 +1192,11 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   </div>
                 )}
                 {isGoods && !isGiftDoc && <>
-                  <div className="field"><label title="Hoá đơn GTGT ghi đơn giá chưa thuế; bảng giá / phiếu giao hàng thường ghi giá đã gồm thuế">Đơn giá nhập vào là</label><select className="select input" value={v.priceIncludesVat ? '1' : '0'} onChange={(e) => doiLoaiGia(e.target.value === '1')}><option value="0">Giá chưa thuế (như trên hoá đơn GTGT)</option><option value="1">Giá đã gồm thuế GTGT</option></select></div>
+                  {/* [2026-11-25 Nguyễn Văn Thủy] đơn giá chưa thuế là chuẩn (mọi cột giá, gợi ý, cảnh báo theo chưa thuế); giá gồm thuế chỉ là cột quy đổi phụ.
+                      Phiếu cũ nhập theo giá gồm thuế: đổi về chưa thuế (giữ nguyên tổng tiền) (đóng góp) */}
+                  {v.priceIncludesVat
+                    ? <div className="field"><label title="Phiếu cũ nhập đơn giá đã gồm thuế. Chuẩn hiện nay: đơn giá chưa thuế — đổi để mọi cột giá, gợi ý tính cùng một chuẩn">Đơn giá</label><select className="select input" value="1" onChange={(e) => e.target.value === '0' && doiLoaiGia(false)}><option value="1">Đang nhập giá gồm thuế (phiếu cũ)</option><option value="0">Đổi về đơn giá chưa thuế (chuẩn)</option></select></div>
+                    : null}
                   {(v.kind === 'receipt' || v.kind === 'return') && (
                     <div className="field"><label>Chiết khấu trên đơn</label>
                       <div className="row" style={{ gap: 4 }}>
@@ -1329,6 +1335,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                       ['conlai', co('conlai') && <th className="num" title={`SL đơn ${donGoc?.docNo ?? ''} còn phải nhập${donNhieuCN ? ` ở chi nhánh ${v.branchCode}` : ''} (trước phiếu này), theo ĐVT của dòng`}>Còn phải nhập (đơn)</th>],
                       ['theohd', co('theohd') && <th className="num" title="Cộng dồn SL các hoá đơn của phiếu (hoá đơn đã lưu ở MH22), theo ĐVT của dòng">SL hoá đơn</th>],
                       ['gia', <th className="num">{isGiftDoc ? 'Giá trị / ĐVT' : v.priceIncludesVat ? 'Đơn giá gồm thuế' : 'Đơn giá chưa thuế'}</th>],
+                      ['giagom', cotHien.giagom && <th className="num" title="Gõ đơn giá gồm thuế (theo bảng giá / phiếu giao hàng) — phần mềm quy ra đơn giá chưa thuế theo thuế suất của dòng">Đơn giá gồm thuế (quy đổi)</th>],
                       ['sldat', co('sldat') && <th className="num" title={`SL đặt trên đơn ${donGoc?.docNo ?? ''}${donNhieuCN ? ` cho chi nhánh ${v.branchCode}` : ''}, quy theo ĐVT của dòng`}>SL đơn đặt</th>],
                       ['giahd', co('giahd') && <th className="num" title="Đơn giá đã thoả thuận (hợp đồng / giá mua của NCC), quy cùng loại giá và ĐVT của dòng — so với đơn giá đang lấy">Giá hợp đồng</th>],
                       ['giadon', co('giadon') && <th className="num" title={`Đơn giá trên đơn ${donGoc?.docNo ?? ''}, quy cùng loại giá và ĐVT của dòng`}>Giá đơn đặt</th>],
@@ -1366,10 +1373,8 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                           {xepCot([
                           ['#', <>
                           {/* STT + nút dòng ở cột đầu: luôn nhìn thấy, không bị khung cuộn ngang che như cột cuối. */}
-                          <td style={{ whiteSpace: 'nowrap' }}>{i + 1}{!readOnly && <div className="mh-line-acts">
-                            <button type="button" className="btn btn-xs" title="Nhân đôi dòng (Ctrl + D) — vd thêm dòng cùng mã để mua lẻ theo ĐVT khác. Chuột phải vào dòng để có thêm lựa chọn" onClick={(e) => { e.stopPropagation(); lineOps.dup(l.lineKey); }}>⧉</button>
-                            <button type="button" className="btn btn-xs mh-del" title="Xoá dòng (Ctrl + Delete)" onClick={(e) => { e.stopPropagation(); lineOps.del(l.lineKey); }}>×</button>
-                          </div>}</td>
+                          {/* [2026-11-25 Nguyễn Văn Thủy] nút nhân đôi / xoá chỉ còn ở cuối dòng (và chuột phải, Ctrl + D / Ctrl + Delete) (đóng góp) */}
+                          <td style={{ whiteSpace: 'nowrap' }}>{i + 1}</td>
                           </>],
                           ['chieu', <>
                           {v.kind === 'exchange' && <td><select className="select input" value={l.dir ?? 'in'} onChange={(e) => setLine(l.lineKey, { dir: e.target.value as 'in' | 'out' })}><option value="out">Trả đi</option><option value="in">Nhận về</option></select></td>}
@@ -1459,6 +1464,9 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                             const r = ratioOf(unitsOf(l.sku), l.unit) || 1; const lech = lech3.some((y) => y.sku === l.sku && y.loi.some((t) => t.startsWith('lệch hoá đơn')));
                             return <span className={lech ? 'mh-bad' : ''} title={lech ? 'SL thực nhận (cả dòng tặng cùng mã) khác SL trên hoá đơn' : 'Khớp hoá đơn'}>{sl((hdBySku.get(l.sku) ?? 0) / r)}</span>; })()}</td>}
                           </>],
+                          ['giagom', cotHien.giagom && <td className="num">{l.lineType !== 'buy' ? null : (() => { const r = TAX_RATE[l.taxCode] ?? 0; const g = roundPrice(l.price * (1 + r / 100));
+                            return readOnly || isOrder ? <span title={`= ${fmt(l.price)} × (1 + ${r}%)`}>{fmt(g)}</span>
+                              : <NumInput style={{ width: 100 }} value={g} title={`Gõ đơn giá gồm thuế — quy ra chưa thuế: ÷ (1 + ${r}%)`} onChange={(n) => setPrice(l, roundPrice((n ?? 0) / (1 + r / 100)))} />; })()}</td>],
                           ['sldat', co('sldat') && <td className="num">{(() => { const x = slDatOf(l); if (x === undefined) return null; return <span className={l.lineType === 'buy' && Math.abs(x - l.qty) > 1e-6 ? 'mh-warn' : ''} title={`SL đặt ${sl(x)} ${l.unit} — phiếu đang nhận ${sl(l.qty)}`}>{sl(x)}</span>; })()}</td>],
                           ['giahd', co('giahd') && <td className="num">{giaO(l, giaHd(l) || undefined, 'giá hợp đồng')}</td>],
                           ['giadon', co('giadon') && <td className="num">{giaO(l, giaDonOf(l), 'giá đơn đặt')}</td>],

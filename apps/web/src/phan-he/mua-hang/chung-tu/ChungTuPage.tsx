@@ -271,8 +271,8 @@ export function ChungTuPage({ embedPartner, embedGroup, command, report, formsOn
     const pc = nccOverride || partner || sel?.partnerCode || last.partnerCode || '';
     return {
       id: `new-${Date.now()}`, kind, status: 'draft', docNo: '', docDate: today(), branchCode: workBranch.get() || sel?.branchCode || last.branchCode || (names.branches.length === 1 ? names.branches[0]!.code : ''),
-      // Mặc định giá đã gồm thuế GTGT (thói quen nhập theo giá thanh toán); lần sau theo lựa chọn lần trước.
-      partnerCode: pc, priceIncludesVat: last.priceIncludesVat ?? true,
+      // [2026-11-25 Nguyễn Văn Thủy] đơn giá CHƯA THUẾ là chuẩn cho mọi phiếu mới; giá gồm thuế chỉ là cột quy đổi phụ trên phiếu (đóng góp)
+      partnerCode: pc, priceIncludesVat: false,
       // Không tạo sẵn dòng trống: thêm hàng bằng ô gõ / quét mã hoặc bộ chọn mặt hàng (tên, ĐVT, thuế theo danh mục).
       lines: [],
       method: kind === 'payment' || kind === 'prepayment' ? 'bank' : undefined,
