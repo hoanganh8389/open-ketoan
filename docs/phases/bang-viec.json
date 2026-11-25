@@ -20,7 +20,7 @@
     {
       "key": "todo",
       "label": "Chưa ai nhận",
-      "count": 204
+      "count": 210
     },
     {
       "key": "partial",
@@ -35,7 +35,7 @@
     {
       "key": "done",
       "label": "Xong",
-      "count": 370
+      "count": 371
     }
   ],
   "items": [
@@ -10697,6 +10697,125 @@
       "facet": "F5",
       "file": "docs/phases/PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md",
       "line": 39
+    },
+    {
+      "id": "S042-0",
+      "phase": "PHASE-042",
+      "title": "README + checklist; đo hiện trạng trên main 631b5a7 (LD xuyên repo: bizcity-platform PHASE-001)",
+      "priority": "P0",
+      "status": "done",
+      "column": "done",
+      "claim": null,
+      "modules": [
+        "kho",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F7",
+      "file": "docs/phases/PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md",
+      "line": 10
+    },
+    {
+      "id": "S042-1",
+      "phase": "PHASE-042",
+      "title": "scope stock:read (risk read), APPSCOPES; thiếu scope ⇒ 403 (LD-KT-1)",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "kho",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md",
+      "line": 11
+    },
+    {
+      "id": "S042-2",
+      "phase": "PHASE-042",
+      "title": "GET /api/v1/inventory/availability theo bizcitystockread@1 — onHand, pendingOut, held, available; test Postgres thật (LD-KT-2)",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "kho",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md",
+      "line": 12
+    },
+    {
+      "id": "S042-3",
+      "phase": "PHASE-042",
+      "title": "order-flow-check --profile stock ĐẠT trên bản thử, bằng chứng vào evidence/ (LD-KT-2)",
+      "priority": "P0",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "kho",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md",
+      "line": 13
+    },
+    {
+      "id": "S042-4",
+      "phase": "PHASE-042",
+      "title": "MCP ktstock dùng hàm S042-2 (LD-KT-3)",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "kho",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F8",
+      "file": "docs/phases/PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md",
+      "line": 14
+    },
+    {
+      "id": "S042-5",
+      "phase": "PHASE-042",
+      "title": "phiếu sale lưu links về pos.order (role source) (LD-KT-4)",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "kho",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md",
+      "line": 15
+    },
+    {
+      "id": "S042-6",
+      "phase": "PHASE-042",
+      "title": "pos.order.create nhận nguồn đơn chờ saleSource=crm, sourceRef, idempotent (LD-KT-5)",
+      "priority": "P1",
+      "status": "todo",
+      "column": "todo",
+      "claim": null,
+      "modules": [
+        "kho",
+        "ban-hang",
+        "he-thong"
+      ],
+      "facet": "F1",
+      "file": "docs/phases/PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md",
+      "line": 16
     }
   ]
 }

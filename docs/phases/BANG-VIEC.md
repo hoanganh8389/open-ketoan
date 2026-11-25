@@ -8,11 +8,11 @@
 | Đang làm | 4 |
 | Chờ merge | 0 |
 | Bị chặn | 31 |
-| Chưa ai nhận | 204 |
+| Chưa ai nhận | 210 |
 | Chờ đủ tín hiệu | 81 |
 | Hoãn | 3 |
-| Xong | 370 |
-| **Tổng** | **693** |
+| Xong | 371 |
+| **Tổng** | **700** |
 
 ## Theo phân hệ (R-FLOW-10)
 
@@ -20,13 +20,13 @@
 |---|---|---|---|---|---|
 | danh-muc | 20 | 18 | 1 | 49 | 88 |
 | mua-hang | 64 | 6 | 1 | 38 | 109 |
-| kho | 46 | 25 | 1 | 90 | 162 |
-| ban-hang | 64 | 6 | 1 | 40 | 111 |
+| kho | 47 | 25 | 1 | 96 | 169 |
+| ban-hang | 65 | 6 | 1 | 46 | 118 |
 | quy | 0 | 0 | 0 | 1 | 1 |
 | chung-tu | 73 | 5 | 1 | 29 | 108 |
 | tong-hop | 31 | 8 | 1 | 28 | 68 |
 | thue | 14 | 2 | 1 | 11 | 28 |
-| he-thong | 179 | 30 | 2 | 63 | 274 |
+| he-thong | 180 | 30 | 2 | 69 | 281 |
 | *(chưa gắn phân hệ)* | 13 | 2 | 0 | 1 | 16 |
 
 ## Đang làm (4)
@@ -78,7 +78,7 @@
 | [S037-34](PHASE-037-COMBO-IDENTITY-PHAN-KHO-KHUYEN-MAI/40-MASTER-CHECKLIST.md#L44) | PHASE-037 | thue | Hướng dẫn (docs/huong-dan/), cập nhật docs/nghiep-vu/11, docs/core/03; đưa văn bản về khuyến mại vào danh mục… | P1 | — |
 | [S040-20](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L29) | PHASE-040 | he-thong | Chủ tài khoản: mở lại GitHub Actions (Q040-3); bật bảo vệ main — PR + 1 người duyệt, check bắt buộc sau khi C… | P0 | — |
 
-## Chưa ai nhận (204)
+## Chưa ai nhận (210)
 
 | Mã | Phase | Phân hệ | Việc | Ưu tiên | Người giữ · nhánh |
 |---|---|---|---|---|---|
@@ -286,6 +286,12 @@
 | [S040-18](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L27) | PHASE-040 | chung-tu | B8 — trạng thái kế toán suy ra trên HT18; chẩn đoán mồ côi nguồn, hoàn tất thiếu sổ, tệp đổi băm, docref ≠ do… | P1 | — |
 | [S040-19](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L28) | PHASE-040 | he-thong | B9 — review R2 (quá hạn từ sau PHASE-034) dùng bộ chấm B2; biên bản docs/reviews/REVIEW-R2-.md | P0 | — |
 | [S040-21](PHASE-040-DOCUMENT-CONTINUITY-TIEN-DO-TRU-COT/40-MASTER-CHECKLIST.md#L30) | PHASE-040 | kho · quy · ban-hang | Sau phase — đưa vào sổ các dòng ☐ "sau phase" ở 10 §2 | P1 | — |
+| [S042-1](PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md#L11) | PHASE-042 | kho · ban-hang · he-thong | scope stock:read (risk read), APPSCOPES; thiếu scope ⇒ 403 (LD-KT-1) | P0 | — |
+| [S042-2](PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md#L12) | PHASE-042 | kho · ban-hang · he-thong | GET /api/v1/inventory/availability theo bizcitystockread@1 — onHand, pendingOut, held, available; test Postgr… | P0 | — |
+| [S042-3](PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md#L13) | PHASE-042 | kho · ban-hang · he-thong | order-flow-check --profile stock ĐẠT trên bản thử, bằng chứng vào evidence/ (LD-KT-2) | P0 | — |
+| [S042-4](PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md#L14) | PHASE-042 | kho · ban-hang · he-thong | MCP ktstock dùng hàm S042-2 (LD-KT-3) | P1 | — |
+| [S042-5](PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md#L15) | PHASE-042 | kho · ban-hang · he-thong | phiếu sale lưu links về pos.order (role source) (LD-KT-4) | P1 | — |
+| [S042-6](PHASE-042-DOC-TON-CHO-APP-NGOAI/40-MASTER-CHECKLIST.md#L16) | PHASE-042 | kho · ban-hang · he-thong | pos.order.create nhận nguồn đơn chờ saleSource=crm, sourceRef, idempotent (LD-KT-5) | P1 | — |
 
 ## Chờ đủ tín hiệu (81)
 
@@ -381,6 +387,6 @@
 | [S019-19](PHASE-019-BAN-DIEU-TRA-NHA-PHAT-TRIEN/40-MASTER-CHECKLIST.md#L28) | PHASE-019 | he-thong | Công cụ MCP chỉ đọc cho máy dev — agent tự tra trace (D019-8 (2)) | P3 | — |
 | [S029-34](PHASE-029-CHUAN-HOA-CHUNG-TU-GOC-TRUY-VET/40-MASTER-CHECKLIST.md#L43) | PHASE-029 | chung-tu | RV-R1-08: cửa nạp từ chối cùng phiên bản khác nội dung (409 CONFLICT + VERSIONCONTENTMISMATCH); force kèm lý … | P1 | — |
 
-## Xong (370)
+## Xong (371)
 
 Chỉ đếm; xem từng việc ở checklist của phase.
