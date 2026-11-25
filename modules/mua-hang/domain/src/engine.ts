@@ -693,9 +693,12 @@ export function computeDoc(doc: PDoc, policies: Policy[], opts: { holidays?: str
     }
   }
   if (!fromPolicy && od && doc.orderDiscountLines) { buyIdx = buyIdx.filter((i) => doc.orderDiscountLines!.includes(lines[i]!.lineKey)); net = buyIdx.reduce((s, i) => s + lines[i]!.after, 0); }
-  const orderDisc = od?.pct ? Math.round((net * od.pct) / 100) : Math.round(od?.amount ?? 0);
+  // [2026-11-25 Nguyễn Văn Thủy] CK % trên đơn tính và làm tròn TỪNG DÒNG (như hoá đơn: dòng giống nhau → số giống nhau), tổng CK = cộng
+  // các dòng; trước đây tính trên tổng rồi chia → hai dòng y hệt lệch nhau 1 đồng. CK bằng số tiền cố định vẫn phân bổ theo giá trị (đóng góp)
+  const pctParts = od?.pct ? buyIdx.map((i) => Math.round((lines[i]!.after * od!.pct!) / 100)) : null;
+  const orderDisc = pctParts ? pctParts.reduce((t, x) => t + x, 0) : Math.round(od?.amount ?? 0);
   if (orderDisc) {
-    const parts = allocate(orderDisc, buyIdx.map((i) => lines[i]!.after));
+    const parts = pctParts ?? allocate(orderDisc, buyIdx.map((i) => lines[i]!.after));
     buyIdx.forEach((i, k) => { lines[i]!.orderDiscount = parts[k]!; lines[i]!.after -= parts[k]!; });
     // Một vết cho một khoản CK: theo chính sách (mã + tên) hoặc ghi trên phiếu.
     const times = fromPolicy && !od?.pct ? tradeTimes(fromPolicy, net) : 1;
