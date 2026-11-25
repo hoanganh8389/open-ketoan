@@ -1,0 +1,13 @@
+{
+  "$comment": "[2026-11-25 08:41 PM Johnny Chu - Chu Hoàng Anh] FLOW — STD-12: đầu mỗi phiên Claude Code kiểm nhanh môi trường dev (không mạng, không docker, vài giây); agent thấy mục ✘ thì chạy node scripts/moi-truong-dev.mjs --sua (AGENTS.md).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          { "type": "command", "command": "node scripts/moi-truong-dev.mjs --nhanh" }
+        ]
+      }
+    ]
+  }
+}
