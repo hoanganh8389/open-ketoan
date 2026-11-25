@@ -1,0 +1,76 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": {
+    "code": "BH17",
+    "label": "BH17 — Cài đặt bán hàng (khối ③ Chênh lệch két chỉ còn bật / tắt; tài khoản khai ở ACC41 — NT-BH-042)",
+    "file": "modules/pos/web/screens/CaiDatPage.tsx",
+    "route": "/app/pos/cai-dat",
+    "entities": [
+      "settings:bizcity.pos.*"
+    ]
+  },
+  "actions": [
+    "sua"
+  ],
+  "questions": [
+    {
+      "id": "Q-CHUNG-01",
+      "ask": "Ai được sửa cài đặt? Không đủ quyền thì sao?",
+      "answer": "settings:write. Không quyền: ô khoá, nút Ghi ẩn, hiện câu \"Chỉ người có quyền ghi cấu hình … đổi được\"; máy chủ chặn 403. Cặp tài khoản chênh lệch két chỉ xem ở đây, sửa ở ACC41 (NT-BH-042)."
+    },
+    {
+      "id": "Q-CHUNG-02",
+      "ask": "Đổi cài đặt khi đã có chứng từ?",
+      "answer": "Có hiệu lực từ lần chốt ca / chứng từ sau; lịch sử ai đổi lúc nào lưu ở khoá cài đặt (có phiên bản). Phiếu đã ghi giữ nguyên."
+    },
+    {
+      "id": "Q-CHUNG-03",
+      "ask": "Hai người cùng sửa?",
+      "answer": "Theo cơ chế phiên bản của PUT /api/v1/settings/values/:key (Core), người ghi sau ghi giá trị của mình; lịch sử giữ cả hai lần."
+    },
+    {
+      "id": "Q-CHUNG-04",
+      "ask": "Kỳ đã khoá?",
+      "answer": "Không áp dụng: màn cấu hình, không ghi sổ."
+    },
+    {
+      "id": "Q-CHUNG-05",
+      "ask": "Bấm Ghi hai lần?",
+      "answer": "Nút Ghi khoá khi đang gửi; lệnh ghi có Idempotency-Key, ghi cùng giá trị không đổi gì."
+    },
+    {
+      "id": "Q-CHUNG-06",
+      "ask": "Ô bắt buộc? Sai báo ở đâu?",
+      "answer": "Hạn trả 0–60 ngày báo tại ô (chặn Ghi); ngưỡng chênh lệch két ≥ 0. Không còn ô tài khoản ở màn này (NT-BH-042)."
+    },
+    {
+      "id": "Q-CHUNG-07",
+      "ask": "Thoát giữa chừng?",
+      "answer": "Nút Bỏ sửa trả về giá trị đang lưu; chưa Ghi thì không đổi gì."
+    },
+    {
+      "id": "Q-CHUNG-08",
+      "ask": "Danh sách chọn?",
+      "answer": "Kho KTL / KKM chỉ liệt kê kho đang dùng của cửa hàng, đúng loại; không thêm kho tại chỗ (khai ở DM18)."
+    }
+  ],
+  "rows": [
+    {
+      "id": "BH17-01",
+      "action": "sua",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Người không có settings:write gọi thẳng API ghi cài đặt / đổi cặp tài khoản lý do",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "kernel"
+      ],
+      "hint": "Nhờ kế toán trưởng đổi; nút Ghi / Đổi đã ẩn với người không quyền",
+      "test": "apps/api/test/nt-bh-042-lech-ket-quy-tac.test.ts#FORBIDDEN",
+      "basis": "Q-CHUNG-01 chốt 25/11"
+    }
+  ]
+}

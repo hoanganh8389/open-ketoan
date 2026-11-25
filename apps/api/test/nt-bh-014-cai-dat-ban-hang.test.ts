@@ -52,8 +52,9 @@ describe.skipIf(!HAS)('NT-BH-014 — phiếu kế toán chênh lệch két khi c
     expect(c.statusCode, c.body).toBe(200);
     return { id, report: c.json().data as Record<string, any>, docKey: `pos:shift:${id}:cash-diff` };
   };
-  const reason = (code: string, name: string, debitAccount: string, creditAccount: string) =>
-    call(ctx, 'PUT', `/api/v1/posting/reasons/${code}`, { name, kind: 'journal', debitAccount, creditAccount, isActive: true });
+  // [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-042: BH17 không ghi lý do nữa — kế toán khai cặp Nợ / Có ở Quy tắc hạch toán ACC41 (đóng góp)
+  const reason = (code: string, _name: string, debitAccount: string, creditAccount: string) =>
+    call(ctx, 'PUT', `/api/v1/posting/scheme/reasons/${code}`, { debitAccount, creditAccount });
 
   beforeAll(async () => {
     ctx = await setupTenant();
@@ -84,7 +85,7 @@ describe.skipIf(!HAS)('NT-BH-014 — phiếu kế toán chênh lệch két khi c
     expect(redo.json().error.message).toContain('Chưa lập được phiếu');
   });
 
-  it('§5 dòng 5: thiếu 10.000 → Nợ 1381 (đối tượng CN-CN01) / Có 1111 — 10.000; gửi lại cùng khoá không có phiếu thứ hai', async () => {
+  it('§5 dòng 5: khai lý do ở ACC41 (NT-BH-042); thiếu 10.000 → Nợ 1381 (đối tượng CN-CN01) / Có 1111 — 10.000; gửi lại cùng khoá không có phiếu thứ hai', async () => {
     for (const [code, name, d, c] of [['POS-THIEU-KET', 'Thiếu tiền két chờ xử lý', '1381', '1111'], ['POS-THUA-KET', 'Thừa tiền két chờ xử lý', '1111', '3381']] as const) {
       const r = await reason(code, name, d, c);
       expect(r.status, JSON.stringify(r.body)).toBeLessThan(300);

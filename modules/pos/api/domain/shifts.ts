@@ -109,10 +109,10 @@ const vnStamp = (d: Date) => { const s = new Date(d.getTime() + 7 * 3600_000).to
 export const cashDiffDocKey = (shiftId: string) => `pos:shift:${shiftId}:cash-diff`;
 
 /**
- * Phiếu kế toán chênh lệch két (manual_journal, NT-BH-014). Lệch 0 → null. Thiếu → lý do `shortReason` (mặc định Nợ 1381 /
- * Có 1111), thừa → `overReason` (Nợ 1111 / Có 3381) — module không viết số tài khoản, tài khoản do kế toán khai ở lý do.
- * Đối tượng: `CN-<chi nhánh>` khi đã có trong danh mục (1381 / 3381 theo dõi đối tượng); chưa có → không gửi, Kernel báo lỗi
- * định khoản, chứng từ nằm ở ACC14 thẻ Lỗi (ca vẫn chốt).
+ * Phiếu kế toán chênh lệch két (manual_journal, NT-BH-014). Lệch 0 → null. Thiếu → lý do `shortReason`, thừa → `overReason` —
+ * module chỉ gửi mã lý do, không viết số tài khoản; cặp Nợ / Có của lý do khai ở Quy tắc hạch toán ACC41 (NT-BH-042).
+ * Đối tượng: `CN-<chi nhánh>` khi đã có trong danh mục (tài khoản thiếu / thừa chờ xử lý theo dõi đối tượng); chưa có → không gửi,
+ * Kernel báo lỗi định khoản, chứng từ nằm ở ACC14 thẻ Lỗi (ca vẫn chốt).
  */
 export function cashDiffJournal(input: {
   shiftId: string; branchCode: string; openedAt: Date; closedAt: Date; cashier: string;

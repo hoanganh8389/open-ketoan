@@ -25,7 +25,10 @@ Phiếu bán hàng và phiếu trả hàng: **Ghi ngay** (lên sổ khi máy bá
 ## ③ Chênh lệch két khi chốt ca
 
 - **Lập phiếu kế toán khi chốt ca lệch két** (mặc định bật): ca có tiền thiếu / thừa thì phần mềm lập một phiếu kế toán, đối tượng là chi nhánh.
-- Hai dòng **Thiếu tiền** (mặc định Nợ 1381 / Có 1111) và **Thừa tiền** (Nợ 1111 / Có 3381): sửa tài khoản tại chỗ. Bên cạnh hiện *Đã có lý do* hoặc *Chưa có lý do — bấm Ghi để tạo*.
+<!-- [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-042: tài khoản chênh lệch két khai ở Quy tắc hạch toán, BH17 chỉ xem (đóng góp) -->
+- Hai dòng **Thiếu tiền** (lý do `POS-THIEU-KET`, gợi ý Nợ 1381 / Có 1111) và **Thừa tiền** (`POS-THUA-KET`, gợi ý Nợ 1111 / Có 3381) **chỉ để xem**: hiện cặp Nợ / Có đang lưu trên lý do và *Đã khai* hoặc *Chưa khai tài khoản*.
+- Đổi tài khoản: bấm **Khai ở Quy tắc hạch toán** → màn ACC41 mở thẳng nghiệp vụ *Chênh lệch két máy bán* → **Đổi** (cần quyền ghi cấu hình). Chỉ chọn tài khoản chi tiết: thiếu Nợ 138 / 334 / 632 / 811 – Có 111; thừa Nợ 111 – Có 338 / 711. Đổi chỉ áp cho phiếu lập sau.
+- Chưa khai tài khoản lúc chốt ca: ca vẫn chốt, biên bản ghi "chưa lập" — khai ở ACC41 rồi bấm **Lập lại phiếu** ở Sổ ca bán.
 - Phiếu lập xong ghi sổ ngay hay chờ duyệt theo chế độ của loại "phiếu kế toán" (dùng chung cho mọi phiếu kế toán phân hệ lập, vd kiểm kê kho) — đổi ở ACC14.
 - Tắt: chỉ lưu biên bản ca, kế toán xử lý tay.
 
