@@ -11,34 +11,41 @@
 // [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: hộp Lập / sửa đơn dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 import { useEffect, useState } from 'react';
 import { BranchPicker, DocSheet, DocSheetPanel, ErrorBox, Field, ItemPicker, Loading, Modal, errorText, useApi, useCan, useMutation, useQuery, useQueryClient } from '@bizcity/ui-kit';
-import { ACTION, M, SELF_CARRIER, SHIP_NEXT, SHIP_STATUS, STATUS, fmt, printQuote, remaining, time, today, vnd, type HistoryEvent, type Order, type ShipStatus } from '../lib';
+import { ACTION, M, SELF_CARRIER, SHIP_NEXT, SHIP_STATUS, STATUS, fmt, printQuote, remaining, time, today, vnd, type HistoryEvent, type Order, type PolicyRef, type ShipStatus } from '../lib';
 
 // [2026-11-24 Võ Hoàng] NGHIEM-THU — thử thật BH20 24/11: lý do đóng đơn (closeReason của máy chủ) bằng tiếng Việt (đóng góp)
 const CLOSE_REASON: Record<string, string> = { delivered: 'đã giao đủ', manual: 'đóng tay — thôi giữ phần chưa giao' };
 
-type DraftLine = { lineKey: string; sku: string; qty: string; unitPrice: string; discount: string; isGift: boolean };
+// [2026-11-25 khanhtd] NGHIEM-THU — BH20: giữ căn cứ khuyến mại (policyRef dòng, policyRefs đơn) khi Ghi — trước đây form bỏ mất, đơn có
+//   khuyến mại (vd đơn Copy) Ghi lại là mất căn cứ chương trình; sửa tay chiết khấu / giá / mã / quà của dòng khuyến mại → thành dòng gõ tay
+type DraftLine = { lineKey: string; sku: string; qty: string; unitPrice: string; discount: string; isGift: boolean; policyRef?: PolicyRef };
 type Draft = {
   orderDate: string; validUntil: string; branchCode: string; warehouseCode: string; partnerCode: string; customerName: string; phone: string;
-  source: 'manual' | 'livestream'; note: string; lines: DraftLine[];
+  source: 'manual' | 'livestream'; note: string; lines: DraftLine[]; policyRefs: NonNullable<Order['policyRefs']>;
   receiver: string; shipPhone: string; address: string; fee: string; carrier: string; trackingNo: string; cod: string;
 };
 
 const fromOrder = (o: Order): Draft => ({
   orderDate: o.orderDate, validUntil: o.validUntil ?? '', branchCode: o.branchCode, warehouseCode: o.warehouseCode, partnerCode: o.partner?.code ?? '',
-  customerName: o.customer?.name ?? '', phone: o.customer?.phone ?? o.phone ?? '', source: o.source, note: o.note ?? '',
-  lines: o.lines.map((l) => ({ lineKey: l.lineKey, sku: l.sku, qty: String(l.qty), unitPrice: String(l.unitPrice), discount: l.discount ? String(l.discount) : '', isGift: l.isGift })),
+  customerName: o.customer?.name ?? '', phone: o.customer?.phone ?? o.phone ?? '', source: o.source, note: o.note ?? '', policyRefs: o.policyRefs ?? [],
+  lines: o.lines.map((l) => ({ lineKey: l.lineKey, sku: l.sku, qty: String(l.qty), unitPrice: String(l.unitPrice), discount: l.discount ? String(l.discount) : '', isGift: l.isGift,
+    ...(l.policyRef ? { policyRef: l.policyRef } : {}) })),
   receiver: o.shipping?.receiver ?? '', shipPhone: o.shipping?.phone ?? '', address: o.shipping?.address ?? '', fee: o.shipping?.fee ? String(o.shipping.fee) : '',
   carrier: o.shipping?.carrier ?? '', trackingNo: o.shipping?.trackingNo ?? '', cod: o.shipping?.cod ? String(o.shipping.cod) : '',
 });
 const blank = (): Draft => ({
-  orderDate: today(), validUntil: today(3), branchCode: '', warehouseCode: '', partnerCode: '', customerName: '', phone: '', source: 'manual', note: '',
+  orderDate: today(), validUntil: today(3), branchCode: '', warehouseCode: '', partnerCode: '', customerName: '', phone: '', source: 'manual', note: '', policyRefs: [],
   lines: [{ lineKey: 'L1', sku: '', qty: '1', unitPrice: '', discount: '', isGift: false }],
   receiver: '', shipPhone: '', address: '', fee: '', carrier: '', trackingNo: '', cod: '',
 });
 const n = (s: string) => (s.trim() === '' ? undefined : Number(s.replace(/\./g, '').replace(',', '.')));
 
 function toInput(d: Draft) {
+  const lines = d.lines.filter((l) => l.sku);
+  const used = new Set(lines.flatMap((l) => (l.policyRef ? [l.policyRef.key] : [])));
+  const policyRefs = d.policyRefs.filter((p) => used.has(p.key));
   return {
+    ...(policyRefs.length ? { policyRefs } : {}),
     orderDate: d.orderDate, validUntil: d.validUntil, branchCode: d.branchCode, ...(d.warehouseCode ? { warehouseCode: d.warehouseCode } : {}), source: d.source,
     ...(d.partnerCode ? { partner: { code: d.partnerCode } } : {}),
     ...(d.customerName || d.phone ? { customer: { ...(d.customerName ? { name: d.customerName } : {}), ...(d.phone ? { phone: d.phone } : {}) } } : {}),
@@ -47,9 +54,9 @@ function toInput(d: Draft) {
       ...(d.receiver ? { receiver: d.receiver } : {}), ...(d.shipPhone ? { phone: d.shipPhone } : {}), ...(d.address ? { address: d.address } : {}),
       ...(d.carrier ? { carrier: d.carrier } : {}), ...(d.trackingNo ? { trackingNo: d.trackingNo } : {}), fee: n(d.fee) ?? 0, cod: n(d.cod) ?? 0,
     } } : {}),
-    lines: d.lines.filter((l) => l.sku).map((l) => ({
+    lines: lines.map((l) => ({
       lineKey: l.lineKey, sku: l.sku, qty: n(l.qty) ?? 0, ...(n(l.unitPrice) !== undefined ? { unitPrice: n(l.unitPrice) } : {}),
-      ...(n(l.discount) ? { discount: n(l.discount) } : {}), ...(l.isGift ? { isGift: true } : {}),
+      ...(n(l.discount) ? { discount: n(l.discount) } : {}), ...(l.isGift ? { isGift: true } : {}), ...(l.policyRef ? { policyRef: l.policyRef } : {}),
     })),
   };
 }
@@ -112,7 +119,12 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
   const [hoi, setHoi] = useState<{ title: string; noteLabel: string; required: boolean; tracking: boolean; ok: (note: string, tracking: string) => void } | null>(null);
   const ask = (a: string, label: string, required = false) =>
     setHoi({ title: label, noteLabel: required ? 'Lý do (bắt buộc)' : 'Ghi chú / lý do (tuỳ chọn)', required, tracking: false, ok: (note) => act(a, { note }) });
-  const setLine = (i: number, patch: Partial<DraftLine>) => setD({ ...d, lines: d.lines.map((l, k) => (k === i ? { ...l, ...patch } : l)) });
+  // Sửa mã / giá / chiết khấu / quà của dòng khuyến mại → dòng gõ tay (bỏ policyRef); đổi số lượng thì giữ — máy chủ tính lại khi Ghi.
+  const setLine = (i: number, patch: Partial<DraftLine>) => setD({ ...d, lines: d.lines.map((l, k) => {
+    if (k !== i) return l;
+    const manual = ['sku', 'unitPrice', 'discount', 'isGift'].some((f) => f in patch);
+    return manual ? { ...l, ...patch, policyRef: undefined } : { ...l, ...patch };
+  }) });
   const addLine = () => {
     let k = d.lines.length + 1;
     while (d.lines.some((l) => l.lineKey === `L${k}`)) k++;
@@ -192,7 +204,7 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
             : <div className="mh-check ok">✓ {!cur ? 'Đủ thông tin — bấm Ghi để lưu đơn' : status === 'draft' ? 'Đủ thông tin — bấm Gửi để giữ hàng' : status === 'open' ? 'Đơn đang mở — nhập "Giao lần này" rồi Lập chuyến giao / Giao tại quầy' : 'Đủ thông tin'}</div>}
           {editable && (
             <ol className="mh-guide" style={{ marginTop: 6 }}>
-              <li className={cur ? 'done' : ''}><b>Ghi</b> lưu đơn nháp — máy chủ tính lại giá, khuyến mại, tiền</li>
+              <li className={cur ? 'done' : ''}><b>Ghi</b> lưu đơn nháp — máy chủ tính lại giá, áp khuyến mại đang hiệu lực theo ngày đơn (đơn Nháp / Chờ duyệt), tiền</li>
               <li className={status !== 'draft' ? 'done' : ''}><b>Gửi</b>: kiểm hạn mức, nợ quá hạn; vướng thì chờ duyệt, không vướng thì giữ hàng ngay</li>
               <li><b>Lập chuyến giao</b> / <b>Giao tại quầy</b> theo số &quot;Giao lần này&quot; (đơn Đã gửi)</li>
             </ol>
@@ -221,7 +233,9 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
             {(n(d.fee) ?? 0) > 0 && <><span>Phí ship thu khách</span><span>{vnd(n(d.fee))}</span></>}
             {(n(d.cod) ?? 0) > 0 && <><span>Tiền COD</span><span>{vnd(n(d.cod))}</span></>}
           </div>
-          {editable && <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>Máy chủ tính lại giá, khuyến mại, tiền khi Ghi.</div>}
+          {editable && <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>{status === 'open'
+            ? 'Máy chủ tính lại tiền khi Ghi; đơn đã gửi giữ nguyên khuyến mại đã áp.'
+            : 'Máy chủ tính lại giá, áp khuyến mại đang hiệu lực, tính tiền khi Ghi. Dòng có chiết khấu gõ tay thì không áp chiết khấu chương trình.'}</div>}
         </DocSheetPanel>
       </>}>
       {dups.length > 0 && (
@@ -276,7 +290,7 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
               return (
                 <tr key={l.lineKey}>
                   <td><ItemPicker value={l.sku} onChange={(v) => setLine(i, { sku: v })} disabled={!editable || Boolean(s?.delivered)} /></td>
-                  <td>{s?.name ?? ''}</td>
+                  <td>{s?.name ?? ''}{l.policyRef && <span className="badge badge-info" style={{ marginLeft: 4 }} title={`Khuyến mại: chương trình ${l.policyRef.key} (bản ${l.policyRef.version}) — máy chủ áp khi Ghi; sửa tay giá / chiết khấu / quà thì thành dòng gõ tay`}>KM</span>}</td>
                   <td><input className="input" value={l.qty} disabled={!editable} onChange={(e) => setLine(i, { qty: e.target.value })} /></td>
                   <td><input className="input" value={l.unitPrice} placeholder="giá cửa hàng" disabled={!editable || l.isGift} title={l.isGift ? 'Dòng quà: giá 0' : ''} onChange={(e) => setLine(i, { unitPrice: e.target.value })} /></td>
                   <td><input className="input" value={l.discount} disabled={!editable || l.isGift} title={l.isGift ? 'Dòng quà: không chiết khấu' : ''} onChange={(e) => setLine(i, { discount: e.target.value })} /></td>
