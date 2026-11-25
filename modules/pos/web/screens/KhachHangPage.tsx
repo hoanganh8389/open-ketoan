@@ -4,20 +4,15 @@
  * điểm, quà). Gồm đơn máy bán và phiếu bán BH10; lọc nhiều cửa hàng, kênh; xuất Excel. Quyền xem pos:report.
  */
 // [2026-11-19 Võ Hoàng] NGHIEM-THU — NT-BH-034: màn Báo cáo khách hàng (đóng góp)
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { DataGrid, ErrorBox, KpiCards, Loading, PageHeader, errorText, useApi, useQuery, type GridColumn } from '@bizcity/ui-kit';
-import { M, RangeLayout, useRange, vnd } from '../lib';
+import { M, RangeLayout, useRange } from '../lib';
+import { TungLanMua } from './lich-su-mua';
 
 type Row = {
   customerCode: string; customerName: string; phone: string; branchCode: string; period: string; orders: number; posOrders: number; phieuBanDocs: number;
   goods: number; discount: number; net: number; returns: number; netAfterReturns: number; voucherCount: number; voucherAmount: number;
   pointsEarned: number; pointsRedeemed: number; giftQty: number; giftValue: number; shops: string;
-};
-type Line = { sku: string; name: string; unit: string; qty: number; unitPrice: number; discount: number; amount: number; isGift: boolean; promo: string | null; giftValue?: number | null };
-type Purchase = {
-  source: 'pos' | 'phieu-ban'; kind: 'sale' | 'return'; refId: string; refCode: string; date: string; branchCode: string; channel: string;
-  goods: number; discount: number; total: number; returns: number; originalCode?: string | null;
-  vouchers: { code: string; campaignName: string; amount: number }[]; pointsEarned: number; pointsRedeemed: number; lines: Line[];
 };
 type Meta = { totals?: Record<string, number>; phieuBan?: string; voucher?: string; loyalty?: string };
 
@@ -34,43 +29,11 @@ const cols: GridColumn<Row>[] = [
   { key: 'shops', header: 'Cửa hàng đã mua', width: 140 },
 ];
 
-/** Từng dòng hàng của các lần mua (để xuất Excel một bảng phẳng). */
-type FlatLine = Line & { key: string; refCode: string; date: string; branchCode: string; source: string; vouchers: string; points: string };
-const lineCols: GridColumn<FlatLine>[] = [
-  { key: 'date', header: 'Ngày', width: 90 }, { key: 'refCode', header: 'Số đơn / phiếu', type: 'code', width: 130 },
-  { key: 'source', header: 'Nguồn', width: 90 }, { key: 'branchCode', header: 'Cửa hàng', type: 'code', width: 80 },
-  { key: 'sku', header: 'Mã hàng', type: 'code', width: 100 }, { key: 'name', header: 'Tên hàng', width: 200 }, { key: 'unit', header: 'ĐVT', width: 60 },
-  { key: 'qty', header: 'SL', type: 'qty', width: 60 }, { key: 'unitPrice', header: 'Đơn giá', type: 'money', width: 100 },
-  { key: 'discount', header: 'Giảm', type: 'money', sum: true, width: 90 }, { key: 'amount', header: 'Thành tiền', type: 'money', sum: true, width: 110 },
-  { key: 'promo', header: 'Khuyến mại', width: 120 }, { key: 'isGift', header: 'Quà', width: 50, value: (l) => (l.isGift ? 'Quà' : '') },
-  { key: 'giftValue', header: 'Giá trị quà', type: 'money', sum: true, width: 100 },
-  { key: 'vouchers', header: 'Voucher', width: 160 }, { key: 'points', header: 'Điểm tích / đổi', width: 110 },
-];
-
 function Detail({ row, range }: { row: Row; range: { from: string; to: string; branchCodes: string; channels: string } }) {
-  const api = useApi();
-  const q = useQuery({
-    queryKey: ['pos-admin', 'customer-detail', row.customerCode, range],
-    queryFn: () => api.get<Purchase[]>(`${M}/reports/customer-detail`, Object.fromEntries(Object.entries({ ...range, customer: row.customerCode }).filter(([k, v]) => v || k === 'customer'))),
-  });
-  const flat = useMemo<FlatLine[]>(() => (q.data ?? []).flatMap((p) => {
-    const vouchers = p.vouchers.map((v) => `${v.code} (${vnd(v.amount)})`).join(', ');
-    const points = p.pointsEarned || p.pointsRedeemed ? `+${p.pointsEarned} / −${p.pointsRedeemed}` : '';
-    const src = p.source === 'pos' ? 'Máy bán' : 'Phiếu BH10';
-    if (p.kind === 'return') {
-      return [{ key: `${p.refId}-r`, refCode: p.refCode, date: p.date, branchCode: p.branchCode, source: `${src} · trả hàng${p.originalCode ? ` (${p.originalCode})` : ''}`,
-        sku: '', name: 'Trả hàng', unit: '', qty: 0, unitPrice: 0, discount: 0, amount: -p.returns, isGift: false, promo: null, vouchers: '', points: '' }];
-    }
-    return p.lines.map((l, i) => ({ ...l, key: `${p.refId}-${i}`, refCode: p.refCode, date: p.date, branchCode: p.branchCode, source: src,
-      vouchers: i === 0 ? vouchers : '', points: i === 0 ? points : '' }));
-  }), [q.data]);
   return (
     <div className="card" style={{ marginTop: 8, padding: 8 }}>
       <b>Từng lần mua · {row.customerName || 'Khách lẻ'} {row.customerCode ? `(${row.customerCode})` : ''}</b>
-      {q.isLoading ? <Loading /> : q.error ? <ErrorBox error={errorText(q.error)} /> : (
-        <DataGrid rows={flat} columns={lineCols} rowKey={(l) => l.key} storageKey="pos.khach-hang.chi-tiet" maxHeight="34vh"
-          exportName={`khach-${row.customerCode || 'le'}`} exportTitle={`Từng lần mua — ${row.customerName || 'Khách lẻ'} ${range.from} – ${range.to}`} emptyText="Không có lần mua" />
-      )}
+      <TungLanMua customerCode={row.customerCode} customerName={row.customerName} range={range} storageKey="pos.khach-hang.chi-tiet" />
     </div>
   );
 }

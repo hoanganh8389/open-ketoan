@@ -14,6 +14,8 @@ import { TraHangPage } from './screens/TraHangPage';
 import { KenhBanPage } from './screens/KenhBanPage';
 // [2026-11-19 Võ Hoàng] NGHIEM-THU — NT-BH-034: màn Báo cáo khách hàng (quyền pos:report) (đóng góp)
 import { KhachHangPage } from './screens/KhachHangPage';
+// [2026-11-25 05:40 PM Võ Hoàng] NT-BH-034 — thẻ Lịch sử mua trong hồ sơ khách (partner.detail.tab) (đóng góp)
+import { LichSuMuaTab } from './screens/lich-su-mua';
 
 const P = 'pos:report';
 // [2026-11-15 11:40 AM Võ Hoàng] NGHIEM-THU — NT-BH-018: Chương trình khuyến mại là chính sách bán chung (máy bán + phiếu bán nhập tay), không phải
@@ -44,4 +46,5 @@ export default defineWebModule({
     { path: '/app/pos/kenh-ban', component: KenhBanPage, permission: KM },
     { path: '/app/pos/bao-cao-khach', component: KhachHangPage, permission: P },
   ],
+  slots: [{ slot: 'partner.detail.tab', component: LichSuMuaTab, permission: P, label: 'Lịch sử mua' }],
 });
