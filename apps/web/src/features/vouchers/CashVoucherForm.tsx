@@ -182,7 +182,9 @@ export function CashVoucherForm({ type, existing, initial, onClose, onSaved, the
   const signatures = useSignatures(existing && !cancelled ? existing.id : undefined).data;
   const setRow = (key: number, patch: Partial<Row>) => setRows((xs) => xs.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   // [2026-11-25 Nguyễn Văn Thủy] #3 tab Test: dòng có tài khoản bắt buộc khoản mục CP / hợp đồng / đơn vị / nhân viên thì cột đó tự hiện — trước đây cột ẩn nên không lưu được phiếu (đóng góp)
-  const batBuoc = (k: ColKey) => rows.some((r) => { const a = accountMap.get(r.account); return Boolean(a) && ((k === 'costItem' && a!.trackCostItem) || (k === 'contract' && a!.trackContract) || (k === 'department' && a!.trackDepartment) || (k === 'employee' && a!.trackEmployee)); });
+  // [2026-11-26 09:50 AM Nguyễn Văn Thủy] HT — #59 tab Test: xét cả tài khoản tiền ở đầu phiếu (vd TK tiền gửi 11210016 bật theo dõi khoản mục / bộ phận / hợp đồng) — máy chủ đòi cả hai vế Nợ / Có, trước đây cột vẫn ẩn nên không có chỗ khai (đóng góp)
+  const canTheo = (a: Account | undefined, k: ColKey) => Boolean(a) && ((k === 'costItem' && a!.trackCostItem) || (k === 'contract' && a!.trackContract) || (k === 'department' && a!.trackDepartment) || (k === 'employee' && a!.trackEmployee));
+  const batBuoc = (k: ColKey) => rows.some((r) => canTheo(accountMap.get(r.account), k) || ((r.account || r.amount) && canTheo(accountMap.get(moneyAccount), k)));
   const show = (k: ColKey) => cols.includes(k) || hasData(rows, k) || batBuoc(k);
   const toggleCol = (k: ColKey) => { const next = cols.includes(k) ? cols.filter((x) => x !== k) : [...cols, k]; setCols(next); try { localStorage.setItem(colsKey(type), JSON.stringify(next)); } catch { /* bỏ qua */ } };
 
@@ -259,9 +261,12 @@ export function CashVoucherForm({ type, existing, initial, onClose, onSaved, the
       if (r.settleRemaining && parseAmount(r.amount) > r.settleRemaining) return `${row}số tiền phải nhỏ hơn hoặc bằng số tiền còn nợ trên hóa đơn`;
       if (parseAmount(r.taxAmount) > 0 && !r.taxCode) return `${row}bạn chưa chọn loại thuế.`;
       if ((acc.trackPartner || acc.isDebt || acc.normalSide === 'both') && !(r.partner || h.partnerCode)) return `${row}tài khoản bắt buộc phải chọn đối tượng`;
-      if (acc.trackCostItem && costItems.length && !r.costItem) return `${row}tài khoản này bắt buộc phải chọn khoản mục CP`;
-      if (acc.trackContract && contracts.length && !r.contract) return `${row}tài khoản bắt buộc phải chọn hợp đồng`;
-      if (acc.trackDepartment && departments.length && !r.department) return `${row}tài khoản bắt buộc phải chọn đơn vị`;
+      // [2026-11-26 09:50 AM Nguyễn Văn Thủy] HT — #59 tab Test: tài khoản tiền ở đầu phiếu bật theo dõi cũng bắt buộc chiều đó trên dòng (như máy chủ) — báo tên tài khoản và cột cần điền (đóng góp)
+      const tien = accountMap.get(moneyAccount);
+      const doi = (k: 'trackCostItem' | 'trackContract' | 'trackDepartment') => (acc[k] ? r.account : tien?.[k] ? moneyAccount : '');
+      if (doi('trackCostItem') && costItems.length && !r.costItem) return `${row}tài khoản ${doi('trackCostItem')} bắt buộc chọn Khoản mục CP (cột Khoản mục CP)`;
+      if (doi('trackContract') && contracts.length && !r.contract) return `${row}tài khoản ${doi('trackContract')} bắt buộc chọn Hợp đồng (cột Hợp đồng)`;
+      if (doi('trackDepartment') && departments.length && !r.department) return `${row}tài khoản ${doi('trackDepartment')} bắt buộc chọn Đơn vị (cột Đơn vị)`;
     }
     return null;
   };
