@@ -134,7 +134,7 @@ export function ThuongPage() {
                 </tbody></table>
                 <div className="row" style={{ gap: 8, marginTop: 8, alignItems: 'center' }}>
                   <button className="btn btn-primary btn-sm" disabled={!r.amount || !r.allocation.length || Boolean(r.existing) || !partnerCode} onClick={() => void create()}>Tạo phiếu thưởng</button>
-                  {r.existing ? <span className="mh-warn">Kỳ này đã có phiếu {r.existing.docNo} — chặn tính trùng (huỷ / bỏ duyệt phiếu cũ để tính lại khi có hàng trả, HĐ điều chỉnh)</span> : <span className="muted" style={{ fontSize: 12 }}>Khi duyệt: Nợ 331 / Có 1561 theo từng mã; giá vốn bình quân tháng tự chia cho hàng còn tồn và hàng đã bán (632).</span>}
+                  {r.existing ? <span className="mh-warn">Kỳ này đã có phiếu {r.existing.docNo} — chặn tính trùng (huỷ / bỏ duyệt phiếu cũ để tính lại khi có hàng trả, HĐ điều chỉnh)</span> : <span className="muted" style={{ fontSize: 12 }}>Khi duyệt: Nợ TK phải trả NCC / Có TK kho theo từng mã — tài khoản lấy ở Tài khoản ngầm định (ACC41), dòng Trả hàng NCC – Thưởng / CK cuối kỳ; giá vốn bình quân tháng tự chia cho hàng còn tồn và hàng đã bán (632).</span>}
                 </div>
                 {msg && <div className={`alert ${msg.ok ? 'alert-ok' : 'alert-bad'}`} style={{ marginTop: 6 }}>{msg.text}</div>}
               </div>

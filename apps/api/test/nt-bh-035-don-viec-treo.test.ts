@@ -168,11 +168,20 @@ describe.skipIf(!HAS)('NT-BH-035 — dọn việc treo bán hàng', () => {
   });
 
   it('BH11: phiếu trả có dòng quà → dòng quà về kho KKM của cửa hàng nhận; CN02 chưa khai → kho của phiếu', async () => {
-    const before = await stockAt('SUA330', KM);
+    // [2026-11-26 08:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: phiếu trả lập theo phiếu bán gốc (bán L1 + quà G1 trước, trả đúng hai dòng đó) (đóng góp)
+    let before = 0;
     const mk = async (branchCode: string, warehouseCode: string) => {
-      const c = await req('POST', '/api/v1/m/phieu-ban/docs', {
-        docType: 'sale_return', docDate: TODAY, branchCode, warehouseCode, partner: { code: 'KH035' }, payments: [],
+      const s = await req('POST', '/api/v1/m/phieu-ban/docs', {
+        docType: 'sale', docDate: TODAY, branchCode, warehouseCode, partner: { code: 'KH035' }, payments: [],
         lines: [{ lineKey: 'L1', sku: 'SUA330', qty: 1, unitPrice: 305_556 }, { lineKey: 'G1', sku: 'SUA330', qty: 1, isGift: true }],
+      });
+      expect(s.statusCode, s.body).toBe(200);
+      const sa = await req('POST', `/api/v1/m/phieu-ban/docs/${s.json().data.id as string}/approve`);
+      expect(sa.statusCode, sa.body).toBe(200);
+      if (branchCode === 'CN01') before = await stockAt('SUA330', KM);
+      const c = await req('POST', '/api/v1/m/phieu-ban/docs', {
+        docType: 'sale_return', docDate: TODAY, branchCode, warehouseCode, partner: { code: 'KH035' }, payments: [], originalDocNo: sa.json().data.docNo,
+        lines: [{ lineKey: 'L1', sku: 'SUA330', qty: 1, originalLineKey: 'L1' }, { lineKey: 'G1', sku: 'SUA330', qty: 1, originalLineKey: 'G1' }],
       });
       expect(c.statusCode, c.body).toBe(200);
       const id = c.json().data.id as string;

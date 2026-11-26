@@ -308,7 +308,8 @@ describe.skipIf(!HAS)('NT-BH-030 — trả lại hàng bán đợt 3', () => {
     const retDoc = async (docNo: string, qty: number) => {
       const d = await req(ctx, 'POST', `${PB_M}/docs`, {
         docType: 'sale_return', docDate: TODAY, branchCode: 'CN01', partner: { code: 'KH001' }, originalDocNo: docNo, payments: [],
-        lines: [{ lineKey: 'R1', sku: 'SUA900', qty, unitPrice: 810_000 }],
+        // [2026-11-26 08:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: dòng trả chọn từ dòng L1 của phiếu gốc (giá máy chủ lấy theo dòng gốc) (đóng góp)
+        lines: [{ lineKey: 'R1', sku: 'SUA900', qty, originalLineKey: 'L1' }],
       });
       expect(d.statusCode, d.body).toBe(200);
       const id = d.json().data.id as string;

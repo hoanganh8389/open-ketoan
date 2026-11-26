@@ -72,7 +72,7 @@ describe.skipIf(!HAS)('NT-BH-017 — phiếu kế toán lập phát sự kiện 
     const s = await req('POST', '/docs', { docType: 'sale', docDate: TODAY, branchCode: 'CN01', lines: [{ lineKey: 'L1', sku: 'SUA330', qty: 2, unitPrice: 300_000 }], payments: [{ methodCode: 'TM', amount: 648_000 }] });
     const sid = s.json().data.id as string;
     await req('POST', `/docs/${sid}/approve`);
-    const r = await req('POST', '/docs', { docType: 'sale_return', docDate: TODAY, branchCode: 'CN01', originalDocNo: s.json().data.docNo, lines: [{ lineKey: 'R1', sku: 'SUA330', qty: 1, unitPrice: 300_000 }], payments: [{ methodCode: 'TM', amount: 324_000 }] });
+    const r = await req('POST', '/docs', { docType: 'sale_return', docDate: TODAY, branchCode: 'CN01', originalDocNo: s.json().data.docNo, lines: [{ lineKey: 'R1', sku: 'SUA330', qty: 1, originalLineKey: 'L1' }], payments: [{ methodCode: 'TM', amount: 324_000 }] }); // [2026-11-26 09:50 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: dòng trả nối dòng gốc (đóng góp)
     const rid = r.json().data.id as string;
     expect((await req('POST', `/docs/${rid}/approve`)).statusCode).toBe(200);
     expect((await events(rid))[0]!.data).toMatchObject({ kind: 'sale_return', originalDocKey: `phieu-ban:${sid}` });
