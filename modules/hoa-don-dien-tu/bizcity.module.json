@@ -1,0 +1,42 @@
+{
+  "contract": "bizcity_module@1",
+  "id": "bizcity.hoa-don-dien-tu",
+  "key": "hoa-don-dien-tu",
+  "kind": "module",
+  "version": "0.1.0",
+  "label": "Hoá đơn điện tử",
+  "description": "THUE03 Hoá đơn điện tử (NT-BH-048): khai một chỗ ở kế toán người bán + tài khoản Viettel theo sổ, mẫu số / ký hiệu / portal theo chi nhánh; mật khẩu mã hoá (ctx.secrets), thử kết nối, nhật ký; cầu nối đọc cài đặt để website phát hành.",
+  "owners": ["@hoanganh8389"],
+  "standard": "^1.0",
+  "requires": {
+    "capabilities": ["platform.secrets", "data.tenant-tx", "data.read-views", "data.migrations.module", "actions.runtime", "actions.idempotency", "evidence.receipt"]
+  },
+  "permissions": [
+    { "key": "hoa-don-dien-tu:cai-dat-xem", "label": "Hoá đơn điện tử — xem cài đặt, nhật ký", "roles": ["owner", "chief_accountant", "accountant"], "risk": "low" },
+    { "key": "hoa-don-dien-tu:cai-dat-sua", "label": "Hoá đơn điện tử — sửa cài đặt, đặt mật khẩu Viettel, thử kết nối", "roles": ["owner", "chief_accountant"], "risk": "high" }
+  ],
+  "secrets": [
+    { "name": "hoa-don-dien-tu.viettel.password", "scope": "tenant", "label": "Mật khẩu tài khoản Viettel (theo sổ)" },
+    { "name": "hoa-don-dien-tu.viettel.token", "scope": "tenant", "label": "Access token Viettel (theo sổ)" },
+    { "name": "hoa-don-dien-tu.portal.password", "scope": "branch", "label": "Mật khẩu portal gửi mail (theo chi nhánh)" }
+  ],
+  "data": { "schema": "mod_hoa_don_dien_tu", "tables": ["so", "chi_nhanh", "nhat_ky"], "reads": ["bizcity_read.branches"] },
+  "actions": [
+    "hoa-don-dien-tu.cai-dat.get",
+    "hoa-don-dien-tu.cai-dat.save-so",
+    "hoa-don-dien-tu.cai-dat.save-chi-nhanh",
+    "hoa-don-dien-tu.ket-noi.thu",
+    "hoa-don-dien-tu.cai-dat.export",
+    "hoa-don-dien-tu.nhat-ky.list",
+    "hoa-don-dien-tu.secrets.read"
+  ],
+  "extensions": {
+    "screens": [
+      { "key": "hoa-don-dien-tu.cai-dat", "code": "THUE03", "group": "Thuế", "label": "Hoá đơn điện tử", "path": "/app/hoa-don-dien-tu",
+        "operations": {
+          "xem": { "permission": "hoa-don-dien-tu:cai-dat-xem", "label": "Xem cài đặt, nhật ký", "kind": "xem" },
+          "sua": { "permission": "hoa-don-dien-tu:cai-dat-sua", "label": "Sửa cài đặt, đặt mật khẩu, thử kết nối", "kind": "ghi" } } }
+    ]
+  },
+  "ui": { "icon": "ReceiptText", "color": "#5d4037", "order": 71 }
+}
