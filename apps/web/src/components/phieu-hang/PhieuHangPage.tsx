@@ -7,7 +7,6 @@
  *   - Nhãn "DỮ LIỆU GIẢ" khi loại phiếu đang chạy dữ liệu mẫu (đổi ở API → Nguồn dữ liệu màn hình).
  */
 import { dongChungTu } from '@/lib/trangThai';
-import { RefreshCw } from 'lucide-react';
 import { workBranch } from '@/lib/workBranch';
 import { useThemTuDiaChi } from '@/lib/themNhanh';
 import { useMemo, useRef, useState } from 'react';
@@ -18,6 +17,7 @@ import { api, errorText } from '@/lib/api';
 import { defaultTo } from '@/lib/format';
 import { KIND_INFO, emptyDoc, tradeApi, type TradeDoc, type TradeKind } from '@/lib/tradeDocs';
 import { PageHeader } from '@/components/PageHeader';
+import { CatalogToolbar } from '@/components/CatalogToolbar';
 import { FilterLayout } from '@/components/ReportPanel';
 import { DateRange, BranchSelect } from '@/components/filters';
 import { DataGrid, type Column } from '@/components/DataGrid';
@@ -140,21 +140,24 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
           </select></div>
       </>}>
       <div className="card">
-        {/* [2026-11-26 10:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-045: hàng nút sát bảng (không khoảng trống dưới); hàng lọc 1 giữ nguyên (đóng góp) */}
-        <div className="row ck-toolbar" style={{ gap: 6, padding: '6px 0 0', marginBottom: 0, flexWrap: 'wrap', alignItems: 'center' }}>
-          {tt.them && <button className="btn btn-sm btn-primary" title={`Lập ${info.label.toLowerCase()} mới — chi nhánh điền sẵn chi nhánh đang làm việc`}
-            onClick={() => { save.reset(); setStartEdit(false); setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? ''))); setFormKey((x) => x + 1); }}>+ Thêm</button>}
-          <button className="btn btn-sm" disabled={!sel} title={!sel ? 'Chọn một phiếu ở bảng dưới' : sel.status === 'approved' ? 'Phiếu đã duyệt — mở xem; Bỏ duyệt ở chân phiếu' : tt.sua ? 'Mở phiếu để sửa' : 'Mở phiếu (chỉ xem — chưa có quyền Sửa)'}
-            onClick={() => { if (!sel) return; setStartEdit(sel.status !== 'approved' && Boolean(tt.sua)); void open(sel); }}>{sel?.status !== 'approved' && tt.sua ? 'Sửa' : 'Xem'}</button>
-          {TRADE_TEMPLATES[kind] && <PrintButton small screen={code} templates={TRADE_TEMPLATES[kind]!} disabled={!sel} title="In phiếu đang chọn" getDocs={async () => (sel ? [await svc.get(sel.id)] : [])} />}
-          <button className="btn btn-sm btn-nap" onClick={() => void q.refetch()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
-          {tt.xuat && <button className="btn btn-sm" onClick={() => exportRef.current?.()} title="Xuất bảng đang lọc ra Excel">Xuất Excel</button>}
-          <span style={{ flex: 1 }} />
-          <form className="row" style={{ gap: 4 }} data-no-search onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>
-            <input className="input" style={{ width: 240, height: 28 }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm: số phiếu, đối tượng, hoá đơn" />
-            <button className="btn btn-sm" type="submit">Tìm</button>
-          </form>
-        </div>
+        {/* [2026-11-26 10:50 PM Võ Hoàng] NGHIEM-THU — NT-BH-045: thanh nút chung CatalogToolbar như các màn danh mục (Thêm · Sửa · Nạp · Xuất,
+            phím tắt Ctrl+N / Ctrl+E / F5 / Ctrl+F8), nằm sát bảng; In + ô Tìm ở phần mở rộng. Không truyền onDelete / trash: chứng từ không xoá (§7) (đóng góp) */}
+        <CatalogToolbar
+          canWrite={Boolean(tt.them || tt.sua)}
+          hasSelection={Boolean(sel)}
+          onAdd={tt.them ? () => { save.reset(); setStartEdit(false); setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? ''))); setFormKey((x) => x + 1); } : undefined}
+          onEdit={tt.sua ? () => { if (!sel) return; setStartEdit(sel.status !== 'approved'); void open(sel); } : undefined}
+          onRefresh={() => q.refetch()}
+          onExport={tt.xuat ? () => exportRef.current?.() : undefined}
+          extra={<>
+            {TRADE_TEMPLATES[kind] && <PrintButton small screen={code} templates={TRADE_TEMPLATES[kind]!} disabled={!sel} title="In phiếu đang chọn" getDocs={async () => (sel ? [await svc.get(sel.id)] : [])} />}
+            <span style={{ flex: 1 }} />
+            <form className="row" style={{ gap: 4 }} data-no-search onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>
+              <input className="input" style={{ width: 240, height: 28 }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm: số phiếu, đối tượng, hoá đơn" title="Tìm theo số phiếu, tên / mã đối tượng, số hoá đơn, ghi chú" />
+              <button className="btn btn-sm" type="submit" title="Lọc bảng theo chữ vừa gõ">Tìm</button>
+            </form>
+          </>}
+        />
         <ErrorBox error={q.error ? errorText(q.error) : null} />
         {q.isLoading ? <Loading /> : (
           <DataGrid storageKey={`phieu-${kind}-v1`} exportName={`phieu-${kind}`} exportRef={exportRef} rows={q.data?.data ?? []} rowKey={(r) => r.id}
