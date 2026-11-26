@@ -73,7 +73,7 @@ Mọi cài đặt voucher khai ở kế toán, không kém loại "Voucher / Mã
 |---|---|
 | Ngày chạy | 27/11/2026 (máy local) |
 | Bản code (commit) | nhánh `feat/nt-bh-050-voucher-du-nhu-cu`; máy bán `feat/voucher-phan-tram` (open-pos) |
-| Test tự động | `apps/api/test/nt-bh-050-voucher-du-nhu-cu.test.ts`; `modules/voucher/test/voucher.test.ts`; open-pos `react/src/features/voucher/shopVoucher.test.ts` |
+| Test tự động | `apps/api/test/nt-bh-050-voucher-du-nhu-cu.test.ts` (đề xuất — ở nhánh code); `modules/voucher/test/voucher.test.ts`; open-pos `react/src/features/voucher/shopVoucher.test.ts` |
 | Tiêu chí lên mức | không đổi mức |
 
 ## 8. Biên bản nghiệm thu
