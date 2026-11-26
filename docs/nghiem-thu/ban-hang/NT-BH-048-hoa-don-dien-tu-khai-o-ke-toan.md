@@ -108,7 +108,7 @@ apps/web/src/layout/ten-man.ts                      (tên màn /app/hoa-don-dien
 ## 7. Kết quả chạy
 <!-- [2026-11-26 10:00 PM Võ Hoàng] NGHIEM-THU — kết quả chạy trên nhánh feat/nt-bh-048-hoa-don-dien-tu (đóng góp) -->
 
-Nhánh `feat/nt-bh-048-hoa-don-dien-tu` (code đẩy sau khi PR giữ chỗ này merge). Test `apps/api/test/nt-bh-048-hoa-don-dien-tu.test.ts`, CSDL test trên máy local.
+Nhánh `feat/nt-bh-048-hoa-don-dien-tu` (code đẩy sau khi PR giữ chỗ này merge). Test `apps/api/test/nt-bh-048-hoa-don-dien-tu.test.ts` (sẽ tạo — ở nhánh code), CSDL test trên máy local.
 
 | Ca | Mong đợi (§5) | Phần mềm |
 |---|---|---|
