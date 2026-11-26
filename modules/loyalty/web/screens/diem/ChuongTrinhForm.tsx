@@ -28,7 +28,7 @@ export function ChuongTrinhForm({ content, base, errs, readOnly, onChange }: Pro
         const r = p.rules;
         const isPublished = published.has(p.code.toUpperCase());
         return (
-          <div key={`${p.id}-${i}`} className="card" style={{ padding: 8, display: 'grid', gap: 6 }}>
+          <div key={`${p.id}-${i}`} className="card card-body" style={{ display: 'grid', gap: 8, margin: 0 }}>
             <Row>
               <Lbl text="Loại"><span className="badge badge-info">{TYPE_LABEL[p.type]}</span></Lbl>
               <Lbl text="Mã (*)" tip="Mã chính sách, không trùng trong cửa hàng"><TextIn errs={errs} path={`${at}.code`} value={p.code} width={120} disabled={readOnly || isPublished} onChange={(v) => setPolicy(i, { code: v })} /></Lbl>

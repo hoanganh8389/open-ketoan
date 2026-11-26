@@ -28,7 +28,7 @@ export function DoiDiemForm({ content, base, errs, readOnly, onChange }: Props) 
         const rewards = arr(rec(p.rules.rules).rewards);
         const isPublished = published.has(p.code.toUpperCase());
         return (
-          <div key={`${p.id}-${i}`} className="card" style={{ padding: 8, display: 'grid', gap: 6 }}>
+          <div key={`${p.id}-${i}`} className="card card-body" style={{ display: 'grid', gap: 8, margin: 0 }}>
             <Row>
               <Lbl text="Loại"><span className="badge badge-info">{TYPE_LABEL[p.type]}</span></Lbl>
               <Lbl text="Mã (*)"><TextIn errs={errs} path={`${at}.code`} value={p.code} width={120} disabled={readOnly || isPublished} onChange={(v) => setPolicy(i, { code: v })} /></Lbl>

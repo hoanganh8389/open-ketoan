@@ -49,24 +49,23 @@ export function ThanhVienTab() {
     ) },
   ];
   return (
-    <div>
-      <form className="row" style={{ display: 'flex', gap: 8, alignItems: 'flex-end', margin: '8px 0', flexWrap: 'wrap' }}
-        onSubmit={(e) => { e.preventDefault(); setF({ q: draft.q.trim(), tier: draft.tier, page: 1 }); }}>
-        <label style={{ display: 'grid', gap: 2 }}><span className="muted" style={{ fontSize: 12 }}>Tìm kiếm</span>
-          <input className="input" style={{ width: 240 }} value={draft.q} placeholder="Mã, tên, SĐT" title="Tìm không dấu theo mã khách, tên, SĐT" onChange={(e) => setDraft({ ...draft, q: e.target.value })} /></label>
-        <label style={{ display: 'grid', gap: 2 }}><span className="muted" style={{ fontSize: 12 }}>Hạng</span>
-          <select className="input" value={draft.tier} title="Lọc theo hạng" onChange={(e) => setDraft({ ...draft, tier: e.target.value })}>
-            <option value="">Tất cả</option>
-            {(d?.tiers ?? []).map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
-          </select></label>
-        <button type="submit" className="btn btn-primary">Tìm</button>
+    <section className="card">
+      {/* [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: ô tìm / lọc trên thanh catalog-toolbar trong card, bảng sát mép như màn Core (đóng góp) */}
+      <form className="catalog-toolbar" style={{ alignItems: 'center' }} onSubmit={(e) => { e.preventDefault(); setF({ q: draft.q.trim(), tier: draft.tier, page: 1 }); }}>
+        <input className="input" style={{ width: 260, height: 28 }} value={draft.q} placeholder="Tìm: mã, tên, SĐT" title="Tìm không dấu theo mã khách, tên, SĐT" onChange={(e) => setDraft({ ...draft, q: e.target.value })} />
+        <select className="input" style={{ height: 28 }} value={draft.tier} title="Lọc theo hạng" onChange={(e) => setDraft({ ...draft, tier: e.target.value })}>
+          <option value="">Mọi hạng</option>
+          {(d?.tiers ?? []).map((t) => <option key={t.key} value={t.key}>{t.name}</option>)}
+        </select>
+        <button type="submit" className="btn btn-sm btn-primary" title="Tìm theo chữ và hạng đã chọn">Tìm</button>
+        <span style={{ flex: 1 }} />
         {d && <span className="muted">{d.total.toLocaleString('vi-VN')} khách · trang {d.page} / {d.pages}</span>}
         {d && d.pages > 1 && <>
           <button type="button" className="btn btn-sm" disabled={d.page <= 1} onClick={() => setF({ ...f, page: d.page - 1 })}>« Trước</button>
           <button type="button" className="btn btn-sm" disabled={d.page >= d.pages} onClick={() => setF({ ...f, page: d.page + 1 })}>Sau »</button>
         </>}
       </form>
-      {msg && <div className="badge badge-ok" style={{ marginBottom: 6 }}>{msg}</div>}
+      {msg && <div className="card-body" style={{ paddingBottom: 0 }}><div className="alert alert-ok" role="status">{msg}</div></div>}
       {q.isLoading ? <Loading /> : q.error ? <ErrorBox error={errorText(q.error)} /> : (
         <DataGrid rows={d?.items ?? []} columns={cols} rowKey={(m) => m.customerCode} storageKey="loyalty.thanh-vien" exportName="thanh-vien-diem"
           emptyText="Chưa có khách nào có sổ điểm" onRowDoubleClick={(m) => setHist(m)} />
@@ -74,7 +73,7 @@ export function ThanhVienTab() {
       {hist && <LichSu member={hist} onClose={() => setHist(null)} />}
       {adj && <DieuChinhForm initial={{ customerCode: adj.code, sign: adj.sign }} onClose={() => setAdj(null)}
         onDone={(m) => { setAdj(null); setMsg(m); void qc.invalidateQueries({ queryKey: ['loyalty'] }); }} />}
-    </div>
+    </section>
   );
 }
 
