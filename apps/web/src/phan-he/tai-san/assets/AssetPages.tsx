@@ -209,7 +209,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       };
       return value.isNew ? api.post('/api/v1/assets', body) : api.put(`/api/v1/assets/${value.code}`, body);
     },
-    onSuccess: async () => { if (value.isNew && anhMoi && v.code) { try { await api.put(`/api/v1/assets/${encodeURIComponent(v.code)}/photo`, { photo: anhMoi }); } catch { /* ảnh lỗi không chặn thẻ — chọn lại ở thẻ */ } } void qc.invalidateQueries({ queryKey: ['assets'] }); if (value.isNew) onClose(); else viewAgain[1](); },
+    onSuccess: async () => { if (value.isNew && anhMoi && v.code) { try { await api.put(`/api/v1/assets/${encodeURIComponent(v.code)}/photo`, { photo: anhMoi }); } catch (e) { window.alert(`Đã ghi thẻ nhưng chưa lưu được ảnh: ${errorText(e)} — mở thẻ ${v.code} chọn lại ảnh`); } } void qc.invalidateQueries({ queryKey: ['assets'] }); if (value.isNew) onClose(); else viewAgain[1](); },
   });
   const remove = useMutation({
     mutationFn: () => api.delete(`/api/v1/assets/${value.code}`),
@@ -229,7 +229,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
         <ListPicker items={nhoms.map((c) => ({ code: c.code, name: c.name }))} value={nhomCode} onChange={pickCategory} placeholder="Bấm để chọn" />
       </Field>
       <Field label="Loại tài sản" hint="Loại chi tiết thuộc nhóm (khai ở ACC37); loại không khai tài khoản thì lấy theo nhóm">
-        <ListPicker items={loais.map((c) => ({ code: c.code, name: c.name }))} value={curCat?.parentCode ? curCat.code : ''} disabled={!nhomCode} onChange={(code) => pickCategory(code || nhomCode)} placeholder={!nhomCode ? 'Chọn nhóm trước' : loais.length ? 'Bấm để chọn' : 'Nhóm chưa khai loại'} />
+        <ListPicker items={loais.map((c) => ({ code: c.code, name: c.name }))} value={curCat?.parentCode ? curCat.code : ''} disabled={!nhomCode} title={!nhomCode ? 'Chọn Nhóm tài sản trước — loại hiện theo nhóm đã chọn' : undefined} onChange={(code) => pickCategory(code || nhomCode)} placeholder={!nhomCode ? 'Chọn nhóm trước' : loais.length ? 'Bấm để chọn' : 'Nhóm chưa khai loại'} />
       </Field>
       <Field label="Chi nhánh đang dùng" hint={value.isNew ? undefined : 'Đổi chi nhánh bằng Điều chuyển ở phần Lịch sử'}>
         <BranchPicker activeOnly value={v.branchCode ?? branches.find((b) => b.isActive)?.code ?? ''} disabled={!value.isNew} onChange={(branchCode) => set({ branchCode })} />
@@ -249,7 +249,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       </Field>
       <Field label={kind === 'fixed_asset' ? 'KH luỹ kế' : 'Luỹ kế đã phân bổ'} hint="Đã trích trước khi dùng phần mềm (tài sản chuyển từ sổ cũ)"><input className="input num" inputMode="numeric" value={v.openingAccumulated ? money(v.openingAccumulated) : ''} onChange={(e) => set({ openingAccumulated: num(e.target.value) ?? 0 })} /></Field>
       <Field label="Luỹ kế tính tới ngày"><input type="date" className="input" value={v.openingAsOf ?? ''} onChange={(e) => set({ openingAsOf: e.target.value || null })} /></Field>
-      <Field label="Giá trị còn lại" hint="= Giá trị tính khấu hao − KH luỹ kế (tự tính)"><input className="input num" disabled value={giaTriConLai ? money(giaTriConLai) : ''} /></Field>
+      <Field label="Giá trị còn lại" hint="= Giá trị tính khấu hao − KH luỹ kế (tự tính)"><input className="input num" disabled title="Ô tự tính = Giá trị tính khấu hao − KH luỹ kế; sửa nguyên giá / giá trị tính KH / KH luỹ kế để đổi" value={giaTriConLai ? money(giaTriConLai) : ''} /></Field>
       <Field label="Số tháng còn lại" hint={`= Số tháng khấu hao − số tháng đã trích (Ngày bắt đầu trích → Luỹ kế tính tới ngày, ÷ 30)${thangDaTrich ? ` = ${v.usefulLifeMonths} − ${thangDaTrich}` : ''}; trống = tự tính, sửa tay được`}><input className="input num" inputMode="numeric" value={v.openingRemainingMonths ?? ''} placeholder={thangConLaiTu ? String(thangConLaiTu) : ''} onChange={(e) => set({ openingRemainingMonths: e.target.value === '' ? null : num(e.target.value) ?? null })} /></Field>
       {/* [2026-11-26 10:15 AM Nguyễn Văn Thủy] TSCD — đổi tên theo yêu cầu kế toán: Mức trích mỗi tháng → Khấu hao mỗi tháng, Luỹ kế đã trích → KH luỹ kế (đóng góp) */}
       <Field label={kind === 'fixed_asset' ? 'Khấu hao mỗi tháng' : 'Phân bổ mỗi tháng'} hint={`= Giá trị còn lại ÷ Số tháng còn lại${khTu ? ` = ${money(khTu)}` : ''}; trống = tự tính, sửa tay được`}>
