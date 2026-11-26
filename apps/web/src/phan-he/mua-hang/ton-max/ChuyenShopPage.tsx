@@ -7,7 +7,8 @@
  */
 import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileSpreadsheet, Send } from 'lucide-react';
+import { FileSpreadsheet, Send, Truck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { TRANSFER_ALLOCATIONS, TRANSFER_MODES, TRANSFER_ROUNDINGS, type TransferAllocation, type TransferRounding } from '@bizcity/mua-hang-domain';
 import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
@@ -157,6 +158,7 @@ function DeXuat({ parent, onDone }: { parent: string; onDone: () => void }) {
 }
 
 function DaChot({ parent }: { parent: string }) {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const tt = useThaoTac('mua-hang.chuyen-shop'); // [2026-11-13 08:00 PM kiennt] NT-HT-003 — Huỷ / Mở lại / Đã lên phiếu theo thao tác màn MH19 (đóng góp)
   const [from, setFrom] = useState(monthStart());
@@ -200,7 +202,9 @@ function DaChot({ parent }: { parent: string }) {
         {open.status === 'open' && tt.huy && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => void act(open, 'cancel')}>Huỷ đề nghị</button>}
         {open.status !== 'open' && tt.xong && <button className="btn" style={{ marginRight: 'auto' }} onClick={() => void act(open, 'reopen')}>Mở lại</button>}
         <button className="btn" onClick={() => void exportOne(open)}><FileSpreadsheet size={14} /> Xuất Excel</button>
-        {open.status === 'open' && tt.xong && <button className="btn btn-primary" onClick={() => void act(open, 'done')}>Đã lên phiếu chuyển</button>}
+        {/* [2026-11-26 kiennt] NT-MH-019 — lập phiếu chuyển kho (KHO01) điền sẵn theo đề nghị; duyệt xuất xong đề nghị tự sang "Đã lên phiếu" (đóng góp) */}
+        {open.status === 'open' && <button className="btn btn-primary" title="Mở Phiếu chuyển kho (KHO01) điền sẵn kho xuất / nhập và dòng hàng theo đề nghị — Ghi và duyệt xuất thì đề nghị tự chuyển Đã lên phiếu" onClick={() => { const r = open; setOpen(null); navigate(`/kho/chuyen-kho?tu-de-nghi=${encodeURIComponent(r.id)}&cn=${encodeURIComponent(r.fromBranch)}`); }}><Truck size={14} /> Lập phiếu chuyển kho</button>}
+        {open.status === 'open' && tt.xong && <button className="btn" onClick={() => void act(open, 'done')}>Đã lên phiếu chuyển</button>}
         <button className="btn" onClick={() => setOpen(null)}>Đóng</button></>}>
         <div className="full muted" style={{ fontSize: 12.5 }}>Từ {open.fromBranch} {open.fromName} (kho {open.fromWarehouse}) · chốt bởi {open.createdBy} lúc {new Date(open.createdAt).toLocaleString('vi-VN')}{open.doneBy ? ` · ${STATUS[open.status].toLowerCase()} bởi ${open.doneBy}` : ''}</div>
         <div className="full"><table className="mh-mini"><thead><tr><th>#</th><th>Mã</th><th>Tên hàng</th><th className="num">SL</th><th>ĐVT</th><th>Quy đổi</th></tr></thead><tbody>

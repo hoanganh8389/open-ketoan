@@ -6,10 +6,10 @@
  *   Ghi phiếu = xuất (tồn bên chuyển giảm ngay); nhận hàng = nhập (tồn bên nhận tăng theo số thực nhận).
  * Phiếu chuyển từ website bán hàng vẫn vào sổ qua cầu nối — xem ở Bảng kê chuyển kho (HH01).
  */
-import { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { errorText } from '@/lib/api';
+import { api, errorText } from '@/lib/api';
 import { today } from '@/lib/format';
 import { workBranch } from '@/lib/workBranch';
 import { dongChungTu } from '@/lib/trangThai';
@@ -65,6 +65,36 @@ export function ChuyenKhoPage() {
   const [bao, setBao] = useState<string | null>(null);
   const [nhanLoat, setNhanLoat] = useState(false);
   const exportRef = useRef<(() => void) | null>(null);
+  // [2026-11-26 kiennt] NT-MH-019 — mở từ đề nghị chuyển hàng (MH19): ?tu-de-nghi=<id>&cn=<chi nhánh xuất> → phiếu mới điền sẵn;
+  // phiếu đó duyệt xuất (trong lần mở này) thì đánh dấu đề nghị "Đã lên phiếu". Gọi thẳng API đề nghị, không import mã phân hệ Mua hàng (đóng góp)
+  const [urlParams] = useSearchParams();
+  const tuDeNghi = useRef<{ id: string; code: string; docId?: string } | null>(null);
+  const daMo = useRef('');
+  useEffect(() => {
+    const id = urlParams.get('tu-de-nghi'); const cn = urlParams.get('cn') ?? '';
+    if (!id || !tt.them || daMo.current === id) return;
+    daMo.current = id;
+    type DeNghi = { id: string; code: string; status: string; fromBranch: string; fromWarehouse: string; toBranch: string; toWarehouse: string; lines: { sku: string; name: string; unit: string; qty: number; note?: string }[] };
+    void api.get<DeNghi[]>('/api/v1/stock/transfer-requests', { from: '2000-01-01', to: today(), status: 'open', branchCode: cn || undefined }).then((ds) => {
+      const r = ds.find((x) => x.id === id);
+      if (!r) { setBao('Không tìm thấy đề nghị chuyển hàng đang chờ lên phiếu (có thể đã lên phiếu / đã huỷ).'); return; }
+      tuDeNghi.current = { id: r.id, code: r.code };
+      save.reset();
+      setEditing({ ...emptyDoc(), fromBranchCode: r.fromBranch, fromWarehouse: r.fromWarehouse, toBranchCode: r.toBranch, toWarehouse: r.toWarehouse, note: `Theo đề nghị chuyển ${r.code}`,
+        lines: r.lines.map((l, i) => ({ lineKey: `dn${i + 1}`, sku: l.sku, name: l.name, unit: l.unit, qty: l.qty, ...(l.note ? { note: l.note } : {}) })) });
+      setFormKey((k) => k + 1);
+    }).catch((e) => setBao(`Không mở được đề nghị chuyển hàng: ${errorText(e)}`));
+  }, [urlParams, tt.them]); // eslint-disable-line react-hooks/exhaustive-deps
+  /** Phiếu lập từ đề nghị đã duyệt xuất → đề nghị "Đã lên phiếu" (một lần). */
+  const danhDauDeNghi = (d: CkDoc) => {
+    const dn = tuDeNghi.current; if (!dn) return;
+    if (!dn.docId) dn.docId = d.id;
+    if (dn.docId !== d.id || d.status === 'draft' || d.status === 'cancelled') return;
+    tuDeNghi.current = null;
+    void api.post(`/api/v1/stock/transfer-requests/${encodeURIComponent(dn.id)}/done`)
+      .then(() => { setBao(`Đề nghị ${dn.code} đã chuyển sang Đã lên phiếu (phiếu ${d.docNo}).`); void qc.invalidateQueries({ queryKey: ['ton-max'] }); })
+      .catch((e) => setBao(`Phiếu ${d.docNo} đã ghi, nhưng chưa đánh dấu được đề nghị ${dn.code}: ${errorText(e)} — đánh dấu ở MH19.`));
+  };
   const params = {
     from: f.from, to: f.to, ...(f.branchCodes && f.branchCodes !== '-' ? { branchCodes: f.branchCodes } : {}), ...(f.warehouses ? { warehouses: f.warehouses } : {}),
     ...(f.status ? { status: f.status } : {}), ...(f.search ? { search: f.search } : {}),
@@ -75,7 +105,7 @@ export function ChuyenKhoPage() {
 
   const save = useMutation({
     mutationFn: ({ d }: { d: CkInput; close: boolean }) => (editing?.id ? ckApi.update(editing.id, d) : ckApi.create(d)),
-    onSuccess: (saved, { close }) => { after(saved); if (close) setEditing(null); else { setEditing(saved); setFormKey((k) => k + 1); } },
+    onSuccess: (saved, { close }) => { after(saved); danhDauDeNghi(saved); if (close) setEditing(null); else { setEditing(saved); setFormKey((k) => k + 1); } },
   });
   const receive = useMutation({
     mutationFn: (b: Parameters<typeof ckApi.receive>[1]) => ckApi.receive(receiving!.id, b),
@@ -89,7 +119,7 @@ export function ChuyenKhoPage() {
   // [2026-11-15 Nguyễn Văn Thủy] thao tác trên phiếu đang mở (duyệt xuất, điều chỉnh, xác nhận, phiếu điện tử): xong thì mở lại đúng phiếu (đóng góp)
   const run = useMutation({
     mutationFn: (fn: () => Promise<CkDoc>) => fn(),
-    onSuccess: (d) => { after(d); setEditing(d); setFormKey((k) => k + 1); },
+    onSuccess: (d) => { after(d); danhDauDeNghi(d); setEditing(d); setFormKey((k) => k + 1); },
   });
   useThemTuDiaChi(() => { if (!tt.them) return; setEditing(emptyDoc(f.branchCodes)); setFormKey((k) => k + 1); });
   /** Nhận đủ hàng loạt: mỗi phiếu chờ nhận đã tích nhận đủ số lượng xuất; phiếu lỗi báo riêng. */
@@ -203,7 +233,7 @@ export function ChuyenKhoPage() {
       </FilterLayout>
       {editing && (
         <PhieuChuyenKhoForm key={formKey} value={editing} saving={save.isPending || run.isPending} error={save.error ?? run.error} onAction={(fn) => { save.reset(); run.mutate(fn); }}
-          onSave={(d, close) => save.mutate({ d, close })} onClose={() => { setEditing(null); save.reset(); }}
+          onSave={(d, close) => save.mutate({ d, close })} onClose={() => { setEditing(null); save.reset(); tuDeNghi.current = null; }}
           onReceive={editing.id ? () => void openReceive(editing) : undefined} />
       )}
       {receiving && <NhanHangModal doc={receiving} saving={receive.isPending} error={receive.error} onOk={(b) => receive.mutate(b)} onClose={() => setReceiving(null)} />}
