@@ -51,7 +51,8 @@ function buildRows(list: Data[], soCai = false): Row[] {
     if (d.opening.debit || d.opening.credit) out.push({ key: `o${a}`, acc: a, kind: 'open', description: 'Số dư đầu kỳ', debit: 0, credit: 0, dn: d.opening.debit, dc: d.opening.credit });
     d.rows.forEach((r, i) => out.push({ key: `d${a}-${i}`, acc: a, kind: 'data', entryId: r.entryId, lineCount: r.lineCount, postingDate: r.postingDate, docDate: r.docDate || r.postingDate, docNo: r.docNo, description: r.description, counter: r.counterAccounts, branchCode: r.branchCode, debit: r.debit, credit: r.credit, dn: r.balanceDebit, dc: r.balanceCredit }));
     out.push({ key: `s${a}`, acc: a, kind: 'sub', description: 'Cộng', debit: d.totals.debit, credit: d.totals.credit, dn: d.closing.debit, dc: d.closing.credit });
-    td += d.totals.debit; tc += d.totals.credit;
+    // [2026-11-26 12:35 PM Nguyễn Văn Thủy] HT — #61: TK nằm dưới một TK khác cũng đang chọn (vd 1111 dưới 111) vẫn hiện chi tiết nhưng không cộng thêm vào Tổng cộng (đóng góp)
+    if (!list.some((x) => x.account.code !== a && a.startsWith(x.account.code))) { td += d.totals.debit; tc += d.totals.credit; }
   }
   if (list.length > 1 && !soCai) out.push({ key: 'tong', acc: '', kind: 'total', description: 'Tổng cộng', debit: td, credit: tc, dn: 0, dc: 0 });
   return out;
@@ -133,6 +134,9 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
   const title = soCai ? 'Sổ cái' : 'Sổ chi tiết các tài khoản';
   const code = soCai ? 'ACC88' : 'ACC12';
   const money = (r: Row, v: number) => (r.kind === 'group' ? null : v);
+  // Tổng cộng: bỏ dòng của TK nằm dưới một TK khác cũng đang chọn (không cộng trùng 111 và 1111).
+  const duoiTkKhac = (acc: string) => accounts.some((x) => x !== acc && acc.startsWith(x));
+  const tongCot = (k: 'debit' | 'credit') => (rs: Row[]) => rs.filter((r) => !duoiTkKhac(r.acc)).reduce((t, r) => t + Math.round(r[k] * 100), 0) / 100;
   // [2026-11-23 khanhtd] Tổng cộng tách khỏi bảng → dòng tổng dính đáy của DataGrid (cộng phát sinh Nợ / Có của các dòng đang hiện,
   //   tính lại khi lọc theo TK đối ứng, số chứng từ…); trước: dòng 'total' nằm trong bảng, lọc là mất. Mẫu in giữ dòng Tổng cộng như cũ.
   const gridRows = rows.filter((r) => r.kind !== 'total');
@@ -142,8 +146,8 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
     { key: 'docDate', header: 'Ngày tháng', band: 'Chứng từ', type: 'date', width: 104, noSort: true },
     { key: 'description', header: 'Diễn giải', width: 320, noSort: true },
     { key: 'counter', header: 'Số hiệu TK đối ứng', type: 'code', width: 110, noSort: true },
-    { key: 'debit', header: 'Nợ', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, value: (r) => money(r, r.debit) },
-    { key: 'credit', header: 'Có', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, value: (r) => money(r, r.credit) },
+    { key: 'debit', header: 'Nợ', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, footerValue: tongCot('debit'), value: (r) => money(r, r.debit) },
+    { key: 'credit', header: 'Có', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, footerValue: tongCot('credit'), value: (r) => money(r, r.credit) },
     { key: 'lineCount', header: 'Số dòng', type: 'number', width: 70, noSort: true, hidden: !f.gop, title: 'Số dòng chi tiết (từng mã hàng) đã cộng gộp vào dòng này. Bấm vào dòng để xem bút toán với từng dòng mã hàng.' },
     { key: 'branchCode', header: 'Chi nhánh', type: 'code', width: 90, hidden: !multi, noSort: true },
   ] : [
@@ -152,8 +156,8 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
     { key: 'docNo', header: 'Số chứng từ', type: 'code', width: 130, noSort: true },
     { key: 'description', header: 'Diễn giải', width: 300, noSort: true },
     { key: 'counter', header: 'TK đối ứng', type: 'code', width: 90, noSort: true },
-    { key: 'debit', header: 'Phát sinh Nợ', type: 'money', width: 130, noSort: true, sum: true, value: (r) => money(r, r.debit) },
-    { key: 'credit', header: 'Phát sinh Có', type: 'money', width: 130, noSort: true, sum: true, value: (r) => money(r, r.credit) },
+    { key: 'debit', header: 'Phát sinh Nợ', type: 'money', width: 130, noSort: true, sum: true, footerValue: tongCot('debit'), value: (r) => money(r, r.debit) },
+    { key: 'credit', header: 'Phát sinh Có', type: 'money', width: 130, noSort: true, sum: true, footerValue: tongCot('credit'), value: (r) => money(r, r.credit) },
     { key: 'lineCount', header: 'Số dòng', type: 'number', width: 70, noSort: true, hidden: !f.gop, title: 'Số dòng chi tiết (từng mã hàng) đã cộng gộp vào dòng này. Bấm vào dòng để xem bút toán với từng dòng mã hàng.' },
     { key: 'dn', header: 'Dư Nợ', type: 'money', width: 130, noSort: true, value: (r) => (r.kind === 'total' ? null : money(r, r.dn)) },
     { key: 'dc', header: 'Dư Có', type: 'money', width: 130, noSort: true, value: (r) => (r.kind === 'total' ? null : money(r, r.dc)) },
