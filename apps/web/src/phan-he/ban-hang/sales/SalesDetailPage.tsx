@@ -21,6 +21,8 @@ interface Row {
   id: string; docDate: string; sourceDocumentId: string; docNo: string; invoiceNo: string | null; invoiceSerial: string; taxRate: number | null; isReturn: boolean; hasInvoice: boolean;
   branchCode: string; partnerCode: string | null; partnerName: string | null; sku: string; name: string; unit: string;
   qty: number; unitPrice: number; amount: number; discount: number; taxCode: string; tax: number; total: number; isGift: boolean;
+  // [2026-11-26 09:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-047: kho, nhóm hàng, lô, hạn dùng, SL theo ĐVT nhỏ nhất (đóng góp)
+  warehouseCode: string; groupCode: string; groupName: string; lotNos: string; expDate: string | null; baseUnit: string; baseQty: number;
 }
 interface Data { rows: Row[]; totals: { lines: number; documents: number; qty: number; amount: number; discount: number; tax: number; total: number } }
 
@@ -90,12 +92,18 @@ export function SalesDetailPage() {
                   { key: 'invoiceSerial', header: 'Ký hiệu', type: 'code' },
                   { key: 'invoiceNo', header: 'Số hoá đơn', type: 'code' },
                   { key: 'branchCode', header: 'Chi nhánh', type: 'code' },
+                  { key: 'warehouseCode', header: 'Kho', type: 'code', title: 'Kho xuất / nhận của dòng (dòng không ghi kho = kho mặc định của chi nhánh)' },
                   { key: 'partnerCode', header: 'Mã khách', type: 'code', hidden: true },
                   { key: 'partnerName', header: 'Khách hàng' },
                   { key: 'sku', header: 'Mã hàng', type: 'code' },
                   { key: 'name', header: 'Tên hàng', render: (r) => <>{r.name}{r.isGift && <span className="badge badge-gray" style={{ marginLeft: 6 }}>Tặng</span>}</> },
                   { key: 'unit', header: 'ĐVT' },
+                  { key: 'groupName', header: 'Nhóm hàng', title: 'Nhóm hàng của mặt hàng (danh mục mặt hàng)', value: (r) => (r.groupCode ? `${r.groupCode} — ${r.groupName}` : '') },
                   { key: 'qty', header: 'Số lượng', type: 'qty', sum: true },
+                  { key: 'baseQty', header: 'SL ĐVT nhỏ nhất', type: 'qty', sum: true, title: 'Số lượng quy về đơn vị tính nhỏ nhất (tỉ lệ ở danh mục mặt hàng)', value: (r) => r.baseQty },
+                  { key: 'baseUnit', header: 'ĐVT nhỏ nhất', hidden: true },
+                  { key: 'lotNos', header: 'Số lô', type: 'code', title: 'Lô phần mềm cấp lúc ghi sổ (hạn gần trước); hàng không theo dõi lô để trống' },
+                  { key: 'expDate', header: 'Hạn dùng', type: 'date', title: 'Hạn dùng sớm nhất của các lô của dòng' },
                   { key: 'unitPrice', header: 'Đơn giá', type: 'money' },
                   { key: 'discount', header: 'Chiết khấu', type: 'money', sum: true, hidden: true },
                   { key: 'amount', header: 'Tiền hàng', type: 'money', sum: true },

@@ -16,7 +16,7 @@
  *   Chỉ đổi chỗ đặt và kiểu hiện; lệnh gọi API, dữ liệu gửi đi, điều kiện chặn Ghi giữ nguyên.
  */
 // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-036: phiếu bán / trả bán cùng mẫu phiếu mua — chỉ giao diện, nghiệp vụ giữ nguyên (đóng góp)
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
 import { KIND_INFO, TAX_RATES, thueMacDinh, applyPromo, clearPromo, promoLines, recompute, type PromoGiftInfo, type PromoResult, type TradeDoc, type TradeLine } from '@/lib/tradeDocs';
@@ -30,12 +30,20 @@ import { KhungPhieu } from './KhungPhieu';
 import { TRADE_TEMPLATES } from './printTemplates';
 import { ChonKho, khoLabel, useKho } from './ChonKho';
 import { DocumentGateBanner, useDocumentGate } from '@/components/PostingGate';
+// [2026-11-26 08:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-045 / 046 / 047: Duyệt trong phiếu, trả theo phiếu gốc, đủ cột dòng hàng (đóng góp)
+import { ChonPhieuGoc, returnSources, type PickedReturn } from './ChonPhieuGoc';
 // [2026-11-14 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-015 bước 2: giá theo cửa hàng, cảnh báo tồn cho phiếu bán / trả (đóng góp)
 
 /** Giá theo cửa hàng + tồn sổ của module phieu-ban (GET /api/v1/m/phieu-ban/quote). */
 interface Quote { sku: string; unit: string; ratio: number; price: number | null; taxCode: string | null; stock: number }
 
-interface CatalogProduct { sku: string; name: string; unit: string; taxOutCode: string | null; taxInCode: string | null; units: { unit: string; isDefault: boolean }[]; prices: { unit: string; price: number | null }[] }
+interface CatalogProduct { sku: string; name: string; unit: string; taxOutCode: string | null; taxInCode: string | null; units: { unit: string; ratio?: number; isDefault: boolean }[]; prices: { unit: string; price: number | null }[] }
+/** NT-BH-047: phân lô của chứng từ đã ghi sổ (GET /api/v1/lots/document) — chỉ xem. */
+interface DocLots { lines: { lineNo: number; sku: string; lots: { lotNo: string; expDate: string | null; qty: number; warehouse: string }[] }[] }
+/** NT-BH-047: cột tuỳ chọn của bảng dòng hàng (nút Chọn cột, nhớ theo máy). */
+const COT_TUY_CHON: [string, string][] = [['kho', 'Phân kho'], ['ckpct', 'CK %'], ['thue', 'Thuế suất'], ['tienThue', 'Tiền thuế'], ['gomThue', 'Thành tiền gồm thuế'], ['lo', 'Số lô'], ['hsd', 'Hạn dùng'], ['ghiChu', 'Ghi chú']];
+const COT_KEY = 'ph.cot-dong.v1';
+const docCot = (): Record<string, boolean> => { try { return JSON.parse(localStorage.getItem(COT_KEY) ?? '{}') as Record<string, boolean>; } catch { return {}; } };
 interface PaymentMethod { code: string; name: string; isActive?: boolean }
 // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-035 §3.1: BH10 có ô Kênh bán (danh mục Kênh bán hàng của module pos) và ô Mã voucher (đóng góp)
 /** Kênh bán hàng (GET /api/v1/m/pos/channels). */
@@ -52,7 +60,7 @@ const num = (s: string) => { const n = Number(s.replace(/\./g, '').replace(',', 
 let seq = 0;
 const lineKey = () => `L${Date.now().toString(36)}${(seq++).toString(36)}`;
 
-export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose, printScreen, helpKey = 'phieu-hang', startEdit }: {
+export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose, printScreen, helpKey = 'phieu-hang', startEdit, canApprove = false, approving = false, onApprove, onUnapprove }: {
   /** Mã màn (BH10, BH11, KHO01…) để nhớ mẫu in mặc định; không truyền thì không có nút In. */
   printScreen?: string;
   value: TradeDoc; readOnly: boolean; saving: boolean; error: unknown;
@@ -61,6 +69,14 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
   helpKey?: string;
   /** Mở bằng nút Sửa của danh sách: phiếu đã ghi vào thẳng chế độ sửa (không qua chế độ xem). */
   startEdit?: boolean;
+  /** NT-BH-045: người dùng có quyền thao tác Duyệt / bỏ duyệt của màn. */
+  canApprove?: boolean;
+  /** Đang gửi lệnh duyệt / bỏ duyệt. */
+  approving?: boolean;
+  /** Duyệt (ghi sổ) từ chân phiếu — `dirty`: phiếu mới / đang sửa chưa ghi → trang Ghi trước rồi Duyệt. */
+  onApprove?: (doc: TradeDoc, dirty: boolean) => void;
+  /** Bỏ duyệt từ chân phiếu (phiếu đã duyệt). */
+  onUnapprove?: () => void;
 }) {
   const info = KIND_INFO[value.docType];
   const [v, setV] = useState<TradeDoc>(value);
@@ -70,7 +86,7 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
   /** Ô nhập khoá: phiếu đã duyệt, hoặc đang xem. */
   const ro = readOnly || viewing;
   /** Vì sao ô đang khoá + cách gỡ (R-BLOCK-1). */
-  const khoaTitle = !ro ? undefined : readOnly ? 'Phiếu đã duyệt — chỉ xem (bỏ duyệt ở danh sách rồi mới sửa)' : 'Đang xem — bấm Sửa (F2) để thay đổi';
+  const khoaTitle = !ro ? undefined : readOnly ? 'Phiếu đã duyệt — chỉ xem (bấm Bỏ duyệt ở chân phiếu rồi mới sửa)' : 'Đang xem — bấm Sửa (F2) để thay đổi';
   const [headOpen, setHeadOpen] = useState(() => value.lines.filter((l) => l.sku).length < 4);
   const [tab, setTab] = useState<'hang' | 'thu' | 'hoa-don'>('hang');
   const set = (p: Partial<TradeDoc>) => setV((x) => recompute({ ...x, ...p }));
@@ -178,6 +194,7 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
     if (!sku) return;
     try {
       const p = await api.get<CatalogProduct>(`/api/v1/catalog/products/${encodeURIComponent(sku)}`);
+      setUnits((x) => ({ ...x, [sku]: p.units }));
       const unit = p.units.find((u) => u.isDefault)?.unit ?? p.unit;
       const price = p.prices.find((x) => x.unit === unit)?.price ?? undefined;
       const taxCode = info.taxDir === 'input' ? p.taxInCode ?? p.taxOutCode ?? thueMacDinh(v.docDate) : info.taxDir === 'output' ? p.taxOutCode ?? thueMacDinh(v.docDate) : undefined;
@@ -192,6 +209,63 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
       setLine(i, { sku, name: p.name, unit: shopPrice !== null && q?.unit ? q.unit : unit, unitPrice, taxCode });
     } catch { /* mã chỉ có ở kho, chưa có trong danh mục hàng: giữ mã, nhập tay tên */ }
   };
+  // NT-BH-047: đơn vị tính theo danh mục (ĐVT xổ xuống + quy cách), CK %, cột tuỳ chọn, phân lô của phiếu đã duyệt.
+  const [units, setUnits] = useState<Record<string, CatalogProduct['units']>>({});
+  useEffect(() => {
+    if (ro || info.isTransfer) return;
+    const need = [...new Set(v.lines.map((l) => l.sku).filter((x) => x && !units[x]))];
+    for (const sku of need) void api.get<CatalogProduct>(`/api/v1/catalog/products/${encodeURIComponent(sku)}`).then((p) => setUnits((x) => ({ ...x, [sku]: p.units }))).catch(() => undefined); // nuot-loi: mã chưa có trong danh mục — ô ĐVT gõ tay như cũ
+  }, [ro, v.lines.map((l) => l.sku).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ratioOfUnit = (sku: string, unit: string) => units[sku]?.find((u) => u.unit === unit)?.ratio ?? 1;
+  const baseUnit = (sku: string) => units[sku]?.find((u) => Number(u.ratio) === 1)?.unit ?? '';
+  const quyCach = (l: TradeLine) => { const r = ratioOfUnit(l.sku, l.unit); const b = baseUnit(l.sku); return r > 1 && b ? `1 ${l.unit} = ${r.toLocaleString('vi-VN')} ${b}` : ''; };
+  /** Đổi ĐVT: đơn giá quy theo tỉ lệ (giá theo ĐVT nhỏ nhất × tỉ lệ mới) — người lập sửa tay nếu bảng giá khác. */
+  const setUnit = (i: number, l: TradeLine, unit: string) => {
+    const from = ratioOfUnit(l.sku, l.unit) || 1;
+    const to = ratioOfUnit(l.sku, unit) || 1;
+    setLine(i, { unit, ...(l.unitPrice && !l.isGift ? { unitPrice: roundPrice((l.unitPrice / from) * to) } : {}) });
+  };
+  const ckPct = (l: TradeLine) => { const g = (l.qty || 0) * (l.unitPrice || 0); return g > 0 && l.discount ? Math.round((l.discount / g) * 10_000) / 100 : 0; };
+  const [cot, setCot] = useState<Record<string, boolean>>(docCot);
+  const [moCot, setMoCot] = useState(false);
+  const hien = (k: string) => cot[k] !== false;
+  const doiCot = (k: string, on: boolean) => { const n = { ...cot, [k]: on }; setCot(n); try { localStorage.setItem(COT_KEY, JSON.stringify(n)); } catch { /* máy chặn lưu: chỉ nhớ phiên này */ } }; // nuot-loi: trình duyệt chặn bộ nhớ — chỉ nhớ trong phiên
+  const lots = useQuery({
+    queryKey: ['lots', 'document', value.id], enabled: readOnly && Boolean(value.id) && (v.docType === 'sale' || v.docType === 'sale_return'),
+    queryFn: () => api.get<DocLots>('/api/v1/lots/document', { docKey: `phieu-ban:${value.id}` }).catch(() => null), staleTime: 60_000, // nuot-loi: không có quyền xem sổ / chưa ghi sổ — cột lô để trống
+  }).data;
+  const lotOf = (l: TradeLine, i: number) => (lots?.lines.find((x) => x.lineNo === i + 1 && x.sku === l.sku) ?? lots?.lines.find((x) => x.sku === l.sku))?.lots ?? [];
+
+  // NT-BH-046: phiếu trả — chọn phiếu gốc, dòng khoá theo dòng gốc, SL ≤ còn trả.
+  const isRet = v.docType === 'sale_return';
+  const [chonGoc, setChonGoc] = useState<string | null>(null);
+  const [gocText, setGocText] = useState(value.originalDocNo ?? '');
+  const [retInfo, setRetInfo] = useState<Record<string, { qty: number; discount: number; returnable: number }>>({});
+  useEffect(() => {
+    if (!isRet || ro || !v.originalDocNo || !v.branchCode) return;
+    void returnSources({ branch: v.branchCode, search: v.originalDocNo }).then((rows) => {
+      const d = rows.find((x) => x.docNo === v.originalDocNo);
+      if (d) setRetInfo(Object.fromEntries(d.lines.map((l) => [l.lineKey, { qty: l.qty, discount: l.discount, returnable: l.returnable }])));
+    }).catch(() => undefined); // nuot-loi: không đọc được còn trả — máy chủ vẫn kiểm lúc Ghi / Duyệt
+  }, [isRet, ro, v.originalDocNo, v.branchCode]); // eslint-disable-line react-hooks/exhaustive-deps
+  const retDiscount = (g: { qty: number; discount: number } | undefined, qty: number) => (g && g.qty > 0 ? Math.round((g.discount * qty) / g.qty) : 0);
+  const pickReturn = (p: PickedReturn) => {
+    setRetInfo(Object.fromEntries(p.source.lines.map((l) => [l.lineKey, { qty: l.qty, discount: l.discount, returnable: l.returnable }])));
+    const same = v.originalDocNo === p.source.docNo;
+    const keep = same ? v.lines.filter((l) => !p.lines.some((x) => x.line.lineKey === l.originalLineKey)) : [];
+    const add: TradeLine[] = p.lines.map(({ line, qty }) => ({
+      lineKey: lineKey(), sku: line.sku, name: line.name, unit: line.unit, qty, unitPrice: line.unitPrice, discount: line.isGift ? 0 : retDiscount(line, qty),
+      amountBeforeTax: 0, taxCode: line.taxCode, isGift: line.isGift || undefined, originalLineKey: line.lineKey,
+    }));
+    set({
+      originalDocNo: p.source.docNo, lines: [...keep, ...add],
+      ...(!v.partner?.code && p.source.partner ? { partner: p.source.partner } : {}),
+      ...(!same ? { warehouseCode: p.source.warehouseCode ?? v.warehouseCode } : {}),
+    });
+    setGocText(p.source.docNo);
+    setChonGoc(null);
+  };
+  const setRetQty = (i: number, l: TradeLine, qty: number) => setLine(i, { qty, ...(l.isGift ? {} : { discount: retDiscount(l.originalLineKey ? retInfo[l.originalLineKey] : undefined, qty) }) });
   const addLine = () => set({ lines: [...v.lines, { lineKey: lineKey(), sku: '', name: '', unit: '', qty: 1, unitPrice: 0, amountBeforeTax: 0, taxCode: info.taxDir ? thueMacDinh(v.docDate) : undefined }] });
   const paid = (v.payments ?? []).reduce((s, p) => s + p.amount, 0);
   const problems = [
@@ -204,6 +278,14 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
     v.lines.some((l) => !l.sku || !(l.qty > 0)) && 'Có dòng thiếu mã hàng hoặc số lượng',
     info.hasPayments && paid > v.totals.total && 'Tiền thu lớn hơn tổng phiếu',
     // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-036: báo trước luật máy chủ "còn ghi nợ phải chọn khách" (domain/doc.ts) — không đợi bấm Ghi mới bị từ chối (đóng góp)
+    // [2026-11-26 08:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: phiếu trả theo phiếu gốc — báo trước luật máy chủ (đóng góp)
+    v.docType === 'sale_return' && !v.originalDocNo && 'Chưa chọn phiếu gốc — bấm Chọn phiếu gốc',
+    v.docType === 'sale_return' && v.lines.some((l) => !l.originalLineKey) && 'Có dòng không lấy từ phiếu gốc — bỏ dòng đó, chọn lại từ phiếu gốc',
+    ...(v.docType === 'sale_return' ? v.lines.map((l, i) => {
+      const g = l.originalLineKey ? retInfo[l.originalLineKey] : undefined;
+      const want = v.lines.filter((x) => x.originalLineKey === l.originalLineKey).reduce((s2, x) => s2 + (x.qty || 0), 0);
+      return g && want > g.returnable + 1e-9 ? `Dòng ${i + 1} (${l.sku}): trả ${want}, còn trả được ${g.returnable}` : false;
+    }) : []),
     info.partner === 'customer' && v.lines.length > 0 && !v.partner?.code && paid < v.totals.total && `Còn ghi nợ (${v.docType === 'sale_return' ? 'trả' : 'thu'} chưa đủ) — chọn khách hàng hoặc ${v.docType === 'sale_return' ? 'trả' : 'thu'} đủ tiền`,
   ].filter(Boolean) as string[];
 
@@ -242,21 +324,32 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
         {printScreen && TRADE_TEMPLATES[v.docType] && value.id && <span data-view-ok><PrintButton screen={printScreen} templates={TRADE_TEMPLATES[v.docType]!} title="In phiếu theo nội dung đã ghi (sửa xong bấm Ghi rồi mới in)" getDocs={() => [value]} /></span>}
         {!ro && <button className="btn btn-primary" disabled={saving || problems.length > 0} title={problems.join('; ')} onClick={() => onSave(saleInput(v))}>Ghi</button>}
         {viewing && !readOnly && <button className="btn btn-primary" autoFocus title="Phím tắt: F2 / Enter" onClick={() => setViewing(false)}>Sửa</button>}
+        {/* NT-BH-045: Duyệt / Bỏ duyệt trong phiếu như phiếu mua — phiếu mới / đang sửa chưa ghi thì trang Ghi trước rồi Duyệt. */}
+        {canApprove && onApprove && !readOnly && v.status !== 'approved' && (
+          <button className="btn" style={{ fontWeight: 600 }} disabled={saving || approving || problems.length > 0}
+            title={problems.length ? `Chưa duyệt được: ${problems.join('; ')}` : approving ? 'Đang duyệt…' : 'Ghi sổ phiếu (bút toán, công nợ, kho). Đang sửa chưa ghi thì tự Ghi rồi Duyệt'}
+            onClick={() => onApprove(saleInput(v), !value.id || (!viewing && v !== value))}>{approving ? 'Đang duyệt…' : 'Duyệt (ghi sổ)'}</button>
+        )}
+        {canApprove && onUnapprove && readOnly && (
+          <button className="btn" disabled={approving} title="Huỷ chứng từ trong sổ (bút toán đảo), phiếu về Nháp để sửa" onClick={onUnapprove}>{approving ? 'Đang bỏ duyệt…' : 'Bỏ duyệt'}</button>
+        )}
         <button className="btn" onClick={onClose}>Thoát</button>
       </>}
       side={<>
         <div className="mh-panel">
           <h4>Kiểm tra {ro ? null : problems.length ? <span className="badge badge-warn">{problems.length}</span> : <span className="badge badge-ok">ổn</span>}</h4>
-          {ro ? <div className="mh-check ok">✓ {v.status === 'approved' ? 'Phiếu đã duyệt (đã ghi sổ) — chỉ xem' : 'Phiếu đã ghi nháp — bấm Sửa để thay đổi; Duyệt ở danh sách để ghi sổ'}</div>
+          {ro ? <div className="mh-check ok">✓ {v.status === 'approved' ? 'Phiếu đã duyệt (đã ghi sổ) — chỉ xem; Bỏ duyệt ở chân phiếu để sửa' : 'Phiếu đã ghi nháp — bấm Sửa để thay đổi; Duyệt (ghi sổ) ở chân phiếu'}</div>
             : problems.length ? problems.map((p) => <div key={p} className="mh-check warn">⚠ {p}</div>)
             : <div className="mh-check ok">✓ Đủ thông tin — bấm Ghi để lưu phiếu</div>}
           {!ro && (
             <ol className="mh-guide" style={{ marginTop: 6 }}>
               <li className={v.branchCode ? 'done' : ''}>Chọn <b>chi nhánh</b> và <b>kho</b> {info.isTransfer ? 'xuất / nhận' : v.docType === 'sale' ? 'xuất hàng' : 'nhận hàng'}</li>
               {info.partner && <li className={v.partner?.code ? 'done' : ''}>Chọn <b>{info.partnerLabel.toLowerCase()}</b>{info.partner === 'customer' ? ` (để trống = khách lẻ, chỉ khi ${isReturn ? 'trả' : 'thu'} đủ tiền)` : ''}</li>}
-              <li className={v.lines.length > 0 && v.lines.every((l) => l.sku && l.qty > 0) ? 'done' : ''}>Thêm <b>dòng hàng</b>: mã, số lượng — tên, ĐVT, giá, thuế tự điền</li>
+              {isRet
+                ? <li className={v.originalDocNo && v.lines.length > 0 ? 'done' : ''}>Bấm <b>Chọn phiếu gốc</b>, tích dòng khách trả, gõ SL — giá, thuế theo phiếu gốc</li>
+                : <li className={v.lines.length > 0 && v.lines.every((l) => l.sku && l.qty > 0) ? 'done' : ''}>Thêm <b>dòng hàng</b>: mã, số lượng — tên, ĐVT, giá, thuế tự điền</li>}
               {usePromo && <li className={promo || (v.policyRefs ?? []).length ? 'done' : ''}>Bấm <b>Áp khuyến mại</b> (nếu có chương trình đang chạy)</li>}
-              <li><b>Ghi</b> để lưu nháp; <b>Duyệt</b> ở danh sách để ghi sổ (bút toán, công nợ, kho)</li>
+              <li><b>Ghi</b> để lưu nháp; <b>Duyệt (ghi sổ)</b> ở chân phiếu để ghi sổ (bút toán, công nợ, kho)</li>
             </ol>
           )}
         </div>
@@ -371,7 +464,7 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
           </Field></div>}
           {info.partner && (
             <div className="span2"><Field label={`${info.partnerLabel}${info.partner === 'supplier' ? ' (*)' : ''}`} hint={info.partner === 'customer' ? 'Để trống = Khách lẻ' : undefined}>
-              <PartnerPicker value={v.partner?.code ?? ''} activeOnly addKind="customer" onChange={async (c) => {
+              <PartnerPicker value={v.partner?.code ?? ''} activeOnly kind={info.partner ?? undefined} addKind={info.partner ?? 'customer'} onChange={async (c) => {
                 if (!c) return set({ partner: undefined });
                 const row = (await api.get<{ code: string; name: string; taxCode?: string | null }[]>('/api/v1/partners', { search: c, pageSize: 5 }).catch(() => [])).find((x) => x.code === c);
                 set({ partner: { code: c, name: row?.name ?? c, taxCode: row?.taxCode ?? undefined } });
@@ -390,7 +483,17 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
               </select>
             </Field>
           )}
-          {info.hasOriginal && <Field label="Phiếu gốc" hint="Số phiếu bán / mua gốc (tham khảo, không bắt buộc)"><input className="input mono" value={v.originalDocNo ?? ''} onChange={(e) => set({ originalDocNo: e.target.value.trim() || undefined })} /></Field>}
+          {info.hasOriginal && (isRet ? (
+            <div className="span2"><Field label="Phiếu gốc (*)" hint="Phiếu bán đã duyệt của cửa hàng. Khách lẻ: gõ số phiếu rồi bấm Chọn">
+              <div className="row" style={{ gap: 4 }}>
+                <input className="input mono" style={{ flex: 1 }} value={gocText} placeholder="Số phiếu bán gốc" onChange={(e) => setGocText(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (v.branchCode) setChonGoc(gocText.trim()); } }} />
+                <button type="button" className="btn btn-sm" disabled={!v.branchCode || (!v.partner?.code && !gocText.trim())}
+                  title={!v.branchCode ? 'Chọn cửa hàng trước' : !v.partner?.code && !gocText.trim() ? 'Chọn khách, hoặc gõ số phiếu gốc (khách lẻ)' : 'Mở danh sách phiếu bán đã duyệt để chọn dòng trả'}
+                  onClick={() => setChonGoc(gocText.trim())}>Chọn phiếu gốc</button>
+              </div>
+            </Field></div>
+          ) : <Field label="Phiếu gốc" hint="Số phiếu bán / mua gốc (tham khảo, không bắt buộc)"><input className="input mono" value={v.originalDocNo ?? ''} onChange={(e) => set({ originalDocNo: e.target.value.trim() || undefined })} /></Field>)}
           {info.partner === 'supplier' && <Field label="Hạn thanh toán"><input className="input" type="date" value={v.dueDate ?? ''} onChange={(e) => set({ dueDate: e.target.value || undefined })} /></Field>}
           {info.hasPayments && (
             <div className="span2"><Field label={isReturn ? 'Trả tiền' : 'Thu tiền'}>
@@ -413,60 +516,102 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
       </div>
 
       {curTab === 'hang' && (<>
-        {!ro && (
-          <div className="lines-bar">
-            <button type="button" className="btn btn-sm btn-primary" onClick={addLine}>+ Thêm dòng</button>
-            <span className="muted" style={{ fontSize: 12 }}>Gõ mã hoặc tên ở ô Mã hàng (F9: thêm nhanh mặt hàng mới) — tên, ĐVT, giá, thuế tự điền</span>
-          </div>
-        )}
-        <div className="kp-lines-box">
-          {/* NT-BH-036: bảng cột cố định (khung-phieu.css) — bề rộng cột gọn lại để Tên hàng đủ chỗ cạnh khung Trợ lý. */}
-          {/* [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-036: tối thiểu 1000px (phần trái ~1070px khi mở Trợ lý) để không tràn mất cột Tiền thuế, tổng (đóng góp) */}
-          <table className="grid-table" style={{ width: '100%', minWidth: info.isTransfer ? 840 : 1000 }}>
-            <thead>
-              <tr>
-                <th style={{ width: 34 }}>#</th><th style={{ width: 120 }}>Mã hàng</th><th>Tên hàng</th><th style={{ width: 70 }}>ĐVT</th><th style={{ width: info.isTransfer ? 200 : 90 }} title="Theo kho ở đầu phiếu">Kho</th><th style={{ width: 70 }}>SL</th>
-                {!info.isTransfer && <><th style={{ width: 105 }}>Đơn giá</th><th style={{ width: 90 }}>Chiết khấu</th><th style={{ width: 105 }}>Tiền hàng</th><th style={{ width: 90 }}>Thuế</th><th style={{ width: 90 }}>Tiền thuế</th></>}
-                <th style={{ width: 34 }} />
-              </tr>
-            </thead>
-            <tbody>
-              {v.lines.map((l, i) => (
-                <tr key={l.lineKey}>
-                  <td style={{ textAlign: 'center' }}>{i + 1}</td>
-                  <td>{ro ? <span className="mono">{l.sku}</span> : <ItemPicker value={l.sku} onChange={(c) => void pickItem(i, c)} hideName canAdd />}</td>
-                  <td><input className="input" value={l.name} disabled={ro} title={khoaTitle} onChange={(e) => setLine(i, { name: e.target.value })} /></td>
-                  <td><input className="input" value={l.unit} disabled={ro} title={khoaTitle} onChange={(e) => setLine(i, { unit: e.target.value })} /></td>
-                  <td className="muted" style={{ fontSize: 12 }}>{khoName}</td>
-                  <td>
-                    <NumInput value={l.qty} disabled={ro} title={khoaTitle} onChange={(n) => setLine(i, { qty: n ?? 0 })} />
-                    {/* Bán vượt tồn theo sổ của kho đã chọn: chỉ cảnh báo (máy bán cũng không chặn). */}
-                    {!ro && v.docType === 'sale' && quotes[l.sku] && l.qty * (quotes[l.sku]!.ratio || 1) > quotes[l.sku]!.stock && (
-                      <div className="muted" style={{ color: 'var(--warn, #b45309)', fontSize: 11 }} title="Tồn theo sổ kế toán của kho đã chọn (ĐVT nhỏ nhất)">tồn sổ còn {quotes[l.sku]!.stock.toLocaleString('vi-VN')}</div>
-                    )}
-                  </td>
-                  {!info.isTransfer && <>
-                    <td><NumInput value={l.unitPrice} disabled={ro || l.isGift} title="Đơn giá có thể có số lẻ: gõ dấu phẩy, vd 506.018,52" onChange={(n) => setLine(i, { unitPrice: n ?? 0 })} /></td>
-                    <td>
-                      <input className="input num" value={money(l.discount)} disabled={ro || l.isGift || Boolean(l.policyRef)} title={l.policyRef ? `Giảm theo chương trình ${l.policyRef.key} (bản ${l.policyRef.version}) — đổi ở khối Khuyến mại & voucher (Trợ lý)` : undefined} onChange={(e) => setLine(i, { discount: num(e.target.value) })} />
-                      {l.policyRef && <div className="muted mono" style={{ fontSize: 11 }} title={`Chương trình ${l.policyRef.key} bản ${l.policyRef.version}`}>KM {l.policyRef.key}</div>}
-                    </td>
-                    <td className="num">{l.isGift ? <span className="muted">tặng</span> : money(l.amountBeforeTax)}</td>
-                    <td><ChonThue value={l.taxCode} ngay={v.docDate} disabled={ro} title={ro ? 'Phiếu đang ở chế độ xem — không đổi được loại thuế' : undefined} onChange={(c) => setLine(i, { taxCode: c })} /></td>
-                    <td className="num">{money(l.taxAmount)}</td>
-                  </>}
-                  <td>{!ro && <button type="button" className="btn btn-xs" title="Bỏ dòng" onClick={() => set({ lines: v.lines.filter((_, j) => j !== i) })}>×</button>}</td>
-                </tr>
-              ))}
-              {!v.lines.length && <tr><td colSpan={info.isTransfer ? 8 : 13} className="muted" style={{ textAlign: 'center', padding: 12 }}>Chưa có dòng hàng{ro ? '' : ' — bấm "+ Thêm dòng"'}</td></tr>}
-            </tbody>
-            {!info.isTransfer && (
-              <tfoot>
-                <tr><td colSpan={8} style={{ textAlign: 'right' }}><b>Cộng</b></td><td className="num"><b>{money(v.totals.beforeTax)}</b></td><td /><td className="num"><b>{money(v.totals.tax)}</b></td><td /></tr>
-                <tr><td colSpan={10} style={{ textAlign: 'right' }}><b>Tổng thanh toán</b></td><td className="num"><b>{money(v.totals.total)}</b></td><td /></tr>
-              </tfoot>
+        {/* [2026-11-26 08:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-047: bảng dòng như phiếu mua — ĐVT theo danh mục + quy cách, CK %, tiền gồm thuế,
+            phân kho / lô / hạn dùng (phiếu đã duyệt), ghi chú dòng, nút Chọn cột; NT-BH-046: phiếu trả chỉ lấy dòng từ phiếu gốc (đóng góp) */}
+        <div className="lines-bar" data-view-ok>
+          {!ro && !isRet && <button type="button" className="btn btn-sm btn-primary" onClick={addLine}>+ Thêm dòng</button>}
+          {!ro && isRet && (
+            <button type="button" className="btn btn-sm btn-primary" disabled={!v.branchCode || (!v.partner?.code && !gocText.trim() && !v.originalDocNo)}
+              title={!v.branchCode ? 'Chọn cửa hàng trước' : 'Chọn phiếu bán gốc, tích dòng khách trả — không gõ mã hàng tay'}
+              onClick={() => setChonGoc(v.originalDocNo ?? gocText.trim())}>{v.lines.length ? 'Thêm dòng từ phiếu gốc' : 'Chọn phiếu gốc'}</button>
+          )}
+          {!ro && <span className="muted" style={{ fontSize: 12 }}>{isRet ? 'Dòng trả lấy từ phiếu gốc: chỉ sửa số lượng (không quá còn trả); giá, chiết khấu, thuế theo phiếu gốc' : 'Gõ mã hoặc tên ở ô Mã hàng (F9: thêm nhanh mặt hàng mới) — tên, ĐVT, giá, thuế tự điền'}</span>}
+          {ro && readOnly && <span className="muted" style={{ fontSize: 12 }}>Số lô, hạn dùng do phần mềm cấp lúc ghi sổ (lô hạn gần trước)</span>}
+          <span style={{ position: 'relative', marginLeft: 'auto' }}>
+            <button type="button" className="btn btn-xs" title="Ẩn / hiện cột của bảng dòng hàng (nhớ theo máy)" onClick={() => setMoCot(!moCot)}>Chọn cột ▾</button>
+            {moCot && (
+              <div className="card" style={{ position: 'absolute', right: 0, top: '100%', zIndex: 20, padding: 8, minWidth: 190, boxShadow: '0 4px 14px rgba(0,0,0,.15)' }}>
+                {COT_TUY_CHON.filter(([k]) => !info.isTransfer || k === 'kho' || k === 'lo' || k === 'hsd' || k === 'ghiChu').map(([k, l]) => (
+                  <label key={k} className="checkbox" style={{ display: 'flex', gap: 6 }}><input type="checkbox" checked={hien(k)} onChange={(e) => doiCot(k, e.target.checked)} /> {l}</label>
+                ))}
+              </div>
             )}
-          </table>
+          </span>
+        </div>
+        <div className="kp-lines-box">
+          {(() => {
+            type Cot = { k: string; th: ReactNode; w?: number; title?: string; td: (l: TradeLine, i: number) => ReactNode; foot?: () => ReactNode };
+            const money0 = (n: number) => money(n) || (n === 0 ? '' : String(n));
+            const locked = (l: TradeLine) => ro || l.isGift || isRet;
+            const cots: Cot[] = [
+              { k: 'stt', th: '#', w: 34, td: (_l, i) => <span style={{ display: 'block', textAlign: 'center' }}>{i + 1}</span> },
+              { k: 'ma', th: 'Mã hàng', w: 120, td: (l, i) => (ro || isRet ? <span className="mono" title={l.originalLineKey ? 'Dòng lấy từ phiếu gốc' : undefined}>{l.sku}</span> : <ItemPicker value={l.sku} onChange={(c) => void pickItem(i, c)} hideName canAdd />) },
+              { k: 'ten', th: 'Tên hàng', td: (l, i) => <input className="input" value={l.name} disabled={ro || isRet} title={isRet ? 'Theo phiếu gốc' : khoaTitle} onChange={(e) => setLine(i, { name: e.target.value })} /> },
+              {
+                k: 'dvt', th: 'ĐVT', w: 90, title: 'Đơn vị tính theo danh mục mặt hàng; dưới ô là quy cách quy đổi', td: (l, i) => (<>
+                  {ro || isRet || !(units[l.sku]?.length) ? <input className="input" value={l.unit} disabled={ro || isRet} title={isRet ? 'Theo phiếu gốc' : khoaTitle} onChange={(e) => setLine(i, { unit: e.target.value })} />
+                    : <select className="input" value={l.unit} onChange={(e) => setUnit(i, l, e.target.value)} title="Đổi ĐVT: đơn giá quy theo tỉ lệ quy đổi">
+                      {!units[l.sku]!.some((u) => u.unit === l.unit) && <option value={l.unit}>{l.unit || '—'}</option>}
+                      {units[l.sku]!.map((u) => <option key={u.unit} value={u.unit}>{u.unit}</option>)}
+                    </select>}
+                  {quyCach(l) && <div className="muted" style={{ fontSize: 10.5, whiteSpace: 'nowrap' }}>{quyCach(l)}</div>}
+                </>),
+              },
+              ...(hien('kho') ? [{
+                k: 'kho', th: 'Phân kho', w: info.isTransfer ? 200 : 110, title: 'Kho xuất / nhận của dòng (trống = kho ở đầu phiếu); phiếu đã duyệt: kho theo phân lô thực tế',
+                td: (l: TradeLine, i: number) => { const w = [...new Set(lotOf(l, i).map((x) => x.warehouse).filter(Boolean))]; return <span className="muted" style={{ fontSize: 12 }}>{w.length ? w.join(', ') : l.warehouseCode ? khoLabel(khoAll, l.warehouseCode) : khoName}</span>; },
+              }] : []),
+              {
+                k: 'sl', th: 'SL', w: 80, title: isRet ? 'Số lượng khách trả — không quá Còn trả của dòng gốc' : 'Số lượng theo ĐVT của dòng', td: (l, i) => (<>
+                  <NumInput value={l.qty} disabled={ro} title={khoaTitle} onChange={(n) => (isRet ? setRetQty(i, l, n ?? 0) : setLine(i, { qty: n ?? 0 }))} />
+                  {!ro && isRet && l.originalLineKey && retInfo[l.originalLineKey] && <div className="muted" style={{ fontSize: 11 }} title="SL bán − đã trả ở các phiếu trả đã duyệt">còn trả {retInfo[l.originalLineKey]!.returnable.toLocaleString('vi-VN')}</div>}
+                  {/* Bán vượt tồn theo sổ của kho đã chọn: chỉ cảnh báo (máy bán cũng không chặn). */}
+                  {!ro && v.docType === 'sale' && quotes[l.sku] && l.qty * (quotes[l.sku]!.ratio || 1) > quotes[l.sku]!.stock && (
+                    <div className="muted" style={{ color: 'var(--warn, #b45309)', fontSize: 11 }} title="Tồn theo sổ kế toán của kho đã chọn (ĐVT nhỏ nhất)">tồn sổ còn {quotes[l.sku]!.stock.toLocaleString('vi-VN')}</div>
+                  )}
+                </>),
+              },
+              ...(!info.isTransfer ? [
+                { k: 'gia', th: 'Đơn giá', w: 105, title: 'Đơn giá trước thuế (có thể có số lẻ)', td: (l: TradeLine, i: number) => <NumInput value={l.unitPrice} disabled={locked(l)} title={isRet ? 'Theo phiếu gốc' : 'Đơn giá có thể có số lẻ: gõ dấu phẩy, vd 506.018,52'} onChange={(n) => setLine(i, { unitPrice: n ?? 0 })} /> },
+                ...(hien('ckpct') ? [{
+                  k: 'ckpct', th: 'CK %', w: 64, title: 'Tỉ lệ chiết khấu trên (SL × đơn giá); gõ % thì ô Chiết khấu tự tính, gõ Chiết khấu thì % tính lại',
+                  td: (l: TradeLine, i: number) => <NumInput value={ckPct(l) || undefined} disabled={locked(l) || Boolean(l.policyRef)} title={l.policyRef ? 'Giảm theo chương trình — đổi ở khối Khuyến mại' : isRet ? 'Theo phiếu gốc' : '0 – 100'}
+                    onChange={(n) => { const p = Math.min(100, Math.max(0, n ?? 0)); setLine(i, { discount: Math.round(((l.qty || 0) * (l.unitPrice || 0) * p) / 100) }); }} />,
+                }] : []),
+                {
+                  k: 'ck', th: 'Chiết khấu', w: 95, title: 'Tiền chiết khấu trước thuế của dòng', td: (l: TradeLine, i: number) => (<>
+                    <input className="input num" value={money(l.discount)} disabled={locked(l) || Boolean(l.policyRef)} title={l.policyRef ? `Giảm theo chương trình ${l.policyRef.key} (bản ${l.policyRef.version}) — đổi ở khối Khuyến mại & voucher (Trợ lý)` : isRet ? 'Theo tỉ lệ chiết khấu dòng gốc' : undefined} onChange={(e) => setLine(i, { discount: num(e.target.value) })} />
+                    {l.policyRef && <div className="muted mono" style={{ fontSize: 11 }} title={`Chương trình ${l.policyRef.key} bản ${l.policyRef.version}`}>KM {l.policyRef.key}</div>}
+                  </>),
+                },
+                { k: 'tien', th: 'Tiền hàng', w: 105, title: 'SL × đơn giá − chiết khấu (trước thuế)', td: (l: TradeLine) => <span className="num" style={{ display: 'block' }}>{l.isGift ? <span className="muted">tặng</span> : money(l.amountBeforeTax)}</span>, foot: () => <b>{money(v.totals.beforeTax)}</b> },
+                ...(hien('thue') ? [{ k: 'thue', th: 'Thuế', w: 90, title: 'Loại thuế GTGT của dòng', td: (l: TradeLine, i: number) => <ChonThue value={l.taxCode} ngay={v.docDate} disabled={ro || isRet} title={ro ? 'Phiếu đang ở chế độ xem — không đổi được loại thuế' : isRet ? 'Theo phiếu gốc' : undefined} onChange={(c) => setLine(i, { taxCode: c })} /> }] : []),
+                ...(hien('tienThue') ? [{ k: 'tienThue', th: 'Tiền thuế', w: 90, title: 'Tiền hàng × thuế suất', td: (l: TradeLine) => <span className="num" style={{ display: 'block' }}>{money(l.taxAmount)}</span>, foot: () => <b>{money(v.totals.tax)}</b> }] : []),
+                ...(hien('gomThue') ? [{ k: 'gomThue', th: 'Thành tiền gồm thuế', w: 115, title: 'Tiền hàng + tiền thuế của dòng', td: (l: TradeLine) => <span className="num" style={{ display: 'block' }}>{l.isGift ? '' : money0(l.amountBeforeTax + (l.taxAmount ?? 0))}</span>, foot: () => <b>{money(v.totals.total)}</b> }] : []),
+              ] : []),
+              ...(hien('lo') ? [{ k: 'lo', th: 'Số lô', w: 120, title: 'Lô phần mềm cấp lúc ghi sổ (hạn gần trước) — chỉ xem; phiếu nháp để trống', td: (l: TradeLine, i: number) => { const x = lotOf(l, i); return <span className="mono" style={{ fontSize: 12 }} title={readOnly ? undefined : 'Lô cấp lúc duyệt (hạn gần trước)'}>{x.length === 1 ? x[0]!.lotNo : x.map((y) => `${y.lotNo} (${y.qty.toLocaleString('vi-VN')})`).join(', ')}</span>; } }] : []),
+              ...(hien('hsd') ? [{ k: 'hsd', th: 'Hạn dùng', w: 90, title: 'Hạn dùng sớm nhất của các lô của dòng — chỉ xem', td: (l: TradeLine, i: number) => { const d = lotOf(l, i).map((x) => x.expDate).filter((x): x is string => Boolean(x)).sort()[0]; return <span style={{ fontSize: 12 }}>{d ? dmy(d) : ''}</span>; } }] : []),
+              ...(hien('ghiChu') ? [{ k: 'ghiChu', th: 'Ghi chú', w: 150, title: 'Ghi chú của dòng', td: (l: TradeLine, i: number) => <input className="input" value={l.note ?? ''} disabled={ro} title={khoaTitle} onChange={(e) => setLine(i, { note: e.target.value || undefined })} /> }] : []),
+              { k: 'bo', th: '', w: 34, td: (_l: TradeLine, i: number) => (!ro ? <button type="button" className="btn btn-xs" title="Bỏ dòng" onClick={() => set({ lines: v.lines.filter((_, j) => j !== i) })}>×</button> : null) },
+            ];
+            const minWidth = cots.reduce((s2, c) => s2 + (c.w ?? 220), 0);
+            const firstFoot = cots.findIndex((c) => c.foot);
+            return (
+              <table className="grid-table" style={{ width: '100%', minWidth }}>
+                <thead><tr>{cots.map((c) => <th key={c.k} style={c.w ? { width: c.w } : undefined} title={c.title}>{c.th}</th>)}</tr></thead>
+                <tbody>
+                  {v.lines.map((l, i) => <tr key={l.lineKey}>{cots.map((c) => <td key={c.k}>{c.td(l, i)}</td>)}</tr>)}
+                  {!v.lines.length && <tr><td colSpan={cots.length} className="muted" style={{ textAlign: 'center', padding: 12 }}>Chưa có dòng hàng{ro ? '' : isRet ? ' — bấm "Chọn phiếu gốc"' : ' — bấm "+ Thêm dòng"'}</td></tr>}
+                </tbody>
+                {!info.isTransfer && firstFoot > 0 && (
+                  <tfoot><tr>
+                    <td colSpan={firstFoot} style={{ textAlign: 'right' }}><b>Cộng</b></td>
+                    {cots.slice(firstFoot).map((c) => <td key={c.k} className="num">{c.foot?.()}</td>)}
+                  </tr></tfoot>
+                )}
+              </table>
+            );
+          })()}
         </div>
       </>)}
 
@@ -496,6 +641,9 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
           <Field label="Ký hiệu"><input className="input mono" value={v.invoice?.serial ?? ''} disabled={!v.invoice} onChange={(e) => v.invoice && set({ invoice: { ...v.invoice, serial: e.target.value.trim() } })} /></Field>
           <Field label="Ngày hoá đơn"><input className="input" type="date" value={v.invoice?.date ?? ''} disabled={!v.invoice} onChange={(e) => v.invoice && set({ invoice: { ...v.invoice, date: e.target.value } })} /></Field>
         </fieldset>
+      )}
+      {chonGoc !== null && v.branchCode && (
+        <ChonPhieuGoc branchCode={v.branchCode} partnerCode={v.partner?.code} search={chonGoc || undefined} onPick={pickReturn} onClose={() => setChonGoc(null)} />
       )}
     </KhungPhieu>
   );

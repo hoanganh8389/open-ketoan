@@ -2,7 +2,8 @@
  * Màn danh sách phiếu hàng hoá dùng chung (bán hàng, hàng bán trả lại, mua hàng, trả hàng nhà cung cấp, chuyển kho).
  * Mỗi phân hệ chỉ cần: <PhieuHangPage kind="sale" code="BH10" seed={mau} helpKey="phieu-hang" />.
  *   - Lọc: khoảng ngày, chi nhánh, trạng thái, tìm nhanh (số phiếu, đối tượng, số hoá đơn, ghi chú).
- *   - Thêm / Sửa (bấm đúp) / Xoá (chỉ phiếu nháp) / Duyệt / Bỏ duyệt / Nạp / Xuất Excel.
+ *   - Thanh nút như màn Kho (NT-BH-045): + Thêm · Sửa / Xem · In · Nạp · Xuất Excel — ẩn theo quyền thao tác của màn (HT12).
+ *     Duyệt (ghi sổ) / Bỏ duyệt nằm trong phiếu (chân phiếu) như phiếu mua; chứng từ không xoá (§7).
  *   - Nhãn "DỮ LIỆU GIẢ" khi loại phiếu đang chạy dữ liệu mẫu (đổi ở API → Nguồn dữ liệu màn hình).
  */
 import { dongChungTu } from '@/lib/trangThai';
@@ -16,7 +17,6 @@ import { defaultTo } from '@/lib/format';
 import { KIND_INFO, emptyDoc, tradeApi, type TradeDoc, type TradeKind } from '@/lib/tradeDocs';
 import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
-import { NutTao } from '@/components/NutTao';
 import { DateRange, BranchSelect } from '@/components/filters';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { khoLabel, useKho } from './ChonKho';
@@ -25,11 +25,16 @@ import { PhieuHangForm } from './PhieuHangForm';
 import { TRADE_TEMPLATES } from './printTemplates';
 import { PrintButton } from '@/components/print';
 import { advisoryText, useDocumentGate } from '@/components/PostingGate';
+// [2026-11-26 09:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-045: nút theo quyền thao tác của màn (như KHO01), Duyệt trong phiếu; NT-BH-047: cột người lập / duyệt, phiếu gốc, đã thu (đóng góp)
+import { useThaoTac } from '@/lib/manHinh';
+import { useAuth } from '@/lib/auth';
 
 const STATUS: Record<string, string> = { draft: 'Nháp', approved: 'Đã duyệt' };
 
 export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtitle }: { kind: TradeKind; code: string; seed: TradeDoc[]; helpKey?: string; subtitle?: string }) {
   const info = KIND_INFO[kind];
+  const tenNguoi = useTenNguoi();
+  const tt = useThaoTac(kind === 'sale_return' ? 'ban-hang.tra-lai' : 'ban-hang.phieu-ban');
   const khoAll = useKho();
   const qc = useQueryClient();
   const svc = useMemo(() => tradeApi(kind, seed), [kind, seed]);
@@ -55,16 +60,28 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
   // bằng cờ startEdit (thay openNextInEdit của khung hộp thoại chung); ghi xong / bấm đúp thì mở ở chế độ xem như trước (đóng góp)
   const [startEdit, setStartEdit] = useState(false);
   const save = useMutation({ mutationFn: (d: TradeDoc) => svc.save(d), onSuccess: (saved, d) => { if (d.id) { setStartEdit(false); setEditing(saved); setFormKey((k) => k + 1); } else setEditing(null); void refresh(); } });
-  const del = useMutation({ mutationFn: (id: string) => svc.remove(id), onSuccess: () => { setSel(null); void refresh(); } });
   // [2026-11-02 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-020 — S020-21b: duyệt phiếu (nguồn API: vào sổ) khi còn cảnh báo kiểm chuẩn của ngày phiếu ⇒ một dòng bằng chứng; dữ liệu giả lập thì không ghi.
-  const gate = useDocumentGate(sel?.docDate);
+  // NT-BH-045: Duyệt / Bỏ duyệt gọi từ chân phiếu đang mở; cảnh báo kiểm chuẩn theo ngày của phiếu đang mở.
+  const gate = useDocumentGate(editing?.docDate);
   const status = useMutation({
-    mutationFn: (p: { id: string; s: 'draft' | 'approved' }) => svc.setStatus(p.id, p.s),
+    /** Duyệt: phiếu mới / đang sửa chưa ghi → Ghi trước (bản đang thấy trên màn) rồi Duyệt. */
+    mutationFn: async (p: { doc: TradeDoc; s: 'draft' | 'approved'; dirty?: boolean }) => {
+      const id = p.dirty || !p.doc.id ? (await svc.save(p.doc)).id : p.doc.id;
+      return svc.setStatus(id, p.s);
+    },
     onSuccess: (d, p) => {
       if (p.s === 'approved' && svc.source === 'api') gate.acknowledge({ docType: kind, docDate: d.docDate, docNo: d.docNo });
-      setSel(d); void refresh();
+      setSel(d); setStartEdit(false); setEditing(d); setFormKey((x) => x + 1); save.reset(); void refresh();
     },
   });
+  const duyet = (doc: TradeDoc, dirty: boolean) => {
+    if (gate.advisories.length && !window.confirm(`Duyệt phiếu ${doc.docNo || '(mới)'}?` + advisoryText(gate.advisories))) return;
+    status.mutate({ doc, s: 'approved', dirty });
+  };
+  const boDuyet = () => {
+    if (!editing || !window.confirm(`Bỏ duyệt phiếu ${editing.docNo}? Chứng từ trong sổ sẽ được huỷ (bút toán đảo), phiếu về Nháp để sửa.`)) return;
+    status.mutate({ doc: editing, s: 'draft' });
+  };
   const open = async (row: TradeDoc) => setEditing(await svc.get(row.id));
 
   const columns: Column<TradeDoc>[] = [
@@ -82,13 +99,22 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
       { key: 'total', header: 'Tổng tiền', type: 'money', width: 130, sum: true, bold: true, value: (r: TradeDoc) => r.totals.total } as Column<TradeDoc>,
     ] : []),
     { key: 'status', header: 'Trạng thái', width: 90, value: (r) => STATUS[r.status] ?? r.status },
+    // NT-BH-047: phiếu gốc (BH11), đã thu / còn nợ, người lập / người duyệt.
+    ...(info.hasOriginal ? [{ key: 'originalDocNo', header: 'Phiếu gốc', type: 'code', width: 120, title: 'Số phiếu bán gốc mà phiếu trả này trả' } as Column<TradeDoc>] : []),
+    ...(info.hasPayments ? [
+      { key: 'paid', header: kind === 'sale_return' ? 'Đã trả' : 'Đã thu', type: 'money', width: 110, sum: true, title: kind === 'sale_return' ? 'Tiền đã trả khách trên phiếu' : 'Tiền đã thu trên phiếu (các hình thức không ghi nợ)', value: (r: TradeDoc) => (r.payments ?? []).reduce((x, p) => x + p.amount, 0) } as Column<TradeDoc>,
+      { key: 'debt', header: kind === 'sale_return' ? 'Trừ công nợ' : 'Còn nợ', type: 'money', width: 110, sum: true, title: 'Tổng tiền − đã thu / đã trả: phần ghi công nợ khách', value: (r: TradeDoc) => Math.max(0, r.totals.total - (r.payments ?? []).reduce((x, p) => x + p.amount, 0)) } as Column<TradeDoc>,
+    ] : []),
+    { key: 'createdBy', header: 'Người lập', width: 130, title: 'Người ghi phiếu lần đầu', value: (r) => (r.createdBy ? tenNguoi(r.createdBy) : '') },
+    { key: 'approvedBy', header: 'Người duyệt', width: 130, title: 'Người duyệt (ghi sổ) — trống khi phiếu còn nháp', value: (r) => (r.status === 'approved' && r.approvedBy ? tenNguoi(r.approvedBy) : '') },
+    { key: 'approvedAt', header: 'Ngày duyệt', type: 'date', width: 100, title: 'Ngày duyệt (ghi sổ)', value: (r) => (r.status === 'approved' && r.approvedAt ? r.approvedAt.slice(0, 10) : '') },
     { key: 'note', header: 'Ghi chú', width: 200 },
   ];
 
   return (
     <>
       <PageHeader title={info.label} code={code} helpKey={helpKey}
-        subtitle={subtitle ?? `Thêm, sửa, xoá, duyệt ${info.label.toLowerCase()}`} />
+        subtitle={subtitle ?? `Thêm, sửa, duyệt ${info.label.toLowerCase()}`} />
       {svc.source === 'mock' && (
         <div className="alert alert-info" style={{ marginBottom: 8 }}>
           <b>DỮ LIỆU GIẢ</b> — màn đang chạy bằng dữ liệu mẫu lưu ở trình duyệt này (chưa vào sổ kế toán), chờ API thật.
@@ -105,20 +131,21 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
           </select></div>
       </>}>
       <div className="card">
-        <div className="row" style={{ gap: 6, padding: '6px 0', flexWrap: 'wrap', alignItems: 'center' }}>
-          <NutTao onClick={() => setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? '')))}>Thêm</NutTao>
-          <button className="btn btn-sm" disabled={!sel} onClick={() => { if (!sel) return; setStartEdit(sel.status !== 'approved'); void open(sel); }}>{sel?.status === 'approved' ? 'Xem' : 'Sửa'}</button>
-          <button className="btn btn-sm" disabled={!sel || status.isPending} onClick={() => { if (!sel) return; const s = sel.status === 'approved' ? 'draft' : 'approved'; if (s === 'approved' && gate.advisories.length && !window.confirm(`Duyệt phiếu ${sel.docNo || '(mới)'}?` + advisoryText(gate.advisories))) return; status.mutate({ id: sel.id, s }); }}>{sel?.status === 'approved' ? 'Bỏ duyệt' : 'Duyệt'}</button>
+        <div className="row ck-toolbar" style={{ gap: 6, padding: '6px 0', flexWrap: 'wrap', alignItems: 'center' }}>
+          {tt.them && <button className="btn btn-sm btn-primary" title={`Lập ${info.label.toLowerCase()} mới — chi nhánh điền sẵn chi nhánh đang làm việc`}
+            onClick={() => { save.reset(); setStartEdit(false); setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? ''))); setFormKey((x) => x + 1); }}>+ Thêm</button>}
+          <button className="btn btn-sm" disabled={!sel} title={!sel ? 'Chọn một phiếu ở bảng dưới' : sel.status === 'approved' ? 'Phiếu đã duyệt — mở xem; Bỏ duyệt ở chân phiếu' : tt.sua ? 'Mở phiếu để sửa' : 'Mở phiếu (chỉ xem — chưa có quyền Sửa)'}
+            onClick={() => { if (!sel) return; setStartEdit(sel.status !== 'approved' && Boolean(tt.sua)); void open(sel); }}>{sel?.status !== 'approved' && tt.sua ? 'Sửa' : 'Xem'}</button>
           {TRADE_TEMPLATES[kind] && <PrintButton small screen={code} templates={TRADE_TEMPLATES[kind]!} disabled={!sel} title="In phiếu đang chọn" getDocs={async () => (sel ? [await svc.get(sel.id)] : [])} />}
-          <button className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
-          <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
+          <button className="btn btn-sm" onClick={() => void q.refetch()} title="Đọc lại danh sách">Nạp</button>
+          {tt.xuat && <button className="btn btn-sm" onClick={() => exportRef.current?.()} title="Xuất bảng đang lọc ra Excel">Xuất Excel</button>}
           <span style={{ flex: 1 }} />
           <form className="row" style={{ gap: 4 }} data-no-search onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>
             <input className="input" style={{ width: 240, height: 28 }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm: số phiếu, đối tượng, hoá đơn" />
             <button className="btn btn-sm" type="submit">Tìm</button>
           </form>
         </div>
-        <ErrorBox error={q.error ? errorText(q.error) : del.error ? errorText(del.error) : status.error ? errorText(status.error) : null} />
+        <ErrorBox error={q.error ? errorText(q.error) : null} />
         {q.isLoading ? <Loading /> : (
           <DataGrid storageKey={`phieu-${kind}-v1`} exportName={`phieu-${kind}`} exportRef={exportRef} rows={q.data?.data ?? []} rowKey={(r) => r.id}
             onSelect={setSel} onRowDoubleClick={(r) => { setStartEdit(false); void open(r); }} rowClassName={(r) => dongChungTu(r.status)} footerLabel="Cộng"
@@ -126,7 +153,20 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
         )}
       </div>
       </FilterLayout>
-      {editing && <PhieuHangForm key={formKey} printScreen={code} helpKey={helpKey} startEdit={startEdit} value={editing} readOnly={editing.status === 'approved'} saving={save.isPending} error={save.error} onSave={(d) => save.mutate(d)} onClose={() => { setEditing(null); save.reset(); }} />}
+      {editing && <PhieuHangForm key={formKey} printScreen={code} helpKey={helpKey} startEdit={startEdit} value={editing} readOnly={editing.status === 'approved'} saving={save.isPending}
+        error={save.error ?? status.error} onSave={(d) => save.mutate(d)} onClose={() => { setEditing(null); save.reset(); status.reset(); }}
+        canApprove={tt.duyet && svc.source === 'api'} approving={status.isPending} onApprove={duyet} onUnapprove={boDuyet} />}
     </>
   );
+}
+
+/** Tên người theo mã (người lập / người duyệt): chính mình; danh sách người dùng khi có quyền quản lý người dùng; còn lại "Người dùng #id". */
+function useTenNguoi() {
+  const { user, can } = useAuth();
+  const users = useQuery({ queryKey: ['users', 'ten'], queryFn: () => api.get<{ id: string; fullName: string }[]>('/api/v1/users'), enabled: can('users:write'), retry: false, staleTime: 10 * 60_000 });
+  return (actor: string) => {
+    const id = actor.startsWith('user:') ? actor.slice(5) : actor;
+    if (user && String(user.id) === id) return user.fullName;
+    return users.data?.find((x) => String(x.id) === id)?.fullName ?? (/^\d+$/.test(id) ? `Người dùng #${id}` : actor);
+  };
 }
