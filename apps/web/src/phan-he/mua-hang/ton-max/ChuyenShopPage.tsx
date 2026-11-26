@@ -5,9 +5,9 @@
  * Sửa số chuyển, bỏ dòng, bấm "Chốt đề nghị" → mỗi shop một đề nghị chuyển. Thẻ "Đề nghị đã chốt": kế toán kho quét danh sách
  * này (hoặc kho / POS đọc qua API) để lên phiếu chuyển kho, rồi đánh dấu "Đã lên phiếu".
  */
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileSpreadsheet, Send, Truck } from 'lucide-react';
+import { ChevronDown, FileSpreadsheet, Send, SlidersHorizontal, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TRANSFER_ALLOCATIONS, TRANSFER_MODES, TRANSFER_ROUNDINGS, type TransferAllocation, type TransferRounding } from '@bizcity/mua-hang-domain';
 import { PageHeader } from '@/components/PageHeader';
@@ -69,6 +69,15 @@ function DeXuat({ parent, onDone }: { parent: string; onDone: () => void }) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [quick, setQuick] = useState<'' | 'short'>('');
+  // [2026-11-26 kiennt] NT-MH-023 — mỗi NCC một tab (như các sheet Bỉm Dokma / Bỉm Huggies… của file Excel công thức đặt hàng); '' = tất cả NCC, '~' = chưa rõ NCC (đóng góp)
+  const [ncc, setNcc] = useState('');
+  const [pop, setPop] = useState(false);
+  const popRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { // đóng ô "Cách chia" khi bấm ra ngoài
+    if (!pop) return;
+    const h = (e: MouseEvent) => { if (!popRef.current?.contains(e.target as Node)) setPop(false); };
+    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
+  }, [pop]);
   const exportRef = useRef<(() => void) | null>(null);
   // NT-MH-004: chọn shop (giữ thứ tự chọn — dùng cho "theo thứ tự" và phần dư khi chia đều), làm tròn, cách phân bổ khi kho thiếu.
   const h = useHierarchy();
@@ -80,7 +89,14 @@ function DeXuat({ parent, onDone }: { parent: string; onDone: () => void }) {
     queryKey: ['ton-max', 'transfer-suggest', parent, wh, sel.join(','), opts.rounding, opts.allocation],
     queryFn: () => api.get<TransferSuggest>('/api/v1/stock/transfer-suggest', { branchCode: parent, fromWarehouse: wh || undefined, shopCodes: sel.length ? sel.join(',') : undefined, rounding: opts.rounding, allocation: opts.allocation }),
   });
-  const lines = q.data?.lines ?? [];
+  const allLines = q.data?.lines ?? [];
+  const nccTabs = useMemo(() => {
+    const m = new Map<string, { name: string; n: number }>();
+    for (const l of allLines) { const k = l.partnerCode || '~'; const x = m.get(k) ?? { name: l.partnerCode ? (l.partnerName || l.partnerCode) : 'Chưa rõ NCC', n: 0 }; x.n++; m.set(k, x); }
+    return [...m].sort(([a, x], [b, y]) => Number(a === '~') - Number(b === '~') || x.name.localeCompare(y.name, 'vi'));
+  }, [allLines]);
+  const curNcc = nccTabs.some(([k]) => k === ncc) ? ncc : '';
+  const lines = curNcc ? allLines.filter((l) => (l.partnerCode || '~') === curNcc) : allLines;
   const qty = (l: TransferSuggestLine) => edit[lk(l)] ?? l.qty;
   const rows = useMemo(() => {
     const out: Row[] = [];
@@ -103,6 +119,7 @@ function DeXuat({ parent, onDone }: { parent: string; onDone: () => void }) {
     { key: 'pick', header: '', width: 34, noFilter: true, noSort: true, render: (l) => <input type="checkbox" checked={!off[lk(l)]} onChange={(e) => setOff({ ...off, [lk(l)]: !e.target.checked })} /> },
     { key: 'sku', header: 'Mã hàng', type: 'code', width: 110 },
     { key: 'name', header: 'Tên hàng', width: 200 },
+    { key: 'partnerName', header: 'NCC', width: 160, value: (l) => (l.partnerCode ? `${l.partnerCode} ${l.partnerName}` : ''), render: (l) => (l.partnerCode ? <span title={l.partnerCode}>{l.partnerName || l.partnerCode}</span> : <span className="muted">chưa rõ</span>), title: 'NCC mặc định của mã — cùng quy tắc Phân tích đặt hàng (MH02): lần nhập gần nhất, chưa nhập thì NCC có bảng giá đang hiệu lực' },
     { key: 'max', header: 'Max shop', type: 'qty', width: 74, className: 'tm-max' },
     { key: 'ton', header: 'Tồn shop', type: 'qty', width: 74, className: 'tm-stock', showZero: true },
     { key: 'diDuong', header: 'Đi đường + đã đề nghị', type: 'qty', width: 92, render: (l) => <span title={`Đang đi đường ${qtyFmt(l.diDuong - l.reserved)} · đề nghị đã chốt chưa làm ${qtyFmt(l.reserved)}`}>{qtyFmt(l.diDuong) || ''}</span> },
@@ -122,45 +139,67 @@ function DeXuat({ parent, onDone }: { parent: string; onDone: () => void }) {
       setEdit({}); setOff({});
       setMsg({ ok: true, text: `Đã chốt ${r.codes.length} đề nghị chuyển (${r.codes.join(', ')}).` });
       await qc.invalidateQueries({ queryKey: ['ton-max'] });
-      onDone();
+      if (!curNcc) onDone(); // đang chốt theo từng tab NCC thì ở lại màn đề xuất để làm tiếp NCC khác
     } catch (e) { setMsg({ ok: false, text: errorText(e) }); } finally { setBusy(false); }
   };
+  const roundOpt = TRANSFER_ROUNDINGS.find((x) => x.key === opts.rounding);
+  const allocOpt = TRANSFER_ALLOCATIONS.find((x) => x.key === opts.allocation);
+  const nShort = lines.filter((l) => l.short > 0).length;
+  const sumQty = picked.reduce((t, l) => t + qty(l), 0);
   return (
     <>
-      <div className="tm-bar" style={{ paddingTop: 0 }}>
-        <label className="tm-parent"><span>Xuất từ kho</span>
-          <select className="select input" style={{ width: 300, minWidth: 0, flex: 'none' }} value={wh || q.data?.fromWarehouse || ''} onChange={(e) => setWh(e.target.value)}>
+      {/* [2026-11-26 kiennt] NT-MH-023 — thiết kế lại thanh công cụ: hàng 1 = kho xuất · shop · "Cách chia" (làm tròn + khi kho không đủ gộp vào ô bật ra);
+          hàng 2 = tab NCC, bên phải là lọc "chỉ thiếu do kho hết" · Excel · Chốt (đóng góp) */}
+      <div className="tm-bar mh19-bar">
+        <label className="tm-parent"><span>Kho xuất</span>
+          <select className="select input" style={{ width: 260, minWidth: 0, flex: 'none' }} value={wh || q.data?.fromWarehouse || ''} onChange={(e) => setWh(e.target.value)}>
             {(q.data?.warehouses ?? []).map((w) => <option key={w.code} value={w.code}>{w.code} · {w.name}{w.isDefault ? ' (mặc định)' : ''}</option>)}
           </select></label>
-        {/* [2026-11-26 kiennt] NT-MH-021 — bố cục gọn: bỏ dải ô đếm; ngưỡng thùng vào chú thích "Làm tròn"; số shop / dòng / SL lên nút Chốt; lọc nhanh thành ô "Hiện" (đóng góp) */}
-        <label className="tm-parent" title={`${TRANSFER_ROUNDINGS.find((x) => x.key === opts.rounding)?.hint ?? ''} — ngưỡng thùng ${Math.round((q.data?.threshold ?? 0.5) * 100)}% (đổi ở Công thức đặt hàng MH18)`}><span>Làm tròn</span>
-          <select className="select input" style={{ width: 170, minWidth: 0, flex: 'none' }} value={opts.rounding} onChange={(e) => setOpts({ rounding: e.target.value as TransferRounding })}>
-            {TRANSFER_ROUNDINGS.map((x) => <option key={x.key} value={x.key} title={x.hint}>{x.label}</option>)}
-          </select></label>
-        <label className="tm-parent" title={TRANSFER_ALLOCATIONS.find((x) => x.key === opts.allocation)?.hint}><span>Khi kho không đủ</span>
-          <select className="select input" style={{ width: 200, minWidth: 0, flex: 'none' }} value={opts.allocation} onChange={(e) => setOpts({ allocation: e.target.value as TransferAllocation })}>
-            {TRANSFER_ALLOCATIONS.map((x) => <option key={x.key} value={x.key} title={x.hint}>{x.label}</option>)}
-          </select></label>
-      </div>
-      <div className="tm-bar tm-shops" style={{ paddingTop: 0, flexWrap: 'wrap' }}>
-        <span className="muted" title="Bấm để chọn shop theo thứ tự ưu tiên (số thứ tự hiện trên nút); không chọn = mọi shop, theo mã">Shop:</span>
-        <button type="button" className={`btn btn-xs${sel.length ? '' : ' btn-primary'}`} onClick={() => { setSel([]); setEdit({}); }}>Tất cả shop</button>
-        {shopList.map((b) => { const i = sel.indexOf(b.code); return (
-          <button key={b.code} type="button" className={`btn btn-xs${i >= 0 ? ' btn-primary' : ''}`} title={b.name}
-            onClick={() => { setSel(i >= 0 ? sel.filter((c) => c !== b.code) : [...sel, b.code]); setEdit({}); }}>{i >= 0 ? `${i + 1}. ` : ''}{b.code}</button>); })}
+        <span className="mh19-sep" />
+        <div className="mh19-shops" title="Bấm để chọn shop theo thứ tự ưu tiên (số thứ tự hiện trên nút); không chọn = mọi shop, theo mã">
+          <span className="muted">Shop</span>
+          <button type="button" className={`mh19-chip${sel.length ? '' : ' on'}`} onClick={() => { setSel([]); setEdit({}); }}>Tất cả</button>
+          {shopList.map((b) => { const i = sel.indexOf(b.code); return (
+            <button key={b.code} type="button" className={`mh19-chip${i >= 0 ? ' on' : ''}`} title={b.name}
+              onClick={() => { setSel(i >= 0 ? sel.filter((c) => c !== b.code) : [...sel, b.code]); setEdit({}); }}>{i >= 0 ? <b>{i + 1}</b> : null}{b.code}</button>); })}
+        </div>
         <span className="grow" />
-        <label className="tm-parent" title="Lọc nhanh các dòng đề xuất"><span>Hiện</span><select className="select input" style={{ width: 220, minWidth: 0, flex: 'none' }} value={quick} onChange={(e) => setQuick(e.target.value as '' | 'short')}>
-          <option value="">Tất cả dòng ({lines.length.toLocaleString('vi-VN')})</option>
-          <option value="short">Thiếu do kho hết ({lines.filter((l) => l.short > 0).length.toLocaleString('vi-VN')})</option>
-        </select></label>
-        <button className="btn btn-sm" onClick={() => exportRef.current?.()}><FileSpreadsheet size={14} /> Xuất Excel</button>
-        {tt.them && <button className="btn btn-primary" disabled={!picked.length || busy || over.length > 0} title={over.length ? `Tổng chia vượt tồn kho: ${over.join('; ')}` : undefined} onClick={() => void commit()}><Send size={14} /> Chốt đề nghị ({shops.size} shop · {picked.length} dòng · SL {qtyFmt(picked.reduce((t, l) => t + qty(l), 0))})</button>}
+        <div className="mh19-pop" ref={popRef}>
+          <button type="button" className="btn btn-sm" onClick={() => setPop(!pop)} title="Cách làm tròn và cách chia khi kho không đủ">
+            <SlidersHorizontal size={14} /> {roundOpt?.label} · {allocOpt?.label} <ChevronDown size={14} />
+          </button>
+          {pop && <div className="mh19-pop-panel">
+            <label><span>Làm tròn</span>
+              <select className="select input" value={opts.rounding} onChange={(e) => setOpts({ rounding: e.target.value as TransferRounding })}>
+                {TRANSFER_ROUNDINGS.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
+              </select>
+              <small>{roundOpt?.hint}</small><small>Ngưỡng thùng {Math.round((q.data?.threshold ?? 0.5) * 100)}% — đổi ở Công thức đặt hàng (MH18).</small></label>
+            <label><span>Khi kho không đủ</span>
+              <select className="select input" value={opts.allocation} onChange={(e) => setOpts({ allocation: e.target.value as TransferAllocation })}>
+                {TRANSFER_ALLOCATIONS.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
+              </select>
+              <small>{allocOpt?.hint}</small></label>
+          </div>}
+        </div>
+      </div>
+      <div className="mh19-tabrow">
+        <div className="tm-ncc-tabs" role="tablist" title="Mỗi NCC một tab — Chốt đề nghị chỉ chốt các dòng của tab đang mở">
+          <button type="button" role="tab" className={curNcc ? '' : 'on'} onClick={() => setNcc('')}>Tất cả NCC <span>{allLines.length.toLocaleString('vi-VN')}</span></button>
+          {nccTabs.map(([k, x]) => <button key={k} type="button" role="tab" className={`${curNcc === k ? 'on' : ''}${k === '~' ? ' none' : ''}`} title={k === '~' ? 'Mã chưa có lần nhập, chưa khai giá mua NCC nào' : k} onClick={() => setNcc(k)}>{x.name} <span>{x.n.toLocaleString('vi-VN')}</span></button>)}
+        </div>
+        <div className="mh19-act">
+          <label className={`mh19-chip${quick === 'short' ? ' on warn' : ''}`} title="Chỉ hiện các dòng kho không đủ hàng để chia (nên đặt mua thêm ở MH02)">
+            <input type="checkbox" checked={quick === 'short'} onChange={(e) => setQuick(e.target.checked ? 'short' : '')} /> Thiếu do kho hết <b>{nShort.toLocaleString('vi-VN')}</b></label>
+          <button className="btn btn-sm" title="Xuất Excel đúng các dòng đang thấy" onClick={() => exportRef.current?.()}><FileSpreadsheet size={14} /> Excel</button>
+          {tt.them && <button className="btn btn-sm btn-primary" disabled={!picked.length || busy || over.length > 0} title={over.length ? `Tổng chia vượt tồn kho: ${over.join('; ')}` : `${shops.size} shop · ${picked.length} dòng · SL ${qtyFmt(sumQty)}${curNcc ? ' — chỉ các dòng của tab NCC đang mở' : ''}`} onClick={() => void commit()}>
+            <Send size={14} /> Chốt đề nghị{picked.length ? <span className="mh19-cnt">{shops.size} shop · {picked.length} dòng · SL {qtyFmt(sumQty)}</span> : null}</button>}
+        </div>
       </div>
       {over.length > 0 && <div className="alert alert-bad" style={{ margin: '0 12px 8px' }}>Tổng chia vượt tồn kho chuyển — sửa trước khi chốt: {over.join('; ')}</div>}
       {opts.allocation === 'manual' && lines.some((l) => l.short > 0) && <div className="alert alert-warn" style={{ margin: '0 12px 8px' }}>Chỉnh tay: các mã kho không đủ để trống cột Chuyển — tự nhập số cho từng shop (tổng mỗi mã ≤ tồn kho).</div>}
       {msg && <div className={`alert ${msg.ok ? 'alert-ok' : 'alert-bad'}`} style={{ margin: '0 12px 8px' }}>{msg.text}</div>}
       <ErrorBox error={q.error ? errorText(q.error) : null} />
-      {q.isLoading ? <Loading /> : <div className="tm-grid"><DataGrid rows={rows} columns={cols} rowKey={(r) => r._key} storageKey="chuyen-shop-de-xuat" exportRef={exportRef} exportName={`de-xuat-chuyen-${parent}-${today()}`}
+      {q.isLoading ? <Loading /> : <div className="tm-grid"><DataGrid rows={rows} columns={cols} rowKey={(r) => r._key} storageKey="chuyen-shop-de-xuat" exportRef={exportRef} exportName={`de-xuat-chuyen-${parent}${curNcc && curNcc !== '~' ? `-${curNcc}` : ''}-${today()}`}
         rowKind={(r) => (r._group ? 'group' : 'data')} groupLabel={(r) => <b>{r.shopCode} · {r.shopName} <span className="muted" style={{ fontWeight: 400 }}>→ kho {r.toWarehouse}</span></b>}
         emptyText="Không shop nào thiếu hàng so với tồn max (hoặc chưa khai max cho shop — mở Tồn max MH16)." /></div>}
     </>

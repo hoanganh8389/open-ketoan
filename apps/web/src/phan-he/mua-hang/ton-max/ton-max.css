@@ -105,3 +105,27 @@
 .tm-prov-head { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--line-soft); margin-bottom: 4px; cursor: pointer; }
 .tm-prov-head .muted { font-size: 11.5px; }
 /* [2026-11-25 kiennt] NT-MH-006 — dải hai cách đặt tồn max (của Nguyễn Văn Thủy, 15/11) đã bỏ khỏi MH16, MH17 (đóng góp) */
+
+/* [2026-11-26 kiennt] NT-MH-023 — MH19: thanh công cụ gọn + mỗi NCC một tab kiểu sheet Excel (đóng góp) */
+.mh19-bar { padding-top: 0; flex-wrap: wrap; gap: 10px; }
+.mh19-sep { width: 1px; align-self: stretch; background: var(--line); }
+.mh19-shops { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.mh19-shops > .muted { margin-right: 2px; }
+.mh19-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: #fff; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.mh19-chip b { display: inline-grid; place-items: center; min-width: 16px; height: 16px; border-radius: 8px; background: rgba(255,255,255,.25); font-size: 11px; }
+.mh19-chip.on { background: #1e3a8a; border-color: #1e3a8a; color: #fff; }
+.mh19-chip.on.warn { background: #fff7ed; border-color: #f59e0b; color: #b45309; }
+.mh19-chip input { margin: 0; }
+.mh19-pop { position: relative; }
+.mh19-pop-panel { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; width: 340px; padding: 12px; display: grid; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.15); }
+.mh19-pop-panel label { display: grid; gap: 4px; font-size: 13px; }
+.mh19-pop-panel label > span { font-weight: 700; }
+.mh19-pop-panel small { color: var(--muted, #64748b); line-height: 1.35; }
+.mh19-tabrow { display: flex; align-items: flex-end; gap: 10px; padding: 0 12px; border-bottom: 2px solid #1e3a8a; margin-bottom: 6px; }
+.mh19-act { flex: none; display: flex; align-items: center; gap: 6px; padding-bottom: 5px; }
+.mh19-cnt { margin-left: 6px; padding-left: 6px; border-left: 1px solid rgba(255,255,255,.4); font-weight: 400; font-size: 12px; }
+.tm-ncc-tabs { flex: 1; min-width: 0; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: thin; }
+.tm-ncc-tabs button { flex: none; border: 1px solid var(--line); border-bottom: 0; border-radius: 6px 6px 0 0; padding: 5px 12px; background: #f1f5f9; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.tm-ncc-tabs button span { margin-left: 4px; font-weight: 400; opacity: .7; font-size: 11.5px; }
+.tm-ncc-tabs button.on { background: #1e3a8a; border-color: #1e3a8a; color: #fff; }
+.tm-ncc-tabs button.none:not(.on) { color: #b45309; }
