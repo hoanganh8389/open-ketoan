@@ -96,16 +96,17 @@ export const GON_DEFS: GonDef[] = [
     // [2026-11-15 10:15 AM Võ Hoàng] NGHIEM-THU — NT-BH-018: BH12 gộp vào BH18 Chương trình khuyến mại — mọi lối tắt trỏ màn mới (đóng góp)
     the: ['/ban-hang/phieu-ban', '/ban-hang/tra-lai', '/app/pos/don-ban', '/app/pos/khuyen-mai', '/danh-muc/khach-hang'],
     sections: [
-      { paths: ['/ban-hang/phieu-ban', '/ban-hang/tra-lai', '/ban-hang/thu-tien'], soon: ['Đơn đặt hàng', 'Giảm giá hàng bán'] },
-      { label: 'Bán lẻ máy POS', paths: ['/app/pos/don-ban', '/app/pos/tra-hang', '/app/pos/ca-ban', '/app/pos/tong-quan'] },
+      // [2026-11-26 12:50 PM Nguyễn Văn Thủy] HT — dọn mục "Khác" của Thiết lập: xếp màn về đúng nhóm, màn lập phiếu đã mở từ danh sách thì không liệt kê lại (đóng góp)
+      { paths: ['/app/phieu-ban/don-dat-hang', '/ban-hang/phieu-ban', '/ban-hang/tra-lai', '/ban-hang/thu-tien'], soon: ['Giảm giá hàng bán'] },
+      { label: 'Bán lẻ máy POS', paths: ['/app/pos/don-ban', '/app/pos/tra-hang', '/app/pos/ca-ban', '/app/pos/tong-quan', '/app/pos/kenh-ban'] },
       // [2026-11-14 01:20 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: Khuyến mại hết mờ, mở BH18 (đóng góp)
-      { label: 'Chính sách bán', paths: ['/app/pos/khuyen-mai', '/danh-muc/bang-gia'], soon: ['Hạn mức nợ khách'] },
+      { label: 'Chính sách bán', paths: ['/app/pos/khuyen-mai', '/danh-muc/bang-gia', '/app/voucher', '/app/loyalty/diem'], soon: ['Hạn mức nợ khách'] },
       { label: 'Danh mục', paths: ['/danh-muc/khach-hang', '/danh-muc/mat-hang', '/cau-hinh/hinh-thuc-thanh-toan'] },
       // [2026-11-13 09:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-014: bỏ mục mờ "Định khoản bán hàng" — tài khoản bán hàng xem ở khối ④ của BH17, sửa ở ACC41 (đóng góp)
       // [2026-11-21 kiennt] NT-MH-005 — bỏ mục Cài đặt: Cài đặt bán hàng (BH17) chuyển sang Phần riêng → Cấu hình (đóng góp)
     ],
     reports: [
-      { label: 'Bán hàng', paths: ['/ban-hang/bao-cao', '/ban-hang/tong-hop', '/cong-no/nhat-ky-ban-hang', '/ban-hang/lai-gop', '/ban-hang/thu-tien-ban-hang'] },
+      { label: 'Bán hàng', paths: ['/ban-hang/bao-cao', '/ban-hang/tong-hop', '/cong-no/nhat-ky-ban-hang', '/ban-hang/lai-gop', '/ban-hang/thu-tien-ban-hang', '/app/pos/bao-cao-khach'] },
       { label: 'Công nợ phải thu', paths: ['/bao-cao/cong-no-phai-thu', '/bao-cao/chi-tiet-cong-no-phai-thu', '/bao-cao/cong-no-theo-han', '/bao-cao/tuoi-no', '/bao-cao/tuoi-no-trong-han', '/bao-cao/tuoi-no-qua-han', '/bao-cao/cong-no-theo-mat-hang', '/cong-no/doi-chieu'] },
     ],
   },
@@ -113,7 +114,7 @@ export const GON_DEFS: GonDef[] = [
     key: 'kho', label: 'Kho', icon: 'Warehouse', description: 'Nhập kho, xuất kho, chuyển kho, tính giá xuất kho', color: '#7b1fa2', module: 'kho', homeLabel: 'Quy trình',
     the: ['/ban-hang/xuat-dieu-chinh', '/kho/chuyen-kho', '/nghiep-vu/tinh-gia-von'],
     sections: [
-      { paths: ['/ban-hang/xuat-dieu-chinh', '/kho/chuyen-kho', '/nghiep-vu/tinh-gia-von'], soon: ['Nhập kho', 'Xuất kho', 'Kiểm kê kho'] },
+      { paths: ['/ban-hang/xuat-dieu-chinh', '/kho/chuyen-kho', '/kho/kiem-ke', '/nghiep-vu/tinh-gia-von'], soon: ['Nhập kho', 'Xuất kho'] },
       { label: 'Danh mục', paths: ['/danh-muc/mat-hang', '/danh-muc/so-do-to-chuc', '/danh-muc/loai-kho', '/danh-muc/don-vi-tinh'] },
     ],
     // [2026-11-25 Nguyễn Văn Thủy] #56 tab Test: Sổ kho (MH24) và Tồn kho theo mặt hàng (MH25) về báo cáo của Kho — đủ mọi luồng nhập / xuất, không riêng mua hàng (đóng góp)
@@ -206,14 +207,17 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Đơn vị', paths: ['/cau-hinh/don-vi', '/cau-hinh/mau-in', '/cau-hinh/bao-cao-chung-tu', '/cau-hinh/khoi-anh'] },
       { label: 'Người dùng', paths: ['/cau-hinh/nguoi-dung', '/app/phan-quyen/vai-tro', '/cau-hinh/khoa-api'] },
       // [2026-11-15 Nguyễn Văn Thủy] MH26 tách / gộp mã con chuyển từ Mua hàng sang Thiết lập (người quản trị đặt một lần) (đóng góp)
-      { label: 'Cấu hình', paths: ['/he-thong/cau-hinh', '/he-thong/loi', '/he-thong/chinh-sach', '/he-thong/quy-dinh-danh-muc', '/he-thong/nhat-ky-kiem', '/mua-hang/bien-the', '/tien-ich/nhap-excel', '/tien-ich/du-lieu-goc', '/tien-ich/add-in', '/app/thu-vien/kho', '/addins/spreadsheet-ai', '/addins/tro-ly'] },
-      { label: 'Kiểm tra dữ liệu', paths: ['/he-thong/kiem-chuan', '/he-thong/ho-so-ke-toan', '/he-thong/ban-danh-gia', '/he-thong/tru-cot', '/he-thong/so-chung-tu', '/bao-cao/kiem-tra-chung-tu', '/tien-ich/ct-mat-lien-ket', '/tien-ich/ct-lech-than-chi-tiet', '/tien-ich/ct-lech-phieu-goc', '/so-cai/but-toan', '/so-cai/sua-dau-but-toan', '/nghiep-vu/but-toan-mau', '/nghiep-vu/but-toan-lap'] },
+      { label: 'Cấu hình', paths: ['/he-thong/cau-hinh', '/he-thong/ho-so-ke-toan', '/app/thiet-lap', '/he-thong/huong-dan', '/he-thong/loi', '/he-thong/chinh-sach', '/he-thong/quy-dinh-danh-muc', '/he-thong/nhat-ky-kiem', '/mua-hang/bien-the', '/tien-ich/nhap-excel', '/tien-ich/du-lieu-goc', '/tien-ich/add-in', '/app/thu-vien/kho', '/addins/spreadsheet-ai', '/addins/tro-ly'] },
+      { label: 'Kiểm tra dữ liệu', paths: ['/he-thong/kiem-chuan', '/he-thong/ban-danh-gia', '/he-thong/tru-cot', '/he-thong/so-chung-tu', '/bao-cao/kiem-tra-chung-tu', '/tien-ich/ct-mat-lien-ket', '/tien-ich/ct-lech-than-chi-tiet', '/tien-ich/ct-lech-phieu-goc', '/so-cai/but-toan', '/so-cai/sua-dau-but-toan', '/nghiep-vu/but-toan-mau', '/nghiep-vu/but-toan-lap'] },
       { label: 'Tài liệu', paths: ['/tien-ich/huong-dan', '/yeu-cau/tai-chinh-ke-toan', '/tien-ich/kien-truc', '/tien-ich/can-cu', '/mua-hang/hieu-nghiep-vu', '/mua-hang/tong-quan', '/mua-hang/csdl'] },
-      { label: 'API', paths: ['/tich-hop/thu-api', '/tich-hop/huong-dan', '/tich-hop/nguon-du-lieu'] },
+      { label: 'API', paths: ['/tich-hop/thu-api', '/tich-hop/huong-dan', '/tich-hop/nguon-du-lieu', '/tien-ich/ung-dung'] },
       { label: 'Nhà phát triển', paths: ['/dev/tong-quan', '/dev/tra-ma', '/dev/nhat-ky', '/dev/loi-theo-module', '/dev/ghi-so', '/dev/su-kien', '/dev/toan-ven', '/dev/van-hanh', '/dev/kich-ban'] },
     ],
   },
 ];
+
+/** Màn lập phiếu mở từ danh sách (Thu, chi tiền ở Tiền mặt; Thu, chi tiền gửi ở Tiền gửi) — không liệt kê lại ở mục Khác. */
+const KHONG_LIET_KE = ['/nghiep-vu/phieu-thu', '/nghiep-vu/phieu-chi', '/nghiep-vu/phieu-bao-co', '/nghiep-vu/phieu-bao-no'];
 
 /** Mọi màn người dùng được thấy, theo đường dẫn (một màn khai ở nhiều phân hệ thì lấy lần đầu). */
 function flatten(menu: MenuItem[]): Map<string, MenuItem> {
@@ -239,6 +243,8 @@ export function buildGon(menu: MenuItem[], phanRieng = true): GonGroup[] {
     sections: resolve(sections),
     reports: resolve(reports),
   }));
+  // [2026-11-26 12:50 PM Nguyễn Văn Thủy] HT — dọn mục "Khác" của Thiết lập: xếp màn về đúng nhóm, màn lập phiếu đã mở từ danh sách thì không liệt kê lại (đóng góp)
+  for (const p of KHONG_LIET_KE) placed.add(p);
   const khac = [...flat.values()].filter((m) => !placed.has(m.path!) && m.path !== '/');
   if (khac.length) groups.find((g) => g.key === THIET_LAP)!.sections.push({ label: 'Khác', items: khac });
   const coMan = (g: GonGroup) => [...g.sections, ...g.reports].some((s) => s.items.length);
