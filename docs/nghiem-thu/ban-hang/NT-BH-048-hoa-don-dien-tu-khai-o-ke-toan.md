@@ -48,6 +48,8 @@ Ngoài phạm vi:
 modules/hoa-don-dien-tu/**                          (mới — manifest, api, web, migrations, test)
 package-lock.json                                   (mục workspace mới)
 apps/api/test/nt-bh-048-*.test.ts                   (mới)
+apps/api/test/secrets.test.ts                       (route đọc bí mật của module đầu tiên khai secrets[])
+apps/api/test/sdk-modules.contract.test.ts          (C-4 bỏ qua <key>.secrets.read — chỉ khoá app)
 docs/nghiem-thu/ban-hang/NT-BH-048-hoa-don-dien-tu-khai-o-ke-toan.md
 docs/huong-dan/hoa-don-dien-tu.md                   (mới)
 apps/web/src/layout/menu-gon.ts                     (thêm lối tắt ở nhóm Thuế)
