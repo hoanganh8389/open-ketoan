@@ -54,6 +54,8 @@ export const TEN_MAN: Record<string, TenMan> = {
   '/tai-san/tscd': { label: 'Ghi tăng tài sản cố định' },
   '/tai-san/ghi-giam': { label: 'Ghi giảm tài sản cố định' },
   '/tai-san/khau-hao': { label: 'Tính khấu hao' },
+  '/tai-san/ghi-giam-ccdc': { label: 'Ghi giảm công cụ dụng cụ' },
+  '/tai-san/ghi-giam-tra-truoc': { label: 'Ghi giảm chi phí trả trước' },
   '/tai-san/danh-gia-lai': { label: 'Đánh giá lại tài sản' },
   '/tai-san/dieu-chuyen': { label: 'Điều chuyển tài sản' },
   '/tai-san/kiem-ke': { label: 'Kiểm kê tài sản' },

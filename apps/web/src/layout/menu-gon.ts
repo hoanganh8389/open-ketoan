@@ -127,7 +127,7 @@ export const GON_DEFS: GonDef[] = [
     key: 'ccdc', label: 'Công cụ dụng cụ', icon: 'Hammer', description: 'Ghi tăng, phân bổ công cụ dụng cụ, chi phí trả trước', color: '#00838f', module: 'tai-san', homeLabel: 'Quy trình',
     // [2026-11-26 01:05 PM Nguyễn Văn Thủy] TSCD — #63 tab Test: nhóm CCDC có lối vào Tính khấu hao, phân bổ (ACC31) — trước chỉ ở nhóm TSCĐ nên tưởng chưa có chức năng (đóng góp)
     the: ['/tai-san/cong-cu', '/tai-san/chi-phi-tra-truoc', '/tai-san/khau-hao'],
-    sections: [{ paths: ['/tai-san/cong-cu', '/tai-san/chi-phi-tra-truoc', '/tai-san/khau-hao'], soon: ['Điều chuyển công cụ dụng cụ', 'Ghi giảm công cụ dụng cụ', 'Kiểm kê công cụ dụng cụ'] }],
+    sections: [{ paths: ['/tai-san/cong-cu', '/tai-san/chi-phi-tra-truoc', '/tai-san/khau-hao', '/tai-san/dieu-chuyen', '/tai-san/ghi-giam-ccdc', '/tai-san/ghi-giam-tra-truoc', '/tai-san/kiem-ke'] }],
     reports: [{ label: 'Công cụ dụng cụ', paths: ['/bao-cao/phan-bo-chi-phi', '/bao-cao/theo-doi-tscd-ccdc'] }],
   },
   {

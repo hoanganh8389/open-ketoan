@@ -68,8 +68,10 @@ const META: Record<AssetKind, { title: string; code: string; subtitle: string; c
 
 /* ------------------------------------------------------------------ Danh sách thẻ */
 export function AssetsPage({ kind, decrease = false }: { kind: AssetKind; decrease?: boolean }) {
+  // [2026-11-26 01:55 PM Nguyễn Văn Thủy] TSCD — FA-002/003/004 (yeucauketoanlantruoc): ghi giảm / thanh lý có màn riêng cho CCDC và chi phí trả trước; điều chuyển, kiểm kê CCDC mở ACC33 / ACC35 (đã chọn được mọi loại thẻ) (đóng góp)
   const meta = decrease
-    ? { ...META[kind], title: 'Giảm tài sản cố định', code: 'ACC30', subtitle: 'Thanh lý, nhượng bán, mất mát: chọn tài sản, ghi ngày ghi giảm; khấu hao trích tới hết ngày trước ngày đó' }
+    ? { ...META[kind], title: kind === 'fixed_asset' ? 'Giảm tài sản cố định' : kind === 'tool' ? 'Ghi giảm công cụ dụng cụ' : 'Ghi giảm chi phí trả trước', code: 'ACC30',
+      subtitle: kind === 'fixed_asset' ? 'Thanh lý, nhượng bán, mất mát: chọn tài sản, ghi ngày ghi giảm; khấu hao trích tới hết ngày trước ngày đó' : 'Hỏng, mất, thanh lý, kết thúc sớm: chọn thẻ, ghi ngày ghi giảm; phân bổ tới hết ngày trước ngày đó, phần còn lại ghi một lần' }
     : META[kind];
   const { can } = useAuth();
   const tt = useThaoTac('tai-san.the-tai-san');
@@ -100,7 +102,7 @@ export function AssetsPage({ kind, decrease = false }: { kind: AssetKind; decrea
         <div className="card-body" style={{ paddingTop: 10, paddingBottom: 6 }}>
           <p className="muted" style={{ margin: 0 }}>
             {decrease
-              ? 'Bấm vào tài sản, đổi Trạng thái thành "Đã ghi giảm" và ghi Ngày ghi giảm, rồi Ghi. Sau đó lập phiếu kế toán ghi giảm: Nợ 2141 (hao mòn luỹ kế), Nợ 811 (giá trị còn lại) / Có 211x; thu tiền thanh lý (nếu có): Nợ 111, 112 / Có 711, 33311.'
+              ? 'Bấm vào thẻ → nút "Ghi giảm / thanh lý" (cuối thẻ): phần mềm lập phiếu kế toán ghi giảm (TSCĐ: Nợ 2141 hao mòn luỹ kế, Nợ 811 giá trị còn lại / Có 211x; CCDC, trả trước: Nợ TK chi phí phần còn lại / Có 242x) và chuyển thẻ sang "Đã ghi giảm". Thu tiền thanh lý (nếu có) lập phiếu thu: Nợ 111, 112 / Có 711, 3331. Xem phiếu đã ghi giảm: chọn "Tài sản đã ghi giảm".'
               : kind === 'fixed_asset'
               ? 'Ghi tăng tài sản (Nợ 211x, 1331 / Có 331, 112…) lập bằng phiếu kế toán hoặc phiếu chi; thẻ ở đây dùng để trích khấu hao hằng tháng. Thanh lý, nhượng bán: sửa thẻ, chọn "Đã ghi giảm" kèm ngày, rồi lập phiếu kế toán ghi giảm (Nợ 2141, Nợ 811 / Có 211x). Đánh giá lại, điều chuyển, kiểm kê: mở thẻ, phần Lịch sử.'
               : 'Xuất công cụ dụng cụ dùng hoặc trả trước (Nợ 242x / Có 153, 111, 331…) lập bằng phiếu; thẻ ở đây dùng để phân bổ dần vào chi phí hằng tháng. Phân bổ tới 12 tháng dùng 2421x, trên 12 tháng dùng 2422x.'}

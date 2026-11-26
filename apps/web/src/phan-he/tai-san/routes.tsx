@@ -10,6 +10,9 @@ export const taiSanRoutes = (
   <>
     <Route path="tai-san/tscd" element={<AssetsPage key="tscd" kind="fixed_asset" />} />
     <Route path="tai-san/ghi-giam" element={<AssetsPage key="ghi-giam" kind="fixed_asset" decrease />} />
+    {/* [2026-11-26 01:55 PM Nguyễn Văn Thủy] TSCD — FA-002/003/004 (yeucauketoanlantruoc): ghi giảm / thanh lý có màn riêng cho CCDC và chi phí trả trước; điều chuyển, kiểm kê CCDC mở ACC33 / ACC35 (đã chọn được mọi loại thẻ) (đóng góp) */}
+    <Route path="tai-san/ghi-giam-ccdc" element={<AssetsPage key="ghi-giam-ccdc" kind="tool" decrease />} />
+    <Route path="tai-san/ghi-giam-tra-truoc" element={<AssetsPage key="ghi-giam-tra-truoc" kind="prepaid" decrease />} />
     <Route path="tai-san/cong-cu" element={<AssetsPage kind="tool" />} />
     <Route path="tai-san/chi-phi-tra-truoc" element={<AssetsPage kind="prepaid" />} />
     <Route path="tai-san/khau-hao" element={<DepreciationPage />} />
