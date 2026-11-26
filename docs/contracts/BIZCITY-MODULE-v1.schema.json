@@ -226,6 +226,20 @@
       },
       "additionalProperties": false
     },
+    "secrets": {
+      "description": "[2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets (BIZCITY-SECRETS-v1 §3): bí mật module dùng qua ctx.secrets; tên <key>.<tên>, phạm vi tenant / book / branch. Khoá API / khoá app đọc được qua GET /api/v1/m/<key>/secrets/read khi có quyền secrets:read:<key> (đóng góp)",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "scope", "label"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9][a-z0-9_-]*)+$" },
+          "scope": { "enum": ["tenant", "book", "branch"] },
+          "label": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
     "waivers": {
       "type": "array",
       "items": {

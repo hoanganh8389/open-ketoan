@@ -139,6 +139,7 @@ export const LAYER_MAP = [
   // [2026-11-20 Nguyễn Văn Thủy] modules/co-cau/ (cơ cấu tổ chức một bảng đơn vị, 0174 thay org-units) cùng lớp M danh mục với chi nhánh (đóng góp)
   ['modules/sync/', 'M', 'data/masterdata'], // [2026-11-24 07:10 PM Johnny Chu - Chu Hoàng Anh] SPINE-3 — Q-SPINE-3: changefeed + digest danh mục (bizcity_sync@1), chỉ đọc trên items / partners / branches
   ['modules/co-cau/', 'M', 'data/masterdata'],
+  ['core/secrets.ts', 'P', 'secrets'], // [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: bí mật mã hoá theo đơn vị (BIZCITY-SECRETS-v1) (đóng góp)
   // [2026-11-10 09:00 PM Nguyễn Văn Thủy] PHASE-026 — modules/posting-flow/ (thiết kế hạch toán: lý do theo màn, sơ đồ dây chuyền) cùng lớp M danh mục (đóng góp)
   ['modules/posting-flow/', 'M', 'data/masterdata'],
   // [2026-11-10 05:00 PM Nguyễn Văn Thủy] PHASE-026 — bảng quy tắc định khoản (chạy thử gọi Kernel) và chương trình bán có hạn mức: lớp module (đóng góp)
