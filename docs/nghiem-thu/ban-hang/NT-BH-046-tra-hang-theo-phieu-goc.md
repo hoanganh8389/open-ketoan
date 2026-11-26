@@ -25,7 +25,7 @@ doanh thu, công nợ, tồn kho và giá vốn hàng trả về không lệch.
 | 4 | Kiểm số lượng | SL trả của **từng dòng** ≤ SL dòng gốc − SL đã trả của dòng đó ở các phiếu trả đã duyệt. Kiểm ở màn **và** máy chủ (lúc Ghi và lúc Duyệt) |
 | 5 | Giá | Đơn giá, thuế suất của dòng trả **lấy đúng dòng gốc, không sửa được**. Chiết khấu trả = chiết khấu dòng gốc × SL trả ÷ SL gốc (làm tròn đồng; trả hết dòng thì lấy phần còn lại để tổng khớp) |
 | 6 | Kho nhận hàng trả | Mặc định **kho đã xuất** ở phiếu gốc, **đổi được** (vd kho hàng lỗi) |
-| 7 | Quà kèm | Như hiện nay: dòng quà không trả riêng (không hiện trong danh sách chọn) |
+| 7 | Quà kèm | Như hiện nay (NT-BH-035): dòng quà của phiếu gốc **chọn trả được** như dòng thường (0 đ, còn trả theo dòng), về kho quà KKM của cửa hàng nhận |
 
 ## 3. Các bước thao tác
 1. BH11 → **+ Thêm** → chọn cửa hàng, chọn **khách** KH001.
@@ -89,3 +89,4 @@ trừ cả phiếu trả BH11 đã duyệt nối bill đó, module `phieu-ban` p
 | Ngày | Thay đổi |
 |---|---|
 | 26/11/2026 | Lập phiếu, ghi chốt 7 mục §2 |
+| 26/11/2026 | Mục 7 ghi đúng hiện trạng: BH11 đang trả được dòng quà (NT-BH-035) — giữ, dòng quà chọn từ phiếu gốc như dòng thường |
