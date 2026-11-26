@@ -108,7 +108,7 @@ export const SO_DO: Record<string, SoDo> = {
     title: 'Nghiệp vụ tiền mặt',
     rows: [
       [{ label: 'Thu tiền', icon: 'ArrowDownLeft', path: '/nghiep-vu/phieu-thu' }, { label: 'Kiểm kê quỹ', icon: 'ListChecks' }],
-      [{ label: 'Đề nghị chi tiền', icon: 'Send' }, { label: 'Chi tiền', icon: 'ArrowUpRight', path: '/nghiep-vu/phieu-chi' }],
+      [{ label: 'Đề nghị chi tiền', icon: 'Send', path: '/cong-no/yeu-cau-thanh-toan' }, { label: 'Chi tiền', icon: 'ArrowUpRight', path: '/nghiep-vu/phieu-chi' }],
     ],
     reports: [
       { label: 'Bảng kê số dư tiền theo ngày', path: '/quy/so-du-tien' }, { label: 'Dòng tiền', path: '/quy/dong-tien' }, { label: 'Sổ nhật ký thu tiền', path: '/quy/nhat-ky-thu-tien' },
@@ -216,7 +216,8 @@ export const SO_DO: Record<string, SoDo> = {
     title: 'Nghiệp vụ công cụ dụng cụ, chi phí trả trước',
     rows: [
       [{ label: 'Ghi tăng', icon: 'CirclePlus', path: '/tai-san/cong-cu' }, { label: 'Phân bổ chi phí trả trước', icon: 'Timer', path: '/tai-san/chi-phi-tra-truoc' }],
-      [{ label: 'Điều chuyển', icon: 'ArrowLeftRight' }, { label: 'Ghi giảm', icon: 'CircleMinus' }, { label: 'Kiểm kê', icon: 'ListChecks' }],
+      // [2026-11-26 03:40 PM Nguyễn Văn Thủy] TSCD — sơ đồ CCDC gắn màn đã có (Điều chuyển ACC33, Ghi giảm CCDC, Kiểm kê ACC35) — trước để trống nên trang Đang phát triển còn liệt kê (đóng góp)
+      [{ label: 'Điều chuyển', icon: 'ArrowLeftRight', path: '/tai-san/dieu-chuyen' }, { label: 'Ghi giảm', icon: 'CircleMinus', path: '/tai-san/ghi-giam-ccdc' }, { label: 'Kiểm kê', icon: 'ListChecks', path: '/tai-san/kiem-ke' }],
     ],
     reports: [
       { label: 'Bảng tính phân bổ chi phí trả trước', path: '/bao-cao/phan-bo-chi-phi' }, { label: 'Bảng tính phân bổ công cụ dụng cụ' },
@@ -264,8 +265,8 @@ export const SO_DO: Record<string, SoDo> = {
   },
   'ngan-sach': {
     title: 'Nghiệp vụ ngân sách',
-    rows: [[{ label: 'Kế hoạch ngân sách', icon: 'CalendarRange', path: '/ke-hoach/thu-chi' }, { label: 'Định mức chi phí', icon: 'Gauge', path: '/ke-hoach/dinh-muc' }, { label: 'Theo dõi thực hiện', icon: 'ChartColumn' }]],
-    reports: [{ label: 'Tình hình thực hiện ngân sách' }],
+    rows: [[{ label: 'Kế hoạch ngân sách', icon: 'CalendarRange', path: '/ke-hoach/thu-chi' }, { label: 'Định mức chi phí', icon: 'Gauge', path: '/ke-hoach/dinh-muc' }, { label: 'Theo dõi thực hiện', icon: 'ChartColumn', path: '/ke-hoach/thu-chi' }]],
+    reports: [{ label: 'Tình hình thực hiện ngân sách', path: '/ke-hoach/thu-chi' }],
     links: [{ label: 'Khoản mục chi phí', icon: 'Coins', path: '/danh-muc/khoan-muc' }, L.coCau],
   },
 };
