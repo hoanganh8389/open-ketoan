@@ -140,7 +140,7 @@ export async function thuKetNoi(ctx: ActionContext) {
   try {
     const res = await fetch(s.apiBaseUrl, { method: 'GET', headers, signal: AbortSignal.timeout(15_000), redirect: 'manual' });
     code = res.status;
-    await res.body?.cancel().catch(() => undefined);
+    await res.body?.cancel().catch(() => undefined); // nuot-loi: chỉ cần mã HTTP, bỏ thân phản hồi; huỷ đọc lỗi không ảnh hưởng kết quả
   } catch (e) {
     err = (e as Error)?.name === 'TimeoutError' ? 'quá 15 giây không trả lời' : String((e as Error)?.message ?? e).slice(0, 200);
   }
