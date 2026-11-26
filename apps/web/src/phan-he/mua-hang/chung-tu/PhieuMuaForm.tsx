@@ -1936,7 +1936,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   </div>
                 ) : null}
                 <div className="mh-panel">
-                  <h4>Bút toán {stored?.links.length ? 'đã ghi' : 'sẽ ghi khi duyệt'} (tài khoản theo cấu hình của đơn vị)</h4>
+                  <h4>Bút toán {v.status === 'cancelled' ? 'của phiếu (đã huỷ — không ghi sổ, không tính vào công nợ, thưởng)' : `${stored?.links.length ? 'đã ghi' : 'sẽ ghi khi duyệt'} (tài khoản theo cấu hình của đơn vị)`}</h4>
                   <table className="mh-mini"><thead><tr><th>Nợ</th><th>Có</th><th className="num">Số tiền</th><th>Diễn giải</th></tr></thead><tbody>
                     {(a?.entries ?? []).map((e, i) => <tr key={i}><td className="mono">{e.debit}</td><td className="mono">{e.credit}</td><td className="num">{vnd(e.amount)}</td><td>{e.text}</td></tr>)}
                     {!(a?.entries ?? []).length && <tr><td colSpan={4} className="muted">{v.kind === 'order' ? 'Đơn đặt hàng không ghi sổ (chỉ giữ hạn mức).' : analyzing ? 'Đang tính…' : 'Chưa đủ thông tin.'}</td></tr>}
