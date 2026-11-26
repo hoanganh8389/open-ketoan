@@ -45,7 +45,10 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   const [colMenu, setColMenu] = useState(false);
   const set = (p: Partial<OldForm>) => setF((x) => ({ ...x, ...p }));
   const eff = stop ? { ...f, dateOn: true, validTo: yesterday(), validFrom: f.validFrom && f.validFrom <= yesterday() ? f.validFrom : yesterday() } : f;
-  const out = oldToParams(eff);
+  // "Tất cả cửa hàng" là một trạng thái riêng: bỏ tích thì chưa cửa hàng nào được chọn (sửa lỗi ô cũ: chưa chọn hiện tích hết, bấm một ô lại bỏ ô đó).
+  const [allBr, setAllBr] = useState(initial.branchCodes.length === 0);
+  const out0 = oldToParams(eff);
+  const out = !allBr && !f.branchCodes.length ? { ...out0, problems: [...out0.problems, 'Chọn ít nhất một cửa hàng áp dụng (hoặc tích Tất cả cửa hàng)'] } : out0;
   const dirty = JSON.stringify(f) !== JSON.stringify(initial) || stop;
   const close = () => { if (!dirty || window.confirm('Còn thay đổi chưa lưu — bỏ thay đổi và đóng?')) onClose(); };
 
@@ -152,7 +155,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
 
   const typeInfo = OLD_TYPE[f.type];
   const branchList = (branches.data ?? []).filter((b) => b.isActive !== false);
-  const allBranches = f.branchCodes.length === 0;
+  const allBranches = allBr;
 
   return (
     <Modal wide title={<span>{editing ? 'Sửa chương trình' : 'Tạo chương trình mới'}{f.key.trim() ? ` ${f.key.trim()}` : ''} <span className="badge badge-info">{typeInfo.label}</span></span>} onClose={close}
@@ -254,7 +257,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
               </div>
               <div style={{ display: 'grid', gap: 4, alignContent: 'start' }}>
                 <b style={{ fontSize: 13 }}>Chỉ áp dụng cho các chi nhánh</b>
-                <Check label="Tất cả cửa hàng" checked={allBranches} onChange={(v) => set({ branchCodes: v ? [] : branchList.slice(0, 1).map((b) => b.code) })} />
+                <Check label="Tất cả cửa hàng" checked={allBranches} onChange={(v) => { setAllBr(v); set({ branchCodes: [] }); }} />
                 <div style={{ maxHeight: 160, overflow: 'auto', display: 'grid', gap: 2, paddingLeft: 4 }}>
                   {branchList.map((b) => (
                     <Check key={b.code} label={`${b.code} ${b.name}`} checked={!allBranches && f.branchCodes.includes(b.code)} disabled={allBranches}
