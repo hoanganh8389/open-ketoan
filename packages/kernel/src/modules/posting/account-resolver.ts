@@ -196,8 +196,8 @@ export class AccountResolver {
     if (this.missing.size) throw Errors.posting('Thiếu cấu hình hạch toán', [...this.missing]);
   }
 
-  // [2026-11-26 04:20 PM Nguyễn Văn Thủy] HT — POSTING_FAILED 'Tài khoản 1561 là tài khoản tổng hợp': TK ở Quy tắc hạch toán thành TK tổng hợp
-  // sau khi mở TK con (1561 → 15611) — đúng một TK con chi tiết thì dùng TK con (khớp bút toán xem trước của Mua hàng); nhiều TK con thì báo chọn lại ở ACC41 (đóng góp)
+  // [2026-11-26 05:10 PM Nguyễn Văn Thủy] HT — POSTING_FAILED 'Tài khoản 1561 là tài khoản tổng hợp': TK ở Quy tắc hạch toán thành TK tổng hợp
+  // sau khi mở TK con (1561 → 15611). KHÔNG tự chọn thay kế toán: báo rõ TK nào, ở đâu, gợi ý TK con, kèm khoá "…" để màn hình mở thẳng hộp sửa ở ACC41 (đóng góp)
   private fromDefault(key: string, label: string): string {
     const acc = this.cfg.defaults.get(key);
     if (!acc) {
@@ -207,8 +207,7 @@ export class AccountResolver {
     const row = this.cfg.accounts.get(acc);
     if (row && !row.is_posting) {
       const con = [...this.cfg.accounts.values()].filter((a) => a.is_posting && a.code !== acc && a.code.startsWith(acc)).map((a) => a.code).sort();
-      if (con.length === 1) return con[0]!;
-      this.missing.add(`${label} ở Quy tắc hạch toán (ACC41) là tài khoản tổng hợp ${acc} — chọn một tài khoản chi tiết (${con.slice(0, 5).join(', ') || 'chưa có tài khoản con'})`);
+      this.missing.add(`${label} ở Quy tắc hạch toán (ACC41) đang là ${acc} — tài khoản tổng hợp; đổi sang tài khoản chi tiết${con.length ? ` (vd ${con.slice(0, 5).join(', ')})` : ''} (khoá "${key}")`);
       return '';
     }
     return acc;

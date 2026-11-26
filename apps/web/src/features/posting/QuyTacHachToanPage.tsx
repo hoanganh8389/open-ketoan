@@ -553,3 +553,25 @@ function SuaGon({ title, lines, keys, onClose }: { title: string; lines: SLine[]
     </Modal>
   );
 }
+
+// [2026-11-26 05:20 PM Nguyễn Văn Thủy] HT — lỗi ghi sổ vì TK ở Quy tắc hạch toán (khoá "…") là TK tổng hợp / chưa đặt: mở thẳng hộp sửa đúng khoá đó
+// ngay trên phiếu đang làm (không rời phiếu), sửa xong duyệt lại (đóng góp)
+/** Khoá cài đặt ACC41 nhắc trong câu lỗi (… khoá "inventory") — không có thì null. */
+export const khoaAcc41 = (text: string | null | undefined): string | null => /khoá "([A-Za-z0-9_]+)"/.exec(text ?? '')?.[1] ?? null;
+
+/** Nút "Sửa tài khoản (ACC41)" mở hộp sửa đúng khoá trong câu lỗi; câu lỗi không nhắc khoá thì không hiện gì. */
+export function NutSuaAcc41({ text, className = 'btn btn-xs' }: { text: string | null | undefined; className?: string }) {
+  const khoa = khoaAcc41(text);
+  const [mo, setMo] = useState(false);
+  const q = useQuery({ queryKey: ['posting-scheme'], queryFn: () => api.get<Scheme>('/api/v1/posting/scheme'), enabled: Boolean(khoa) && mo });
+  if (!khoa) return null;
+  const k = q.data?.keys.find((x) => x.key === khoa);
+  return (
+    <>
+      <button type="button" className={className} style={{ marginLeft: 6 }} title="Mở hộp sửa tài khoản này ở Quy tắc hạch toán (ACC41) ngay tại đây — sửa xong bấm Duyệt lại" onClick={(e) => { e.stopPropagation(); setMo(true); }}>Sửa tài khoản (ACC41)</button>
+      {mo && (q.isLoading ? <Modal title="Tài khoản ngầm định" onClose={() => setMo(false)} footer={<button className="btn" onClick={() => setMo(false)}>Đóng</button>}><Loading /></Modal>
+        : k ? <KeyDialog k={k} onClose={() => setMo(false)} />
+        : <Modal title="Tài khoản ngầm định" onClose={() => setMo(false)} footer={<button className="btn" onClick={() => setMo(false)}>Đóng</button>}><ErrorBox error={q.error ? errorText(q.error) : `Không thấy khoá "${khoa}" ở Quy tắc hạch toán — mở ACC41 để sửa`} /></Modal>)}
+    </>
+  );
+}

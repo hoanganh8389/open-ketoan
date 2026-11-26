@@ -9,6 +9,7 @@
  * "Duyệt ngoại lệ" (ghi lý do vào nhật ký).
  */
 import { ChonKho } from '@/components/phieu-hang/ChonKho';
+import { NutSuaAcc41 } from '@/features/posting/QuyTacHachToanPage';
 import { ChonHopDong } from '../hop-dong/ChonHopDong';
 import { hopDongPath } from '../hop-dong/HopDongPage';
 import { ChonNhieuChiNhanh } from '@/components/phieu-hang/ChonNhieuChiNhanh';
@@ -2058,7 +2059,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
           </aside>
         </div>
         <div className="mh-sheet-foot" {...kl.footProps}>
-          <span className="grow">{kl.banner ?? (err ? <span className="mh-bad">{err}</span> : problems.length && !readOnly ? <span className="muted">Chưa ghi được: {problems.join(' · ')}</span> : blocking.length && !readOnly ? <span className="mh-bad">Còn {blocking.length} cảnh báo chặn duyệt{creditOnly ? ' — cần người có quyền bấm Duyệt ngoại lệ' : ''}</span> : null)}</span>
+          <span className="grow">{kl.banner ?? (err ? <span className="mh-bad">{err}<NutSuaAcc41 text={err} /></span> : problems.length && !readOnly ? <span className="muted">Chưa ghi được: {problems.join(' · ')}</span> : blocking.length && !readOnly ? <span className="mh-bad">Còn {blocking.length} cảnh báo chặn duyệt{creditOnly ? ' — cần người có quyền bấm Duyệt ngoại lệ' : ''}</span> : null)}</span>
           {/* In bản đã ghi (máy chủ trả số liệu) — có ở cả chế độ xem; phiếu mới phải Ghi trước. */}
           {!v.id.startsWith('new-') && <span data-view-ok><PrintButton screen="MH03" memoryKey={`MH03:${(stored ?? v).kind}`} templates={mauInCua(stored ?? v)} title={dirty ? 'In theo nội dung đã ghi (sửa xong bấm Ghi rồi mới in)' : 'In phiếu'}
             getDocs={() => layPhieuIn(v.id, { names, docs: data.docs }).then((p) => [p])} /></span>}
