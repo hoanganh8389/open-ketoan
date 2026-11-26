@@ -255,7 +255,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
         <input className="input num" inputMode="numeric" value={v.usefulLifeMonths ?? ''} onChange={(e) => set({ usefulLifeMonths: num(e.target.value) })} />
       </Field>
       <Field label={kind === 'fixed_asset' ? 'KH luỹ kế' : 'Luỹ kế đã phân bổ'} hint="Đã trích trước khi dùng phần mềm (tài sản chuyển từ sổ cũ)"><input className="input num" inputMode="numeric" value={v.openingAccumulated ? money(v.openingAccumulated) : ''} onChange={(e) => set({ openingAccumulated: num(e.target.value) ?? 0 })} /></Field>
-      <Field label="Luỹ kế tính tới ngày"><input type="date" className="input" value={v.openingAsOf ?? ''} onChange={(e) => set({ openingAsOf: e.target.value || null })} /></Field>
+      <Field label="Luỹ kế tính tới ngày" hint="KH luỹ kế đã gồm cả tháng của ngày này — phần mềm trích từ tháng sau (vd ngày 31/10 → trích từ tháng 11)"><input type="date" className="input" value={v.openingAsOf ?? ''} onChange={(e) => set({ openingAsOf: e.target.value || null })} /></Field>
       <Field label="Giá trị còn lại" hint="= Giá trị tính khấu hao − KH luỹ kế (tự tính)"><input className="input num" disabled title="Ô tự tính = Giá trị tính khấu hao − KH luỹ kế; sửa nguyên giá / giá trị tính KH / KH luỹ kế để đổi" value={giaTriConLai ? money(giaTriConLai) : ''} /></Field>
       <Field label="Số tháng còn lại" hint={`= Số tháng khấu hao − số tháng đã trích (Ngày bắt đầu trích → Luỹ kế tính tới ngày, ÷ 30)${thangDaTrich ? ` = ${v.usefulLifeMonths} − ${thangDaTrich}` : ''}; trống = tự tính, sửa tay được`}><input className="input num" inputMode="numeric" value={v.openingRemainingMonths ?? ''} placeholder={thangConLaiTu ? String(thangConLaiTu) : ''} onChange={(e) => set({ openingRemainingMonths: e.target.value === '' ? null : num(e.target.value) ?? null })} /></Field>
       {/* [2026-11-26 10:15 AM Nguyễn Văn Thủy] TSCD — đổi tên theo yêu cầu kế toán: Mức trích mỗi tháng → Khấu hao mỗi tháng, Luỹ kế đã trích → KH luỹ kế (đóng góp) */}
@@ -825,6 +825,13 @@ export function DepreciationPage() {
             {[run.data].map((b) => (
               <div key="kq" style={{ marginBottom: 8 }}>
                 Đã ghi sổ: {b.items.length} thẻ · tổng trích <b>{money(b.total)}</b>
+                {/* [2026-11-26 01:20 PM Nguyễn Văn Thủy] TSCD — #64 tab Test: tính ra 0 thẻ thì nói vì sao (thẻ có KH luỹ kế tính tới ngày trong / sau tháng này trích từ tháng sau; thẻ bắt đầu trích sau tháng; thẻ tạm ngừng / đã trích hết) (đóng góp) */}
+                {b.items.length === 0 && (preview.data?.rows.length ?? 0) > 0 && (
+                  <div className="alert alert-info" style={{ marginTop: 6 }}>
+                    Tháng {mm} không thẻ nào phải trích. Thường do: thẻ đã khai <b>KH luỹ kế</b> với <b>Luỹ kế tính tới ngày</b> nằm trong tháng {mm} hoặc sau đó — luỹ kế đã gồm tháng này, phần mềm trích từ tháng sau;
+                    thẻ có <b>Ngày bắt đầu trích</b> sau tháng {mm}; thẻ <b>Tạm ngừng</b>; hoặc đã trích hết giá trị. Mở thẻ (ACC28) kiểm hai ô trên rồi tính lại.
+                  </div>
+                )}
                 {b.items.some((i) => i.overridden) && <span className="muted"> · {b.items.filter((i) => i.overridden).length} thẻ sửa tay</span>}
                 {b.catchUpTotal > 0 && <span> · trong đó trích bổ sung các tháng chưa trích của {b.catchUpAssets} thẻ: <b>{money(b.catchUpTotal)}</b></span>}
                 {b.branches.length > 0 && <span className="muted"> ({b.branches.map((x) => `${x.branchCode}: ${money(x.total)}`).join('; ')})</span>}
