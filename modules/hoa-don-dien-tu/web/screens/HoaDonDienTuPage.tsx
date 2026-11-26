@@ -72,6 +72,17 @@ export function HoaDonDienTuPage() {
       render: (r) => sua ? <button className="btn btn-xs" title={`Sửa cài đặt hoá đơn của ${r.branchCode}`} onClick={() => setSuaCn(r)}>Sửa</button> : null },
   ];
 
+  const nkCols: GridColumn<NhatKy>[] = [
+    { key: 'at', header: <span title="Thời điểm">Lúc</span>, width: 160, value: (x) => vn(x.at) },
+    { key: 'actorName', header: <span title="Người làm">Người</span>, width: 160 },
+    { key: 'doiTuong', header: <span title="Sổ / chi nhánh / thử kết nối">Ở đâu</span>, width: 140,
+      value: (x) => (x.doiTuong === 'so' ? 'Sổ' : x.doiTuong === 'ket-noi' ? 'Thử kết nối' : x.doiTuong.replace('chi-nhanh:', 'Chi nhánh ')) },
+    { key: 'noiDung', header: <span title="Ô đã đổi, mật khẩu đã đặt / xoá, kết quả thử">Nội dung</span>, width: 520,
+      value: (x) => (x.hanhDong === 'thu-ket-noi'
+        ? `${x.chiTiet.ok ? 'Kết nối được' : 'Không được'}${x.chiTiet.httpCode != null ? ` (HTTP ${x.chiTiet.httpCode})` : ''}${x.chiTiet.loi ? ` — ${x.chiTiet.loi}` : ''}`
+        : [x.chiTiet.oDaDoi?.length ? `Sửa: ${x.chiTiet.oDaDoi.join(', ')}` : '', ...(x.chiTiet.biMat ?? [])].filter(Boolean).join(' · ') || 'Lưu, không đổi gì') },
+  ];
+
   return (
     <>
       <PageHeader {...header} actions={sua ? (
@@ -80,7 +91,8 @@ export function HoaDonDienTuPage() {
       {thu.data && <div className={`alert ${thu.data.ok ? 'alert-ok' : 'alert-warn'}`} role="status">{thu.data.message}</div>}
       <ErrorBox error={thu.error ? errorText(thu.error) : null} />
 
-      <div className="card" style={{ marginBottom: 12 }}>
+      {/* [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-048: bố cục theo lớp chung của Core (card card-body, DataGrid cho mọi bảng) — hết dính lề (đóng góp) */}
+      <section className="card card-body">
         <div className="row" style={{ alignItems: 'center', gap: 8 }}>
           <b title="Thông tin theo sổ (một sổ = một pháp nhân): dùng cho mọi chi nhánh">Người bán và tài khoản Viettel</b>
           <span className="muted" title="Trạng thái cài đặt">· {s.configured ? TRANG_THAI[s.trangThai] : 'Chưa khai'}</span>
@@ -88,7 +100,7 @@ export function HoaDonDienTuPage() {
           <span style={{ flex: 1 }} />
           {sua && <button className="btn btn-primary btn-sm" onClick={() => setSuaSo(true)} title="Sửa thông tin người bán, tài khoản Viettel, mặc định">Sửa</button>}
         </div>
-        <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '6px 16px', marginTop: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '12px 24px', marginTop: 12 }}>
           <Xem label="MST người bán" tip="Mã số thuế in trên hoá đơn">{s.mst}</Xem>
           <Xem label="Tên pháp lý" tip="Tên người bán in trên hoá đơn">{s.tenPhapLy}</Xem>
           <Xem label="Địa chỉ" tip="Địa chỉ pháp lý">{s.diaChi}</Xem>
@@ -101,31 +113,27 @@ export function HoaDonDienTuPage() {
           <Xem label="Tự động" tip="Website tự xử lý hoá đơn khi bán xong, hay phát hành tay">{s.autoEnabled ? (s.autoMode === 'issue' ? 'Phát hành và gửi CQT' : 'Tạo nháp') : 'Tắt (phát hành tay)'}</Xem>
           <Xem label="Kiểm chứng chỉ SSL" tip="Chỉ tắt khi môi trường thử dùng chứng chỉ tự ký">{s.sslVerify ? 'Bật' : 'Tắt'}</Xem>
         </div>
-      </div>
+      </section>
 
-      <div className="card" style={{ marginBottom: 12 }}>
-        <b title="Mẫu số / ký hiệu riêng và portal gửi mail theo từng chi nhánh">Theo chi nhánh</b>
+      <section className="card">
+        <div className="card-body" style={{ paddingBottom: 0 }}>
+          <b title="Mẫu số / ký hiệu riêng và portal gửi mail theo từng chi nhánh">Theo chi nhánh</b>
+          <span className="muted"> · trống = theo sổ; bấm đúp một dòng để sửa</span>
+        </div>
         <DataGrid rows={d.chiNhanh} columns={cols} rowKey={(r) => r.branchCode} storageKey="hoa-don-dien-tu.chi-nhanh" exportName="hoa-don-dien-tu-chi-nhanh"
           emptyText="Chưa có chi nhánh đang dùng." onRowDoubleClick={sua ? (r) => setSuaCn(r) : undefined} />
-      </div>
+      </section>
 
-      <div className="card">
-        <b title="Ai, lúc nào, sửa ô nào, thử kết nối — không ghi giá trị mật khẩu">Nhật ký</b>
+      <section className="card">
+        <div className="card-body" style={{ paddingBottom: 0 }}>
+          <b title="Ai, lúc nào, sửa ô nào, thử kết nối — không ghi giá trị mật khẩu">Nhật ký</b>
+          <span className="muted"> · không ghi giá trị mật khẩu</span>
+        </div>
         {nk.isLoading ? <Loading /> : (
-          <table className="grid full" style={{ marginTop: 6 }}>
-            <thead><tr><th title="Thời điểm">Lúc</th><th title="Người làm">Người</th><th title="Sổ / chi nhánh / thử kết nối">Ở đâu</th><th title="Ô đã đổi, mật khẩu đã đặt / xoá, kết quả thử">Nội dung</th></tr></thead>
-            <tbody>{(nk.data?.items ?? []).map((x) => (
-              <tr key={x.id}>
-                <td>{vn(x.at)}</td><td>{x.actorName}</td>
-                <td>{x.doiTuong === 'so' ? 'Sổ' : x.doiTuong === 'ket-noi' ? 'Thử kết nối' : x.doiTuong.replace('chi-nhanh:', 'Chi nhánh ')}</td>
-                <td>{x.hanhDong === 'thu-ket-noi'
-                  ? `${x.chiTiet.ok ? 'Kết nối được' : 'Không được'}${x.chiTiet.httpCode != null ? ` (HTTP ${x.chiTiet.httpCode})` : ''}${x.chiTiet.loi ? ` — ${x.chiTiet.loi}` : ''}`
-                  : [x.chiTiet.oDaDoi?.length ? `Sửa: ${x.chiTiet.oDaDoi.join(', ')}` : '', ...(x.chiTiet.biMat ?? [])].filter(Boolean).join(' · ') || 'Lưu, không đổi gì'}</td>
-              </tr>
-            ))}</tbody>
-          </table>
+          <DataGrid rows={nk.data?.items ?? []} rowKey={(x) => x.id} storageKey="hoa-don-dien-tu.nhat-ky" exportName="hoa-don-dien-tu-nhat-ky"
+            emptyText="Chưa có thay đổi nào." columns={nkCols} />
         )}
-      </div>
+      </section>
 
       {suaSo && <SoForm so={s} secrets={d.secrets} onClose={() => setSuaSo(false)} onSaved={() => { setSuaSo(false); reload(); }} />}
       {suaCn && <CnForm cn={suaCn} so={s} onClose={() => setSuaCn(null)} onSaved={() => { setSuaCn(null); reload(); }} />}
