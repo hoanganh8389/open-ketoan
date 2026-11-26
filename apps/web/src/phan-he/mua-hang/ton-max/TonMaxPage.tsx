@@ -4,7 +4,7 @@
  *     gợi ý max (shop = bán / ngày × số ngày đủ hàng; kho = tổng max shop + % dự phòng), max / min sửa ngay trên ô.
  * Áp gợi ý hàng loạt cho các dòng đang lọc, nhập / xuất Excel, cài riêng từng mã (số ngày đo bán, số ngày đủ hàng, cách chuyển).
  */
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileUp, Plus, Settings2, Sparkles } from 'lucide-react';
@@ -16,9 +16,12 @@ import { api, errorText } from '@/lib/api';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { docSo, num, qtyFmt, stockApi, useHierarchy, type MaxBoardRow } from './api';
-import { ChonChiNhanhCha, ChonShop, ChuaPhanCap, isOff, OSo } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
+import { ChonShop, ChuaPhanCap, isOff, OSo, useMotChiNhanh } from './chung'; // [2026-11-25 kiennt] NT-MH-006 — bỏ dải "Hai cách đặt tồn max" (mỗi màn một việc, đỡ chiếm chỗ) (đóng góp)
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { useThaoTac } from '@/lib/manHinh';
+// [2026-11-26 kiennt] NT-MH-022 — bảng tham số + thanh lọc chuẩn (Chi nhánh · Nhóm hàng) như MH11 / MH17 (đóng góp)
+import { FilterLayout } from '@/components/ReportPanel';
+import { BranchSelect } from '@/components/filters';
 
 type Draft = { max?: number; min?: number; mode?: TransferMode };
 const k = (r: { branchCode: string; warehouseCode: string; sku: string }) => `${r.branchCode}|${r.warehouseCode}|${r.sku}`;
@@ -27,7 +30,9 @@ export function TonMaxPage() {
   const qc = useQueryClient();
   const tt = useThaoTac('mua-hang.ton-max'); // [2026-11-13 08:00 PM kiennt] NT-HT-003 — nút ghi tồn max theo thao tác "sua" của màn MH16 (đóng góp)
   const h = useHierarchy();
-  const [parent, setParent] = useState('');
+  // [2026-11-26 kiennt] NT-MH-022 — ô Chi nhánh chung, MỘT chi nhánh một lúc (cả chi nhánh) (đóng góp)
+  const cn = useMotChiNhanh({ caNhom: true });
+  const parent = cn.parent;
   // [2026-11-26 kiennt] NT-MH-020 — bỏ chế độ "Theo mã hàng": màn luôn xem theo chi nhánh / shop (đóng góp)
   const [target, setTarget] = useState(''); // '' = kho chi nhánh
   const [wh, setWh] = useState('');
@@ -106,17 +111,26 @@ export function TonMaxPage() {
     { key: 'cfg', header: '', width: 40, noFilter: true, noSort: true, render: (r) => <button className="btn btn-xs" title="Cài riêng mã: số ngày đo bán, số ngày đủ hàng" onClick={() => setCfgSku(r)}><Settings2 size={13} /></button> },
   ];
 
+  // [2026-11-26 kiennt] NT-MH-022 — đổi sang chi nhánh khác thì về kho chi nhánh, bỏ số đang sửa; chọn lại đúng chi nhánh đang xem thì giữ (NT-MH-017) (đóng góp)
+  const parentTruoc = useRef(parent);
+  useEffect(() => {
+    if (parentTruoc.current === parent) return;
+    parentTruoc.current = parent;
+    setTarget(''); setWh(''); setDrafts({}); setExtra([]);
+  }, [parent]);
   const curWh = q.data?.warehouseCode || wh;
   const targetName = `kho ${curWh} của ${target ? targetNode?.name ?? target : parentNode?.name ?? parent}${targetNode && isOff(targetNode) ? ' (ngừng)' : ''}`;
 
   return (
     <>
       <PageHeader title="Tồn max (kế toán mua hàng)" code="MH16" helpKey="mua-hang-ton-max" subtitle="Kế toán mua hàng xem và sửa max theo chi nhánh – kho – mã. Gợi ý từ tốc độ bán (shop) và tổng max shop (kho). Max là gốc của chia hàng xuống shop và đặt mua" />
+      <FilterLayout filters={<>
+        <BranchSelect value={cn.value} onChange={cn.onChange} />
+        <ChonNhomHang value={nhom} onChange={setNhom} />
+      </>}>
       <div className="card">
         <ChuaPhanCap branches={h.data?.branches} />
         <div className="tm-bar">
-          {/* [2026-11-26 kiennt] NT-MH-017 — chọn lại đúng chi nhánh đang xem: giữ shop / kho / số đang sửa chưa lưu (đóng góp) */}
-          <ChonChiNhanhCha value={parent} onChange={(v) => { if (v === parent) return; setParent(v); setTarget(''); setWh(''); setDrafts({}); setExtra([]); }} />
             <ChonShop parent={parent} value={target} onChange={(v) => { setTarget(v); setWh(''); setDrafts({}); setExtra([]); }} />
             <label className="tm-parent" title="Phân kho đang xem — max khai theo từng kho">
               <span>Phân kho</span>
@@ -124,7 +138,6 @@ export function TonMaxPage() {
                 {targetNode.warehouses.map((w) => <option key={w.code} value={w.code}>{w.code}{w.isDefault ? ' (mặc định)' : ''}</option>)}
               </select> : <span className="mh-bad" style={{ fontSize: 13 }}>chưa có kho — khai ở <Link to="/danh-muc/kho">Danh mục kho</Link></span>}
             </label>
-            <ChonNhomHang value={nhom} onChange={setNhom} />
           <span className="grow" />
           {tt.sua && <button className="btn btn-sm" onClick={() => setAdd(true)}><Plus size={14} /> Thêm mã</button>}
           <button className="btn btn-sm" onClick={() => applySuggest(true)} title="Điền gợi ý cho các dòng đang lọc mà chưa có max"><Sparkles size={14} /> Gợi ý cho mã chưa có max</button>
@@ -145,6 +158,7 @@ export function TonMaxPage() {
             exportTitle={`Tồn max — ${targetName}`} emptyText="Chưa có mã nào (chưa có tồn, bán hay max). Bấm Thêm mã hoặc Nhập Excel." /></div>
         )}
       </div>
+      </FilterLayout>
       {add && q.data && <ChonMatHang title="Thêm mã để khai max — bấm vào dòng để thêm" existing={new Map([...all, ...extra].map((r) => [r.sku, '✓ đã có']))} onClose={() => setAdd(false)}
         onPick={(p) => { setExtra((x) => [...x, { branchCode: target || parent, branchName: '', warehouseCode: curWh, sku: p.sku, name: p.name, baseUnit: p.unit, ton: 0, avgPerDay: 0, windowDays: q.data!.formula.windowDays, coverDays: q.data!.formula.coverDays, suggested: 0, max: 0, min: 0, hasLevel: false, transferMode: 'auto' }]); }} />}
       {cfgSku && <CaiRiengMa row={cfgSku} onClose={() => setCfgSku(null)} onSaved={() => { setCfgSku(null); void qc.invalidateQueries({ queryKey: ['ton-max'] }); }} />}
