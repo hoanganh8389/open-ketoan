@@ -612,7 +612,7 @@ td .picker > .input, .modal-body .picker > .input { width: 100%; }
 /* Nút In đã nằm trên thanh công cụ danh mục (cạnh Xuất): ẩn nút In ở tiêu đề trang của thẻ đó. */
 .ws-panel:has(.catalog-toolbar.canh-phai) .page-header .nut-in-man { display: none; }
 /* [2026-11-26 Nguyễn Văn Thủy] màn đã có nút Nạp riêng (thanh công cụ / danh sách) thì ẩn nút Nạp ở tiêu đề — không hai nút (đóng góp) */
-.ws-panel:has(.btn-nap) .page-header .nut-nap-man, main:has(.btn-nap) .page-header .nut-nap-man { display: none; }
+.ws-panel:has(.btn-nap) .page-header .nut-nap-man { display: none; }
 .fgroup { grid-column: 1 / -1; min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px 10px; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
 .fgroup > legend { padding: 0 6px; font-weight: 600; font-size: 13px; color: var(--ink-700); }
 .fgroup .full { grid-column: 1 / -1; }

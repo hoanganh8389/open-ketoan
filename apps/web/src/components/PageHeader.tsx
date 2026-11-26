@@ -13,6 +13,7 @@ import { useAppMenu } from '@/layout/useAppMenu';
 import { useAuth } from '@/lib/auth';
 import { tenMan } from '@/layout/ten-man';
 import { HelpDrawer } from './HelpDrawer';
+import { taiLaiNeuCoBanMoi } from '@/lib/banMoi';
 import { DEFAULT_DATA_SCREENS, RestoreDefaultsButton } from '@/features/flow/DefaultDataPages';
 
 export function PageHeader({ title, code, subtitle, note, actions, helpKey, helpExtra }: { title: string; code?: string; subtitle?: string; /** Dòng luôn hiện dưới tiêu đề, dành cho thông tin theo dữ liệu đang xem. */ note?: string; actions?: ReactNode; helpKey?: string; /** Phần riêng của màn hiện trong ngăn Hướng dẫn, dưới thẻ hướng dẫn. */ helpExtra?: ReactNode }) {
@@ -41,7 +42,7 @@ export function PageHeader({ title, code, subtitle, note, actions, helpKey, help
         {note && <div className="page-sub">{note}</div>}
       </div>
       <div className="page-actions">
-        <button type="button" className="btn nut-nap-man" onClick={() => void qc.invalidateQueries({ type: 'active' })} title="Nạp lại số liệu mới nhất của màn này từ máy chủ">
+        <button type="button" className="btn nut-nap-man" onClick={() => void taiLaiNeuCoBanMoi().then((moi) => { if (!moi) void qc.invalidateQueries({ type: 'active' }); })} title="Nạp lại số liệu mới nhất của màn này; có bản phần mềm mới thì tải lại trang để cập nhật">
           <RefreshCw size={16} className={dangNap ? 'spin' : undefined} /> Nạp
         </button>
         {actions}
