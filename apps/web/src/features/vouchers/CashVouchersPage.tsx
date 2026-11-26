@@ -161,9 +161,9 @@ export function CashVouchersPage({ type, pair }: { type: CashType; pair?: CashTy
   const title = pair ? (isBank ? 'Thu, chi tiền gửi' : 'Thu, chi tiền') : meta.title;
   const moi = (t: CashType, theoHoaDon = false) => () => setForm({ seq: Date.now(), type: t, theoHoaDon });
   const addButtons: ToolButton[] = pair ? [
-    { key: 'thu', label: isBank ? 'Thu tiền gửi' : 'Thu tiền', icon: <Plus size={15} />, onClick: moi(type),
-      menu: [{ key: 'thu-phieu', label: isBank ? 'Thu tiền gửi' : 'Phiếu thu', onClick: moi(type) }, { key: 'thu-hd', label: 'Thu tiền theo hóa đơn', onClick: moi(type, true) }] },
-    { key: 'chi', label: isBank ? 'Chi tiền gửi' : 'Chi tiền', icon: <Plus size={15} />, onClick: moi(pair),
+    { key: 'thu', label: isBank ? 'Giấy báo có' : 'Thu tiền', icon: <Plus size={15} />, onClick: moi(type),
+      menu: [{ key: 'thu-phieu', label: isBank ? 'Giấy báo có' : 'Phiếu thu', onClick: moi(type) }, { key: 'thu-hd', label: 'Thu tiền theo hóa đơn', onClick: moi(type, true) }] },
+    { key: 'chi', label: isBank ? 'Giấy báo nợ' : 'Chi tiền', icon: <Plus size={15} />, onClick: moi(pair),
       menu: [{ key: 'chi-phieu', label: isBank ? 'Ủy nhiệm chi' : 'Phiếu chi', onClick: moi(pair) }, { key: 'chi-hd', label: 'Trả tiền theo hóa đơn', onClick: moi(pair, true) }] },
   ] : tt.them ? [{ key: 'add', label: 'Thêm', icon: <Plus size={15} className="text-ok" />, onClick: () => setForm({ seq: Date.now() }) }] : [];
 

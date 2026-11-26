@@ -35,7 +35,7 @@ const m = (label: string, base: string, link = themMoi(base)): ThemNhanhMuc => (
 /** Nút "Thêm nhanh" đầu menu trái: lập chứng từ / thêm danh mục hay dùng, chia theo nhóm việc. Mục người dùng không có quyền tự ẩn. */
 export const THEM_NHANH: ThemNhanhNhom[] = [
   { label: 'Tiền mặt', items: [m('Thu tiền', '/nghiep-vu/phieu-thu'), m('Chi tiền', '/nghiep-vu/phieu-chi')] },
-  { label: 'Tiền gửi', items: [m('Thu tiền gửi', '/nghiep-vu/phieu-bao-co'), m('Chi tiền gửi', '/nghiep-vu/phieu-bao-no')] },
+  { label: 'Tiền gửi', items: [m('Giấy báo có', '/nghiep-vu/phieu-bao-co'), m('Giấy báo nợ', '/nghiep-vu/phieu-bao-no')] },
   { label: 'Mua hàng', items: [m('Đơn mua hàng', '/mua-hang/tong-hop', '/mua-hang/tong-hop?moi=order'), m('Mua hàng', '/mua-hang/tong-hop', '/mua-hang/tong-hop?moi=receipt'), m('Trả lại hàng mua', '/mua-hang/tong-hop', '/mua-hang/tong-hop?moi=return'), m('Chi phí mua hàng', '/mua-hang/tong-hop', '/mua-hang/tong-hop?moi=cost')] },
   { label: 'Bán hàng', items: [m('Bán hàng', '/ban-hang/phieu-ban'), m('Trả lại hàng bán', '/ban-hang/tra-lai')] },
   { label: 'Kho', items: [m('Chuyển kho', '/kho/chuyen-kho')] },

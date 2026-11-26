@@ -45,7 +45,7 @@ const DOC_TYPES: DocType[] = DOC_TYPE_LIST;
 /** Loại CT của sổ quỹ / tiền gửi. */
 const CASH_DOC_TYPES: [string, string][] = [
   ['', 'Tất cả'], ['purchase', 'Phiếu trả tiền NCC'], ['sale', 'Phiếu thu tiền khách hàng'], ['receipt', 'Phiếu thu'], ['payment', 'Phiếu chi'],
-  ['bank_receipt', 'Thu tiền gửi'], ['bank_payment', 'Chi tiền gửi'],
+  ['bank_receipt', 'Giấy báo có'], ['bank_payment', 'Giấy báo nợ'],
 ];
 
 export function AccountLedgerPage({ preset }: { preset?: LedgerPreset }) {

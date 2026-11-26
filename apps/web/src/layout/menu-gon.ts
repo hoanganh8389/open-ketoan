@@ -229,7 +229,7 @@ export const GON_DEFS: GonDef[] = [
 const KHONG_LIET_KE = ['/nghiep-vu/phieu-thu', '/nghiep-vu/phieu-chi', '/nghiep-vu/phieu-bao-co', '/nghiep-vu/phieu-bao-no'];
 
 // [2026-11-26 07:55 PM Nguyễn Văn Thủy] HT — sơ đồ Tiền mặt / Tiền gửi mất nút Thu / Chi: màn lập phiếu không liệt kê ở menu vẫn mở được nếu có quyền (đóng góp)
-/** Màn lập phiếu không liệt kê ở menu nhưng người dùng có quyền mở — sơ đồ quy trình (Thu tiền, Chi tiền, Thu / Chi tiền gửi) vẫn hiện nút. */
+/** Màn lập phiếu không liệt kê ở menu nhưng người dùng có quyền mở — sơ đồ quy trình (Thu tiền, Chi tiền, Giấy báo có / nợ) vẫn hiện nút. */
 export const moDuocNgoaiMenu = (menu: MenuItem[]): string[] => { const flat = flatten(menu); return KHONG_LIET_KE.filter((p) => flat.has(p)); };
 
 /** Mọi màn người dùng được thấy, theo đường dẫn (một màn khai ở nhiều phân hệ thì lấy lần đầu). */

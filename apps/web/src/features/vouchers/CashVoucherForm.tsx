@@ -368,7 +368,7 @@ export function CashVoucherForm({ type, existing, initial, onClose, onSaved, the
     });
   };
 
-  const title = (isBank ? (isReceipt ? 'Thu tiền gửi' : 'Chi tiền gửi') : meta.title) + (theoHoaDon && !existing ? ' theo hóa đơn' : '');
+  const title = (isBank ? (isReceipt ? 'Giấy báo có' : 'Giấy báo nợ') : meta.title) + (theoHoaDon && !existing ? ' theo hóa đơn' : '');
   const bankAcc = banks.find((b) => b.accountCode === moneyAccount && b.isActive);
   return (
     <>
