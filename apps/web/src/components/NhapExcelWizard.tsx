@@ -206,7 +206,7 @@ export function NhapExcelWizard({ loai, onClose }: { loai: NhapLoai; onClose: ()
               ))}
             </div>
           )}
-          {loai.modes === false && <p className="muted">Mã đã có → cập nhật (ô trống giữ nguyên); mã chưa có → thêm mới.</p>}
+          {loai.modes === false && <p className="muted">{loai.ghiChuNhap ?? 'Mã đã có → cập nhật (ô trống giữ nguyên); mã chưa có → thêm mới.'}</p>}
         </div>
       )}
 

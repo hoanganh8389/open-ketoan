@@ -2211,3 +2211,20 @@ td.o-loi { background: color-mix(in srgb, var(--bad) 8%, transparent); }
 .rp-gon-mui { flex: none; color: var(--ink-500, #6b7280); }
 .rp-gon.mo { border-color: var(--brand-500, #2457b3); }
 .rp-gon-than { padding: 0 8px 8px; }
+
+/* [2026-11-26 08:00 PM Nguyễn Văn Thủy] SO-DU — ACC15: quy trình 3 bước, ô kiểm tra, báo lỗi / cảnh báo từng dòng (đóng góp) */
+.so-du-quy-trinh { margin-bottom: 10px; padding: 6px 14px 10px; }
+.so-du-quy-trinh-nut { padding-left: 0; font-weight: 600; }
+.so-du-buoc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; margin-top: 4px; font-size: 13px; }
+.so-du-buoc > div { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--line, #dfe4ec); border-radius: 6px; background: var(--panel, #fff); }
+.so-du-buoc > div.so-du-giai-thich { grid-column: span 3; background: var(--info-bg, #eef5ff); border-color: #c9dcf5; }
+.so-du-buoc span { color: var(--muted, #5b6575); line-height: 1.45; }
+@media (max-width: 900px) { .so-du-buoc { grid-template-columns: 1fr; } .so-du-buoc > div.so-du-giai-thich { grid-column: span 1; } }
+.so-du-kiem { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center; padding: 8px 14px; margin-bottom: 10px; font-size: 13px; }
+.so-du-ok { color: var(--ok, #1a7f37); }
+.so-du-canh-bao { color: #a15c00; }
+.so-du-loi { color: var(--danger, #c62828); font-size: 12px; }
+td .so-du-canh-bao { font-size: 12px; }
+.so-du-dong-loi > td { background: #fff5f5; }
+.so-du-dem { margin-left: 5px; font-size: 11px; opacity: .7; }
+.so-du-ly-do { font-size: 12px; max-width: 520px; margin-right: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #a15c00; }

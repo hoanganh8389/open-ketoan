@@ -217,7 +217,7 @@ export const reportService = {
     const scope = { tenantId: auth.tenantId, accountPrefix: q.account, branchIds, partnerId };
     const [openingRows, lines] = await Promise.all([
       // Lọc một mã hàng (vd 156 chi tiết theo mã): số dư đầu kỳ cũng chỉ của mã đó.
-      sku ? reportRepository.openingBySku(db, { ...scope, from: q.from, sku, codeOnly: q.codeOnly }) : reportRepository.openingByPartner(db, { ...scope, from: q.from }),
+      sku ? reportRepository.openingBySku(db, { ...scope, from: q.from, sku, codeOnly: q.codeOnly }) : reportRepository.openingByPartner(db, { ...scope, from: q.from, to: q.docType === 'opening' ? undefined : q.to }),
       // Cộng gộp (2, 3) mà không lọc mã hàng: đọc lớp trung gian bút toán gộp theo tài khoản (0134) thay vì quét từng dòng mã hàng.
       (q.groupMode ?? 1) !== 1 && !sku
         ? reportRepository.accountLinesGrouped(db, {

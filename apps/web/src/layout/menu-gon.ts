@@ -192,7 +192,13 @@ export const GON_DEFS: GonDef[] = [
   },
   {
     key: 'so-du', label: 'Số dư ban đầu', icon: 'ListEnd', description: 'Số dư tài khoản, công nợ, tồn kho, tài sản đầu kỳ', color: '#6d4c41',
-    sections: [{ paths: ['/nghiep-vu/so-du-tai-khoan'], soon: ['Tồn kho vật tư, hàng hóa'] }],
+    // [2026-11-26 08:40 PM Nguyễn Văn Thủy] SO-DU — một luồng: ACC15 (tiền, ngân hàng, công nợ KH / NCC / NV — thẻ trong màn), tài sản / CCDC / trả trước
+    // khai luỹ kế ở thẻ, tồn kho đầu kỳ + mọi số dư nhập tệp ở Nhập Excel; bỏ "Tồn kho vật tư" khỏi đang phát triển (đã nhập được) (đóng góp)
+    sections: [
+      { paths: ['/nghiep-vu/so-du-tai-khoan'] },
+      { label: 'Tài sản, công cụ đầu kỳ (khai nguyên giá, luỹ kế ở thẻ)', paths: ['/tai-san/tscd', '/tai-san/cong-cu', '/tai-san/chi-phi-tra-truoc'] },
+      { label: 'Nhập từ Excel (số dư, tồn kho đầu kỳ)', paths: ['/tien-ich/nhap-excel'] },
+    ],
   },
   {
     key: 'phan-rieng', label: 'Phần riêng', icon: 'Puzzle', rieng: true, color: '#455a64',
