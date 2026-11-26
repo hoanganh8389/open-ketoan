@@ -9,6 +9,7 @@
  * "Duyệt ngoại lệ" (ghi lý do vào nhật ký).
  */
 import { ChonKho } from '@/components/phieu-hang/ChonKho';
+import { NutSuaAcc41 } from '@/features/posting/QuyTacHachToanPage';
 import { ChonHopDong } from '../hop-dong/ChonHopDong';
 import { hopDongPath } from '../hop-dong/HopDongPage';
 import { ChonNhieuChiNhanh } from '@/components/phieu-hang/ChonNhieuChiNhanh';
@@ -122,7 +123,9 @@ let seq = 0;
 const newKey = () => `L${Date.now().toString(36)}${(seq++).toString(36)}`;
 interface CatalogProduct { sku: string; name: string; unit: string; taxInCode: string | null; brandCode?: string | null; variantCode?: string; typeCode?: string | null; sendToTax?: boolean; parentSku?: string | null }
 
-export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value: PDoc; data: MhData; onClose: () => void; onSaved: () => void; onOpen?: (d: PDoc) => void }) {
+/** Trạng thái phiếu đang mở để giữ qua tải lại trang (bản nháp ở bộ nhớ máy, xem WindowDock). */
+export interface GiuPhieuMua { v: PDoc; dirty: boolean; viewing: boolean }
+export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen, khoiPhuc }: { value: PDoc; data: MhData; onClose: () => void; onSaved: () => void; onOpen?: (d: PDoc) => void; khoiPhuc?: Omit<GiuPhieuMua, 'v'> }) {
   // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — phiếu mới mang chi nhánh đang làm việc của người lập (nơi lập) — có thể khác chi nhánh của phiếu (đóng góp)
   const [v, setV] = useState<PDoc>(() => (value.id.startsWith('new-') && !value.workBranchCode && workBranch.get() ? { ...value, workBranchCode: workBranch.get() } : value));
   const [stored, setStored] = useState<StoredDoc | undefined>(data.docs.find((d) => d.id === value.id));
@@ -194,9 +197,11 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const [err, setErr] = useState('');
   // [2026-11-11 12:00 AM Nguyễn Văn Thủy] MH — dán từ Excel (Ctrl + V) vào bảng hàng: báo số dòng đưa vào / bỏ qua (đóng góp)
   const [danBao, setDanBao] = useState<{ ok: boolean; text: string } | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const [dirty, setDirty] = useState(Boolean(khoiPhuc?.dirty));
+  const giuRef = useRef<GiuPhieuMua | null>(null);
   // Thu nhỏ xuống thanh dưới (giữ nguyên phiếu đang nhập); chấm cam ở ô = phiếu có thay đổi chưa lưu.
-  const dock = useDockWindow(() => thoatRef.current(), dirty, `mh:${value.id}`);
+  // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — phiếu đang mở giữ qua tải lại trang / mất điện: ghi bản nháp ở máy, mở lại đúng nội dung (đóng góp)
+  const dock = useDockWindow(() => thoatRef.current(), dirty, `mh:${value.id}`, { kind: 'mh', draft: () => giuRef.current });
   const thoatRef = useRef<() => void>(onClose);
   const names = useNames();
   const brands = useBrands(data.policies);
@@ -213,7 +218,8 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   // Phiếu đã duyệt / huỷ: chỉ xem. Phiếu đã ghi (nháp, chờ duyệt): mở ở chế độ xem, bấm "Sửa" mới sửa; Gửi duyệt / Duyệt
   // vẫn bấm được khi đang xem (không đổi nội dung phiếu).
   const frozen = v.status === 'approved' || v.status === 'cancelled';
-  const [viewing, setViewing] = useState(!value.id.startsWith('new-') && !frozen);
+  const [viewing, setViewing] = useState(khoiPhuc ? khoiPhuc.viewing && !frozen : !value.id.startsWith('new-') && !frozen);
+  giuRef.current = { v, dirty, viewing };
   const readOnly = frozen || viewing;
   useEffect(() => {
     if (!viewing || frozen) return;
@@ -249,7 +255,8 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   }, [v.kind, readOnly, hier.data, v.branchCode, v.deliveryWarehouse, defaultWh]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!showKho || readOnly || !hier.data || !v.branchCode) return;
-    if (v.warehouseCode && branchWhs.some((w) => w.code === v.warehouseCode)) return;
+    // [2026-11-26 06:10 PM Nguyễn Văn Thủy] MH — phân kho được là kho của chi nhánh con cháu (nhiều cấp): chi nhánh nhập kho = chi nhánh chủ kho (đóng góp)
+    if (v.warehouseCode && (branchWhs.some((w) => w.code === v.warehouseCode) || cay.conCua(v.branchCode).includes(cay.khoChu(v.warehouseCode)))) return;
     if ((v.warehouseCode ?? '') !== defaultWh) setV((x) => ({ ...x, warehouseCode: defaultWh || undefined }));
   }, [showKho, readOnly, hier.data, v.branchCode, v.warehouseCode, defaultWh]); // eslint-disable-line react-hooks/exhaustive-deps
   /** Thông tin NCC + nơi giao cho mẫu đơn gửi NCC. */
@@ -1220,9 +1227,9 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   <ListPicker items={kmItems(v.costItem)} value={v.costItem ?? ''} nameOnly disabled={readOnly} placeholder="Chọn khoản mục" emptyText="Chưa có khoản mục — bấm + để thêm"
                     onAdd={(t) => setThemKm({ text: t, chon: chonKmDau })} addLabel="Thêm khoản mục" onChange={chonKmDau} /></div>}
                 {/* [2026-11-25 11:10 PM Nguyễn Văn Thủy] MH-NHAN — đơn đặt: bỏ ô Chi nhánh nhận / Giao tại kho ở đầu đơn; chọn chi nhánh nhận ở tab dưới bảng hàng (đóng góp) */}
-                {showKho && <div className="field"><label title="Phân kho mặc định của phiếu — dòng nào để trống cột Phân kho thì vào / ra kho này. Mặc định là kho mặc định của chi nhánh">Phân kho (*)</label>
+                {showKho && <div className="field"><label title="Phân kho của phiếu: kho của chi nhánh lập chứng từ hoặc của chi nhánh con cháu (nhiều cấp) — chọn kho chi nhánh con thì hàng nhập kho, ghi sổ ở chi nhánh đó. Dòng nào để trống cột Phân kho thì vào / ra kho này">Phân kho (*){v.warehouseCode && cay.khoChu(v.warehouseCode) && cay.khoChu(v.warehouseCode) !== v.branchCode ? <span className="muted" style={{ fontWeight: 400 }} title="Chi nhánh nhập kho = chi nhánh chủ phân kho; chi nhánh lập chứng từ giữ nguyên"> · nhập kho tại {cay.khoChu(v.warehouseCode)}</span> : null}</label>
                   {/* [2026-11-11 Nguyễn Văn Thủy] chọn phân kho của chi nhánh đang chọn, nút + thêm phân kho ngay trên phiếu (đóng góp) */}
-                  <ChonKho branchCode={v.branchCode} value={v.warehouseCode ?? ''} disabled={readOnly} op={({ receipt: 'purchase_in', return: 'purchase_return_out', gift_in: 'gift_in', gift_out: 'gift_out' } as Record<string, string>)[v.kind]} onChange={(c) => set({ warehouseCode: c || undefined })} /></div>}
+                  <ChonKho branchCode={v.branchCode} conCua value={v.warehouseCode ?? ''} disabled={readOnly} op={({ receipt: 'purchase_in', return: 'purchase_return_out', gift_in: 'gift_in', gift_out: 'gift_out' } as Record<string, string>)[v.kind]} onChange={(c) => set({ warehouseCode: c || undefined })} /></div>}
                 <div className="field span2"><label>Nhà cung cấp (*)</label>
                   <PartnerPicker kind="supplier" value={v.partnerCode} onChange={pickPartner} activeOnly addKind="supplier" disabled={readOnly} />
                   {/* [2026-11-25 Nguyễn Văn Thủy] NCC chỉ hiện tên; MST, địa chỉ rê chuột hoặc bấm (i) xem hồ sơ (đóng góp) */}
@@ -2058,7 +2065,7 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
           </aside>
         </div>
         <div className="mh-sheet-foot" {...kl.footProps}>
-          <span className="grow">{kl.banner ?? (err ? <span className="mh-bad">{err}</span> : problems.length && !readOnly ? <span className="muted">Chưa ghi được: {problems.join(' · ')}</span> : blocking.length && !readOnly ? <span className="mh-bad">Còn {blocking.length} cảnh báo chặn duyệt{creditOnly ? ' — cần người có quyền bấm Duyệt ngoại lệ' : ''}</span> : null)}</span>
+          <span className="grow">{kl.banner ?? (err ? <span className="mh-bad">{err}<NutSuaAcc41 text={err} /></span> : problems.length && !readOnly ? <span className="muted">Chưa ghi được: {problems.join(' · ')}</span> : blocking.length && !readOnly ? <span className="mh-bad">Còn {blocking.length} cảnh báo chặn duyệt{creditOnly ? ' — cần người có quyền bấm Duyệt ngoại lệ' : ''}</span> : null)}</span>
           {/* In bản đã ghi (máy chủ trả số liệu) — có ở cả chế độ xem; phiếu mới phải Ghi trước. */}
           {!v.id.startsWith('new-') && <span data-view-ok><PrintButton screen="MH03" memoryKey={`MH03:${(stored ?? v).kind}`} templates={mauInCua(stored ?? v)} title={dirty ? 'In theo nội dung đã ghi (sửa xong bấm Ghi rồi mới in)' : 'In phiếu'}
             getDocs={() => layPhieuIn(v.id, { names, docs: data.docs }).then((p) => [p])} /></span>}

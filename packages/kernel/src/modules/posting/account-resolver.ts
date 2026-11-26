@@ -193,13 +193,25 @@ export class AccountResolver {
 
   /** Gọi sau khi dựng xong: còn thiếu cấu hình thì ném một lỗi gộp. */
   assertComplete(): void {
-    if (this.missing.size) throw Errors.posting('Thiếu cấu hình hạch toán', [...this.missing]);
+    // [2026-11-26 07:05 PM Nguyễn Văn Thủy] HT20 — câu lỗi nói luôn thiếu gì (POS / HT20 chỉ hiện câu lỗi, không hiện details) [loi POSTING_FAILED] (đóng góp)
+    if (this.missing.size) {
+      const ds = [...this.missing];
+      throw Errors.posting(`Thiếu cấu hình hạch toán: ${ds.slice(0, 3).join('; ')}${ds.length > 3 ? ` (và ${ds.length - 3} mục khác)` : ''}`, ds);
+    }
   }
 
+  // [2026-11-26 05:10 PM Nguyễn Văn Thủy] HT — POSTING_FAILED 'Tài khoản 1561 là tài khoản tổng hợp': TK ở Quy tắc hạch toán thành TK tổng hợp
+  // sau khi mở TK con (1561 → 15611). KHÔNG tự chọn thay kế toán: báo rõ TK nào, ở đâu, gợi ý TK con, kèm khoá "…" để màn hình mở thẳng hộp sửa ở ACC41 (đóng góp)
   private fromDefault(key: string, label: string): string {
     const acc = this.cfg.defaults.get(key);
     if (!acc) {
       this.missing.add(`Chưa đặt ${label} (Quy tắc hạch toán, khoá "${key}")`);
+      return '';
+    }
+    const row = this.cfg.accounts.get(acc);
+    if (row && !row.is_posting) {
+      const con = [...this.cfg.accounts.values()].filter((a) => a.is_posting && a.code !== acc && a.code.startsWith(acc)).map((a) => a.code).sort();
+      this.missing.add(`${label} ở Quy tắc hạch toán (ACC41) đang là ${acc} — tài khoản tổng hợp; đổi sang tài khoản chi tiết${con.length ? ` (vd ${con.slice(0, 5).join(', ')})` : ''} (khoá "${key}")`);
       return '';
     }
     return acc;

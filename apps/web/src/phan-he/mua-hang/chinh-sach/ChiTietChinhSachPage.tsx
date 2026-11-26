@@ -16,7 +16,8 @@ import { Loading } from '@/components/ui';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { PartnerPicker } from '@/components/pickers';
 import { ALL_KINDS, PolicyForm } from './PolicyForm';
-import { purchaseApi, today, useMuaHang, useNames } from '../du-lieu';
+import { P, purchaseApi, today, useBrands, useMuaHang, useNames } from '../du-lieu';
+import { api } from '@/lib/api';
 import { dmy } from '../chung';
 import '../mua-hang.css';
 
@@ -29,7 +30,7 @@ const vn = (n: unknown) => Number(n ?? 0).toLocaleString('vi-VN');
 const PERIOD: Record<string, string> = { month: 'tháng', quarter: 'quý', year: 'năm' };
 
 /** Trải một chính sách thành các dòng ưu đãi (thêm loại chính sách: thêm một nhánh ở đây). */
-export function detailsOf(p: Policy): Detail[] {
+export function detailsOf(p: Policy, tenNhan?: (code: string) => string): Detail[] {
   const r = p.rule as R;
   switch (p.kind as PolicyKind) {
     case 'item_discount': return ((r.items ?? []) as ItemDiscount[]).map((i) => ({
@@ -49,7 +50,7 @@ export function detailsOf(p: Policy): Detail[] {
     }));
     case 'credit_limit': {
       const br = Object.entries((r.branches ?? {}) as Record<string, number>);
-      return [{ cond: `toàn ${p.scope.brandCode ? `nhãn ${p.scope.brandCode}` : 'NCC'}`, benefit: `hạn mức ${vn(r.limit)}đ, cảnh báo từ ${Number(r.warnPct ?? 90).toLocaleString('vi-VN')}%`, value: r.limit, valueUnit: 'đ' },
+      return [{ cond: `toàn ${p.scope.brandCode ? `nhãn ${tenNhan?.(p.scope.brandCode) ?? p.scope.brandCode}` : 'NCC'}`, benefit: `hạn mức ${vn(r.limit)}đ, cảnh báo từ ${Number(r.warnPct ?? 90).toLocaleString('vi-VN')}%`, value: r.limit, valueUnit: 'đ' },
         ...br.map(([b, v]) => ({ branch: b, cond: 'phân bổ cho chi nhánh', benefit: `hạn mức ${vn(v)}đ`, value: v, valueUnit: 'đ' }))];
     }
     case 'supply_target': return Object.entries((r.branches ?? {}) as Record<string, number>).map(([b, v]) => ({ branch: b, cond: `chỉ tiêu cung ứng ${r.period ?? ''}`, benefit: `${vn(v)}đ`, value: v, valueUnit: 'đ' }));
@@ -67,7 +68,30 @@ export function ChiTietChinhSachPage() {
   const [partner, setPartner] = useState('');
   const [state, setState] = useState('Đang áp');
   const [editing, setEditing] = useState<Policy | null>(null);
+  /** Tổng hợp = mỗi chính sách một dòng (mặc định); chi tiết = trải từng dòng ưu đãi. */
+  const [chiTiet, setChiTiet] = useState(false);
+  const brands = useBrands(data?.policies ?? []);
+  const tenNhan = useMemo(() => new Map(brands.map((b) => [b.code, b.name])), [brands]);
   const now = today();
+  // [2026-11-26 08:00 PM Nguyễn Văn Thủy] MH14 — tổng hợp thực hiện từng chính sách trong kỳ: số / giá trị đơn đặt, doanh số luỹ kế, quyền lợi được hưởng, đã nhận, còn phải nhận (cùng nguồn MH32) (đóng góp)
+  const [tu, setTu] = useState(`${now.slice(0, 4)}-01-01`);
+  const [den, setDen] = useState(now);
+  const exec = useQuery({ queryKey: ['mua-hang', 'policy-execution', 'mh14', tu, den], staleTime: 30_000,
+    queryFn: () => api.get<{ policy: string; base: number; entitled: number; expected: number; received: number; remaining: number }[]>(`${P}/policy-execution`, { from: tu, to: den }) });
+  const thucHien = useMemo(() => new Map((exec.data ?? []).map((x) => [x.policy, x])), [exec.data]);
+  /** Đơn đặt hàng (chưa huỷ, không nháp) thuộc phạm vi chính sách trong kỳ: cùng NCC, cùng hợp đồng, trong hiệu lực, đúng nhãn / mã nếu chính sách ghi. */
+  const donDat = useMemo(() => {
+    const m = new Map<string, { so: number; giaTri: number }>();
+    for (const p of data?.policies ?? []) {
+      const a = [tu, p.validFrom ?? ''].sort()[1]!, b = [den, p.validTo || '9999-12-31'].sort()[0]!;
+      const ds = (data?.docs ?? []).filter((d) => d.kind === 'order' && d.status !== 'cancelled' && d.status !== 'draft' && d.docDate >= a && d.docDate <= b
+        && (!p.scope.partnerCode || d.partnerCode === p.scope.partnerCode) && (d.contractCode ?? '') === (p.scope.contractCode ?? '')
+        && (!p.scope.brandCode || d.brandCode === p.scope.brandCode || d.lines.some((l) => l.brandCode === p.scope.brandCode))
+        && (!p.scope.sku || d.lines.some((l) => l.sku === p.scope.sku)));
+      m.set(p.code, { so: ds.length, giaTri: Math.round(ds.reduce((t, d) => t + d.totals.beforeTax, 0)) });
+    }
+    return m;
+  }, [data, tu, den]);
   const stateOf = (p: Policy) => (!p.isActive ? 'Tắt' : p.validTo && p.validTo < now ? 'Hết hiệu lực' : p.validFrom && p.validFrom > now ? 'Chưa tới hiệu lực' : 'Đang áp');
   const rows: Row[] = useMemo(() => {
     const out: Row[] = [];
@@ -75,11 +99,20 @@ export function ChiTietChinhSachPage() {
     const list = (data?.policies ?? []).filter((p) => (!kind || p.kind === kind) && (!partner || p.scope.partnerCode === partner) && (!state || stateOf(p) === state))
       .sort((a, b) => Number(!a.scope.partnerCode) - Number(!b.scope.partnerCode) || (a.scope.partnerCode ?? '').localeCompare(b.scope.partnerCode ?? '') || ALL_KINDS.indexOf(a.kind) - ALL_KINDS.indexOf(b.kind) || a.code.localeCompare(b.code));
     for (const p of list) {
-      const ds = detailsOf(p);
-      ds.forEach((d, i) => out.push({ ...d, sku: d.sku ?? p.scope.sku, branch: d.branch ?? (scopeBranches(p.scope).join(', ') || undefined), key: `${p.id}-${i}`, stt: ++stt, line: i + 1, lines: ds.length, p, state: stateOf(p) }));
+      const ds = detailsOf(p, (c) => tenNhan.get(c) ?? c);
+      const branch = scopeBranches(p.scope).join(', ') || undefined;
+      if (!chiTiet) {
+        // Một dòng / chính sách: điều kiện → được hưởng gộp gọn, đủ đọc trong một ô (rê chuột xem hết).
+        const tom = (k: 'cond' | 'benefit') => [...new Set(ds.map((d) => d[k]).filter(Boolean))];
+        const c = tom('cond'), b = tom('benefit');
+        out.push({ cond: c.length > 2 ? `${c[0]} … ${c[c.length - 1]} (${c.length} bậc)` : c.join('; '), benefit: b.length > 2 ? `${b[0]} … ${b[b.length - 1]}` : b.join('; '),
+          sku: p.scope.sku, branch, key: p.id, stt: ++stt, line: 1, lines: ds.length, p, state: stateOf(p) });
+        continue;
+      }
+      ds.forEach((d, i) => out.push({ ...d, sku: d.sku ?? p.scope.sku, branch: d.branch ?? branch, key: `${p.id}-${i}`, stt: ++stt, line: i + 1, lines: ds.length, p, state: stateOf(p) }));
     }
     return out;
-  }, [data, kind, partner, state]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [data, kind, partner, state, chiTiet, tenNhan]); // eslint-disable-line react-hooks/exhaustive-deps
   // Tên hàng của các mã trong bảng (tra theo lô 500 mã).
   const skus = useMemo(() => [...new Set(rows.map((r) => r.sku).filter(Boolean) as string[])], [rows]);
   const prods = useQuery({ queryKey: ['mua-hang', 'ct-cs-names', skus.join(',')], enabled: skus.length > 0, staleTime: 60_000, queryFn: async () => {
@@ -92,45 +125,56 @@ export function ChiTietChinhSachPage() {
     { key: 'stt', header: 'STT', type: 'number', width: 55 },
     { key: 'partnerCode', header: 'Mã NCC', type: 'code', width: 100, value: (r) => r.p.scope.partnerCode ?? '', render: (r) => r.p.scope.partnerCode ? <Link to={`/mua-hang/nha-cung-cap/${encodeURIComponent(r.p.scope.partnerCode)}`}>{r.p.scope.partnerCode}</Link> : <span className="muted">Mọi NCC</span> },
     { key: 'partnerName', header: 'Tên NCC', width: 170, value: (r) => (r.p.scope.partnerCode ? names.partnerName(r.p.scope.partnerCode) : ''), render: (r) => (r.p.scope.partnerCode ? <span title={names.partnerName(r.p.scope.partnerCode)}>{names.partnerName(r.p.scope.partnerCode)}</span> : null) },
-    { key: 'partnerTax', header: 'MST NCC', type: 'code', width: 110, value: (r) => (r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.taxCode ?? '' : '') },
-    { key: 'partnerPhone', header: 'SĐT NCC', type: 'code', width: 110, value: (r) => (r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.phone ?? '' : '') },
-    { key: 'partnerAddress', header: 'Địa chỉ NCC', width: 220, value: (r) => (r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.address ?? '' : ''), render: (r) => <span title={r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.address ?? '' : ''}>{r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.address : ''}</span> },
+    { key: 'code', header: 'Mã chính sách', type: 'code', width: 150, value: (r) => r.p.code },
     { key: 'kind', header: 'Loại chính sách', width: 170, value: (r) => POLICY_LABEL[r.p.kind] },
+    { key: 'brand', header: 'Nhãn hàng', width: 130, title: 'Nhãn hàng chính sách áp (trống = mọi nhãn của NCC)', value: (r) => (r.p.scope.brandCode ? tenNhan.get(r.p.scope.brandCode) ?? r.p.scope.brandCode : '') },
+    { key: 'partnerTax', hidden: true, header: 'MST NCC', type: 'code', width: 110, value: (r) => (r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.taxCode ?? '' : '') },
+    { key: 'partnerPhone', hidden: true, header: 'SĐT NCC', type: 'code', width: 110, value: (r) => (r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.phone ?? '' : '') },
+    { key: 'partnerAddress', hidden: true, header: 'Địa chỉ NCC', width: 220, value: (r) => (r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.address ?? '' : ''), render: (r) => <span title={r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.address ?? '' : ''}>{r.p.scope.partnerCode ? names.partner(r.p.scope.partnerCode)?.address : ''}</span> },
     { key: 'cond', header: 'Điều kiện', width: 220 },
     { key: 'benefit', header: 'Được hưởng', width: 240 },
-    { key: 'value', header: 'Mức', type: 'number', width: 90, value: (r) => r.value ?? '' },
-    { key: 'valueUnit', header: 'Đơn vị mức', width: 70, value: (r) => r.valueUnit ?? '' },
+    { key: 'value', hidden: !chiTiet, header: 'Mức', type: 'number', width: 90, value: (r) => r.value ?? '' },
+    { key: 'valueUnit', hidden: !chiTiet, header: 'Đơn vị mức', width: 70, value: (r) => r.valueUnit ?? '' },
     { key: 'sku', header: 'Mã hàng', type: 'code', width: 100, value: (r) => r.sku ?? '' },
-    { key: 'skuName', header: 'Tên hàng', width: 180, value: (r) => (r.sku ? prods.data?.get(r.sku) ?? '' : '') },
-    { key: 'unit', header: 'ĐVT', width: 70, value: (r) => r.unit ?? '' },
+    { key: 'skuName', hidden: !chiTiet, header: 'Tên hàng', width: 180, value: (r) => (r.sku ? prods.data?.get(r.sku) ?? '' : '') },
+    { key: 'unit', hidden: !chiTiet, header: 'ĐVT', width: 70, value: (r) => r.unit ?? '' },
     { key: 'branch', header: 'Chi nhánh', width: 110, value: (r) => (r.branch ? names.branchName(r.branch) : '') },
-    { key: 'code', header: 'Mã chính sách', type: 'code', width: 150, value: (r) => r.p.code },
-    { key: 'line', header: 'Dòng', width: 70, value: (r) => (r.lines > 1 ? `${r.line}/${r.lines}` : '') },
-    { key: 'brand', header: 'Nhãn', width: 90, value: (r) => r.p.scope.brandCode ?? '' },
-    { key: 'note', header: 'Ghi chú', width: 160, value: (r) => r.note ?? '' },
+    { key: 'note', hidden: true, header: 'Ghi chú', width: 160, value: (r) => r.note ?? '' },
+    // Số tổng hợp của cả chính sách: chỉ ghi ở dòng đầu của chính sách (cộng cột không bị trùng).
+    { key: 'soDon', header: 'Số đơn đặt hàng', type: 'money', width: 90, sum: true, title: 'Đơn đặt hàng đã gửi duyệt / đã duyệt trong kỳ, thuộc phạm vi chính sách (NCC, hợp đồng, nhãn / mã, hiệu lực)', value: (r) => (r.line === 1 ? donDat.get(r.p.code)?.so ?? 0 : '') },
+    { key: 'giaTriDon', header: 'Giá trị đơn đặt', type: 'money', width: 120, sum: true, title: 'Tiền hàng chưa thuế của các đơn đặt trên', value: (r) => (r.line === 1 ? donDat.get(r.p.code)?.giaTri ?? 0 : '') },
+    { key: 'doanhSo', header: 'Doanh số luỹ kế', type: 'money', width: 130, sum: true, title: 'Tiền hàng chưa thuế đủ điều kiện tính ưu đãi / thưởng trong kỳ (phiếu nhập đã duyệt) — cùng số MH32', value: (r) => (r.line === 1 ? thucHien.get(r.p.code)?.base ?? '' : '') },
+    { key: 'duocHuong', header: 'Quyền lợi được hưởng', type: 'money', width: 130, sum: true, title: 'Chiết khấu / thưởng / quà được hưởng trong kỳ (đã chốt + tạm tính kỳ chưa lập phiếu thưởng)', value: (r) => (r.line === 1 ? thucHien.get(r.p.code)?.entitled ?? '' : '') },
+    { key: 'daNhan', header: 'Đã nhận', type: 'money', width: 120, sum: true, title: 'Đã trừ trên hoá đơn / đã hạch toán phiếu thưởng', value: (r) => (r.line === 1 ? thucHien.get(r.p.code)?.received ?? '' : '') },
+    { key: 'conNhan', header: 'Còn phải nhận', type: 'money', width: 120, sum: true, title: 'Được hưởng − đã nhận (gồm phần tạm tính chưa lập phiếu thưởng)', value: (r) => { const x = thucHien.get(r.p.code); return r.line === 1 && x ? Math.max(0, Math.round(x.entitled - x.received)) : ''; } },
     { key: 'validFrom', header: 'Hiệu lực từ', width: 90, value: (r) => dmy(r.p.validFrom) },
     { key: 'validTo', header: 'Đến', width: 90, value: (r) => dmy(r.p.validTo) },
     { key: 'state', header: 'Trạng thái', width: 110, render: (r) => <span className={`badge ${r.state === 'Đang áp' ? 'badge-ok' : r.state === 'Hết hiệu lực' ? 'badge-warn' : 'badge-gray'}`}>{r.state}</span>, value: (r) => r.state },
-    { key: 'createdBy', header: 'Người tạo', width: 110, value: (r) => r.p.createdBy ?? '' },
-    { key: 'createdAt', header: 'Ngày giờ tạo', width: 140, value: (r) => (r.p.createdAt ? new Date(r.p.createdAt).toLocaleString('vi-VN', { hour12: false }) : '') },
+    { key: 'createdBy', hidden: true, header: 'Người tạo', width: 110, value: (r) => r.p.createdBy ?? '' },
+    { key: 'createdAt', hidden: true, header: 'Ngày giờ tạo', width: 140, value: (r) => (r.p.createdAt ? new Date(r.p.createdAt).toLocaleString('vi-VN', { hour12: false }) : '') },
   ];
   const policies = new Set(rows.map((r) => r.p.id)).size;
 
   return (
     <>
       <PageHeader title="Báo cáo chi tiết chính sách mua hàng" code="MH14" helpKey="mua-hang-chi-tiet-chinh-sach"
-        subtitle="Mỗi chính sách trải ra từng dòng ưu đãi: từng mã hàng, từng bậc, từng chi nhánh — lọc, xuất Excel; bấm đúp một dòng để mở chính sách" />
+        subtitle="Mỗi chính sách: điều kiện, quyền lợi và số thực hiện trong kỳ (đơn đặt, doanh số, được hưởng, đã nhận, còn phải nhận)" />
       <div className="card">
         <div className="row" style={{ gap: 8, padding: '8px 12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <label className="row" style={{ gap: 4, alignItems: 'center' }} title="Kỳ tính số đơn đặt, doanh số, quyền lợi">Từ <input type="date" className="input" value={tu} onChange={(e) => setTu(e.target.value || tu)} /> đến <input type="date" className="input" value={den} onChange={(e) => setDen(e.target.value || den)} /></label>
           <div style={{ width: 260 }}><PartnerPicker kind="supplier" value={partner} onChange={setPartner} placeholder="Lọc theo nhà cung cấp" /></div>
           <select className="select input" style={{ width: 230 }} value={kind} onChange={(e) => setKind(e.target.value as PolicyKind | '')}><option value="">Mọi loại chính sách</option>{ALL_KINDS.map((k) => <option key={k} value={k}>{POLICY_LABEL[k]}</option>)}</select>
           <select className="select input" style={{ width: 170 }} value={state} onChange={(e) => setState(e.target.value)}><option value="">Mọi trạng thái</option><option>Đang áp</option><option>Hết hiệu lực</option><option>Chưa tới hiệu lực</option><option>Tắt</option></select>
-          <span className="muted" style={{ fontSize: 12 }}>{rows.length.toLocaleString('vi-VN')} dòng ưu đãi của {policies} chính sách · bấm đúp một dòng để mở chính sách · khai báo / sửa ở <Link to="/mua-hang/chinh-sach">Chính sách mua hàng (MH04)</Link></span>
+          <div className="row" style={{ gap: 0 }} role="group" title="Tổng hợp: mỗi chính sách một dòng kèm số thực hiện · Chi tiết: trải từng mã / bậc / chi nhánh">
+            <button type="button" className={`btn btn-sm${chiTiet ? '' : ' btn-primary'}`} onClick={() => setChiTiet(false)}>Tổng hợp</button>
+            <button type="button" className={`btn btn-sm${chiTiet ? ' btn-primary' : ''}`} onClick={() => setChiTiet(true)}>Chi tiết từng dòng</button>
+          </div>
+          <span className="muted" style={{ fontSize: 12 }}>{policies} chính sách{chiTiet ? ` · ${rows.length.toLocaleString('vi-VN')} dòng ưu đãi` : ''} · bấm đúp một dòng để mở chính sách · khai báo / sửa ở <Link to="/mua-hang/chinh-sach">Chính sách mua hàng (MH04)</Link></span>
         </div>
         {isLoading || !data ? <Loading /> : (
-          <DataGrid storageKey="mh-chi-tiet-chinh-sach-v2" exportName="bao-cao-chi-tiet-chinh-sach-mua-hang" exportTitle="BÁO CÁO CHI TIẾT CHÍNH SÁCH MUA HÀNG"
+          <DataGrid storageKey="mh-chi-tiet-chinh-sach-v3" exportName="bao-cao-chi-tiet-chinh-sach-mua-hang" exportTitle="BÁO CÁO CHI TIẾT CHÍNH SÁCH MUA HÀNG"
             rows={rows} rowKey={(r) => r.key} columns={columns} onRowDoubleClick={(r) => setEditing(r.p)} groupable
-            rowClassName={(r) => (r.state === 'Đang áp' ? '' : 'muted')} footerLabel={false} emptyText="Chưa có chính sách khớp bộ lọc" />
+            rowClassName={(r) => (r.state === 'Đang áp' ? '' : 'muted')} footerLabel="Cộng" emptyText="Chưa có chính sách khớp bộ lọc" />
         )}
       </div>
       {editing && <PolicyForm value={editing} all={data?.policies ?? []} onClose={() => setEditing(null)} onSaved={(_code, stay) => { if (!stay) setEditing(null); void refresh(); }} />}

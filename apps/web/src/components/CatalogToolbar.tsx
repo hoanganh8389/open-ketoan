@@ -68,7 +68,7 @@ export function CatalogToolbar({ onAdd, onCopy, onEdit, onDelete, onRefresh, onE
       {onCopy && canWrite && <button className="btn btn-sm" disabled={!hasSelection} onClick={onCopy} title={hasSelection ? 'Nhân bản: thêm mục mới chép thông tin dòng đang chọn (mã để trống)' : 'Chọn một dòng trên bảng để nhân bản'}><Copy size={14} /> Nhân bản</button>}
       {/* [2026-11-17 kiennt] màn danh mục không có nút Sửa trên thanh: bấm đúp dòng → hộp thoại → Sửa (đóng góp) */}
       {onEdit && !danhMuc && <button className="btn btn-sm" disabled={!canWrite || !hasSelection} onClick={() => { openNextInEdit(); onEdit(); }} title="Sửa dòng đang chọn (Ctrl+E) — mở thẳng chế độ sửa; bấm đúp dòng để xem"><Pencil size={14} /> Sửa</button>}
-      {onRefresh && <button className="btn btn-sm" disabled={loading} onClick={() => void refresh()} title="Nạp lại dữ liệu mới nhất từ máy chủ (F5)"><RefreshCw size={14} className={loading ? 'spin' : undefined} /> {loading ? 'Đang nạp…' : 'Nạp'}</button>}
+      {onRefresh && <button className="btn btn-sm btn-nap" disabled={loading} onClick={() => void refresh()} title="Nạp lại dữ liệu mới nhất từ máy chủ (F5)"><RefreshCw size={14} className={loading ? 'spin' : undefined} /> {loading ? 'Đang nạp…' : 'Nạp'}</button>}
       {onExport && <button className="btn btn-sm" onClick={onExport} title="Xuất Excel (Ctrl+F8)"><FileSpreadsheet size={14} /> Xuất</button>}
       {danhMuc && <button className="btn btn-sm" onClick={() => window.print()} title="In màn hình đang xem"><Printer size={14} /> In</button>}
       {trash && <ThungRacDanhMuc catalog={trash.catalog} title={trash.title} sel={trash.sel} />}

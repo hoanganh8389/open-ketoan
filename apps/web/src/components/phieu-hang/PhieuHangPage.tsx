@@ -6,10 +6,12 @@
  *   - Nhãn "DỮ LIỆU GIẢ" khi loại phiếu đang chạy dữ liệu mẫu (đổi ở API → Nguồn dữ liệu màn hình).
  */
 import { dongChungTu } from '@/lib/trangThai';
+import { RefreshCw } from 'lucide-react';
 import { workBranch } from '@/lib/workBranch';
 import { useThemTuDiaChi } from '@/lib/themNhanh';
 import { useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { useMoLaiHopThoai } from '@/layout/WindowDock';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
 import { defaultTo } from '@/lib/format';
@@ -21,7 +23,7 @@ import { DateRange, BranchSelect } from '@/components/filters';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { khoLabel, useKho } from './ChonKho';
 import { ErrorBox, Loading } from '@/components/ui';
-import { PhieuHangForm } from './PhieuHangForm';
+import { PhieuHangForm, type GiuPhieuHang } from './PhieuHangForm';
 import { TRADE_TEMPLATES } from './printTemplates';
 import { PrintButton } from '@/components/print';
 import { advisoryText, useDocumentGate } from '@/components/PostingGate';
@@ -54,7 +56,14 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
   // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-036: form có khung riêng (cùng mẫu phiếu mua) — nút Sửa của danh sách mở thẳng chế độ sửa
   // bằng cờ startEdit (thay openNextInEdit của khung hộp thoại chung); ghi xong / bấm đúp thì mở ở chế độ xem như trước (đóng góp)
   const [startEdit, setStartEdit] = useState(false);
-  const save = useMutation({ mutationFn: (d: TradeDoc) => svc.save(d), onSuccess: (saved, d) => { if (d.id) { setStartEdit(false); setEditing(saved); setFormKey((k) => k + 1); } else setEditing(null); void refresh(); } });
+  // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — tải lại trang / mất điện: mở lại phiếu hàng đang dở đúng nội dung (đóng góp)
+  const loc = useLocation();
+  const [khoiPhuc, setKhoiPhuc] = useState<GiuPhieuHang | undefined>();
+  useMoLaiHopThoai('phieu-hang', loc.pathname, (list) => {
+    const g = list[list.length - 1]?.draft as GiuPhieuHang | null;
+    if (g?.v) { setKhoiPhuc(g); setStartEdit(Boolean(g.startEdit)); setEditing(g.v); }
+  });
+  const save = useMutation({ mutationFn: (d: TradeDoc) => svc.save(d), onSuccess: (saved, d) => { setKhoiPhuc(undefined); if (d.id) { setStartEdit(false); setEditing(saved); setFormKey((k) => k + 1); } else setEditing(null); void refresh(); } });
   const del = useMutation({ mutationFn: (id: string) => svc.remove(id), onSuccess: () => { setSel(null); void refresh(); } });
   // [2026-11-02 04:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-020 — S020-21b: duyệt phiếu (nguồn API: vào sổ) khi còn cảnh báo kiểm chuẩn của ngày phiếu ⇒ một dòng bằng chứng; dữ liệu giả lập thì không ghi.
   const gate = useDocumentGate(sel?.docDate);
@@ -110,7 +119,7 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
           <button className="btn btn-sm" disabled={!sel} onClick={() => { if (!sel) return; setStartEdit(sel.status !== 'approved'); void open(sel); }}>{sel?.status === 'approved' ? 'Xem' : 'Sửa'}</button>
           <button className="btn btn-sm" disabled={!sel || status.isPending} onClick={() => { if (!sel) return; const s = sel.status === 'approved' ? 'draft' : 'approved'; if (s === 'approved' && gate.advisories.length && !window.confirm(`Duyệt phiếu ${sel.docNo || '(mới)'}?` + advisoryText(gate.advisories))) return; status.mutate({ id: sel.id, s }); }}>{sel?.status === 'approved' ? 'Bỏ duyệt' : 'Duyệt'}</button>
           {TRADE_TEMPLATES[kind] && <PrintButton small screen={code} templates={TRADE_TEMPLATES[kind]!} disabled={!sel} title="In phiếu đang chọn" getDocs={async () => (sel ? [await svc.get(sel.id)] : [])} />}
-          <button className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
+          <button className="btn btn-sm btn-nap" onClick={() => void q.refetch()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
           <span style={{ flex: 1 }} />
           <form className="row" style={{ gap: 4 }} data-no-search onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>
@@ -126,7 +135,7 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
         )}
       </div>
       </FilterLayout>
-      {editing && <PhieuHangForm key={formKey} printScreen={code} helpKey={helpKey} startEdit={startEdit} value={editing} readOnly={editing.status === 'approved'} saving={save.isPending} error={save.error} onSave={(d) => save.mutate(d)} onClose={() => { setEditing(null); save.reset(); }} />}
+      {editing && <PhieuHangForm key={formKey} khoiPhuc={khoiPhuc} giuKey={`hang:${kind}:${editing.id || 'moi'}`} printScreen={code} helpKey={helpKey} startEdit={startEdit} value={editing} readOnly={editing.status === 'approved'} saving={save.isPending} error={save.error} onSave={(d) => save.mutate(d)} onClose={() => { setEditing(null); setKhoiPhuc(undefined); save.reset(); }} />}
     </>
   );
 }

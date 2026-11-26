@@ -16,7 +16,9 @@ import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Loading, Modal } from '@/components/ui';
 import { errorText } from '@/lib/api';
 import { purchaseApi, today, useMuaHang, useNames, type SupplierRow } from '../du-lieu';
-import { PhieuMuaForm } from '../chung-tu/PhieuMuaForm';
+import { PhieuMuaForm, type GiuPhieuMua } from '../chung-tu/PhieuMuaForm';
+import { useMoLaiHopThoai } from '@/layout/WindowDock';
+import { useLocation } from 'react-router-dom';
 import { factsText, fold, num, qtyFmt, stockApi, stockSnapshot, useHierarchy, type AnalysisRow } from '../ton-max/api';
 import { ChuaPhanCap, useMotChiNhanh } from '../ton-max/chung';
 // [2026-11-26 kiennt] NT-MH-022 — bảng tham số + thanh lọc chuẩn (Chi nhánh · Nhóm hàng) như MH11 / MH17 (đóng góp)
@@ -51,6 +53,13 @@ export function DatHangPage() {
   // Lập đơn xong mở xem trước ngay tại chỗ (form đơn đặt: sửa, duyệt, xem mẫu gửi NCC) — không phải sang MH11.
   const mh = useMuaHang();
   const [openDoc, setOpenDoc] = useState<PDoc | null>(null);
+  // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — tải lại trang: mở lại đơn đặt đang dở (đóng góp)
+  const loc = useLocation();
+  const [khoiPhuc, setKhoiPhuc] = useState<{ dirty: boolean; viewing: boolean } | undefined>();
+  useMoLaiHopThoai('mh', loc.pathname, (list) => {
+    const g = list[list.length - 1]?.draft as GiuPhieuMua | null;
+    if (g?.v?.id) { setKhoiPhuc({ dirty: g.dirty, viewing: g.viewing }); setOpenDoc(g.v); }
+  });
   const openById = async (id: string) => { const r = await mh.refetch(); const d = r.data?.docs.find((x) => x.id === id); if (d) setOpenDoc(d); };
   const [busy, setBusy] = useState(false);
   const exportRef = useRef<(() => void) | null>(null);
@@ -214,7 +223,7 @@ export function DatHangPage() {
           <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>{why.shopsWithMax} shop có max, {why.shopsBelowMax} shop đang dưới max. Đổi cách tính ở <Link to="/mua-hang/cong-thuc">Công thức đặt hàng</Link>.</div>
         </div>
       </Modal>}
-      {openDoc && mh.data && <PhieuMuaForm key={openDoc.id} value={openDoc} data={mh.data} onClose={() => setOpenDoc(null)} onSaved={() => void mh.refresh()} onOpen={(d) => setOpenDoc(d)} />}
+      {openDoc && mh.data && <PhieuMuaForm key={openDoc.id} value={openDoc} khoiPhuc={khoiPhuc} data={mh.data} onClose={() => { setOpenDoc(null); setKhoiPhuc(undefined); }} onSaved={() => void mh.refresh()} onOpen={(d) => setOpenDoc(d)} />}
     </>
   );
 }

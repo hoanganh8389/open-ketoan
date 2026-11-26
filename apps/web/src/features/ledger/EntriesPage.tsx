@@ -2,6 +2,7 @@
  * Bút toán sổ cái: tra theo bộ sổ, ngày, chi nhánh, tài khoản, số chứng từ.
  */
 import { useState, type ReactNode } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { DOC_TYPE_LABELS, type DocType } from '@ketoan/contracts';
 import { api, errorText, ALL_ROWS } from '@/lib/api';
@@ -89,7 +90,7 @@ export function EntryDetail({ id, onClose }: { id: string; onClose: () => void }
         <>
           {e?.sourceDocumentId && <button className={`btn btn-sm${history ? ' btn-primary' : ''}`} onClick={() => setHistory((x) => !x)}>Lịch sử thay đổi</button>}
           {e?.sourceDocumentId && <button className="btn btn-sm" onClick={() => setDocId(e.sourceDocumentId)}>Chứng từ gốc</button>}
-          <button className="btn btn-sm" onClick={() => q.refetch()}>Nạp</button>
+          <button className="btn btn-sm btn-nap" onClick={() => q.refetch()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
         </>
       }
     >

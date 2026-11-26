@@ -4,6 +4,7 @@
  * API: /api/v1/kho/kiem-ke. + Thêm: chi nhánh đang làm việc điền sẵn, ngày hôm nay.
  */
 import { useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { errorText } from '@/lib/api';
 import { today } from '@/lib/format';
@@ -52,7 +53,7 @@ export function KiemKePage() {
           <div className="row ck-toolbar">
             {tt.them && <button className="btn btn-sm btn-primary" onClick={() => { setEditing(emptyDoc()); setFormKey((k) => k + 1); }} title="Lập biên bản kiểm kê mới — chi nhánh đang làm việc, ngày hôm nay">+ Thêm</button>}
             <button className="btn btn-sm" disabled={!sel} onClick={() => sel && void open(sel)}>Mở</button>
-            <button className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
+            <button className="btn btn-sm btn-nap" onClick={() => void q.refetch()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
             <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
           </div>
           <ErrorBox error={q.error ? errorText(q.error) : null} />

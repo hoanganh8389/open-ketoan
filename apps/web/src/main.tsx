@@ -7,6 +7,7 @@ import { giaoDien } from './lib/giaoDien';
 import { setAdminUrl } from './lib/sourceDoc';
 import { installColumnResize } from './lib/colResize';
 import { installTableNav } from './lib/tableNav';
+import { ganNutNapKiemBanMoi } from './lib/banMoi';
 import { installPrintCatalog } from './printCatalog';
 // [2026-11-02 09:33 PM Johnny Chu - Chu Hoàng Anh] PHASE-014 — W2: bản thật cho @bizcity/ui-kit (màn của module SDK)
 import { installUiKit } from './lib/uiKitHost';
@@ -20,6 +21,7 @@ function render() {
   installUiKit();
   installColumnResize();
   installTableNav();
+  ganNutNapKiemBanMoi();
   installPrintCatalog();
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

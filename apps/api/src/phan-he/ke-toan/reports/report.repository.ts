@@ -31,35 +31,69 @@ export const reportRepository = {
     return db.selectFrom('branches').select(['id', 'code']).where('tenant_id', '=', tenantId).where('code', 'in', codes).execute();
   },
 
-  /** Đầu kỳ + phát sinh theo (tài khoản, đối tượng) cho cân đối phát sinh. */
+  /**
+   * Đầu kỳ + phát sinh theo (tài khoản, đối tượng) cho cân đối phát sinh.
+   * [2026-11-26 07:30 PM Nguyễn Văn Thủy] SO-DU — phiếu số dư đầu kỳ (doc_type 'opening') LUÔN là số dư đầu kỳ, không bao giờ là phát sinh:
+   * ngày chốt nằm trong khoảng báo cáo thì chuyển phần của phiếu số dư từ cột phát sinh sang cột đầu kỳ (số cuối kỳ không đổi) (đóng góp)
+   */
   async balances(db: Db, a: { tenantId: string; from: string; to: string; branchIds: string[] | null; accountPrefix?: string; accountCodes?: string[]; byBranch?: boolean }): Promise<BalanceRow[]> {
     const branchFilter = a.branchIds ? sql`AND branch_id = ANY(${a.branchIds}::bigint[])` : sql``;
     const accFilter = a.accountPrefix ? sql`AND account_code LIKE ${a.accountPrefix + '%'}` : a.accountCodes ? sql`AND account_code = ANY(${a.accountCodes}::text[])` : sql``;
     const branchCol = a.byBranch ? sql`branch_id::text` : sql`''`;
+    const lBranch = a.branchIds ? sql`AND l.branch_id = ANY(${a.branchIds}::bigint[])` : sql``;
+    const lAcc = a.accountPrefix ? sql`AND l.account_code LIKE ${a.accountPrefix + '%'}` : a.accountCodes ? sql`AND l.account_code = ANY(${a.accountCodes}::text[])` : sql``;
+    const lBranchCol = a.byBranch ? sql`l.branch_id::text` : sql`''`;
     const res = await sql<BalanceRow>`
-      SELECT account_code, partner_id, ${branchCol} AS branch_id,
-             SUM(CASE WHEN posting_date <  ${a.from}::date THEN debit - credit ELSE 0 END) AS opening,
-             SUM(CASE WHEN posting_date >= ${a.from}::date THEN debit  ELSE 0 END)        AS debit,
-             SUM(CASE WHEN posting_date >= ${a.from}::date THEN credit ELSE 0 END)        AS credit
-        FROM bizcity_read.ledger_balances_daily
-       WHERE tenant_id = ${a.tenantId}
-         AND posting_date <= ${a.to}::date
-         ${branchFilter} ${accFilter}
-       GROUP BY 1, 2, 3`.execute(db);
+      WITH b AS (
+        SELECT account_code, partner_id, ${branchCol} AS branch_id,
+               SUM(CASE WHEN posting_date <  ${a.from}::date THEN debit - credit ELSE 0 END) AS opening,
+               SUM(CASE WHEN posting_date >= ${a.from}::date THEN debit  ELSE 0 END)        AS debit,
+               SUM(CASE WHEN posting_date >= ${a.from}::date THEN credit ELSE 0 END)        AS credit
+          FROM bizcity_read.ledger_balances_daily
+         WHERE tenant_id = ${a.tenantId}
+           AND posting_date <= ${a.to}::date
+           ${branchFilter} ${accFilter}
+         GROUP BY 1, 2, 3),
+      o AS (
+        SELECT l.account_code, COALESCE(l.partner_id, 0) AS partner_id, ${lBranchCol} AS branch_id,
+               SUM(l.debit - l.credit) AS net, SUM(l.debit) AS d, SUM(l.credit) AS c
+          FROM bizcity_read.ledger_lines l
+          JOIN bizcity_read.ledger_entries e ON e.id = l.entry_id
+         WHERE l.tenant_id = ${a.tenantId} AND e.doc_type = 'opening'
+           AND l.posting_date BETWEEN ${a.from}::date AND ${a.to}::date
+           ${lBranch} ${lAcc}
+         GROUP BY 1, 2, 3)
+      SELECT b.account_code, b.partner_id, b.branch_id,
+             b.opening + COALESCE(o.net, 0) AS opening,
+             b.debit - COALESCE(o.d, 0)     AS debit,
+             b.credit - COALESCE(o.c, 0)    AS credit
+        FROM b LEFT JOIN o ON o.account_code = b.account_code AND o.partner_id = b.partner_id AND o.branch_id = b.branch_id`.execute(db);
     return res.rows;
   },
 
-  /** Số dư đầu (Nợ − Có) của tài khoản trước ngày `from`, tách theo đối tượng. */
-  async openingByPartner(db: Db, a: { tenantId: string; accountPrefix: string; from: string; branchIds: string[] | null; partnerId?: string }) {
+  /** Số dư đầu (Nợ − Có) của tài khoản trước ngày `from`, tách theo đối tượng — cộng cả phiếu số dư đầu kỳ ghi trong kỳ (tới `to`). */
+  async openingByPartner(db: Db, a: { tenantId: string; accountPrefix: string; from: string; to?: string; branchIds: string[] | null; partnerId?: string }) {
     const branchFilter = a.branchIds ? sql`AND branch_id = ANY(${a.branchIds}::bigint[])` : sql``;
     const partnerFilter = a.partnerId ? sql`AND partner_id = ${a.partnerId}` : sql``;
     const res = await sql<{ partner_id: string; net: string }>`
-      SELECT partner_id, SUM(debit - credit) AS net
-        FROM bizcity_read.ledger_balances_daily
-       WHERE tenant_id = ${a.tenantId}
-         AND account_code LIKE ${a.accountPrefix + '%'}
-         AND posting_date < ${a.from}::date
-         ${branchFilter} ${partnerFilter}
+      SELECT partner_id, SUM(net) AS net FROM (
+        SELECT partner_id, SUM(debit - credit) AS net
+          FROM bizcity_read.ledger_balances_daily
+         WHERE tenant_id = ${a.tenantId}
+           AND account_code LIKE ${a.accountPrefix + '%'}
+           AND posting_date < ${a.from}::date
+           ${branchFilter} ${partnerFilter}
+         GROUP BY partner_id
+        UNION ALL
+        SELECT COALESCE(l.partner_id, 0), SUM(l.debit - l.credit)
+          FROM bizcity_read.ledger_lines l
+          JOIN bizcity_read.ledger_entries e ON e.id = l.entry_id
+         WHERE l.tenant_id = ${a.tenantId} AND e.doc_type = 'opening'
+           AND l.account_code LIKE ${a.accountPrefix + '%'}
+           AND l.posting_date BETWEEN ${a.from}::date AND ${(a.to ?? a.from)}::date ${a.to ? sql`` : sql`AND false`}
+           ${a.branchIds ? sql`AND l.branch_id = ANY(${a.branchIds}::bigint[])` : sql``}
+           ${a.partnerId ? sql`AND l.partner_id = ${a.partnerId}` : sql``}
+         GROUP BY 1) x
        GROUP BY partner_id`.execute(db);
     return res.rows;
   },
@@ -155,6 +189,7 @@ export const reportRepository = {
          AND l.account_code LIKE ${a.accountPrefix + '%'}
          AND l.posting_date BETWEEN ${a.from}::date AND ${a.to}::date
          ${branchFilter} ${partnerFilter} ${correctionFilter} ${typeFilter} ${counterFilter} ${skuFilter}
+         ${a.docType === 'opening' ? sql`` : sql`AND e.doc_type <> 'opening'`}
        ORDER BY ${order}`.execute(db);
     return res.rows;
   },
@@ -192,6 +227,7 @@ export const reportRepository = {
          ${a.partnerId ? sql`AND g.partner_id = ${a.partnerId}` : sql``}
          ${a.showCorrections ? sql`` : sql`AND e.status = 'posted' AND NOT e.is_reversal`}
          ${a.docType ? sql`AND e.doc_type = ${a.docType}` : sql``}
+         ${a.docType === 'opening' ? sql`` : sql`AND e.doc_type <> 'opening'`}
          ${a.counterPrefix ? sql`AND EXISTS (SELECT 1 FROM unnest(string_to_array(g.counter_accounts, ', ')) c WHERE c LIKE ${a.counterPrefix + '%'})` : sql``}
        ORDER BY ${a.cashOrder ? sql`g.posting_date, (g.debit = 0), e.entry_no, g.first_line_no` : sql`g.posting_date, e.entry_no, g.first_line_no`}`.execute(db);
     return res.rows;

@@ -25,7 +25,9 @@ const TRO_LY_AN = 'ph.tro-ly.an';
 
 const khongLam = () => undefined;
 
-export function KhungPhieu({ title, badges, totalLabel = 'Tổng tiền', total, helpKey, viewing = false, readOnly = false, onEdit = khongLam, onClose, sideTitle = 'Trợ lý', side, footNote, footer, keys, lyDo, children }: {
+export function KhungPhieu({ title, badges, totalLabel = 'Tổng tiền', total, helpKey, viewing = false, readOnly = false, onEdit = khongLam, onClose, sideTitle = 'Trợ lý', side, footNote, footer, keys, lyDo, children, giu }: {
+  /** Giữ phiếu đang mở qua tải lại trang / mất điện (bản nháp ở máy — xem WindowDock). */
+  giu?: { key: string; kind: string; draft: () => unknown };
   /** Tên phiếu + số phiếu (chữ của tiêu đề, cũng là tên ô ở thanh thu nhỏ). */
   title: string;
   /** Nhãn trạng thái cạnh tiêu đề (Nháp / Đã duyệt…). */
@@ -59,7 +61,7 @@ export function KhungPhieu({ title, badges, totalLabel = 'Tổng tiền', total,
   const locked = viewing || readOnly;
   const coTroLy = side !== undefined && side !== null && side !== false;
   const kl = useKiemLoi(locked, { lyDo });
-  const dock = useDockWindow(onClose);
+  const dock = useDockWindow(onClose, false, giu?.key, giu && { kind: giu.kind, draft: giu.draft });
   const sheet = useRef<HTMLDivElement>(null);
 
   // Phím tắt như khung hộp thoại chung: chỉ khung đang ở trên cùng (không thu nhỏ, không bị hộp thoại khác che) nhận phím.

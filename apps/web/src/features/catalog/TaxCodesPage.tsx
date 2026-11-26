@@ -5,6 +5,7 @@
 // TK thuế theo Quy tắc hạch toán (ACC41). Bỏ Thêm / Sửa / Xoá / Nhập Excel; mã cũ (V…, R…) chỉ xem, kèm loại thay thế (đóng góp)
 // [2026-11-20 kiennt] NT-DM-012 — bỏ dòng giải thích trên màn, chuyển vào hướng dẫn sử dụng (docs/huong-dan/loai-thue.md) (đóng góp)
 import { useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { ErrorBox, Loading } from '@/components/ui';
 import { DataGrid, type Column } from '@/components/DataGrid';
@@ -45,7 +46,7 @@ export function TaxCodesPage() {
         <div className="row" style={{ gap: 12, alignItems: 'center', marginBottom: 6 }}>
           <label className="checkbox"><input type="checkbox" checked={maCu} onChange={(e) => setMaCu(e.target.checked)} /> Xem mã cũ (trước khi cố định — chỉ để đọc chứng từ đã ghi)</label>
           <span style={{ flex: 1 }} />
-          <button type="button" className="btn btn-sm" onClick={() => q.refetch()}>Nạp</button>
+          <button type="button" className="btn btn-sm btn-nap" onClick={() => q.refetch()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
           <button type="button" className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất</button>
         </div>
         <ErrorBox error={q.error ? errorText(q.error) : null} />

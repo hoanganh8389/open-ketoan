@@ -3,7 +3,9 @@
  * Sơ đồ tổ chức (DM16): gốc Công ty → Miền → Chi nhánh → Tỉnh → điểm kinh doanh (chi nhánh) → kho.
  * Một chỗ gọi API + dựng chỉ mục cây cho màn DM16, bộ lọc cây chi nhánh / kho và ô chọn chi nhánh ở màn đặt hàng.
  */
+import { useEffect, useMemo } from 'react';
 import { useQuery, type QueryClient } from '@tanstack/react-query';
+import { useWorkBranch } from '@/lib/workBranch';
 import { api } from '@/lib/api';
 import { plain } from '@/components/pickers';
 
@@ -89,3 +91,53 @@ export function matchText(q: string, ...fields: (string | null | undefined)[]) {
 
 /** Gợi ý ở ô chọn chi nhánh: "77 cửa hàng đang bán · kho 08000". */
 export const purchaseUnitHint = (u: PurchaseUnit) => `${u.activeBranches} cửa hàng đang bán · kho ${u.branchCode}`;
+
+
+// [2026-11-26 07:00 PM Nguyễn Văn Thủy] UX — bộ lọc dạng cây theo CHI NHÁNH ĐANG LÀM VIỆC: chỉ đơn vị đó và con cháu (đệ quy), đơn vị đó làm gốc —
+// cấp cha phía trên không hiện, không tích được; 'Tất cả' = tất cả trong nhánh đó (đóng góp)
+/** Cây cắt theo đơn vị w: giữ w + con cháu, w thành gốc. w rỗng, không có trong cây, hoặc là gốc công ty → null (không cắt). */
+export function catCay(tree: OrgTree | undefined, w: string): OrgTree | null {
+  if (!tree || !w) return null;
+  const ix = indexOrg(tree);
+  const node = ix.byCode.get(w);
+  if (node) {
+    if (!node.parentCode) return null;
+    const keep = ix.subtree(w);
+    return {
+      nodes: tree.nodes.filter((n) => keep.has(n.code)).map((n) => (n.code === w ? { ...n, parentCode: null } : n)),
+      branches: tree.branches.filter((b) => b.orgCode && keep.has(b.orgCode)),
+      unassigned: 0,
+    };
+  }
+  const b = tree.branches.find((x) => x.code === w);
+  if (!b) return null;
+  // Đơn vị lá (cửa hàng không có đơn vị con): một gốc chỉ có chính nó.
+  const goc: OrgNode = { code: w, shortCode: '', name: b.name, alias: '', note: '', kind: 'unit', parentCode: null, level: 0, path: w, sortOrder: 0, isActive: b.isActive,
+    purchaseBranchCode: null, purchaseUnitCode: null, directBranches: 1, totalBranches: 1, activeBranches: b.isActive ? 1 : 0 };
+  return { nodes: [goc], branches: [{ ...b, orgCode: w }], unassigned: 0 };
+}
+
+/** Cây cho bộ lọc theo chi nhánh đang làm việc: tree để vẽ, allowed = mã chi nhánh được chọn (null = mọi chi nhánh, không cắt). */
+export function useCayTheoLamViec(): { tree: OrgTree | undefined; allowed: string[] | null } {
+  const q = useOrgTree();
+  const w = useWorkBranch();
+  return useMemo(() => {
+    const cat = catCay(q.data, w);
+    return cat ? { tree: cat, allowed: cat.branches.map((b) => b.code) } : { tree: q.data, allowed: null };
+  }, [q.data, w]);
+}
+
+/** "Tất cả chi nhánh" của bộ lọc: không cắt → '' (mọi chi nhánh); cắt theo chi nhánh làm việc → liệt kê đúng các mã trong nhánh. */
+export const tatCaCn = (allowed: string[] | null, all: string[]) => (allowed ? all.join(',') : '');
+/**
+ * Bộ lọc chi nhánh khi cắt theo chi nhánh làm việc: giá trị rỗng ('' = tất cả) hoặc có mã ngoài nhánh thì tự đổi thành các mã trong nhánh —
+ * báo cáo không lấy số của chi nhánh ngoài nhánh đang làm việc.
+ */
+export function useGioiHanCn(value: string, onChange: ((v: string) => void) | undefined, all: string[], allowed: string[] | null, none = '-') {
+  useEffect(() => {
+    if (!allowed || !onChange || !all.length || value === none) return;
+    const cur = value ? value.split(',') : [];
+    const ok = cur.filter((c) => all.includes(c));
+    if (!value || ok.length !== cur.length) onChange((ok.length ? ok : all).join(','));
+  }, [allowed?.join(','), all.join(','), value]); // eslint-disable-line react-hooks/exhaustive-deps
+}
