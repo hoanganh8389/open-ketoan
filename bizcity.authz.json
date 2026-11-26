@@ -635,6 +635,36 @@
       "module": "kho"
     },
     {
+      "key": "loyalty:chinh-sach-duyet",
+      "label": "Chính sách tích điểm — duyệt / từ chối, duyệt = phát hành cho máy bán; người lập không tự duyệt (NT-BH-039)",
+      "risk": "high",
+      "module": "loyalty"
+    },
+    {
+      "key": "loyalty:chinh-sach-lap",
+      "label": "Chính sách tích điểm — lập nháp (sửa từ bản hiện hành, áp cho nhiều cửa hàng) — vai trò khác do quản trị gán ở HT12 (NT-BH-039)",
+      "risk": "low",
+      "module": "loyalty"
+    },
+    {
+      "key": "loyalty:chinh-sach-sua",
+      "label": "Chính sách tích điểm — sửa nháp, gửi duyệt (chương trình, đổi điểm, cài đặt + hạng) — vai trò khác do quản trị gán ở HT12 (NT-BH-039)",
+      "risk": "low",
+      "module": "loyalty"
+    },
+    {
+      "key": "loyalty:dieu-chinh-duyet",
+      "label": "Điều chỉnh điểm tay — duyệt / từ chối, duyệt = ghi sổ điểm; người lập không tự duyệt (NT-BH-039)",
+      "risk": "high",
+      "module": "loyalty"
+    },
+    {
+      "key": "loyalty:dieu-chinh-lap",
+      "label": "Điều chỉnh điểm tay — lập yêu cầu cộng / trừ điểm kèm lý do — vai trò khác do quản trị gán ở HT12 (NT-BH-039)",
+      "risk": "low",
+      "module": "loyalty"
+    },
+    {
       "key": "loyalty:read",
       "label": "Xem điểm thành viên: chính sách tích điểm của cửa hàng, số dư / lô / lịch sử điểm của khách (máy bán, kế toán)",
       "risk": "low",
@@ -1879,6 +1909,11 @@
         "kho:kiem-ke-xac-minh",
         "kho:kiem-ke-xem",
         "ledger:read",
+        "loyalty:chinh-sach-duyet",
+        "loyalty:chinh-sach-lap",
+        "loyalty:chinh-sach-sua",
+        "loyalty:dieu-chinh-duyet",
+        "loyalty:dieu-chinh-lap",
         "loyalty:read",
         "mua-hang:bien-the-sua",
         "mua-hang:bien-the-xem",
