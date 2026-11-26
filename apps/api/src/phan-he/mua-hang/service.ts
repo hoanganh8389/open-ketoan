@@ -206,7 +206,8 @@ export const purchaseService = {
       // → phiếu ghi ở chi nhánh con chủ kho (nơi hàng thực nhận, như đơn giao nhiều chi nhánh) thay vì báo lỗi (đóng góp)
       if (STOCK_KINDS.includes(doc.kind) && doc.warehouseCode) {
         const con = await nhanhConCuaKho(trx, auth.tenantId, doc.branchCode, doc.warehouseCode);
-        if (con) doc.branchCode = con;
+        // Chi nhánh lập phiếu giữ nguyên (workBranchCode); chi nhánh nhập kho / ghi sổ = chi nhánh chủ kho (con cháu, nhiều cấp).
+        if (con) { doc.workBranchCode = cur?.workBranchCode ?? doc.workBranchCode ?? doc.branchCode; doc.branchCode = con; }
       }
       if (STOCK_KINDS.includes(doc.kind)) doc.warehouseCode = (await resolveWarehouse(trx, auth.tenantId, doc.branchCode, doc.warehouseCode)) || undefined;
       else delete doc.warehouseCode;

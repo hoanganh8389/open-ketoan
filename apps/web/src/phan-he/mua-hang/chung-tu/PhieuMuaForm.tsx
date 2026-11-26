@@ -250,7 +250,8 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   }, [v.kind, readOnly, hier.data, v.branchCode, v.deliveryWarehouse, defaultWh]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!showKho || readOnly || !hier.data || !v.branchCode) return;
-    if (v.warehouseCode && branchWhs.some((w) => w.code === v.warehouseCode)) return;
+    // [2026-11-26 06:10 PM Nguyễn Văn Thủy] MH — phân kho được là kho của chi nhánh con cháu (nhiều cấp): chi nhánh nhập kho = chi nhánh chủ kho (đóng góp)
+    if (v.warehouseCode && (branchWhs.some((w) => w.code === v.warehouseCode) || cay.conCua(v.branchCode).includes(cay.khoChu(v.warehouseCode)))) return;
     if ((v.warehouseCode ?? '') !== defaultWh) setV((x) => ({ ...x, warehouseCode: defaultWh || undefined }));
   }, [showKho, readOnly, hier.data, v.branchCode, v.warehouseCode, defaultWh]); // eslint-disable-line react-hooks/exhaustive-deps
   /** Thông tin NCC + nơi giao cho mẫu đơn gửi NCC. */
@@ -1221,9 +1222,9 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                   <ListPicker items={kmItems(v.costItem)} value={v.costItem ?? ''} nameOnly disabled={readOnly} placeholder="Chọn khoản mục" emptyText="Chưa có khoản mục — bấm + để thêm"
                     onAdd={(t) => setThemKm({ text: t, chon: chonKmDau })} addLabel="Thêm khoản mục" onChange={chonKmDau} /></div>}
                 {/* [2026-11-25 11:10 PM Nguyễn Văn Thủy] MH-NHAN — đơn đặt: bỏ ô Chi nhánh nhận / Giao tại kho ở đầu đơn; chọn chi nhánh nhận ở tab dưới bảng hàng (đóng góp) */}
-                {showKho && <div className="field"><label title="Phân kho mặc định của phiếu — dòng nào để trống cột Phân kho thì vào / ra kho này. Mặc định là kho mặc định của chi nhánh">Phân kho (*)</label>
+                {showKho && <div className="field"><label title="Phân kho của phiếu: kho của chi nhánh lập chứng từ hoặc của chi nhánh con cháu (nhiều cấp) — chọn kho chi nhánh con thì hàng nhập kho, ghi sổ ở chi nhánh đó. Dòng nào để trống cột Phân kho thì vào / ra kho này">Phân kho (*){v.warehouseCode && cay.khoChu(v.warehouseCode) && cay.khoChu(v.warehouseCode) !== v.branchCode ? <span className="muted" style={{ fontWeight: 400 }} title="Chi nhánh nhập kho = chi nhánh chủ phân kho; chi nhánh lập chứng từ giữ nguyên"> · nhập kho tại {cay.khoChu(v.warehouseCode)}</span> : null}</label>
                   {/* [2026-11-11 Nguyễn Văn Thủy] chọn phân kho của chi nhánh đang chọn, nút + thêm phân kho ngay trên phiếu (đóng góp) */}
-                  <ChonKho branchCode={v.branchCode} value={v.warehouseCode ?? ''} disabled={readOnly} op={({ receipt: 'purchase_in', return: 'purchase_return_out', gift_in: 'gift_in', gift_out: 'gift_out' } as Record<string, string>)[v.kind]} onChange={(c) => set({ warehouseCode: c || undefined })} /></div>}
+                  <ChonKho branchCode={v.branchCode} conCua value={v.warehouseCode ?? ''} disabled={readOnly} op={({ receipt: 'purchase_in', return: 'purchase_return_out', gift_in: 'gift_in', gift_out: 'gift_out' } as Record<string, string>)[v.kind]} onChange={(c) => set({ warehouseCode: c || undefined })} /></div>}
                 <div className="field span2"><label>Nhà cung cấp (*)</label>
                   <PartnerPicker kind="supplier" value={v.partnerCode} onChange={pickPartner} activeOnly addKind="supplier" disabled={readOnly} />
                   {/* [2026-11-25 Nguyễn Văn Thủy] NCC chỉ hiện tên; MST, địa chỉ rê chuột hoặc bấm (i) xem hồ sơ (đóng góp) */}

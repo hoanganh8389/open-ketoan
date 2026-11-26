@@ -228,7 +228,12 @@ describe('Mua hàng — kho của chi nhánh con trên phiếu nhập', () => {
     const shop = await db.insertInto('branches').values({ tenant_id: tid, code: 'SHOPCON', name: 'Shop con thử', accounting_unit_id: cha.accounting_unit_id, unit_parent_id: cha.id } as never).returning('id').executeTakeFirstOrThrow();
     await db.insertInto('warehouses').values({ tenant_id: tid, code: 'KHO-SHOPCON', branch_id: shop.id, name: 'Kho shop con', is_default: true }).execute();
     const d = await save(receipt({ docDate: '2026-10-20', warehouseCode: 'KHO-SHOPCON' }));
-    expect(d).toMatchObject({ branchCode: 'SHOPCON', warehouseCode: 'KHO-SHOPCON', status: 'draft' });
+    expect(d).toMatchObject({ branchCode: 'SHOPCON', warehouseCode: 'KHO-SHOPCON', status: 'draft', workBranchCode: 'CN01' });
+    // Nhiều cấp: kho của chi nhánh cháu (CN01 → SHOPCON → SHOPCHAU) cũng được, phiếu ghi ở chi nhánh chủ kho.
+    const chau = await db.insertInto('branches').values({ tenant_id: tid, code: 'SHOPCHAU', name: 'Shop cháu thử', accounting_unit_id: cha.accounting_unit_id, unit_parent_id: shop.id } as never).returning('id').executeTakeFirstOrThrow();
+    await db.insertInto('warehouses').values({ tenant_id: tid, code: 'KHO-SHOPCHAU', branch_id: chau.id, name: 'Kho shop cháu', is_default: true }).execute();
+    const d2 = await save(receipt({ docDate: '2026-10-20', warehouseCode: 'KHO-SHOPCHAU' }));
+    expect(d2).toMatchObject({ branchCode: 'SHOPCHAU', warehouseCode: 'KHO-SHOPCHAU', workBranchCode: 'CN01' });
     const ngoai = await db.insertInto('branches').values({ tenant_id: tid, code: 'NGOAICAY', name: 'Chi nhánh ngoài cây', accounting_unit_id: cha.accounting_unit_id } as never).returning('id').executeTakeFirstOrThrow();
     await db.insertInto('warehouses').values({ tenant_id: tid, code: 'KHO-NGOAI', branch_id: ngoai.id, name: 'Kho ngoài' }).execute();
     const r = await call(ctx, 'POST', '/api/v1/purchase/documents', receipt({ docDate: '2026-10-20', warehouseCode: 'KHO-NGOAI' }));
