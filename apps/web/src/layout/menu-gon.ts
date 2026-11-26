@@ -115,9 +115,10 @@ export const GON_DEFS: GonDef[] = [
   },
   {
     key: 'kho', label: 'Kho', icon: 'Warehouse', description: 'Nhập kho, xuất kho, chuyển kho, tính giá xuất kho', color: '#7b1fa2', module: 'kho', homeLabel: 'Quy trình',
-    the: ['/ban-hang/xuat-dieu-chinh', '/kho/chuyen-kho', '/nghiep-vu/tinh-gia-von'],
+    // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: BH06 nay ở /app/xuat-dieu-chinh (module) (đóng góp)
+    the: ['/app/xuat-dieu-chinh', '/kho/chuyen-kho', '/nghiep-vu/tinh-gia-von'],
     sections: [
-      { paths: ['/ban-hang/xuat-dieu-chinh', '/kho/chuyen-kho', '/kho/kiem-ke', '/nghiep-vu/tinh-gia-von'], soon: ['Nhập kho', 'Xuất kho'] },
+      { paths: ['/app/xuat-dieu-chinh', '/kho/chuyen-kho', '/kho/kiem-ke', '/nghiep-vu/tinh-gia-von'], soon: ['Nhập kho', 'Xuất kho'] },
       { label: 'Danh mục', paths: ['/danh-muc/mat-hang', '/danh-muc/so-do-to-chuc', '/danh-muc/loai-kho', '/danh-muc/don-vi-tinh'] },
     ],
     // [2026-11-25 Nguyễn Văn Thủy] #56 tab Test: Sổ kho (MH24) và Tồn kho theo mặt hàng (MH25) về báo cáo của Kho — đủ mọi luồng nhập / xuất, không riêng mua hàng (đóng góp)

@@ -1,0 +1,49 @@
+{
+  "contract": "bizcity_module@1",
+  "id": "bizcity.xuat-dieu-chinh",
+  "key": "xuat-dieu-chinh",
+  "kind": "module",
+  "version": "0.1.0",
+  "label": "Phiếu xuất điều chỉnh",
+  "description": "BH06 Phiếu xuất điều chỉnh lập ở kế toán (NT-BH-044): Lưu nháp / Lưu = ghi sổ, trừ kho. 0 đ → stock_adjustment giảm kho kèm mục đích theo lý do; có giá → bán nội bộ, không hoá đơn điện tử, công nợ người nhận. Huỷ = bút toán đảo; in 02-VT.",
+  "owners": ["@hoanganh8389"],
+  "standard": "^1.0",
+  "requires": {
+    "capabilities": ["ledger.submit", "ledger.cancel", "data.tenant-tx", "data.read-views", "data.migrations.module", "actions.runtime", "actions.idempotency", "evidence.receipt"]
+  },
+  "permissions": [
+    { "key": "xuat-dieu-chinh:phieu-xem", "label": "Phiếu xuất điều chỉnh — xem, in", "roles": ["owner", "chief_accountant", "accountant", "staff"], "risk": "low" },
+    { "key": "xuat-dieu-chinh:phieu-lap", "label": "Phiếu xuất điều chỉnh — lập, lưu nháp, ghi sổ", "roles": ["owner", "chief_accountant", "accountant", "staff"], "risk": "low" },
+    { "key": "xuat-dieu-chinh:phieu-huy", "label": "Phiếu xuất điều chỉnh — huỷ (bút toán đảo)", "roles": ["owner", "chief_accountant", "accountant"], "risk": "high" }
+  ],
+  "data": {
+    "schema": "mod_xuat_dieu_chinh",
+    "tables": ["phieu", "code_counters"],
+    "reads": ["bizcity_read.branches", "bizcity_read.warehouses", "bizcity_read.products", "bizcity_read.branch_prices", "bizcity_read.stock_on_hand", "bizcity_read.tax_codes", "bizcity_read.partners", "bizcity_read.monthly_unit_costs"]
+  },
+  "actions": [
+    "xuat-dieu-chinh.phieu.list",
+    "xuat-dieu-chinh.phieu.get",
+    "xuat-dieu-chinh.phieu.save",
+    "xuat-dieu-chinh.phieu.delete",
+    "xuat-dieu-chinh.phieu.cancel",
+    "xuat-dieu-chinh.danh-muc.get",
+    "xuat-dieu-chinh.hang.get"
+  ],
+  "ledger": {
+    "submits": [
+      { "docType": "stock_adjustment", "contract": "bizcity_ledger_intake@1", "reasons": { "kind": "out", "default": "stock_adjustment:decrease" } },
+      { "docType": "sale", "contract": "bizcity_ledger_intake@1" }
+    ]
+  },
+  "extensions": {
+    "screens": [
+      { "key": "xuat-dieu-chinh.phieu", "code": "BH06", "group": "Bán hàng", "label": "Phiếu xuất điều chỉnh", "path": "/app/xuat-dieu-chinh",
+        "operations": {
+          "xem": { "permission": "xuat-dieu-chinh:phieu-xem", "label": "Xem, in", "kind": "xem" },
+          "them": { "permission": "xuat-dieu-chinh:phieu-lap", "label": "Thêm, lưu nháp, ghi sổ", "kind": "ghi" },
+          "huy": { "permission": "xuat-dieu-chinh:phieu-huy", "label": "Huỷ phiếu", "kind": "huy" } } }
+    ]
+  },
+  "ui": { "icon": "PackageMinus", "color": "#b45309", "order": 32 }
+}

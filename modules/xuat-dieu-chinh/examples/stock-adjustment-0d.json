@@ -1,0 +1,36 @@
+{
+  "docKey": "xuat-dieu-chinh:00000000-0000-4000-8000-000000000441",
+  "version": 1,
+  "branchCode": "CH02",
+  "docNo": "XDC-CH02-2611-0001",
+  "docDate": "2026-11-26",
+  "reasonCode": "XSD1",
+  "description": "Xuất điều chỉnh XDC-CH02-2611-0001 — Xuất dùng quầy",
+  "sourceRef": {
+    "type": "export_adjust",
+    "id": "00000000-0000-4000-8000-000000000441",
+    "label": "Phiếu xuất điều chỉnh"
+  },
+  "extra": {
+    "exportAdjust": true
+  },
+  "docType": "stock_adjustment",
+  "direction": "decrease",
+  "purposeCode": "DUNG-BH",
+  "lines": [
+    {
+      "lineKey": "L1",
+      "sku": "SUA01",
+      "name": "Sữa 01",
+      "unit": "Hộp",
+      "qty": 2,
+      "amount": 0,
+      "warehouseCode": "CH02-K1",
+      "lotNo": "L01",
+      "expDate": "2027-06-30"
+    }
+  ],
+  "totals": {
+    "total": 0
+  }
+}

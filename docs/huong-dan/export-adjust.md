@@ -1,6 +1,12 @@
 # Phiếu xuất điều chỉnh (BH06)
 
 <!-- [2026-11-23 11:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10e (SC-DOC-6): hướng dẫn màn BH06 (helpKey export-adjust) -->
+<!-- [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: màn BH06 đã chuyển sang module xuat-dieu-chinh (đóng góp) -->
+
+> **Đã chuyển sang màn mới (NT-BH-044, 26/11/2026).** Phiếu xuất điều chỉnh nay **lập ngay ở kế toán** tại màn BH06 mới (`/app/xuat-dieu-chinh`,
+> module `xuat-dieu-chinh`): danh sách đủ phiếu 0 đ và phiếu có giá, Thêm / Lưu nháp / Lưu (ghi sổ, trừ kho), Huỷ (bút toán đảo), Chép thành
+> phiếu mới, In 02-VT. Đường cũ `/ban-hang/xuat-dieu-chinh` tự chuyển sang màn mới. Hướng dẫn: [Phiếu xuất điều chỉnh](xuat-dieu-chinh.md).
+> Phần dưới mô tả màn cũ (chỉ xem, in), giữ để tra cứu.
 
 Danh sách các phiếu cửa hàng xuất hàng **không phải để bán**: dùng nội bộ, tặng, dùng thử, huỷ hỏng… (bill giấy, không có hoá đơn điện tử). Mỗi phiếu là một phiếu bán nội bộ có **lý do xuất**, và **không tính vào báo cáo bán hàng**.
 
