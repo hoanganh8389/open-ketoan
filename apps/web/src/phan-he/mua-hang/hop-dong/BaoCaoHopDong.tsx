@@ -276,11 +276,11 @@ export function ThucHienHopDongPage() {
     { key: 'partnerCode', header: 'Nhà cung cấp', width: 200, value: (r) => names.partnerName(r.partnerCode) },
     { key: 'term', header: 'Hiệu lực', width: 170, value: (r) => (r.code ? `${dmy(r.startDate) || '—'} → ${dmy(r.endDate) || '…'}` : ''), hidden: true },
     { key: 'status', header: 'Trạng thái', width: 110, value: (r) => ten(r), hidden: true },
-    { key: 'value', header: 'Giá trị HĐ', type: 'money', width: 130, sum: true, value: (r) => r.value ?? '' },
-    { key: 'ordered', header: 'Đã đặt', type: 'money', width: 125, sum: true, title: 'Theo đơn đặt hàng đã duyệt trong kỳ (gồm thuế)' },
-    { key: 'received', header: 'Đã nhận', type: 'money', width: 125, sum: true, title: 'Theo phiếu nhập đã duyệt trừ phiếu trả hàng, trong kỳ (gồm thuế)' },
-    { key: 'invoiced', header: 'Đã nhận hoá đơn', type: 'money', width: 130, sum: true, title: 'Tổng các hoá đơn NCC (MH22) đính vào phiếu nhập của hợp đồng — mỗi hoá đơn tính một lần. Không cộng với phiếu nhập (không phải hai lần mua)' },
-    { key: 'progress', header: 'Tiến độ', width: 80, value: (r) => (r.progress === null ? '' : `${r.progress.toLocaleString('vi-VN')}%`), title: 'Đã nhận / giá trị hợp đồng' },
+    { key: 'value', header: 'Giá trị HĐ', type: 'money', width: 130, sum: true, title: 'Giá trị hợp đồng chưa thuế GTGT', value: (r) => r.value ?? '' },
+    { key: 'ordered', header: 'Đã đặt', type: 'money', width: 125, sum: true, title: 'Tiền hàng chưa thuế theo đơn đặt hàng đã duyệt trong kỳ' },
+    { key: 'received', header: 'Đã nhận', type: 'money', width: 125, sum: true, title: 'Tiền hàng chưa thuế theo phiếu nhập đã duyệt trừ phiếu trả hàng, trong kỳ' },
+    { key: 'invoiced', header: 'Đã nhận hoá đơn', type: 'money', width: 130, sum: true, title: 'Tiền hàng chưa thuế của các hoá đơn NCC (MH22) đính vào phiếu nhập của hợp đồng — mỗi hoá đơn tính một lần. Không cộng với phiếu nhập (không phải hai lần mua)' },
+    { key: 'progress', header: 'Tiến độ', width: 80, value: (r) => (r.progress === null ? '' : `${r.progress.toLocaleString('vi-VN')}%`), title: 'Đã nhận / giá trị hợp đồng (cùng chưa thuế)' },
     { key: 'remainingValue', header: 'Còn lại theo giá trị', type: 'money', width: 140, value: (r) => r.remainingValue ?? '', hidden: true },
     { key: 'paid', header: 'Đã thanh toán', type: 'money', width: 125, sum: true, title: 'Phiếu trả tiền / ứng trước NCC đã duyệt trong kỳ (gồm chiết khấu thanh toán được trừ)' },
     { key: 'debt', header: 'Còn phải trả', type: 'money', width: 125, sum: true, title: 'Theo sổ công nợ thực tế đến ngày cuối kỳ: nợ còn mở của các phiếu thuộc hợp đồng (NCC chỉ một hợp đồng: gồm cả số dư đầu kỳ)' },
@@ -289,7 +289,7 @@ export function ThucHienHopDongPage() {
   ];
   return (
     <>
-      <PageHeader title="Tình hình thực hiện hợp đồng mua hàng" code="MH35" helpKey="mua-hang-bao-cao-hop-dong" subtitle="Giá trị hợp đồng · đã đặt (đơn) · đã nhận (phiếu nhập) · đã nhận hoá đơn · đã thanh toán · còn phải trả (sổ công nợ) — kèm phần không theo hợp đồng của từng NCC" />
+      <PageHeader title="Tình hình thực hiện hợp đồng mua hàng" code="MH35" helpKey="mua-hang-bao-cao-hop-dong" subtitle="Giá trị hợp đồng · đã đặt (đơn) · đã nhận (phiếu nhập) · đã nhận hoá đơn — tiền hàng chưa thuế; đã thanh toán · còn phải trả (sổ công nợ) — tiền thực trả — kèm phần không theo hợp đồng của từng NCC" />
       {f.khung({}, <div className="card">
         {f.bar()}
         <ErrorBox error={q.error ? errorText(q.error) : null} />

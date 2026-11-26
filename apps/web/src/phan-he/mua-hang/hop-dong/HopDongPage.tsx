@@ -90,10 +90,10 @@ export function HopDongMuaPage({ embedded, partner }: { embedded?: boolean; part
   );
 }
 
-const empty = (partnerCode = ''): ContractInput & { code: string } => ({ code: '', name: '', partnerCode, status: 'active', branchCodes: [], brandCodes: [], skus: [], note: '', signedDate: today(), startDate: today(), endDate: null, value: null,
+const empty = (partnerCode = ''): ContractInput & { code: string } => ({ code: '', name: '', partnerCode, status: 'active', branchCodes: [], brandCodes: [], skus: [], note: '', signedDate: today(), startDate: today(), endDate: null, value: null, pricesIncludeVat: false, vatRate: null,
   signerSeller: '', signerBuyer: '', deliveryPlace: '', freightBy: '', returnTerms: '', penaltyPct: null, lateInterestPct: null, liquidatedDate: null, liquidationNote: '' });
 const fromRow = (c: ContractRow): ContractInput & { code: string } => ({ code: c.code, name: c.name, partnerCode: c.partnerCode, status: c.status, branchCodes: c.branchCodes, brandCodes: c.brandCodes, skus: c.skus, note: c.note,
-  signedDate: c.signedDate, startDate: c.startDate, endDate: c.endDate, value: c.value, signerSeller: c.signerSeller, signerBuyer: c.signerBuyer, deliveryPlace: c.deliveryPlace, freightBy: c.freightBy as ContractInput['freightBy'],
+  signedDate: c.signedDate, startDate: c.startDate, endDate: c.endDate, value: c.value, pricesIncludeVat: c.pricesIncludeVat, vatRate: c.vatRate, signerSeller: c.signerSeller, signerBuyer: c.signerBuyer, deliveryPlace: c.deliveryPlace, freightBy: c.freightBy as ContractInput['freightBy'],
   returnTerms: c.returnTerms, penaltyPct: c.penaltyPct, lateInterestPct: c.lateInterestPct, liquidatedDate: c.liquidatedDate, liquidationNote: c.liquidationNote });
 
 /** Đường dẫn trang một hợp đồng (số hợp đồng có "/" nên để ở tham số). */
@@ -241,7 +241,7 @@ function ChiTietHopDong() {
               </>}
             </fieldset>
           ) : buoc === 'gia' && c ? (
-            <GiaVaChinhSach partnerCode={c.partnerCode} contractCode={code} brands={c.brandCodes} skus={c.skus} start={c.startDate ?? undefined} end={c.endDate ?? undefined} readOnly={c.status === 'liquidated'} />
+            <GiaVaChinhSach partnerCode={c.partnerCode} contractCode={code} gomThue={c.pricesIncludeVat} brands={c.brandCodes} skus={c.skus} start={c.startDate ?? undefined} end={c.endDate ?? undefined} readOnly={c.status === 'liquidated'} />
           ) : buoc === 'chung-tu' && det.data ? (
             <ChungTuHopDong code={code} partnerCode={det.data.contract.partnerCode} active={det.data.contract.status === 'active'} docs={det.data.documents} start={det.data.contract.startDate ?? undefined} />
           ) : <Loading />}
@@ -365,7 +365,15 @@ export function ThongTinHopDong({ v, set, isNew, khoaNcc, branchList }: { v: Con
           <option value="draft">Nháp</option><option value="active">Đang hiệu lực</option>{v.status === 'liquidated' && <option value="liquidated">Đã thanh lý</option>}
         </select>
       </Field>
-      <Field label="Giá trị hợp đồng" tip="Tổng giá trị cam kết (nếu có), để theo dõi; không dùng để tính"><NumInput value={v.value ?? 0} decimals={0} onChange={(n) => set({ value: n || null })} /></Field>
+      {/* [2026-11-26 05:30 PM Nguyễn Văn Thủy] MH29 — giá chưa thuế là chuẩn: hợp đồng ghi giá gồm thuế thì khai ở đây, giá trị / bảng giá quy về chưa thuế (đóng góp) */}
+      <Field label="Giá ghi trên hợp đồng" tip="Văn bản hợp đồng ghi giá gồm thuế thì chọn Gồm thuế: gõ theo giá gồm thuế, phần mềm quy về chưa thuế (giá trị theo thuế suất bên cạnh, bảng giá theo thuế suất từng mặt hàng). Mọi phiếu, báo cáo vẫn tính theo giá chưa thuế">
+        <select className="select input" value={v.pricesIncludeVat ? '1' : ''} onChange={(e) => set({ pricesIncludeVat: e.target.value === '1', vatRate: e.target.value === '1' ? (v.vatRate ?? 8) : null })}>
+          <option value="">Chưa thuế GTGT</option><option value="1">Gồm thuế GTGT</option>
+        </select>
+      </Field>
+      {v.pricesIncludeVat && <Field label="Thuế suất quy đổi (%)" tip="Dùng quy đổi giá trị hợp đồng gồm thuế ↔ chưa thuế"><NumInput value={v.vatRate ?? 0} decimals={0} onChange={(n) => set({ vatRate: n })} /></Field>}
+      <Field label="Giá trị hợp đồng (chưa thuế)" tip="Tổng giá trị cam kết chưa thuế GTGT (nếu có) — Tình hình thực hiện hợp đồng (MH35) so tiến độ theo số này"><NumInput value={v.value ?? 0} decimals={0} onChange={(n) => set({ value: n || null })} /></Field>
+      {v.pricesIncludeVat && <Field label="Giá trị gồm thuế (quy đổi)" tip="Gõ giá trị ghi trên hợp đồng (gồm thuế) — lưu là giá trị chưa thuế"><NumInput value={v.value ? Math.round(v.value * (1 + (v.vatRate ?? 0) / 100)) : 0} decimals={0} onChange={(n) => set({ value: n ? Math.round(n / (1 + (v.vatRate ?? 0) / 100)) : null })} /></Field>}
       <Field label="Ghi chú"><input className="input" value={v.note} placeholder="Phạm vi, hồ sơ kèm theo…" onChange={(e) => set({ note: e.target.value })} /></Field>
     </div>
   );

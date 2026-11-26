@@ -803,12 +803,12 @@ export async function contractPriceCheck(trx: Db, tenantId: string, ctx: Ctx, f:
 // tính một lần) · đã thanh toán (phiếu trả / ứng tiền) · còn phải trả (sổ công nợ) — mỗi con số một nguồn chứng từ, không cộng trùng (đóng góp)
 export interface ContractExecRow { code: string; name: string; partnerCode: string; startDate: string; endDate: string; status: string; value: number | null;
   ordered: number; received: number; invoiced: number; paid: number; debt: number; progress: number | null; remainingValue: number | null; receipts: number; invoices: number }
-/** Hoá đơn NCC (id, tổng tiền) đính vào từng phiếu nhập. */
+/** Hoá đơn NCC (id, tiền hàng chưa thuế) đính vào từng phiếu nhập — MH35 cùng chuẩn chưa thuế. */
 async function invoiceTotalsOfReceipts(trx: Db, tenantId: string, receiptIds: string[]) {
   const out = new Map<string, { id: string; total: number }[]>();
   if (!receiptIds.length) return out;
   const rows = (await sql<{ rid: string; id: string; total: string }>`
-    SELECT substr(l.to_ref, length('mua-hang.document:') + 1) AS rid, i.id::text AS id, i.total::text AS total
+    SELECT substr(l.to_ref, length('mua-hang.document:') + 1) AS rid, i.id::text AS id, i.total_before_tax::text AS total
       FROM document_links l JOIN supplier_invoices i ON i.tenant_id = l.tenant_id AND i.id = substr(l.from_ref, length('mua-hang.invoice:') + 1)::bigint AND i.status = 'active'
      WHERE l.tenant_id = ${tenantId} AND l.role = 'attachesTo' AND l.from_ref LIKE 'mua-hang.invoice:%' AND l.to_ref = ANY(${receiptIds.map((r) => `mua-hang.document:${r}`)}::text[])`.execute(trx)).rows;
   for (const r of rows) (out.get(r.rid) ?? out.set(r.rid, []).get(r.rid)!).push({ id: r.id, total: toNumber(r.total) });
@@ -826,7 +826,8 @@ export async function contractExecution(trx: Db, tenantId: string, ctx: Ctx, f: 
   const linked = await invoiceTotalsOfReceipts(trx, tenantId, ctx.docs.filter((d) => d.kind === 'receipt' && inK(d)).map((d) => d.id));
   const tinh = (pick: (d: StoredDoc) => boolean, debt: number) => {
     const ds = ctx.docs.filter((d) => pick(d) && inK(d));
-    const t = (k: string[]) => ds.filter((d) => k.includes(d.kind)).reduce((s, d) => s + d.totals.total, 0);
+    // [2026-11-26 05:30 PM Nguyễn Văn Thủy] MH35 — đã đặt / đã nhận / tiến độ theo CHƯA THUẾ (cùng chuẩn giá trị hợp đồng); đã trả, còn phải trả vẫn là tiền thật (đóng góp)
+    const t = (k: string[]) => ds.filter((d) => k.includes(d.kind)).reduce((s, d) => s + d.totals.beforeTax, 0);
     const rec = ds.filter((d) => d.kind === 'receipt');
     const inv = new Map<string, number>();
     for (const r of rec) for (const x of linked.get(r.id) ?? []) inv.set(x.id, x.total);
