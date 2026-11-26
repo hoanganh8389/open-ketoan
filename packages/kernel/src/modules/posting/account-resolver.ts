@@ -193,7 +193,11 @@ export class AccountResolver {
 
   /** Gọi sau khi dựng xong: còn thiếu cấu hình thì ném một lỗi gộp. */
   assertComplete(): void {
-    if (this.missing.size) throw Errors.posting('Thiếu cấu hình hạch toán', [...this.missing]);
+    // [2026-11-26 07:05 PM Nguyễn Văn Thủy] HT20 — câu lỗi nói luôn thiếu gì (POS / HT20 chỉ hiện câu lỗi, không hiện details) [loi POSTING_FAILED] (đóng góp)
+    if (this.missing.size) {
+      const ds = [...this.missing];
+      throw Errors.posting(`Thiếu cấu hình hạch toán: ${ds.slice(0, 3).join('; ')}${ds.length > 3 ? ` (và ${ds.length - 3} mục khác)` : ''}`, ds);
+    }
   }
 
   // [2026-11-26 05:10 PM Nguyễn Văn Thủy] HT — POSTING_FAILED 'Tài khoản 1561 là tài khoản tổng hợp': TK ở Quy tắc hạch toán thành TK tổng hợp
