@@ -22,7 +22,8 @@ export function toTradeDoc(r: DocRow) {
   return {
     id: r.doc_id, docType: r.kind, status: r.status, docNo: r.doc_no, docDate: r.doc_date, branchCode: r.branch_code,
     ...r.body, warehouseCode: r.warehouse_code ?? undefined,
-    ledgerStatus: r.ledger_status, createdAt: r.created_at.toISOString(), updatedAt: r.updated_at.toISOString(),
+    // [2026-11-26 09:50 PM Võ Hoàng] NGHIEM-THU — NT-BH-047: người lập (mã người dùng) cho cột Người lập ở danh sách — không ghi vào thân phiếu (giữ phiên bản sổ chứng từ) (đóng góp)
+    ledgerStatus: r.ledger_status, createdAt: r.created_at.toISOString(), updatedAt: r.updated_at.toISOString(), createdBy: r.created_by,
     ...(r.approved_at ? { approvedAt: r.approved_at.toISOString(), approvedBy: r.approved_by } : {}),
   };
 }
@@ -96,6 +97,18 @@ export async function deleteDoc(tx: Tx, id: string): Promise<void> {
 /** Phiếu bán của module theo số (cùng cửa hàng) — để nối phiếu trả với phiếu gốc. */
 export async function saleByNo(tx: Tx, branch: string, docNo: string): Promise<DocRow | null> {
   return (await sql<DocRow>`SELECT ${COLS} FROM mod_phieu_ban.docs WHERE branch_code = ${branch} AND kind = 'sale' AND doc_no = ${docNo}`.execute(tx)).rows[0] ?? null;
+}
+
+// [2026-11-26 07:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: phiếu bán đã duyệt của cửa hàng để chọn làm phiếu gốc (theo khách / số phiếu) (đóng góp)
+/** Phiếu bán ĐÃ DUYỆT của một cửa hàng — theo khách (mã), tìm theo số phiếu, khoảng ngày; mới trước. */
+export async function approvedSales(tx: Tx, f: { branch: string; partnerCode?: string; search?: string; from?: string; to?: string; limit: number }): Promise<DocRow[]> {
+  const like = f.search?.trim() ? `%${f.search.trim()}%` : null;
+  return (await sql<DocRow>`SELECT ${COLS} FROM mod_phieu_ban.docs
+    WHERE kind = 'sale' AND status = 'approved' AND branch_code = ${f.branch}
+      ${f.partnerCode ? sql`AND partner_code = ${f.partnerCode}` : sql``}
+      ${like ? sql`AND doc_no ILIKE ${like}` : sql``}
+      ${f.from ? sql`AND doc_date >= ${f.from}::date` : sql``} ${f.to ? sql`AND doc_date <= ${f.to}::date` : sql``}
+    ORDER BY doc_date DESC, doc_no DESC LIMIT ${Math.min(Math.max(f.limit, 1), 200)}`.execute(tx)).rows;
 }
 
 /** Các phiếu trả ĐÃ DUYỆT nối phiếu bán gốc (trừ phiếu đang xét). */
