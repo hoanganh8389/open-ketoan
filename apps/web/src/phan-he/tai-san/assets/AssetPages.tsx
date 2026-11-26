@@ -229,7 +229,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
         <ListPicker items={nhoms.map((c) => ({ code: c.code, name: c.name }))} value={nhomCode} onChange={pickCategory} placeholder="Bấm để chọn" />
       </Field>
       <Field label="Loại tài sản" hint="Loại chi tiết thuộc nhóm (khai ở ACC37); loại không khai tài khoản thì lấy theo nhóm">
-        <ListPicker items={loais.map((c) => ({ code: c.code, name: c.name }))} value={curCat?.parentCode ? curCat.code : ''} disabled={!nhomCode} title={!nhomCode ? 'Chọn Nhóm tài sản trước — loại hiện theo nhóm đã chọn' : undefined} onChange={(code) => pickCategory(code || nhomCode)} placeholder={!nhomCode ? 'Chọn nhóm trước' : loais.length ? 'Bấm để chọn' : 'Nhóm chưa khai loại'} />
+        <span title={!nhomCode ? 'Chọn Nhóm tài sản trước — loại hiện theo nhóm đã chọn' : undefined} style={{ display: 'block' }}><ListPicker items={loais.map((c) => ({ code: c.code, name: c.name }))} value={curCat?.parentCode ? curCat.code : ''} disabled={!nhomCode} onChange={(code) => pickCategory(code || nhomCode)} placeholder={!nhomCode ? 'Chọn nhóm trước' : loais.length ? 'Bấm để chọn' : 'Nhóm chưa khai loại'} /></span>
       </Field>
       <Field label="Chi nhánh đang dùng" hint={value.isNew ? undefined : 'Đổi chi nhánh bằng Điều chuyển ở phần Lịch sử'}>
         <BranchPicker activeOnly value={v.branchCode ?? branches.find((b) => b.isActive)?.code ?? ''} disabled={!value.isNew} onChange={(branchCode) => set({ branchCode })} />
