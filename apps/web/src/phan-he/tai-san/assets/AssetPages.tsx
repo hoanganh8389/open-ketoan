@@ -880,7 +880,7 @@ const lastDay = (period: string) => new Date(Date.UTC(Number(period.slice(0, 4))
 /* ------------------------------------------------------------------ Sổ tài sản */
 interface RegisterRow {
   code: string; name: string; kind: AssetKind; kindLabel: string; categoryName: string; branchCode: string; unit: string; quantity: number; startDate: string; usefulLifeMonths: number;
-  assetAccount: string; depreciationAccount: string; expenseAccount: string; status: string; disposedDate: string | null; increased: boolean; decreased: boolean; overridden: boolean;
+  assetAccount: string; depreciationAccount: string; expenseAccount: string; status: string; disposedDate: string | null; increased: boolean; decreased: boolean; overridden: boolean; chargeNote?: string;
   originalCost: number; costAdjust: number; opening: number; charge: number; adjust: number; closing: number; remaining: number;
 }
 interface RegisterData { rows: RegisterRow[]; totals: { originalCost: number; opening: number; charge: number; adjust: number; closing: number; remaining: number } }
@@ -909,7 +909,7 @@ function RegisterGrid({ data, storageKey, onRowClick }: { data: RegisterData; st
         { key: 'remaining', header: 'Giá trị còn lại', type: 'money', sum: true },
         { key: 'expenseAccount', header: 'TK chi phí', type: 'code' },
         { key: 'depreciationAccount', header: 'TK ghi Có', type: 'code' },
-        { key: 'status', header: 'Tình trạng', value: (r) => (r.overridden ? 'Sửa tay' : r.decreased ? 'Giảm trong kỳ' : r.increased ? 'Tăng trong kỳ' : STATUS_LABEL[r.status] ?? r.status) },
+        { key: 'status', header: 'Tình trạng', title: 'Tình trạng của thẻ trong kỳ; không trích vì luỹ kế đầu kỳ đã gồm tới ngày trong kỳ thì ghi rõ', value: (r) => (r.chargeNote ? r.chargeNote : r.overridden ? 'Sửa tay' : r.decreased ? 'Giảm trong kỳ' : r.increased ? 'Tăng trong kỳ' : STATUS_LABEL[r.status] ?? r.status) },
       ] satisfies Column<RegisterRow>[]}
     />
   );

@@ -539,11 +539,11 @@ export const assetService = {
     const toIdx = q.to.slice(0, 7);
     const res = await sql<{
       code: string; name: string; kind: string; category_name: string | null; branch_code: string; unit: string; quantity: string; start_date: string; useful_life_months: number;
-      original_cost: string; opening_accumulated: string; asset_account: string | null; depreciation_account: string; expense_account: string; status: string; disposed_date: string | null; acquired_date: string | null;
+      original_cost: string; opening_accumulated: string; asset_account: string | null; depreciation_account: string; expense_account: string; status: string; disposed_date: string | null; acquired_date: string | null; opening_as_of: string | null;
       before: string; within: string; overrides: string; cost_adj_before: string; cost_adj_within: string; acc_adj_before: string; acc_adj_within: string;
     }>`
       SELECT a.code, a.name, a.kind, c.name AS category_name, b.code AS branch_code, a.unit, a.quantity, a.start_date::text, a.useful_life_months,
-             a.original_cost, a.opening_accumulated, a.asset_account, a.depreciation_account, a.expense_account, a.status, a.disposed_date::text, a.acquired_date::text,
+             a.original_cost, a.opening_accumulated, a.asset_account, a.depreciation_account, a.expense_account, a.status, a.disposed_date::text, a.acquired_date::text, a.opening_as_of::text,
              COALESCE((SELECT SUM(d.amount) FROM asset_depreciations d WHERE d.asset_id = a.id AND to_char(make_date(d.year, d.month, 1), 'YYYY-MM') < ${fromIdx}), 0) AS before,
              COALESCE((SELECT SUM(d.amount) FROM asset_depreciations d WHERE d.asset_id = a.id AND to_char(make_date(d.year, d.month, 1), 'YYYY-MM') BETWEEN ${fromIdx} AND ${toIdx}), 0) AS within,
              (SELECT COUNT(*) FROM asset_depreciation_overrides o WHERE o.asset_id = a.id AND to_char(make_date(o.year, o.month, 1), 'YYYY-MM') BETWEEN ${fromIdx} AND ${toIdx}) AS overrides,
@@ -575,6 +575,9 @@ export const assetService = {
           assetAccount: r.asset_account ?? '', depreciationAccount: r.depreciation_account, expenseAccount: r.expense_account,
           status: r.status, disposedDate: r.disposed_date, overridden: Number(r.overrides) > 0,
           increased: r.start_date >= q.from,
+          // [2026-11-26 07:00 PM Nguyễn Văn Thủy] TSCD — #64 tab Test: không trích trong kỳ vì KH luỹ kế đã gồm tới ngày trong / sau kỳ → nói lý do ngay trên dòng (đóng góp)
+          chargeNote: charge === 0 && r.opening_as_of && r.opening_as_of >= q.from && toNumber(r.opening_accumulated) > 0
+            ? `Luỹ kế đã tính tới ${r.opening_as_of.split('-').reverse().join('/')} — trích từ tháng sau` : '',
           decreased: Boolean(r.disposed_date && r.disposed_date >= q.from && r.disposed_date <= q.to),
           originalCost: fromCents(cost), costAdjust: fromCents(cents(r.cost_adj_within)), opening: fromCents(opening), charge: fromCents(charge), adjust: fromCents(adjust), closing: fromCents(closing), remaining: fromCents(cost - closing),
         };
