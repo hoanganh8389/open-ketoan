@@ -92,4 +92,29 @@ describe('Phiếu mua đã ghi sổ — bản điều chỉnh', () => {
     const rows = Array.isArray(list) ? list : list.docs;
     expect(rows.find((x) => x.id === o.id)?.ledger).toBe('none'); // đơn đặt: không ghi sổ
   });
+
+  // [2026-11-26 08:10 PM Nguyễn Văn Thủy] MH06 — phiếu đang điều chỉnh: chưa tính vào doanh số thưởng (số chưa chốt) nhưng báo ra (dangDieuChinh) ở xem trước, tổng hợp thưởng, MH32 (đóng góp)
+  it('đang điều chỉnh: tính thưởng chưa cộng phiếu đó nhưng báo rõ phiếu nào, bao nhiêu; huỷ điều chỉnh thì tính lại', async () => {
+    await call(t, 'PUT', '/api/v1/partners/NCC-DC-THUONG', { name: 'NCC điều chỉnh thưởng', kind: 'supplier' });
+    const pol = await call(t, 'POST', '/api/v1/purchase/policies', { code: 'DC-THUONG', kind: 'period_rebate', name: 'Thưởng tháng thử', scope: { partnerCode: 'NCC-DC-THUONG' }, rule: { period: 'month', tiers: [{ from: 1000000, pct: 2 }] }, validFrom: '2026-10-01', isActive: true });
+    expect(pol.status, JSON.stringify(pol.body).slice(0, 300)).toBeLessThan(300);
+    const d = await approve(((await call(t, 'POST', '/api/v1/purchase/documents', body(10, { partnerCode: 'NCC-DC-THUONG', docDate: '2026-10-10' }))).body.data as Doc).id);
+    const xem = async () => (await call(t, 'POST', '/api/v1/purchase/rebates/preview', { policyCode: 'DC-THUONG', period: '2026-10' })).body.data as { base: number; amount: number; dangDieuChinh: { id: string; value: number }[] };
+    const truoc = await xem();
+    expect(truoc.base).toBeGreaterThan(0);
+    expect(truoc.dangDieuChinh).toEqual([]);
+    expect((await call(t, 'POST', `/api/v1/purchase/documents/${d.id}/adjust`, { reason: 'Sửa giá theo biên bản' })).status).toBe(200);
+    const dang = await xem();
+    expect(dang.base).toBe(0); // chưa tính: số chưa chốt
+    expect(dang.dangDieuChinh.map((x) => x.id)).toEqual([d.id]);
+    expect(dang.dangDieuChinh[0]!.value).toBe(Math.round(truoc.base)); // báo đúng số đang treo
+    const tong = (await call(t, 'GET', '/api/v1/purchase/rebates/overview?month=2026-10')).body.data as { policy: string; dangDieuChinh?: unknown[] }[];
+    expect(tong.find((x) => x.policy === 'DC-THUONG')?.dangDieuChinh).toHaveLength(1);
+    const th = (await call(t, 'GET', '/api/v1/purchase/policy-execution?from=2026-10-01&to=2026-10-31')).body.data as { policy: string; docs: { docId: string; note: string }[] }[];
+    expect(th.find((x) => x.policy === 'DC-THUONG')?.docs.some((x) => x.docId === d.id && x.note.includes('đang điều chỉnh'))).toBe(true);
+    expect((await call(t, 'POST', `/api/v1/purchase/documents/${d.id}/adjust-cancel`)).status).toBe(200);
+    const sau = await xem();
+    expect(sau.base).toBe(truoc.base);
+    expect(sau.dangDieuChinh).toEqual([]);
+  });
 });
