@@ -29,6 +29,11 @@ export const lineInput = z.object({
   taxCode: z.string().trim().max(16).optional(),
   isGift: z.boolean().optional(),
   policyRef: policyRefInput.optional(),
+  // [2026-11-26 07:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: dòng trả nối đúng dòng của phiếu bán gốc; NT-BH-047: ghi chú dòng (đóng góp)
+  /** Phiếu trả: khoá dòng (`lineKey`) của dòng trên phiếu bán gốc mà dòng này trả. */
+  originalLineKey: z.string().trim().min(1).max(64).optional(),
+  /** Ghi chú của dòng (in, xem lại). */
+  note: z.string().trim().max(500).optional(),
 }).passthrough();
 export const docInput = z.object({
   docNo: z.string().trim().max(32).optional(),
@@ -63,6 +68,10 @@ export type Line = {
   amountBeforeTax: number; taxCode: string; taxAmount: number; isGift: boolean; policyRef?: PolicyRef;
   /** NT-BH-028: kho riêng của dòng — dòng quà ở kho quà (KKM) của cửa hàng; trống = kho của phiếu. */
   warehouseCode?: string;
+  /** NT-BH-046: phiếu trả — khoá dòng của phiếu bán gốc. */
+  originalLineKey?: string;
+  /** NT-BH-047: ghi chú dòng. */
+  note?: string;
 };
 export type Body = {
   warehouseCode?: string; partner?: { code: string; name: string; taxCode?: string }; invoice?: { no: string; serial?: string; date: string };
@@ -116,6 +125,8 @@ export function computeDoc(input: DocInput, ctx: {
       lineKey: l.lineKey, sku: l.sku, name: l.name || item?.name || '', unit: l.unit || item?.unit || '', qty: l.qty, unitPrice, discount,
       amountBeforeTax: Math.max(0, amountBeforeTax), taxCode, taxAmount: roundMoney(Math.max(0, amountBeforeTax) * (rate ?? 0) / 100), isGift,
       ...(policyRef ? { policyRef } : {}),
+      ...(l.originalLineKey ? { originalLineKey: l.originalLineKey } : {}),
+      ...(l.note ? { note: l.note } : {}),
     };
   });
   // Dòng mang chương trình phải có căn cứ: chương trình + bản ở dòng và ở policyRefs của phiếu (kèm băm) — như máy bán (NT-BH-003).
@@ -176,6 +187,73 @@ export function overReturn(lines: readonly Pick<Line, 'sku' | 'qty'>[], left: Ma
   const want = new Map<string, number>();
   for (const l of lines) want.set(l.sku, (want.get(l.sku) ?? 0) + l.qty);
   return [...want].filter(([sku, q]) => q > (left.get(sku) ?? 0) + 1e-9).map(([sku, q]) => `${sku}: trả ${q}, còn trả được ${Math.max(0, left.get(sku) ?? 0)}`);
+}
+
+// [2026-11-26 07:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: trả theo DÒNG của phiếu gốc — còn trả từng dòng, giá / thuế khoá theo dòng gốc (đóng góp)
+export type OriginalLine = Pick<Line, 'lineKey' | 'sku' | 'name' | 'unit' | 'qty' | 'unitPrice' | 'discount' | 'taxCode' | 'isGift'>;
+export type ReturnedLine = Pick<Line, 'sku' | 'qty' | 'discount'> & { originalLineKey?: string };
+/** Còn trả của một dòng gốc: số lượng và phần chiết khấu chưa trả (để lần trả cuối lấy phần còn lại, tổng khớp từng đồng). */
+export type LineLeft = { qty: number; discount: number };
+
+/**
+ * Còn trả được theo từng dòng của phiếu gốc. Dòng trả có `originalLineKey` trừ đúng dòng đó; dòng trả cũ (lập trước NT-BH-046, không có
+ * khoá dòng) trừ theo mã hàng vào các dòng cùng mã, dòng trước trước. Số âm (trả cũ vượt) giữ 0.
+ */
+export function returnableByLine(original: readonly OriginalLine[], returned: readonly ReturnedLine[]): Map<string, LineLeft> {
+  const left = new Map<string, LineLeft>(original.map((l) => [l.lineKey, { qty: l.qty, discount: l.discount }]));
+  for (const r of returned) {
+    if (r.originalLineKey && left.has(r.originalLineKey)) {
+      const x = left.get(r.originalLineKey)!;
+      x.qty = r4(x.qty - r.qty); x.discount = Math.max(0, x.discount - (r.discount || 0));
+      continue;
+    }
+    let need = r.qty;
+    let disc = r.discount || 0;
+    for (const o of original) {
+      if (need <= 1e-9) break;
+      if (o.sku !== r.sku) continue;
+      const x = left.get(o.lineKey)!;
+      const take = Math.min(need, Math.max(0, x.qty));
+      if (take <= 0) continue;
+      const d = Math.min(disc, x.discount);
+      x.qty = r4(x.qty - take); x.discount -= d; disc -= d; need = r4(need - take);
+    }
+  }
+  for (const x of left.values()) if (x.qty < 0) x.qty = 0;
+  return left;
+}
+const r4 = (n: number) => Math.round(n * 10_000) / 10_000;
+
+/**
+ * Khoá dòng trả theo dòng gốc: mã, tên, ĐVT, đơn giá, thuế lấy đúng dòng gốc (máy chủ không tin số của màn); chiết khấu = chiết khấu
+ * dòng gốc × SL trả ÷ SL gốc (tròn đồng), trả hết phần còn lại của dòng thì lấy đúng phần chiết khấu còn lại. Trả lỗi theo dòng:
+ * thiếu khoá dòng gốc, dòng gốc không có, sai mã, trả quá số còn trả (cộng các dòng cùng trỏ một dòng gốc).
+ */
+export function lockReturnLines<L extends { lineKey: string; sku: string; qty: number; originalLineKey?: string }>(
+  lines: readonly L[], original: readonly OriginalLine[], left: ReadonlyMap<string, LineLeft>, originalNo: string,
+): { lines: (L & Partial<OriginalLine>)[]; problems: string[] } {
+  const problems: string[] = [];
+  const byKey = new Map(original.map((o, i) => [o.lineKey, { o, i }]));
+  const want = new Map<string, number>();
+  const out = lines.map((l, i) => {
+    const at = `Dòng ${i + 1} (${l.sku})`;
+    const hit = l.originalLineKey ? byKey.get(l.originalLineKey) : undefined;
+    if (!l.originalLineKey) { problems.push(`${at}: chưa chọn từ phiếu gốc ${originalNo} — bấm Chọn phiếu gốc, tích dòng cần trả`); return l; }
+    if (!hit) { problems.push(`${at}: không có trên phiếu gốc ${originalNo}`); return l; }
+    if (hit.o.sku !== l.sku) { problems.push(`${at}: khác mã hàng của dòng ${hit.i + 1} phiếu gốc (${hit.o.sku})`); return l; }
+    want.set(hit.o.lineKey, r4((want.get(hit.o.lineKey) ?? 0) + l.qty));
+    const lf = left.get(hit.o.lineKey) ?? { qty: 0, discount: 0 };
+    const all = Math.abs(l.qty - lf.qty) <= 1e-9;
+    const discount = hit.o.isGift ? 0 : all ? lf.discount : Math.min(lf.discount, roundMoney((hit.o.discount * l.qty) / (hit.o.qty || 1)));
+    const { policyRef: _p, ...rest } = l as L & { policyRef?: unknown };
+    return { ...rest, name: hit.o.name, unit: hit.o.unit, unitPrice: hit.o.unitPrice, taxCode: hit.o.taxCode, isGift: hit.o.isGift, discount } as L & Partial<OriginalLine>;
+  });
+  for (const [key, q] of want) {
+    const { o, i } = byKey.get(key)!;
+    const lf = left.get(key)?.qty ?? 0;
+    if (q > lf + 1e-9) problems.push(`Dòng ${i + 1} phiếu gốc (${o.sku}): trả ${q}, còn trả được ${Math.max(0, lf)}`);
+  }
+  return { lines: out, problems };
 }
 
 export const docKeyOf = (docId: string) => `phieu-ban:${docId}`;

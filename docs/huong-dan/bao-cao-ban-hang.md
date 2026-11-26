@@ -25,3 +25,12 @@ Liệt kê **từng mặt hàng** đã bán và trả lại trong kỳ: mỗi d�
 - **Xuất Excel** xuất toàn bộ kết quả lọc (tối đa 50.000 dòng).
 
 Chỉ tính chứng từ đang hiệu lực: chứng từ đã huỷ không có trong báo cáo; chứng từ sửa thì lấy nội dung mới nhất.
+
+## Cột kho, nhóm hàng, lô
+
+| Cột | Ý nghĩa |
+|---|---|
+| Kho | Kho xuất (bán) / kho nhận (trả lại) của dòng; dòng không ghi kho = kho mặc định của chi nhánh |
+| Nhóm hàng | Nhóm hàng của mặt hàng theo danh mục (mã — tên) |
+| SL ĐVT nhỏ nhất | Số lượng quy về đơn vị tính nhỏ nhất theo tỉ lệ ở danh mục mặt hàng (vd 1 Thùng = 12 Hộp → 12) |
+| Số lô, Hạn dùng | Lô phần mềm cấp lúc ghi sổ (lô hạn gần trước); nhiều lô thì cách nhau dấu phẩy, hạn dùng là hạn sớm nhất. Hàng không theo dõi lô để trống |
