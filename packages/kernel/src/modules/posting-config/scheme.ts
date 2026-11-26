@@ -167,6 +167,12 @@ export const SCHEME: SchemeBusiness[] = [
         { side: 'credit', role: 'Hàng xuất trả', amount: 'goods', source: 'warehouse', key: 'inventory' },
         { side: 'credit', role: 'Giảm thuế đầu vào', amount: 'tax', source: 'tax', key: 'tax_input' },
       ] },
+      // [2026-11-26 05:50 PM Nguyễn Văn Thủy] ACC41 — dòng riêng cho phiếu Thưởng / CK cuối kỳ (Mua hàng MH06): kế toán thấy và sửa tài khoản ở ACC41; giảm giá trị hàng (TK kho) để giá vốn bình quân tự chia hàng còn tồn / đã bán (đóng góp)
+      { name: 'Thưởng / CK cuối kỳ', lines: [
+        { side: 'debit', role: 'Giảm phải trả NCC', amount: 'total', source: 'rule', key: 'payable', when: 'Phiếu thưởng / chiết khấu cuối kỳ (MH06)' },
+        { side: 'credit', role: 'Giảm giá trị hàng mua (giá vốn tự chia hàng còn tồn / đã bán)', amount: 'goods', source: 'warehouse', key: 'inventory', when: 'Phiếu thưởng / chiết khấu cuối kỳ (MH06)' },
+        { side: 'credit', role: 'Giảm thuế đầu vào (khi có hoá đơn điều chỉnh giảm)', amount: 'tax', source: 'tax', key: 'tax_input', when: 'Phiếu thưởng có hoá đơn điều chỉnh giảm' },
+      ] },
       { name: 'Chênh lệch khi tính giá vốn (cuối tháng)', lines: [
         { side: 'debit', role: 'Hàng (phiếu trả lớn hơn giá trị tính giá vốn)', amount: 'cost', source: 'warehouse', key: 'inventory', when: 'Phiếu trả lớn hơn' },
         { side: 'credit', role: 'Chênh lệch hàng trả NCC', amount: 'cost', source: 'rule', key: 'purchase_return_diff', when: 'Phiếu trả lớn hơn' },

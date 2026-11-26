@@ -83,10 +83,22 @@ export async function cashBalances(a: Scope & { prefixes: string[] }) {
   const likes = a.prefixes.map((p) => `${p}%`);
   const res = await sql<{ branch_code: string; branch_name: string; account_code: string; account_name: string | null; opening: string; debit: string; credit: string }>`
     SELECT b.code AS branch_code, b.name AS branch_name, g.account_code, MAX(ac.name) AS account_name,
-           SUM(CASE WHEN g.posting_date <  ${a.from}::date THEN g.debit - g.credit ELSE 0 END) AS opening,
-           SUM(CASE WHEN g.posting_date >= ${a.from}::date THEN g.debit  ELSE 0 END) AS debit,
-           SUM(CASE WHEN g.posting_date >= ${a.from}::date THEN g.credit ELSE 0 END) AS credit
-      FROM bizcity_read.ledger_balances_daily g
+           SUM(CASE WHEN g.posting_date <  ${a.from}::date OR g.la_so_du THEN g.debit - g.credit ELSE 0 END) AS opening,
+           SUM(CASE WHEN g.posting_date >= ${a.from}::date AND NOT g.la_so_du THEN g.debit  ELSE 0 END) AS debit,
+           SUM(CASE WHEN g.posting_date >= ${a.from}::date AND NOT g.la_so_du THEN g.credit ELSE 0 END) AS credit
+      -- phiếu số dư đầu kỳ ghi trong kỳ: chuyển từ thu / chi sang dư đầu (đóng góp)
+      FROM (
+        SELECT tenant_id, branch_id, account_code, posting_date, debit, credit, false AS la_so_du FROM bizcity_read.ledger_balances_daily
+         WHERE tenant_id = ${a.tenantId} AND posting_date <= ${a.to}::date
+        UNION ALL
+        SELECT l.tenant_id, l.branch_id, l.account_code, l.posting_date, -l.debit, -l.credit, false
+          FROM bizcity_read.ledger_lines l JOIN bizcity_read.ledger_entries e ON e.id = l.entry_id
+         WHERE l.tenant_id = ${a.tenantId} AND e.doc_type = 'opening' AND l.posting_date BETWEEN ${a.from}::date AND ${a.to}::date
+        UNION ALL
+        SELECT l.tenant_id, l.branch_id, l.account_code, l.posting_date, l.debit, l.credit, true
+          FROM bizcity_read.ledger_lines l JOIN bizcity_read.ledger_entries e ON e.id = l.entry_id
+         WHERE l.tenant_id = ${a.tenantId} AND e.doc_type = 'opening' AND l.posting_date BETWEEN ${a.from}::date AND ${a.to}::date
+      ) g
       JOIN branches b ON b.id = g.branch_id
       LEFT JOIN accounts ac ON ac.tenant_id = g.tenant_id AND ac.code = g.account_code
      WHERE g.tenant_id = ${a.tenantId}

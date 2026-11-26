@@ -18,6 +18,7 @@ import { pageRoutes } from '../pages';
 import { LoiManHinh } from '../components/LoiManHinh'; // [2026-11-22 05:05 PM Johnny Chu - Chu Hoàng Anh] PHASE-038 — B4b: khung lỗi theo màn
 import { inFrame } from '@/lib/auth';
 import { MODULES } from './menu';
+import { baoDongThe } from './WindowDock';
 import { GON_DEFS, groupHome, OLD_HOME_ALIASES } from './menu-gon';
 
 interface Tab { pathname: string; search: string; key: number }
@@ -28,12 +29,20 @@ let seq = 0;
 /** Đường dẫn cũ đã gộp vào màn khác: không mở thẻ riêng, chuyển thẳng sang màn mới (giữ tham số ?mo, ?loai…). */
 const ALIASES: Record<string, string> = { ...OLD_HOME_ALIASES, '/mua-hang/chung-tu': '/mua-hang/tong-hop', '/mua-hang/phieu-mua': '/mua-hang/tong-hop', '/mua-hang/tra-ncc': '/mua-hang/tong-hop' };
 
+/** Thẻ khôi phục sau tải lại: bỏ lệnh "mở / lập phiếu" trong địa chỉ (?mo, ?moi…) — phiếu đang dở đã được giữ riêng, không mở thêm phiếu trắng. */
+function boLenhMo(search: string) {
+  const q = new URLSearchParams(search);
+  for (const k of ['mo', 'moi', 'nhan-tu', 'tu-hoa-don', 'nhap-excel']) q.delete(k);
+  const r = q.toString();
+  return r ? `?${r}` : '';
+}
 function loadTabs(): Tab[] {
   // Nhúng trong trang quản trị: mỗi khung một màn, không khôi phục thẻ (các khung dùng chung bộ nhớ phiên).
   if (inFrame) return [];
   try {
-    const v = JSON.parse(sessionStorage.getItem(STORE_KEY) ?? '[]') as { pathname: string; search: string }[];
-    return Array.isArray(v) ? v.filter((t) => typeof t.pathname === 'string').map((t) => ({ pathname: ALIASES[t.pathname] ?? t.pathname, search: t.search ?? '', key: ++seq })).filter((t, i, a) => a.findIndex((x) => x.pathname === t.pathname) === i) : [];
+    // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — thẻ nhớ cả ở bộ nhớ máy (localStorage): mất điện / đóng trình duyệt mở lại vẫn còn thẻ và phiếu dở (đóng góp)
+    const v = JSON.parse(sessionStorage.getItem(STORE_KEY) ?? localStorage.getItem(STORE_KEY) ?? '[]') as { pathname: string; search: string }[];
+    return Array.isArray(v) ? v.filter((t) => typeof t.pathname === 'string').map((t) => ({ pathname: ALIASES[t.pathname] ?? t.pathname, search: boLenhMo(t.search ?? ''), key: ++seq })).filter((t, i, a) => a.findIndex((x) => x.pathname === t.pathname) === i) : [];
   } catch {
     return [];
   }
@@ -98,7 +107,7 @@ export function TabWorkspace({ menu, strip }: { menu: MenuItem[]; strip?: ReactN
 
   useEffect(() => {
     if (inFrame) return;
-    try { sessionStorage.setItem(STORE_KEY, JSON.stringify(tabs.map(({ pathname, search }) => ({ pathname, search })))); } catch { /* chế độ riêng tư */ }
+    try { const j = JSON.stringify(tabs.map(({ pathname, search }) => ({ pathname, search }))); sessionStorage.setItem(STORE_KEY, j); localStorage.setItem(STORE_KEY, j); } catch { /* nuot-loi: chế độ riêng tư chặn bộ nhớ — thẻ vẫn chạy, chỉ không nhớ */ }
   }, [tabs]);
 
   // Cuộn thẻ đang xem vào tầm nhìn.
@@ -117,6 +126,7 @@ export function TabWorkspace({ menu, strip }: { menu: MenuItem[]; strip?: ReactN
   const open = (t: Tab) => navigate(t.pathname + t.search, { state: { tab: true } });
   const closeTabs = (keep: (t: Tab) => boolean) => {
     const rest = tabs.filter(keep);
+    baoDongThe(tabs.filter((t) => !keep(t)).map((t) => t.pathname)); // hộp thoại trong thẻ đóng vẫn giữ (ô mờ ở thanh dưới)
     setTabs(rest);
     if (!rest.some((t) => t.pathname === location.pathname)) {
       // Đóng thẻ đang xem: chuyển sang thẻ bên phải, không có thì bên trái, không còn thẻ nào thì về Tổng quan.

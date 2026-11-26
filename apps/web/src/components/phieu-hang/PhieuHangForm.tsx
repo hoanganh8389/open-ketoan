@@ -60,7 +60,12 @@ const num = (s: string) => { const n = Number(s.replace(/\./g, '').replace(',', 
 let seq = 0;
 const lineKey = () => `L${Date.now().toString(36)}${(seq++).toString(36)}`;
 
-export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose, printScreen, helpKey = 'phieu-hang', startEdit, canApprove = false, approving = false, onApprove, onUnapprove }: {
+/** Phiếu hàng đang mở giữ qua tải lại trang (bản nháp ở máy). */
+export interface GiuPhieuHang { v: TradeDoc; viewing: boolean; startEdit?: boolean }
+export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose, printScreen, helpKey = 'phieu-hang', startEdit, khoiPhuc, giuKey, canApprove = false, approving = false, onApprove, onUnapprove }: {
+  khoiPhuc?: GiuPhieuHang;
+  /** Khoá giữ hộp thoại (màn chủ đặt); có thì phiếu được giữ qua tải lại trang. */
+  giuKey?: string;
   /** Mã màn (BH10, BH11, KHO01…) để nhớ mẫu in mặc định; không truyền thì không có nút In. */
   printScreen?: string;
   value: TradeDoc; readOnly: boolean; saving: boolean; error: unknown;
@@ -79,10 +84,10 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
   onUnapprove?: () => void;
 }) {
   const info = KIND_INFO[value.docType];
-  const [v, setV] = useState<TradeDoc>(value);
+  const [v, setV] = useState<TradeDoc>(khoiPhuc?.v ?? value);
   const gate = useDocumentGate(readOnly ? undefined : v.docDate);
   // NT-BH-036: phiếu đã ghi (chưa duyệt) mở ở chế độ XEM như trước (khung hộp thoại chung viewFirst) — bấm Sửa / F2 mới sửa.
-  const [viewing, setViewing] = useState(() => Boolean(value.docNo) && !readOnly && !startEdit);
+  const [viewing, setViewing] = useState(() => (khoiPhuc ? khoiPhuc.viewing && !readOnly : Boolean(value.docNo) && !readOnly && !startEdit));
   /** Ô nhập khoá: phiếu đã duyệt, hoặc đang xem. */
   const ro = readOnly || viewing;
   /** Vì sao ô đang khoá + cách gỡ (R-BLOCK-1). */
@@ -312,6 +317,7 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
 
   return (
     <KhungPhieu
+      giu={giuKey ? { key: giuKey, kind: 'phieu-hang', draft: (): GiuPhieuHang => ({ v, viewing, startEdit }) } : undefined}
       title={`${info.label}${v.docNo ? ` ${v.docNo}` : ' (mới)'}`}
       badges={<span className={`badge ${v.status === 'approved' ? 'badge-ok' : 'badge-gray'}`}>{v.status === 'approved' ? 'Đã duyệt' : 'Nháp'}</span>}
       totalLabel={totalLabel} total={v.totals.total} helpKey={helpKey}

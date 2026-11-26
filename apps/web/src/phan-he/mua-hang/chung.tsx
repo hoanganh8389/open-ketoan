@@ -5,6 +5,7 @@ import type { Check, CreditStatus } from '@bizcity/mua-hang-domain';
 import { ListPicker } from '@/components/pickers';
 import { vnd } from './du-lieu';
 import './mua-hang.css';
+import { NutSuaAcc41 } from '@/features/posting/QuyTacHachToanPage';
 
 const ICON: Record<string, string> = { error: '⛔', warn: '⚠', info: 'ℹ', ok: '✓' };
 export function CheckList({ checks, empty = 'Không có cảnh báo', onPick }: { checks: Check[]; empty?: string; onPick?: (lineKey: string) => void }) {
@@ -14,7 +15,7 @@ export function CheckList({ checks, empty = 'Không có cảnh báo', onPick }: 
     <>
       {[...checks].sort((a, b) => order[a.level] - order[b.level]).map((c, i) => (
         <div key={i} className={`mh-check ${c.level}`} style={{ cursor: c.lineKey && onPick ? 'pointer' : undefined }} onClick={() => c.lineKey && onPick?.(c.lineKey)}>
-          <span>{ICON[c.level]}</span><span>{c.text}{c.blocking ? <b> — chặn duyệt</b> : null}</span>
+          <span>{ICON[c.level]}</span><span>{c.text}{c.blocking ? <b> — chặn duyệt</b> : null}<NutSuaAcc41 text={c.text} /></span>
         </div>
       ))}
     </>

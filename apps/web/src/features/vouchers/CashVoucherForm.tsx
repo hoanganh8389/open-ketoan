@@ -88,7 +88,14 @@ function readCols(type: string): ColKey[] {
   try { const v = JSON.parse(localStorage.getItem(colsKey(type)) ?? 'null') as ColKey[] | null; return Array.isArray(v) ? v : COLS_DEFAULT; } catch { return COLS_DEFAULT; }
 }
 
-export function CashVoucherForm({ type, existing, initial, onClose, onSaved, theoHoaDon }: {
+/** Phiếu thu / chi đang mở giữ qua tải lại trang (bản nháp ở máy). */
+export interface GiuPhieuTien { h: Record<string, string>; rows: unknown[]; loai: number; dirty: boolean; meta?: unknown }
+export function CashVoucherForm({ type, existing, initial, onClose, onSaved, theoHoaDon, khoiPhuc, giuKey, giuMeta }: {
+  /** Thông tin màn chủ cần để mở lại phiếu (loại, phiếu đã lập…) — ghi kèm bản nháp. */
+  giuMeta?: unknown;
+  khoiPhuc?: GiuPhieuTien;
+  /** Khoá giữ hộp thoại (màn chủ đặt); có thì phiếu được giữ qua tải lại trang. */
+  giuKey?: string;
   type: Exclude<VoucherType, 'manual'>;
   /** Thu / trả tiền theo hoá đơn: chọn đối tượng xong tự mở bảng chứng từ còn nợ để chọn. */
   theoHoaDon?: boolean;
@@ -129,7 +136,8 @@ export function CashVoucherForm({ type, existing, initial, onClose, onSaved, the
   const reasonKind = isReceipt ? 'receipt' : 'payment';
   // Lý do hạch toán theo màn (chỉ khi bật lý do): màn đã gán lý do thì chỉ hiện các lý do đó.
 
-  const [h, setH] = useState({
+  // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — mở lại sau tải lại trang: lấy đúng nội dung đang nhập dở (đóng góp)
+  const [h, setH] = useState(() => ({
     docNo: existing?.docNo ?? '',
     branchCode: p?.branchCode || branches?.find((b) => b.isActive)?.code || '',
     docDate: (existing?.payload.docDate ?? today()) as string,
@@ -143,10 +151,12 @@ export function CashVoucherForm({ type, existing, initial, onClose, onSaved, the
     counterparty: p?.counterparty ?? '',
     description: p?.description ?? '',
     reference: existing?.payload.reference ?? '',
-  });
-  const set = (patch: Partial<typeof h>) => setH((x) => ({ ...x, ...patch }));
+    ...(khoiPhuc?.h ?? {}),
+  }));
+  const [dirty, setDirty] = useState(Boolean(khoiPhuc?.dirty));
+  const set = (patch: Partial<typeof h>) => { setH((x) => ({ ...x, ...patch })); setDirty(true); };
   const branchCode = h.branchCode || branches?.find((b) => b.isActive)?.code || '';
-  const [rows, setRows] = useState<Row[]>(() =>
+  const [rows, setRows] = useState<Row[]>(() => khoiPhuc ? (khoiPhuc.rows as Row[]).map((r) => ({ ...blankRow(r), key: ++seq })) :
     (p?.lines ?? []).map((l) =>
       blankRow({
         account: lineSide === 'credit' ? l.creditAccount : l.debitAccount,
@@ -166,9 +176,9 @@ export function CashVoucherForm({ type, existing, initial, onClose, onSaved, the
     if (p?.lines[0]) { const g = guessLoai(loaiList, lineSide === 'credit' ? p.lines[0].creditAccount : p.lines[0].debitAccount, lineSide); return g >= 0 ? g : khac; }
     return theoHoaDon ? 0 : khac;
   };
-  const [loai, setLoai] = useState(firstLoai);
-  // Danh sách loại tải xong từ Tài khoản ngầm định thì chọn lại theo danh sách mới.
-  useEffect(() => { setLoai(firstLoai()); }, [loaiList]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [loai, setLoai] = useState(khoiPhuc ? khoiPhuc.loai : firstLoai);
+  // Danh sách loại tải xong từ Tài khoản ngầm định thì chọn lại theo danh sách mới (phiếu mở lại sau tải trang: giữ loại đã chọn).
+  useEffect(() => { if (!khoiPhuc) setLoai(firstLoai()); }, [loaiList]); // eslint-disable-line react-hooks/exhaustive-deps
   // [2026-11-13 Nguyễn Văn Thủy] ẩn / hiện cột tài khoản (vẫn ghi theo loại) — nhớ theo máy (đóng góp)
   const [showAcc, setShowAcc] = useState(() => { try { return localStorage.getItem('ketoan.phieu.an-tk') !== '1'; } catch { return true; } });
   const toggleAcc = () => setShowAcc((v) => { try { localStorage.setItem('ketoan.phieu.an-tk', v ? '1' : '0'); } catch { /* bỏ qua */ } return !v; });
@@ -368,11 +378,12 @@ export function CashVoucherForm({ type, existing, initial, onClose, onSaved, the
     });
   };
 
-  const title = (isBank ? (isReceipt ? 'Thu tiền gửi' : 'Chi tiền gửi') : meta.title) + (theoHoaDon && !existing ? ' theo hóa đơn' : '');
+  const title = (isBank ? (isReceipt ? 'Giấy báo có' : 'Giấy báo nợ') : meta.title) + (theoHoaDon && !existing ? ' theo hóa đơn' : '');
   const bankAcc = banks.find((b) => b.accountCode === moneyAccount && b.isActive);
   return (
     <>
     <VoucherModal
+      giu={giuKey ? { key: giuKey, kind: 'phieu-tien', dirty, draft: (): GiuPhieuTien => ({ h, rows, loai, dirty, meta: giuMeta }) } : undefined}
       title={title} existing={existing} readOnly={dis} saving={saving} total={total + taxTotal}
       titleExtra={theoHoaDon && !existing ? undefined :
         <select className="select input pt-loai" value={loai} disabled={dis} title="Loại phiếu: chọn để điền sẵn tài khoản" onChange={(e) => chooseLoai(Number(e.target.value))}>

@@ -4,6 +4,7 @@
  * DATA_DIR/mua-hang/<tenant>/<yyyy-mm>.jsonl (không cần bảng); nút "Tải file nhật ký" xuất đúng khuôn đó.
  */
 import { Fragment, useMemo, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
 import { PageHeader } from '@/components/PageHeader';
@@ -82,7 +83,7 @@ export function NhatKyMuaPage() {
           <label className="row" style={{ gap: 4, alignItems: 'center' }}>đến <input className="input" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
           {(from || to) && <button className="btn btn-sm" onClick={() => { setFrom(''); setTo(''); }} title="Bỏ lọc ngày">× Bỏ lọc ngày</button>}
           <select className="select input" style={{ width: 220 }} value={event} onChange={(e) => setEvent(e.target.value)}><option value="">Mọi sự kiện</option>{events.map((e) => <option key={e} value={e}>{EVENT[e]?.[0] ?? e}</option>)}</select>
-          <button className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
+          <button className="btn btn-sm btn-nap" onClick={() => void q.refetch()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
           <button className="btn btn-sm" onClick={download} title="Tải toàn bộ nhật ký đang lọc thành một file (mỗi dòng một sự kiện)">Tải file nhật ký</button>
           <span className="muted" style={{ fontSize: 12 }}>{rows.length} dòng · bấm một dòng để xem chi tiết</span>
         </div>

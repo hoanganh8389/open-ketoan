@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent } from 'react';
 import { boLoiO, ganLoiMayChu, kiemBatBuoc, laNutGhi, SU_KIEN_LOI, type LoiMayChu } from './kiemLoi';
 import { boKiemForm, ghiLoiForm } from '@/lib/kiemForm';
+import { NutSuaAcc41 } from '@/features/posting/QuyTacHachToanPage';
 
 const KHUNG = '.modal-mask:not(.is-min), .mh-sheet:not(.is-min)';
 
@@ -77,6 +78,6 @@ export function useKiemLoi(locked = false, opt: { lyDo?: () => string | null | u
     void navigator.clipboard?.writeText(text);
   };
   const banner = bao && !locked ? <span className="modal-loi" role="alert" title="Bấm để ẩn" onClick={() => setBao(null)}>{bao}</span>
-    : traCuu?.requestId && !locked ? <span className="modal-loi modal-tra-cuu" role="status">Lỗi <span className="mono">{traCuu.code}</span> · mã tra cứu <span className="mono">{traCuu.requestId}</span> <button type="button" className="btn btn-xs" title="Chép mã lỗi, câu báo, mã tra cứu — dán vào báo lỗi" onClick={(e) => { e.stopPropagation(); chep(); }}>Chép</button> <button type="button" className="btn btn-xs btn-ghost" title="Ẩn" onClick={(e) => { e.stopPropagation(); setTraCuu(null); }}>×</button></span> : null;
+    : traCuu?.requestId && !locked ? <span className="modal-loi modal-tra-cuu" role="status" title={[traCuu.message, ...traCuu.details].join(' — ')}>{/* [2026-11-26 07:30 PM Nguyễn Văn Thủy] UX — hiện CẢ câu lỗi (vd TK 1561 là tài khoản tổng hợp), không chỉ mã; lỗi tài khoản ACC41 có nút sửa tại chỗ (đóng góp) */}<b>{traCuu.details.length ? `${traCuu.message}: ${traCuu.details.join('; ')}` : traCuu.message}</b><NutSuaAcc41 text={[traCuu.message, ...traCuu.details].join(' ')} /> · <span className="muted">{traCuu.code} · mã tra cứu <span className="mono">{traCuu.requestId}</span></span> <button type="button" className="btn btn-xs" title="Chép mã lỗi, câu báo, mã tra cứu — dán vào báo lỗi" onClick={(e) => { e.stopPropagation(); chep(); }}>Chép</button> <button type="button" className="btn btn-xs btn-ghost" title="Ẩn" onClick={(e) => { e.stopPropagation(); setTraCuu(null); }}>×</button></span> : null;
   return { body, kiem, footProps, bodyProps, banner, daKiem: daKiem && !locked };
 }

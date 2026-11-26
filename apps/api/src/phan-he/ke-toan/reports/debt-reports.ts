@@ -27,10 +27,12 @@ export async function debtByEmployee(a: Scope & { accountPrefix: string; employe
   const employeeFilter = a.employee === undefined ? sql`` : sql`AND COALESCE(l.dims->>'employee', '') = ${a.employee}`;
   const res = await sql<{ employee: string; partner_id: string | null; opening: string; debit: string; credit: string }>`
     SELECT COALESCE(l.dims->>'employee', '') AS employee, l.partner_id,
-           SUM(CASE WHEN l.posting_date < ${a.from}::date THEN l.debit - l.credit ELSE 0 END) AS opening,
-           SUM(CASE WHEN l.posting_date >= ${a.from}::date THEN l.debit ELSE 0 END) AS debit,
-           SUM(CASE WHEN l.posting_date >= ${a.from}::date THEN l.credit ELSE 0 END) AS credit
+           -- phiếu số dư đầu kỳ luôn là đầu kỳ (kể cả ngày chốt nằm trong kỳ)
+           SUM(CASE WHEN l.posting_date < ${a.from}::date OR e.doc_type = 'opening' THEN l.debit - l.credit ELSE 0 END) AS opening,
+           SUM(CASE WHEN l.posting_date >= ${a.from}::date AND e.doc_type <> 'opening' THEN l.debit ELSE 0 END) AS debit,
+           SUM(CASE WHEN l.posting_date >= ${a.from}::date AND e.doc_type <> 'opening' THEN l.credit ELSE 0 END) AS credit
       FROM bizcity_read.ledger_lines l
+      JOIN bizcity_read.ledger_entries e ON e.id = l.entry_id
      WHERE l.tenant_id = ${a.tenantId}
        AND l.account_code LIKE ${a.accountPrefix + '%'}
        AND l.posting_date <= ${a.to}::date

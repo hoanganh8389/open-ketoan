@@ -44,7 +44,7 @@ export function postingFindings(err: AppError, doc: Pick<IngestDocument, 'docDat
   if (err.code === 'UNBALANCED_ENTRY') return f('IN-POST-004', null, cut(err.message));
   const m = err.message;
   if (/^Lý do .+ chưa khai báo/.test(m) || m.startsWith('Chưa có lý do mặc định')) return f('IN-POST-001', 'reasonCode', cut(m));
-  if (m === 'Thiếu cấu hình hạch toán') return f('IN-POST-002', null, Array.isArray(err.details) ? cut((err.details as string[]).slice(0, 5).join('; '), 240) : cut(m));
+  if (m.startsWith('Thiếu cấu hình hạch toán')) return f('IN-POST-002', null, Array.isArray(err.details) ? cut((err.details as string[]).slice(0, 5).join('; '), 240) : cut(m));
   if (m.startsWith('Chưa có nhóm hạch toán mặt hàng')) return f('IN-POST-003', 'lines', cut(m));
   if (m.startsWith('Bút toán không hợp lệ') || m.startsWith('Bút toán không có dòng')) return f('IN-POST-004', null, cut(m));
   return f('IN-POST-005', null, cut(m));

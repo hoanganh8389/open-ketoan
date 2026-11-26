@@ -9,7 +9,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CalendarDays, ChevronDown, FolderTree, Lock, Network } from 'lucide-react';
 import { PERIOD_PRESETS, presetOf, rememberPeriod } from '@/lib/format';
-import { useOrgTree } from '@/lib/orgUnits';
+import { tatCaCn, useCayTheoLamViec, useGioiHanCn } from '@/lib/orgUnits';
+import { workBranch } from '@/lib/workBranch';
 import { useBranches } from './filters';
 import { CayDonVi } from './CayDonVi';
 import { CayNhomHang, indexNhom, useNhomHang } from './CayNhomHang';
@@ -48,18 +49,22 @@ function O({ icon, nhan, tomTat, khongDung, children, rong = 420 }: { icon: Reac
 }
 
 function OChiNhanh({ nguon }: { nguon?: LocChuan['cn'] }) {
-  const { data: all = [] } = useBranches();
-  const tree = useOrgTree();
+  // [2026-11-26 07:00 PM Nguyễn Văn Thủy] UX — cây / danh sách chỉ chi nhánh đang làm việc và con cháu (cấp cha không tích được) (đóng góp)
+  const { data: raw = [] } = useBranches();
+  const { tree: cay, allowed } = useCayTheoLamViec();
+  const all = useMemo(() => (allowed ? raw.filter((b) => allowed.includes(b.code)) : raw), [raw, allowed]);
+  const tree = { data: cay };
   const [the, setThe] = useState<'cay' | 'ds' | 'kho'>('cay');
   const [tim, setTim] = useState('');
   const v = nguon?.value ?? '';
   const picked = v === CN_NONE ? [] : v ? v.split(',') : all.map((b) => b.code);
   const kho = nguon?.kho?.value ? nguon.kho.value.split(',') : [];
-  const tomTat = !nguon || !v ? 'Tất cả chi nhánh' : v === CN_NONE ? 'Chưa chọn' : picked.length === 1
+  useGioiHanCn(v, nguon?.onChange, all.map((b) => b.code), allowed, CN_NONE);
+  const tomTat = !nguon || !v || (allowed && picked.length === all.length) ? (allowed ? `Tất cả trong ${workBranch.get()}` : 'Tất cả chi nhánh') : v === CN_NONE ? 'Chưa chọn' : picked.length === 1
     ? `${picked[0]} · ${all.find((b) => b.code === picked[0])?.name ?? ''}` : `${picked.length} / ${all.length} chi nhánh`;
   const khoDs = useKhoLoc();
   const dat = (codes: string[]) => {
-    nguon?.onChange(codes.length === 0 ? CN_NONE : codes.length >= all.length ? '' : all.map((b) => b.code).filter((c) => codes.includes(c)).join(','));
+    nguon?.onChange(codes.length === 0 ? CN_NONE : codes.length >= all.length ? tatCaCn(allowed, all.map((b) => b.code)) : all.map((b) => b.code).filter((c) => codes.includes(c)).join(','));
     // Bỏ chi nhánh thì kho của chi nhánh đó rời khỏi danh sách kho đã chọn.
     if (kho.length) { const kept = kho.filter((c) => codes.includes(khoDs.find((k) => k.code === c)?.branchCode ?? '')); if (kept.length !== kho.length) nguon?.kho?.onChange(kept.join(',')); }
   };

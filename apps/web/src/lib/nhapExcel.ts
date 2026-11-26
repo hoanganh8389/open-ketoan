@@ -35,6 +35,8 @@ export interface NhapLoai {
   nhom: string;
   title: string;
   desc: string;
+  /** Câu giải thích cách nhập ở bước chọn tệp (thay câu mặc định "Mã đã có → cập nhật…" khi loại này không theo mã). */
+  ghiChuNhap?: string;
   keyField: string;
   fields: NhapTruong[];
   /** Cho chọn Thêm mới / Cập nhật / Cả hai (mặc định có). */
@@ -536,6 +538,7 @@ const SO_DU: NhapLoai = {
   id: 'so-du-tai-khoan', nhom: 'Số dư ban đầu', title: 'Số dư tài khoản đầu kỳ',
   desc: 'Dư Nợ / Dư Có từng tài khoản, công nợ theo đối tượng (131, 331…), theo chi nhánh — mỗi chi nhánh một phiếu số dư', keyField: 'accountCode',
   listPath: '/nghiep-vu/so-du-tai-khoan', invalidate: ['documents', 'document'], modes: false,
+  ghiChuNhap: 'Mỗi chi nhánh thành một phiếu số dư (ngày chốt = ngày cuối trước khi dùng phần mềm). Chi nhánh đã có phiếu số dư thì không nhập chồng: sửa phiếu đó, hoặc huỷ rồi nhập lại. Tổng Dư Nợ phải bằng tổng Dư Có của chi nhánh (hoặc ghi cột TK cân đối). Tiền mặt / tiền gửi (111, 112, 113) chỉ có Dư Nợ.',
   fields: [
     { key: 'branchCode', header: 'Chi nhánh', required: true, aliases: ['ma chi nhanh', 'don vi'], example: '00000', note: 'Mã chi nhánh trong sơ đồ tổ chức. Mỗi chi nhánh thành một phiếu số dư.' },
     { key: 'docDate', header: 'Ngày chốt số dư', required: true, aliases: ['ngay', 'ngay so du', 'ngay chung tu', 'ngay hach toan'], defaultValue: cuoiThangTruoc(), note: 'dd/mm/yyyy — thường là ngày cuối kỳ trước khi bắt đầu dùng phần mềm.' },
@@ -579,6 +582,8 @@ const SO_DU: NhapLoai = {
       if (Number.isNaN(debit) || Number.isNaN(credit)) errors.push('Số tiền không đọc được');
       else if (debit < 0 || credit < 0) errors.push('Số tiền âm: ghi sang cột bên kia');
       else if ((debit > 0) === (credit > 0)) errors.push('Mỗi dòng ghi Dư Nợ hoặc Dư Có (không cả hai, không để trống cả hai)');
+      // [2026-11-26 07:50 PM Nguyễn Văn Thủy] SO-DU — tiền chỉ có số dư Nợ (khớp kiểm ở máy chủ) (đóng góp)
+      else if (/^11[123]/.test(a) && credit > 0) errors.push(`Tài khoản ${a} là tiền: chỉ có Dư Nợ (số tiền đang có), không ghi Dư Có`);
       if (bal && (!acc.has(bal) || laiLo(bal))) errors.push(`TK cân đối ${bal} không dùng được (cần tài khoản chi tiết, không phải doanh thu / chi phí)`);
       return { row, key: `${branchCode} · ${a}${p ? ` · ${p}` : ''}`, action: errors.length ? 'error' : 'create', errors, g: `${branchCode}|${date}`, debit: debit || 0, credit: credit || 0, bal,
         values: { branchCode, docDate: r.docDate, accountCode: a, partnerCode: p, debit: debit ? tien(debit) : '', credit: credit ? tien(credit) : '', balancingAccount: bal } };
@@ -635,6 +640,7 @@ const TON_KHO: NhapLoai = {
   id: 'ton-kho', nhom: 'Số dư ban đầu', title: 'Tồn kho đầu kỳ (số lượng)',
   desc: 'Số lượng tồn từng mã hàng theo kho — so với tồn trên sổ, mỗi kho một phiếu điều chỉnh (+/−) ghi sổ ngay. Mã không có trong tệp giữ nguyên; nhập lại cả tệp không sinh thêm chênh lệch.', keyField: 'sku',
   listPath: '/bao-cao/nhap-xuat-ton', invalidate: ['documents', 'inventory'], modes: false,
+  ghiChuNhap: 'Ghi số lượng tồn THỰC TẾ của từng mã ở từng kho tại ngày cân tồn. Phần mềm so với tồn trên sổ, mỗi kho lập một phiếu điều chỉnh phần chênh (+/−). Mã không có trong tệp giữ nguyên; nhập lại cả tệp không sinh thêm chênh lệch. Giá trị tồn đầu kỳ (tiền) = số lượng × giá vốn bình quân đầu kỳ, nhập ở bảng tính giá vốn.',
   fields: [
     { key: 'docDate', header: 'Ngày cân tồn', required: true, aliases: ['ngay', 'ngay chung tu', 'ngay ton', 'ngay kiem ke'], defaultValue: homNay(), note: 'dd/mm/yyyy — ngày ghi phiếu điều chỉnh. Cả tệp một ngày.' },
     KHO_TRUONG, SKU_TRUONG, TEN_TRUONG,
@@ -681,7 +687,7 @@ const TON_KHO: NhapLoai = {
 };
 
 const TON_MAX: NhapLoai = {
-  id: 'ton-max', nhom: 'Số dư ban đầu', title: 'Tồn max theo kho',
+  id: 'ton-max', nhom: 'Mua hàng', title: 'Tồn max theo kho',
   desc: 'Mức tồn tối đa từng mã hàng ở từng kho — dùng tính chuyển hàng về shop và đề xuất đặt mua', keyField: 'sku',
   listPath: '/mua-hang/ton-max', invalidate: ['ton-max'], modes: false,
   fields: [KHO_TRUONG, SKU_TRUONG, TEN_TRUONG,
@@ -719,8 +725,8 @@ type LoaiPhieu = 'receipt' | 'payment' | 'bank_receipt' | 'bank_payment' | 'manu
 const PHIEU: Record<LoaiPhieu, { id: string; title: string; path: string; nguoi: string; no?: string; co?: string; dg: string }> = {
   receipt: { id: 'phieu-thu', title: 'Phiếu thu', path: '/nghiep-vu/phieu-thu', nguoi: 'Người nộp', no: '1111', dg: 'Thu tiền' },
   payment: { id: 'phieu-chi', title: 'Phiếu chi', path: '/nghiep-vu/phieu-chi', nguoi: 'Người nhận', co: '1111', dg: 'Chi tiền' },
-  bank_receipt: { id: 'bao-co', title: 'Thu tiền gửi', path: '/nghiep-vu/phieu-bao-co', nguoi: 'Người nộp', dg: 'Thu tiền gửi' },
-  bank_payment: { id: 'bao-no', title: 'Chi tiền gửi', path: '/nghiep-vu/phieu-bao-no', nguoi: 'Người nhận', dg: 'Chi tiền gửi' },
+  bank_receipt: { id: 'bao-co', title: 'Giấy báo có', path: '/nghiep-vu/phieu-bao-co', nguoi: 'Người nộp', dg: 'Thu tiền gửi' },
+  bank_payment: { id: 'bao-no', title: 'Giấy báo nợ', path: '/nghiep-vu/phieu-bao-no', nguoi: 'Người nhận', dg: 'Chi tiền gửi' },
   manual: { id: 'phieu-ke-toan', title: 'Chứng từ nghiệp vụ khác', path: '/nghiep-vu/phieu-ke-toan', nguoi: 'Người liên quan', dg: 'Hạch toán' },
 };
 const phieuTien = (docType: LoaiPhieu): NhapLoai => {

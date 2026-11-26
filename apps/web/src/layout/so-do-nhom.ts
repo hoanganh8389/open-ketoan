@@ -84,7 +84,7 @@ export const SO_DO_V2: Record<string, SoDo> = {
           { label: 'Ca bán', path: '/app/pos/ca-ban' }, { label: 'Tổng quan máy bán', path: '/app/pos/tong-quan' }] },
         { nhom: 'Thu tiền & công nợ', icon: 'Wallet', ghiChu: 'Thu theo hình thức, đối chiếu', items: [
           { label: 'Thu tiền theo hình thức thanh toán', path: '/ban-hang/thu-tien' }, { label: 'Thu tiền mặt', path: '/nghiep-vu/phieu-thu' },
-          { label: 'Thu tiền gửi', path: '/nghiep-vu/phieu-bao-co' }, { label: 'Đối chiếu công nợ', path: '/cong-no/doi-chieu' }] },
+          { label: 'Giấy báo có', path: '/nghiep-vu/phieu-bao-co' }, { label: 'Đối chiếu công nợ', path: '/cong-no/doi-chieu' }] },
       ],
       nhanh: [
         { nhom: 'Trả lại hàng', icon: 'RotateCcw', items: [
@@ -119,8 +119,8 @@ export const SO_DO: Record<string, SoDo> = {
   'tien-gui': {
     title: 'Nghiệp vụ tiền gửi',
     rows: [
-      [{ label: 'Thu tiền gửi', icon: 'ArrowDownLeft', path: '/nghiep-vu/phieu-bao-co' }, { label: 'Đối chiếu ngân hàng', icon: 'ListChecks' }],
-      [{ label: 'Chuyển tiền nội bộ', icon: 'ArrowLeftRight', path: '/quy/phieu-chuyen-tien' }, { label: 'Chi tiền gửi', icon: 'ArrowUpRight', path: '/nghiep-vu/phieu-bao-no' }],
+      [{ label: 'Giấy báo có', icon: 'ArrowDownLeft', path: '/nghiep-vu/phieu-bao-co' }, { label: 'Đối chiếu ngân hàng', icon: 'ListChecks' }],
+      [{ label: 'Chuyển tiền nội bộ', icon: 'ArrowLeftRight', path: '/quy/phieu-chuyen-tien' }, { label: 'Giấy báo nợ', icon: 'ArrowUpRight', path: '/nghiep-vu/phieu-bao-no' }],
     ],
     reports: [
       { label: 'Bảng kê số dư tiền theo ngày', path: '/quy/so-du-tien' }, { label: 'Sổ tiền gửi ngân hàng', path: '/quy/so-tien-gui' },
@@ -187,7 +187,7 @@ export const SO_DO: Record<string, SoDo> = {
     rows: [
       [
         { label: 'Bán hàng', icon: 'Receipt', path: '/ban-hang/phieu-ban' },
-        { label: 'Thu tiền theo hóa đơn', icon: 'ArrowDownLeft', path: '/nghiep-vu/phieu-thu', sub: [{ label: 'Thu tiền mặt', path: '/nghiep-vu/phieu-thu' }, { label: 'Thu tiền gửi', path: '/nghiep-vu/phieu-bao-co' }] },
+        { label: 'Thu tiền theo hóa đơn', icon: 'ArrowDownLeft', path: '/nghiep-vu/phieu-thu', sub: [{ label: 'Thu tiền mặt', path: '/nghiep-vu/phieu-thu' }, { label: 'Giấy báo có', path: '/nghiep-vu/phieu-bao-co' }] },
       ],
       [{ label: 'Trả lại hàng bán', icon: 'RotateCcw', path: '/ban-hang/tra-lai' }],
     ],

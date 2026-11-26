@@ -10,8 +10,8 @@ export const TEN_MAN: Record<string, TenMan> = {
   // Tiền mặt, tiền gửi
   '/nghiep-vu/phieu-thu': { label: 'Thu tiền' },
   '/nghiep-vu/phieu-chi': { label: 'Chi tiền' },
-  '/nghiep-vu/phieu-bao-co': { label: 'Thu tiền gửi' },
-  '/nghiep-vu/phieu-bao-no': { label: 'Chi tiền gửi' },
+  '/nghiep-vu/phieu-bao-co': { label: 'Giấy báo có' },
+  '/nghiep-vu/phieu-bao-no': { label: 'Giấy báo nợ' },
   '/quy/phieu-chuyen-tien': { label: 'Chuyển tiền nội bộ' },
   '/quy/so-quy-tien-mat': { label: 'Sổ quỹ tiền mặt' },
   '/quy/so-tien-gui': { label: 'Sổ tiền gửi ngân hàng' },

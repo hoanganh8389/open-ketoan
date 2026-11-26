@@ -543,6 +543,20 @@ function fromOpening(input: OpeningInput): ManualDoc {
       if (profitLoss.length) {
         throw Errors.validation(`Tài khoản ${profitLoss.join(', ')} là doanh thu, chi phí hoặc xác định kết quả, không có số dư đầu kỳ. Lãi, lỗ luỹ kế trước ngày bắt đầu dùng phần mềm nhập vào 4212 (lợi nhuận năm nay) hoặc 4211 (năm trước).`, profitLoss);
       }
+      // [2026-11-26 07:40 PM Nguyễn Văn Thủy] SO-DU — tiền mặt, tiền gửi, tiền đang chuyển (111, 112, 113) chỉ có số dư Nợ; TK theo dõi
+      // đối tượng (131, 331, 141, 334…) phải ghi mã đối tượng có trong danh mục — trước đây thiếu mã thì số dư mất đối tượng, sổ công nợ không thấy (đóng góp)
+      const soAm = input.lines.filter((l) => /^11[123]/.test(l.accountCode) && toCents(l.credit) > 0).map((l) => l.accountCode);
+      if (soAm.length) {
+        throw Errors.validation(`Tài khoản ${[...new Set(soAm)].join(', ')} là tiền (111 tiền mặt, 112 tiền gửi, 113 tiền đang chuyển): chỉ có số dư Nợ (số tiền đang có), không nhập Dư Có. Thấu chi ngân hàng ghi ở 341 (vay).`);
+      }
+      const thieuDT = input.lines.filter((l) => tracksPartner(accounts.get(l.accountCode)) && !(l.partnerCode ?? '').trim()).map((l) => l.accountCode);
+      if (thieuDT.length) {
+        throw Errors.validation(`Tài khoản ${[...new Set(thieuDT)].join(', ')} theo dõi theo đối tượng (khách hàng, nhà cung cấp, nhân viên): mỗi dòng cần Mã đối tượng để sổ công nợ có số dư đầu kỳ của từng đối tượng.`);
+      }
+      const saiDT = input.lines.filter((l) => (l.partnerCode ?? '').trim() && tracksPartner(accounts.get(l.accountCode)) && !partners.get(l.partnerCode!.trim())).map((l) => l.partnerCode!.trim());
+      if (saiDT.length) {
+        throw Errors.validation(`Mã đối tượng ${[...new Set(saiDT)].join(', ')} chưa có trong danh mục khách hàng / nhà cung cấp / nhân viên — khai báo đối tượng trước rồi nhập số dư.`);
+      }
       const diff = debit - credit;
       if (diff !== 0 && !input.balancingAccount) {
         throw Errors.validation(`Tổng Dư Nợ (${fromCents(debit)}) khác tổng Dư Có (${fromCents(credit)}), lệch ${fromCents(Math.abs(diff))}. Kiểm tra lại, hoặc nhập "Tài khoản cân đối" để ghi phần chênh lệch.`);

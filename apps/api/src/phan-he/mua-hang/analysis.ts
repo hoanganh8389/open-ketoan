@@ -62,7 +62,8 @@ export async function resolveAccounts(trx: Db, tenantId: string, _s?: PurchaseSe
     ?? methods.find((m) => !m.is_receivable && m.account_code.startsWith(prefix) && posting.has(m.account_code))?.account_code;
   // [2026-11-15 Nguyễn Văn Thủy] một nơi khai: tài khoản của Quy tắc hạch toán (ACC41) → tự chọn; cài đặt mua hàng không còn tài khoản riêng (đóng góp)
   const defaults = new Map((await trx.selectFrom('posting_defaults').select(['key', 'account_code']).where('tenant_id', '=', tenantId).execute()).map((d) => [d.key, d.account_code]));
-  const def = (key: string) => { const c = defaults.get(key); return c && posting.has(c) ? c : undefined; };
+  // [2026-11-26 05:20 PM Nguyễn Văn Thủy] MH — bút toán xem trước dùng ĐÚNG tài khoản sẽ ghi (kể cả khi ACC41 đang trỏ TK tổng hợp — kiểm tra báo lỗi chặn riêng), không tự đổi sang TK con (đóng góp)
+  const def = (key: string) => defaults.get(key) || undefined;
   return {
     stock: def('inventory') ?? pick('1561', '156'),
     vatIn: def('tax_input') ?? pick('1331', '133'),
@@ -302,6 +303,21 @@ export async function activationGate(trx: Db, tenantId: string, doc: PDoc, docs:
   return { blocked, passed };
 }
 
+/** Khoá ACC41 mà phiếu mua hàng ghi sổ dùng tới. */
+const KHOA_MUA_HANG: [string, string][] = [['inventory', 'TK kho hàng hoá'], ['tax_input', 'TK thuế GTGT đầu vào'], ['payable', 'TK phải trả nhà cung cấp'], ['promotion_expense', 'TK chi phí quà tặng'], ['payment_discount_income', 'TK chiết khấu thanh toán được hưởng']];
+/** Khoá ACC41 của Mua hàng đang trỏ vào TK tổng hợp (vd 1561 sau khi mở 15611) → kiểm tra chặn duyệt, câu có khoá để màn mở hộp sửa. */
+async function acc41TongHop(trx: Db, tenantId: string): Promise<Check[]> {
+  const defs = await trx.selectFrom('posting_defaults').select(['key', 'account_code']).where('tenant_id', '=', tenantId).where('key', 'in', KHOA_MUA_HANG.map(([k]) => k)).execute();
+  if (!defs.length) return [];
+  const accs = await trx.selectFrom('accounts').select(['code', 'is_posting']).where('tenant_id', '=', tenantId).execute();
+  const tongHop = new Set(accs.filter((a) => !a.is_posting).map((a) => a.code));
+  return defs.filter((d) => tongHop.has(d.account_code)).map((d) => {
+    const con = accs.filter((a) => a.is_posting && a.code !== d.account_code && a.code.startsWith(d.account_code)).map((a) => a.code).sort().slice(0, 5);
+    const ten = KHOA_MUA_HANG.find(([k]) => k === d.key)![1];
+    return { level: 'error' as const, code: 'acc41_tong_hop', blocking: true, text: `${ten} ở Quy tắc hạch toán (ACC41) đang là ${d.account_code} — tài khoản tổng hợp; đổi sang tài khoản chi tiết${con.length ? ` (vd ${con.join(', ')})` : ''} (khoá "${d.key}")` };
+  });
+}
+
 export async function analyze(trx: Db, tenantId: string, doc: PDoc, ctx: Ctx): Promise<Analysis> {
   const { policies, docs, settings, accounts } = ctx;
   // ĐVT của các mã trên phiếu: bảng chiết khấu theo mã ghi ĐVT khác ĐVT phiếu (vd giảm / Thùng, phiếu theo Lon) quy đổi theo tỉ lệ.
@@ -504,6 +520,7 @@ export async function analyze(trx: Db, tenantId: string, doc: PDoc, ctx: Ctx): P
     const u2 = { ...units, ...(await unitsOf(trx, tenantId, q.list.flatMap((x) => x.lines.map((l) => l.sku)).filter((x) => !units[x]))) };
     invoiceQty = { bySku: Object.fromEntries(invoiceQtyBySku(q.list, u2)), grossBySku: Object.fromEntries(invoiceGrossBySku(q.list)), invoices: q.list.map((x) => x.key), missing: q.missing, shared: q.shared };
   }
+  checks.push(...await acc41TongHop(trx, tenantId));
   return { prices, units, calc, checks, credit, entries, blocking: checks.filter((c) => c.blocking), prepayment: pre.amount, refOrder, priceHistory: history, accounts, priceWarnPct: settings.priceWarnPct, invoiceQty, ...(blockedOut.length ? { blockedPolicies: blockedOut } : {}) };
 }
 

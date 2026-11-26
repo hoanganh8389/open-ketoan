@@ -22,7 +22,7 @@ import { useBranches } from './filters';
 import { FilterPanelCtx, useFilterPanel, type FilterPanelContext } from './filterPanel';
 // [2026-11-03 10:39 AM Nguyễn Văn Thủy] SDTC — bảng lọc chi nhánh / kho thêm thẻ Cây theo sơ đồ tổ chức (tích cha tích hết con, tới kho)
 import { CayDonVi } from './CayDonVi';
-import { useOrgTree } from '@/lib/orgUnits';
+import { tatCaCn, useCayTheoLamViec, useGioiHanCn } from '@/lib/orgUnits';
 import { BoThamSo, BranchBridgeCtx, type BoThamSoProps, type BranchBridge } from './BoThamSo';
 import { LocChuanCtx, useDangKyLoc, type LocChuan, type LocChuanContext } from './locChuan';
 import { ThanhLocChuan } from './ThanhLocChuan';
@@ -179,9 +179,12 @@ export function ReportSideLayout({ panel, children, boThamSo }: { panel: ReactNo
         {/* [2026-11-25 Nguyễn Văn Thủy] thanh gọn một dòng: chỉ hiện bộ lọc khác mặc định; đủ bộ lọc ở "Tất cả bộ lọc" (đóng góp) */}
         <ThanhLocChuan loc={loc}
           khac={<div className="rp-tt" title="Bộ lọc khác đang áp — sửa ở Tất cả bộ lọc">{ttLoc.map((x) => <span key={x}>{x}</span>)}</div>}
-          nutThamSo={<button type="button" className="btn btn-sm rp-chon" onClick={() => setMo(true)}
+          // [2026-11-26 06:45 PM Nguyễn Văn Thủy] UX — nút Tìm kiếm ra ngay thanh lọc (bấm nút Tìm kiếm của bảng lọc), Tất cả bộ lọc chỉ để lọc nâng cao (đóng góp)
+          nutThamSo={<><button type="button" className="btn btn-sm btn-primary rp-tim-ngoai" title="Tìm kiếm theo bộ lọc đang chọn (lấy số liệu mới nhất)"
+            onClick={() => { const b = panelRef.current?.querySelector<HTMLButtonElement>('.rp-actions .btn-primary'); if (b) { b.click(); setTimeout(() => setTt(doc()), 50); } }}><Search size={14} /> Tìm kiếm</button>
+            <button type="button" className="btn btn-sm rp-chon" onClick={() => setMo(true)}
             title={['Mọi bộ lọc của màn xếp dọc (chi nhánh, kỳ, nhà cung cấp, trạng thái…) và bộ lọc đã lưu', ...(tt.length ? ['', 'Đang chọn:', ...tt] : [])].join('\n')}>
-            <SlidersHorizontal size={14} /> Tất cả bộ lọc{ttLoc.length ? <span className="tlc-dem">{ttLoc.length}</span> : null}</button>} />
+            <SlidersHorizontal size={14} /> Tất cả bộ lọc{ttLoc.length ? <span className="tlc-dem">{ttLoc.length}</span> : null}</button></>} />
         {mo && <div className="rp-keo-mask" onMouseDown={() => setMo(false)} />}
         <aside className={`rp-panel rp-keo-panel${mo ? ' mo' : ''}`} ref={panelRef} onClickCapture={onPanelClick} aria-hidden={!mo}>
           <div className="rp-keo-head">
@@ -267,12 +270,14 @@ const whKey = (pathname: string) => `ketoan.kho.chon:${pathname}`;
  */
 export function BranchCheckList({ value, onChange, onRestore }: { value: string; onChange: (v: string) => void; onRestore?: (v: string) => void }) {
   const { data: raw = [] } = useBranches();
+  // [2026-11-26 07:00 PM Nguyễn Văn Thủy] UX — chỉ chi nhánh đang làm việc và con cháu (đóng góp)
+  const { allowed } = useCayTheoLamViec();
   // Chỉ chi nhánh đang dùng (chi nhánh đã ngừng / mã cũ sau khi đổi mã không hiện); chi nhánh ngừng mà đang được chọn thì
   // vẫn giữ để bỏ tích được. Không tích gì (= tất cả) thì báo cáo vẫn gồm số liệu cũ của chi nhánh đã ngừng.
   const data = useMemo(() => {
     const sel = new Set(value && value !== BRANCH_NONE ? value.split(',') : []);
-    return raw.filter((b) => b.isActive !== false || sel.has(b.code));
-  }, [raw, value]);
+    return raw.filter((b) => (b.isActive !== false || sel.has(b.code)) && (!allowed || allowed.includes(b.code)));
+  }, [raw, value, allowed]);
   const { pathname } = useLocation();
   const keyRef = useRef(pickedKey(pathname));
   const restored = useRef(false);
@@ -297,7 +302,8 @@ export function BranchCheckList({ value, onChange, onRestore }: { value: string;
 
   const q = text.trim().toLowerCase();
   const shown = data.filter((b) => !q || b.code.toLowerCase().includes(q) || b.name.toLowerCase().includes(q));
-  const emit = (s: Set<string>) => onChange(s.size === all.length ? '' : s.size === 0 ? BRANCH_NONE : all.filter((c) => s.has(c)).join(','));
+  const emit = (s: Set<string>) => onChange(s.size === all.length ? tatCaCn(allowed, all) : s.size === 0 ? BRANCH_NONE : all.filter((c) => s.has(c)).join(','));
+  useGioiHanCn(value, onChange, all, allowed, BRANCH_NONE);
   const toggle = (code: string) => { const s = new Set(picked); if (s.has(code)) s.delete(code); else s.add(code); emit(s); };
   const allOn = all.length > 0 && picked.size === all.length;
 
@@ -318,7 +324,7 @@ export function BranchCheckList({ value, onChange, onRestore }: { value: string;
     <div className="rp-branches">
       <div className="rp-branches-head">
         <input className="input" placeholder="Tìm mã, tên chi nhánh" value={text} onChange={(e) => setText(e.target.value)} />
-        <label className="checkbox" title="Tích / bỏ tích tất cả"><input type="checkbox" checked={allOn} onChange={() => onChange(allOn ? BRANCH_NONE : '')} /> Chọn</label>
+        <label className="checkbox" title="Tích / bỏ tích tất cả"><input type="checkbox" checked={allOn} onChange={() => onChange(allOn ? BRANCH_NONE : tatCaCn(allowed, all))} /> Chọn</label>
       </div>
       <div className="rp-branches-list">
         {shown.map((b) => (
@@ -492,14 +498,16 @@ export function KhoiGon({ nhan, tomTat, children }: { nhan: string; tomTat: stri
  * Chi nhánh chưa gắn sơ đồ tổ chức không có trong cây: chọn "Chọn tất" ở cây = mọi chi nhánh đã gắn.
  */
 function PanelBranchTree({ value, onChange, warehouses }: { value: string; onChange: (v: string) => void; warehouses?: { value: string; onChange: (v: string) => void } }) {
-  const tree = useOrgTree();
-  const { data: all = [] } = useBranches();
+  const { tree: cay, allowed } = useCayTheoLamViec();
+  const tree = { data: cay };
+  const { data: raw = [] } = useBranches();
+  const all = allowed ? raw.filter((b) => allowed.includes(b.code)) : raw;
   const picked = value === BRANCH_NONE ? [] : value ? value.split(',') : all.map((b) => b.code);
   const pickedWh = warehouses?.value ? warehouses.value.split(',') : [];
   return (
     <CayDonVi tree={tree.data} showBranches showWarehouses={Boolean(warehouses)} checkable height={360} openLevel={2}
       picked={picked} pickedWarehouses={pickedWh}
-      onPick={(b, w) => { onChange(b.length === 0 ? BRANCH_NONE : b.length === all.length ? '' : all.map((x) => x.code).filter((c) => b.includes(c)).join(',')); warehouses?.onChange(w.join(',')); }} />
+      onPick={(b, w) => { onChange(b.length === 0 ? BRANCH_NONE : b.length === all.length ? tatCaCn(allowed, all.map((x) => x.code)) : all.map((x) => x.code).filter((c) => b.includes(c)).join(',')); warehouses?.onChange(w.join(',')); }} />
   );
 }
 
