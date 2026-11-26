@@ -43,6 +43,7 @@ export const groupHome = (key: string) => `/nhom/${key}`;
 /** Nhóm Thiết lập: không ở menu trái, mở bằng nút bánh răng; màn chưa xếp nhóm nào cũng vào đây. */
 export const THIET_LAP = 'he-thong';
 export const DANG_PHAT_TRIEN = 'đang phát triển';
+// [2026-11-26 04:10 PM Nguyễn Văn Thủy] HT — 'Đang phát triển' chỉ giữ việc THẬT chưa có màn; việc đã có ở chỗ khác bỏ khỏi soon: Nhập / Xuất kho (phiếu nhập ở Mua hàng, xuất ở BH06), Thẻ TSCĐ (ACC28), Bảng tính khấu hao (ACC31, ACC29), Điều khoản thanh toán (Giới hạn ngày nợ ở đối tượng + hình thức TT), số dư ngân hàng / công nợ (ACC15 theo tài khoản + đối tượng), TSCĐ / CCDC / trả trước đầu kỳ (khai luỹ kế ở thẻ) (đóng góp)
 // [2026-11-25 Nguyễn Văn Thủy] việc chưa có màn (`soon`) không hiện ở menu / trang nhóm nữa — gom ở trang /dang-phat-trien (đóng góp)
 /** true: ẩn mọi mục "đang phát triển" khỏi menu, trang nhóm, sơ đồ; xem đủ ở trang DANG_PHAT_TRIEN_PAGE. */
 export const AN_DANG_PHAT_TRIEN = true;
@@ -118,7 +119,7 @@ export const GON_DEFS: GonDef[] = [
     // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: BH06 nay ở /app/xuat-dieu-chinh (module) (đóng góp)
     the: ['/app/xuat-dieu-chinh', '/kho/chuyen-kho', '/nghiep-vu/tinh-gia-von'],
     sections: [
-      { paths: ['/app/xuat-dieu-chinh', '/kho/chuyen-kho', '/kho/kiem-ke', '/nghiep-vu/tinh-gia-von'], soon: ['Nhập kho', 'Xuất kho'] },
+      { paths: ['/app/xuat-dieu-chinh', '/kho/chuyen-kho', '/kho/kiem-ke', '/nghiep-vu/tinh-gia-von'] },
       { label: 'Danh mục', paths: ['/danh-muc/mat-hang', '/danh-muc/so-do-to-chuc', '/danh-muc/loai-kho', '/danh-muc/don-vi-tinh'] },
     ],
     // [2026-11-25 Nguyễn Văn Thủy] #56 tab Test: Sổ kho (MH24) và Tồn kho theo mặt hàng (MH25) về báo cáo của Kho — đủ mọi luồng nhập / xuất, không riêng mua hàng (đóng góp)
@@ -135,7 +136,7 @@ export const GON_DEFS: GonDef[] = [
     key: 'tscd', label: 'Tài sản cố định', icon: 'Building2', description: 'Ghi tăng, khấu hao, đánh giá lại, điều chuyển, ghi giảm, kiểm kê', color: '#00695c', module: 'tai-san', homeLabel: 'Quy trình',
     the: ['/tai-san/tscd', '/tai-san/khau-hao', '/tai-san/danh-gia-lai', '/tai-san/dieu-chuyen', '/tai-san/ghi-giam', '/tai-san/kiem-ke'],
     sections: [{ paths: ['/tai-san/tscd', '/tai-san/khau-hao', '/tai-san/danh-gia-lai', '/tai-san/dieu-chuyen', '/tai-san/ghi-giam', '/tai-san/kiem-ke'] }],
-    reports: [{ label: 'Tài sản cố định', paths: ['/bao-cao/so-tai-san', '/bao-cao/tai-san', '/bao-cao/theo-doi-tscd-ccdc'], soon: ['Thẻ tài sản cố định', 'Bảng tính khấu hao tài sản cố định'] }],
+    reports: [{ label: 'Tài sản cố định', paths: ['/bao-cao/so-tai-san', '/bao-cao/tai-san', '/bao-cao/theo-doi-tscd-ccdc'] }],
   },
   {
     key: 'thue', label: 'Thuế', icon: 'Percent', description: 'Khai thuế GTGT, quyết toán TNDN, bảng kê hóa đơn', color: '#5d4037', module: 'thue',
@@ -180,7 +181,7 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Mặt hàng', paths: ['/danh-muc/mat-hang', '/danh-muc/phan-loai-hang', '/danh-muc/loai-kho', '/danh-muc/don-vi-tinh', '/danh-muc/bang-gia'] },
       // [2026-11-13 Nguyễn Văn Thủy] chi nhánh, kho, phòng ban khai chung ở Cơ cấu tổ chức (đóng góp)
       { label: 'Tổ chức', paths: ['/danh-muc/so-do-to-chuc'] },
-      { label: 'Tài khoản, ngân hàng', paths: ['/danh-muc/tai-khoan', '/cau-hinh/quy-tac-hach-toan', '/cau-hinh/tai-khoan-ket-chuyen', '/danh-muc/ngan-hang', '/cau-hinh/hinh-thuc-thanh-toan'], soon: ['Điều khoản thanh toán'] },
+      { label: 'Tài khoản, ngân hàng', paths: ['/danh-muc/tai-khoan', '/cau-hinh/quy-tac-hach-toan', '/cau-hinh/tai-khoan-ket-chuyen', '/danh-muc/ngan-hang', '/cau-hinh/hinh-thuc-thanh-toan'] },
       // [2026-11-16 kiennt] Biểu thuế tách thành nhóm Thuế suất riêng, ngay dưới Tài khoản, ngân hàng (đóng góp)
       { label: 'Thuế suất', paths: ['/danh-muc/loai-thue'] },
       { label: 'Chi phí', paths: ['/danh-muc/khoan-muc', '/danh-muc/muc-thu-chi', '/danh-muc/hop-dong', '/danh-muc/vu-viec', '/danh-muc/du-an'] },
@@ -191,7 +192,7 @@ export const GON_DEFS: GonDef[] = [
   },
   {
     key: 'so-du', label: 'Số dư ban đầu', icon: 'ListEnd', description: 'Số dư tài khoản, công nợ, tồn kho, tài sản đầu kỳ', color: '#6d4c41',
-    sections: [{ paths: ['/nghiep-vu/so-du-tai-khoan'], soon: ['Số dư tài khoản ngân hàng', 'Công nợ khách hàng', 'Công nợ nhà cung cấp', 'Công nợ nhân viên', 'Tồn kho vật tư, hàng hóa', 'Công cụ dụng cụ đầu kỳ', 'Tài sản cố định đầu kỳ', 'Chi phí trả trước đầu kỳ'] }],
+    sections: [{ paths: ['/nghiep-vu/so-du-tai-khoan'], soon: ['Tồn kho vật tư, hàng hóa'] }],
   },
   {
     key: 'phan-rieng', label: 'Phần riêng', icon: 'Puzzle', rieng: true, color: '#455a64',
