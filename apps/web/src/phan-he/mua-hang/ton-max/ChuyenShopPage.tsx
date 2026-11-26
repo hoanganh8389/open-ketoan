@@ -16,7 +16,7 @@ import { ErrorBox, Loading, Modal } from '@/components/ui';
 import { api, errorText } from '@/lib/api';
 import { monthStart, today } from '../du-lieu';
 import { num, qtyFmt, stockApi, useHierarchy, type TransferRequest, type TransferSuggest, type TransferSuggestLine } from './api';
-import { ChonChiNhanhCha, ChuaPhanCap, KhoiSo } from './chung';
+import { ChonChiNhanhCha, ChuaPhanCap } from './chung';
 import { useThaoTac } from '@/lib/manHinh';
 
 type Row = TransferSuggestLine & { _group?: boolean; _key: string };
@@ -117,37 +117,35 @@ function DeXuat({ parent, onDone }: { parent: string; onDone: () => void }) {
     <>
       <div className="tm-bar" style={{ paddingTop: 0 }}>
         <label className="tm-parent"><span>Xuất từ kho</span>
-          <select className="select input" style={{ minWidth: 200 }} value={wh || q.data?.fromWarehouse || ''} onChange={(e) => setWh(e.target.value)}>
+          <select className="select input" style={{ width: 300, minWidth: 0, flex: 'none' }} value={wh || q.data?.fromWarehouse || ''} onChange={(e) => setWh(e.target.value)}>
             {(q.data?.warehouses ?? []).map((w) => <option key={w.code} value={w.code}>{w.code} · {w.name}{w.isDefault ? ' (mặc định)' : ''}</option>)}
           </select></label>
-        <label className="tm-parent" title={TRANSFER_ROUNDINGS.find((x) => x.key === opts.rounding)?.hint}><span>Làm tròn</span>
-          <select className="select input" value={opts.rounding} onChange={(e) => setOpts({ rounding: e.target.value as TransferRounding })}>
+        {/* [2026-11-26 kiennt] NT-MH-021 — bố cục gọn: bỏ dải ô đếm; ngưỡng thùng vào chú thích "Làm tròn"; số shop / dòng / SL lên nút Chốt; lọc nhanh thành ô "Hiện" (đóng góp) */}
+        <label className="tm-parent" title={`${TRANSFER_ROUNDINGS.find((x) => x.key === opts.rounding)?.hint ?? ''} — ngưỡng thùng ${Math.round((q.data?.threshold ?? 0.5) * 100)}% (đổi ở Công thức đặt hàng MH18)`}><span>Làm tròn</span>
+          <select className="select input" style={{ width: 170, minWidth: 0, flex: 'none' }} value={opts.rounding} onChange={(e) => setOpts({ rounding: e.target.value as TransferRounding })}>
             {TRANSFER_ROUNDINGS.map((x) => <option key={x.key} value={x.key} title={x.hint}>{x.label}</option>)}
           </select></label>
         <label className="tm-parent" title={TRANSFER_ALLOCATIONS.find((x) => x.key === opts.allocation)?.hint}><span>Khi kho không đủ</span>
-          <select className="select input" value={opts.allocation} onChange={(e) => setOpts({ allocation: e.target.value as TransferAllocation })}>
+          <select className="select input" style={{ width: 200, minWidth: 0, flex: 'none' }} value={opts.allocation} onChange={(e) => setOpts({ allocation: e.target.value as TransferAllocation })}>
             {TRANSFER_ALLOCATIONS.map((x) => <option key={x.key} value={x.key} title={x.hint}>{x.label}</option>)}
           </select></label>
-        <span className="muted" style={{ fontSize: 12 }} title="Ngưỡng làm tròn thùng đổi ở Công thức đặt hàng">Ngưỡng thùng {Math.round((q.data?.threshold ?? 0.5) * 100)}%</span>
-        <span className="grow" />
-        <button className="btn btn-sm" onClick={() => exportRef.current?.()}><FileSpreadsheet size={14} /> Xuất Excel</button>
-        {tt.them && <button className="btn btn-primary" disabled={!picked.length || busy || over.length > 0} title={over.length ? `Tổng chia vượt tồn kho: ${over.join('; ')}` : undefined} onClick={() => void commit()}><Send size={14} /> Chốt đề nghị ({shops.size} shop · {picked.length} dòng)</button>}
       </div>
       <div className="tm-bar tm-shops" style={{ paddingTop: 0, flexWrap: 'wrap' }}>
-        <span className="muted" title="Bấm để chọn shop theo thứ tự ưu tiên (số thứ tự hiện trên nút); không chọn = mọi shop, theo mã">Shop phân tích:</span>
+        <span className="muted" title="Bấm để chọn shop theo thứ tự ưu tiên (số thứ tự hiện trên nút); không chọn = mọi shop, theo mã">Shop:</span>
         <button type="button" className={`btn btn-xs${sel.length ? '' : ' btn-primary'}`} onClick={() => { setSel([]); setEdit({}); }}>Tất cả shop</button>
         {shopList.map((b) => { const i = sel.indexOf(b.code); return (
           <button key={b.code} type="button" className={`btn btn-xs${i >= 0 ? ' btn-primary' : ''}`} title={b.name}
             onClick={() => { setSel(i >= 0 ? sel.filter((c) => c !== b.code) : [...sel, b.code]); setEdit({}); }}>{i >= 0 ? `${i + 1}. ` : ''}{b.code}</button>); })}
+        <span className="grow" />
+        <label className="tm-parent" title="Lọc nhanh các dòng đề xuất"><span>Hiện</span><select className="select input" style={{ width: 220, minWidth: 0, flex: 'none' }} value={quick} onChange={(e) => setQuick(e.target.value as '' | 'short')}>
+          <option value="">Tất cả dòng ({lines.length.toLocaleString('vi-VN')})</option>
+          <option value="short">Thiếu do kho hết ({lines.filter((l) => l.short > 0).length.toLocaleString('vi-VN')})</option>
+        </select></label>
+        <button className="btn btn-sm" onClick={() => exportRef.current?.()}><FileSpreadsheet size={14} /> Xuất Excel</button>
+        {tt.them && <button className="btn btn-primary" disabled={!picked.length || busy || over.length > 0} title={over.length ? `Tổng chia vượt tồn kho: ${over.join('; ')}` : undefined} onClick={() => void commit()}><Send size={14} /> Chốt đề nghị ({shops.size} shop · {picked.length} dòng · SL {qtyFmt(picked.reduce((t, l) => t + qty(l), 0))})</button>}
       </div>
       {over.length > 0 && <div className="alert alert-bad" style={{ margin: '0 12px 8px' }}>Tổng chia vượt tồn kho chuyển — sửa trước khi chốt: {over.join('; ')}</div>}
       {opts.allocation === 'manual' && lines.some((l) => l.short > 0) && <div className="alert alert-warn" style={{ margin: '0 12px 8px' }}>Chỉnh tay: các mã kho không đủ để trống cột Chuyển — tự nhập số cho từng shop (tổng mỗi mã ≤ tồn kho).</div>}
-      <div className="tm-stats">
-        <KhoiSo label="Shop cần chia hàng" value={new Set(lines.map((l) => l.shopCode)).size} tone="green" />
-        <KhoiSo label="Dòng đề xuất" value={lines.length} active={quick === ''} onClick={() => setQuick('')} />
-        <KhoiSo label="Tổng SL chuyển" value={qtyFmt(picked.reduce((s, l) => s + qty(l), 0))} tone="orange" />
-        <KhoiSo label="Dòng thiếu do kho hết" value={lines.filter((l) => l.short > 0).length} tone="red" active={quick === 'short'} onClick={() => setQuick('short')} hint="Kho không đủ — nên đặt mua thêm (Phân tích đặt hàng)" />
-      </div>
       {msg && <div className={`alert ${msg.ok ? 'alert-ok' : 'alert-bad'}`} style={{ margin: '0 12px 8px' }}>{msg.text}</div>}
       <ErrorBox error={q.error ? errorText(q.error) : null} />
       {q.isLoading ? <Loading /> : <div className="tm-grid"><DataGrid rows={rows} columns={cols} rowKey={(r) => r._key} storageKey="chuyen-shop-de-xuat" exportRef={exportRef} exportName={`de-xuat-chuyen-${parent}-${today()}`}
