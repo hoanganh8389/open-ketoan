@@ -106,8 +106,29 @@ apps/web/src/layout/ten-man.ts                      (tên màn /app/hoa-don-dien
 - Theo dõi: tên bí mật cố định `hoa-don-dien-tu.viettel.password`, `hoa-don-dien-tu.viettel.token` (tenant), `hoa-don-dien-tu.portal.password` (branch) — S-HD-4 đọc đúng các tên này.
 
 ## 7. Kết quả chạy
+<!-- [2026-11-26 10:00 PM Võ Hoàng] NGHIEM-THU — kết quả chạy trên nhánh feat/nt-bh-048-hoa-don-dien-tu (đóng góp) -->
 
-(điền sau khi code)
+Nhánh `feat/nt-bh-048-hoa-don-dien-tu` (code đẩy sau khi PR giữ chỗ này merge). Test `apps/api/test/nt-bh-048-hoa-don-dien-tu.test.ts`, CSDL test trên máy local.
+
+| Ca | Mong đợi (§5) | Phần mềm |
+|---|---|---|
+| 1 | Chưa khai, đủ chi nhánh, "theo sổ" | đạt |
+| 2 | Lưu sổ; mật khẩu chỉ "đã đặt"; bảng module không có cột mật khẩu | đạt (phản hồi không chứa chuỗi mật khẩu; `information_schema` không có cột pass / token) |
+| 3 | Trống = giữ | đạt (`updatedAt` của bí mật không đổi; nhật ký chỉ `dienThoai`) |
+| 4 | `-` = xoá; Đang dùng + Basic không còn mật khẩu thì chặn | đạt (chặn ô `password`; chuyển Nháp thì xoá được) |
+| 5 | Chi nhánh riêng, chi nhánh khác theo sổ; export không bí mật | đạt |
+| 6, 7 | MST sai, URL không https | đạt (báo cả hai ô một lần) |
+| 8 | Kế toán chỉ xem: 403 khi lưu / thử | đạt (`canEdit: false`) |
+| 9 | Phiên bản cũ → CONFLICT | đạt (409) |
+| 10 | Thử kết nối 200 / 401 / lỗi mạng; chỉ một GET tới base URL | đạt (fetch giả; Basic đúng tài khoản) |
+| 11 | Phiên người dùng đọc bí mật → 403 | đạt |
+| 12 | Khoá app đọc được (sổ + chi nhánh), nhật ký không giá trị | đạt (2 dòng `secrets.read`) |
+| 13 | Chưa có khoá gốc → NOT_READY, ô thường vẫn lưu | đạt (503 `SECRETS_KEY_MISSING`, lần lưu có mật khẩu huỷ cả giao dịch) |
+| 14 | Nhật ký đủ, không nơi nào giữ bản rõ | đạt (dò bảng module, `audit_logs`, `tenant_secrets`) |
+
+Kèm theo: `npx bizcity module check hoa-don-dien-tu` ĐẠT; `secrets.test.ts` và `sdk-modules.contract.test.ts` đạt (module đầu tiên khai `secrets[]` → route đọc cho khoá app `/api/v1/m/<key>/secrets/read` là ngoại lệ đúng thiết kế ở ca C-4 và ca "không route nào nhắc bí mật"). `module-manifests.test.ts` đỏ một ca có sẵn trên `main` (`mua-hang.purchase.line-columns-log` chưa khai) — không do phiếu này.
+
+Chưa làm: gọi Viettel thật (chỉ thử khi có tài khoản môi trường thử, không phát hành); S-HD-4, S-HD-5.
 
 ## 8. Biên bản
 
@@ -120,3 +141,4 @@ apps/web/src/layout/ten-man.ts                      (tên màn /app/hoa-don-dien
 | Ngày | Thay đổi |
 |---|---|
 | 26/11/2026 | Lập phiếu, trạng thái Đã chốt |
+| 26/11/2026 | Code xong, kết quả chạy §7 (13 ca đạt) — chờ PR code |
