@@ -7,7 +7,7 @@
 import { randomUUID } from 'node:crypto';
 import { Errors, sql, type ActionContext } from '@bizcity/module-sdk';
 import {
-  EDITABLE, overlapOf, quotaFor, quotaMessage, quotaRows, skusOf, windowOf,
+  CUSTOMER_QUOTA, EDITABLE, overlapOf, quotaFor, quotaMessage, quotaRows, skusOf, windowOf,
   type DraftContent, type DraftStatus, type Overlap, type PromoShape, type PromoUse, type Quota, type QuotaShort,
 } from './domain/promo.js';
 import { todayVn } from './read.js';
@@ -226,6 +226,23 @@ export async function quotaState(tx: Tx, branch: string, keys: readonly string[]
  * Máy bán nhận đơn: khoá cửa hàng × chương trình (thứ tự mã cố định) tới hết giao dịch — hai máy cùng áp một chương trình chạy nối
  * tiếp, đơn sau thấy lượt của đơn trước (như khoá tồn NT-BH-021). Trả chương trình đã hết lượt.
  */
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): lượt theo khách — đếm đơn / phiếu còn tính của cùng khách áp chương trình (đóng góp)
+/** Chương trình đã hết lượt của khách (hạn mức `@khach`); khách lẻ (không mã) không xét. Khoá theo khách × chương trình. */
+export async function checkCustomerQuota(tx: Tx, customer: string | null | undefined, keys: readonly string[], excludeRef: string): Promise<(QuotaShort & { customer: string })[]> {
+  const list = [...new Set(keys)].sort();
+  if (!customer || !list.length) return [];
+  const qs = (await sql<{ policy_key: string; quota: number }>`
+    SELECT policy_key, quota FROM mod_pos.promo_quotas WHERE policy_key IN (${sql.join(list)}) AND branch_code = ${CUSTOMER_QUOTA}`.execute(tx)).rows;
+  const out: (QuotaShort & { customer: string })[] = [];
+  for (const q of qs) {
+    await lockKey(tx, `pos:promo-khach:${customer}:${q.policy_key}`);
+    const used = Number((await sql<{ n: string }>`SELECT count(*) AS n FROM mod_pos.promo_uses
+      WHERE policy_key = ${q.policy_key} AND customer_ref = ${customer} AND released_at IS NULL AND ref_id <> ${excludeRef}`.execute(tx)).rows[0]!.n);
+    if (used >= q.quota) out.push({ key: q.policy_key, quota: q.quota, used, customer });
+  }
+  return out;
+}
+
 export async function checkQuota(tx: Tx, branch: string, keys: readonly string[], orderId: string): Promise<QuotaShort[]> {
   const list = [...new Set(keys)].sort();
   for (const k of list) await lockKey(tx, `pos:promo:${branch}:${k}`);
@@ -234,11 +251,11 @@ export async function checkQuota(tx: Tx, branch: string, keys: readonly string[]
 export { quotaMessage };
 
 /** Ghi lượt dùng (mỗi đơn × chương trình một dòng; ghi lại = cập nhật, bỏ trả lượt). */
-export async function recordUses(tx: Tx, tenantId: string | number, u: { source: 'pos' | 'phieu-ban'; refId: string; refCode: string; branch: string; date: string; uses: PromoUse[]; offlineOver?: string[] }) {
+export async function recordUses(tx: Tx, tenantId: string | number, u: { source: 'pos' | 'phieu-ban'; refId: string; refCode: string; branch: string; date: string; uses: PromoUse[]; offlineOver?: string[]; customer?: string | null }) {
   for (const x of u.uses) {
-    await sql`INSERT INTO mod_pos.promo_uses (tenant_id, policy_key, branch_code, source, ref_id, ref_code, business_date, discount, gift_qty, offline_over)
-      VALUES (${tenantId}, ${x.key}, ${u.branch}, ${u.source}, ${u.refId}, ${u.refCode}, ${u.date}, ${x.discount}, ${x.giftQty}, ${(u.offlineOver ?? []).includes(x.key)})
-      ON CONFLICT (tenant_id, source, ref_id, policy_key) DO UPDATE SET branch_code = EXCLUDED.branch_code, ref_code = EXCLUDED.ref_code,
+    await sql`INSERT INTO mod_pos.promo_uses (tenant_id, policy_key, branch_code, source, ref_id, ref_code, business_date, discount, gift_qty, offline_over, customer_ref)
+      VALUES (${tenantId}, ${x.key}, ${u.branch}, ${u.source}, ${u.refId}, ${u.refCode}, ${u.date}, ${x.discount}, ${x.giftQty}, ${(u.offlineOver ?? []).includes(x.key)}, ${u.customer || null})
+      ON CONFLICT (tenant_id, source, ref_id, policy_key) DO UPDATE SET branch_code = EXCLUDED.branch_code, ref_code = EXCLUDED.ref_code, customer_ref = EXCLUDED.customer_ref,
         business_date = EXCLUDED.business_date, discount = EXCLUDED.discount, gift_qty = EXCLUDED.gift_qty, released_at = NULL, release_reason = NULL`.execute(tx);
   }
 }

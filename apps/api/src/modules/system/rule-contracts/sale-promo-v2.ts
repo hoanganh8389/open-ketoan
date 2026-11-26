@@ -123,6 +123,9 @@ export const priceLinesParams = z.object({
     tiers: z.array(z.object({ min: pos, ...way }).strict()).min(1).max(20).optional(),
     /** Số lượng tối đa được giảm trên một chứng từ (theo thứ tự dòng). */
     maxQty: pos.optional(),
+    // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7): khai theo đơn vị quy đổi (vd Thùng = 48): bậc số lượng, số lượng tối đa, giá / giảm
+    // tiền mỗi cái tính theo đơn vị này; bộ tính quy về đơn vị nhỏ nhất (giỏ gửi theo đơn vị nhỏ nhất) (đóng góp)
+    unit: z.object({ name: z.string().trim().min(1).max(32), ratio: pos }).strict().optional(),
   }).strict()).min(1).max(500),
 }).strict();
 export type PriceLinesParams = z.infer<typeof priceLinesParams>;
@@ -154,11 +157,15 @@ export function evaluatePriceLines(p: PriceLinesParams, input: PromoInputV2): Pr
     const ls = hit.filter((l) => owner.get(l.lineKey) === i && hasPrice(l));
     if (!ls.length) return;
     const base = p.basis === 'qty' ? r4(ls.reduce((s, l) => s + l.qty, 0)) : ls.reduce((s, l) => s + Math.round(l.qty * l.price!), 0);
-    const tier = e.tiers ? [...e.tiers].reverse().find((t) => base >= t.min - EPS) : undefined;
-    const w: Way | undefined = e.tiers ? tier : e;
-    entries.push({ sku: e.sku, base, ...(tier ? { tierMin: tier.min } : {}) });
+    // K7: đơn vị quy đổi — ngưỡng số lượng × tỉ lệ, giá / giảm tiền mỗi cái ÷ tỉ lệ (về đơn vị nhỏ nhất).
+    const k = e.unit?.ratio ?? 1;
+    const minOf = (m: number) => (p.basis === 'qty' ? m * k : m);
+    const tier = e.tiers ? [...e.tiers].reverse().find((t) => base >= minOf(t.min) - EPS) : undefined;
+    const w0: Way | undefined = e.tiers ? tier : e;
+    const w: Way | undefined = w0 && k !== 1 ? { pct: w0.pct, amountPerUnit: w0.amountPerUnit != null ? w0.amountPerUnit / k : w0.amountPerUnit, unitPrice: w0.unitPrice != null ? w0.unitPrice / k : w0.unitPrice } : w0;
+    entries.push({ sku: e.sku, base, ...(tier ? { tierMin: tier.min } : {}), ...(e.unit ? { unit: e.unit.name, ratio: k } : {}) });
     if (!w || !hasWay(w)) return;
-    let room = e.maxQty ?? Infinity;
+    let room = e.maxQty != null ? e.maxQty * k : Infinity;
     for (const l of ls) {
       if (room <= EPS) break;
       const q = Math.min(l.qty, room); room = r4(room - q);
@@ -279,6 +286,28 @@ export const priceLinesVectors: V<PriceLinesParams>[] = [
   { name: 'maxQty 3: 5 A chỉ giảm 3 cái (10.000 / cái), rải theo thứ tự dòng',
     params: { ...base, basis: 'qty', lines: [{ sku: 'A', amountPerUnit: 10_000, maxQty: 3 }] }, input: { lines: [L('a1', 'A', 2, 100_000), L('a2', 'A', 3, 100_000)] },
     output: { discounts: [{ lineKey: 'a1', sku: 'A', qty: 2, amount: 20_000 }, { lineKey: 'a2', sku: 'A', qty: 3, amount: 10_000 }], gifts: [], total: 30_000, touched: ['a1', 'a2'], noPrice: [], detail: { entries: [{ sku: 'A', base: 5 }] } } },
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7, K9): ca đơn vị quy đổi và khung giờ qua đêm (đóng góp)
+  { name: 'K7 đơn vị Thùng = 4: từ 2 thùng giá 360.000 / thùng — 8 hộp × 100.000 → giá 90.000 / hộp, giảm 80.000',
+    params: { ...base, basis: 'qty', lines: [{ sku: 'A', unit: { name: 'Thùng', ratio: 4 }, tiers: [{ min: 2, unitPrice: 360_000 }] }] }, input: { lines: [L('a', 'A', 8, 100_000)] },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 8, amount: 80_000 }], gifts: [], total: 80_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 8, tierMin: 2, unit: 'Thùng', ratio: 4 }] } } },
+  { name: 'K7 đơn vị Thùng = 4: 7 hộp chưa đủ 2 thùng → không áp',
+    params: { ...base, basis: 'qty', lines: [{ sku: 'A', unit: { name: 'Thùng', ratio: 4 }, tiers: [{ min: 2, unitPrice: 360_000 }] }] }, input: { lines: [L('a', 'A', 7, 100_000)] },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chưa dòng nào đạt mức giảm của chương trình', detail: { entries: [{ sku: 'A', base: 7, unit: 'Thùng', ratio: 4 }] } } },
+  { name: 'K9 khung qua đêm 22:00–02:00, lúc 23:30 → áp 10 %',
+    params: { ...base, basis: 'qty', conditions: { timeFrom: '22:00', timeTo: '02:00' }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { at: { time: '23:30' } } },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 10_000 }], gifts: [], total: 10_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 1 }] } } },
+  { name: 'K9 khung qua đêm 22:00–02:00, lúc 12:00 → không áp',
+    params: { ...base, basis: 'qty', conditions: { timeFrom: '22:00', timeTo: '02:00' }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { at: { time: '12:00' } } },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chỉ áp 22:00–02:00 (qua đêm)' } },
+  { name: 'K9 chỉ đơn bán sỉ — đơn máy bán (bán lẻ) → không áp',
+    params: { ...base, basis: 'qty', conditions: { orderTypes: ['wholesale'] }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)] },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chỉ áp đơn bán sỉ' } },
+  { name: 'K9 sinh nhật theo ngày — đúng ngày sinh → áp',
+    params: { ...base, basis: 'qty', conditions: { birthdayScope: 'day' }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { docDate: '2026-11-27', customer: { birthday: '1990-11-27' } } },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 10_000 }], gifts: [], total: 10_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 1 }] } } },
+  { name: 'K9 sinh nhật theo tuần — sinh 25/11, mua 27/11 (cùng tuần thứ Hai 23/11) → áp',
+    params: { ...base, basis: 'qty', conditions: { birthdayScope: 'week' }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { docDate: '2026-11-27', customer: { birthday: '1990-11-25' } } },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 10_000 }], gifts: [], total: 10_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 1 }] } } },
   { name: 'làm tròn đồng: 3 A × 33.333 giảm 15 % → 15.000',
     params: { ...base, basis: 'qty', lines: [{ sku: 'A', pct: 15 }] }, input: { lines: [L('a', 'A', 3, 33_333)] },
     output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 3, amount: 15_000 }], gifts: [], total: 15_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 3 }] } } },
@@ -364,7 +393,8 @@ const commonDocs = [
 const scopeStep = 'phạm vi: dòng có sku ∈ scope.skus, hoặc (groupCodes trống hoặc giao lines[].groupCodes) và (brandCodes trống hoặc chứa lines[].brandCode); thiếu nhóm / nhãn của dòng → chặn (cửa nạp: không xác định)';
 const lineInput = 'lines[]: { lineKey, sku, qty, itemId?, price?, groupCodes? (nhóm + nhóm cha, bộ tính điền), brandCode? (bộ tính điền) }; context?';
 const dateIssues = (p: { validFrom?: string; validTo?: string }) => (p.validFrom && p.validTo && p.validTo < p.validFrom ? [{ path: 'validTo', message: 'Ngày kết thúc trước ngày bắt đầu' }] : []);
-const timeIssues = (p: { conditions?: { timeFrom?: string; timeTo?: string } }) => (p.conditions?.timeFrom && p.conditions.timeTo && p.conditions.timeTo < p.conditions.timeFrom ? [{ path: 'conditions.timeTo', message: 'Giờ kết thúc trước giờ bắt đầu' }] : []);
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): giờ kết thúc trước giờ bắt đầu = khung qua đêm (conditionsBlock xử lý); chỉ chặn hai giờ trùng nhau (đóng góp)
+const timeIssues = (p: { conditions?: { timeFrom?: string; timeTo?: string } }) => (p.conditions?.timeFrom && p.conditions.timeTo && p.conditions.timeTo === p.conditions.timeFrom ? [{ path: 'conditions.timeTo', message: 'Giờ kết thúc trùng giờ bắt đầu' }] : []);
 const ascending = (xs: number[]) => xs.every((x, i) => i === 0 || x > xs[i - 1]!);
 const keyOf = (t: { sku: string; itemId?: string }) => t.itemId ?? `sku:${t.sku}`;
 const dupIssue = (list: { sku: string; itemId?: string }[], path: string, what: string) => (new Set(list.map(keyOf)).size !== list.length ? [{ path, message: `Một mã chỉ khai một lần trong ${what}` }] : []);

@@ -13,7 +13,7 @@ import { recordUses, releaseUses, restoreReturnedUses, type Tx } from '../promo.
 
 type Line = { isGift?: boolean; qty: number; discount?: number; policyRef?: { key: string } };
 type Data = {
-  docId: string; kind: string; branchCode: string; doc?: { docNo?: string; docDate?: string; lines?: Line[] };
+  docId: string; kind: string; branchCode: string; doc?: { docNo?: string; docDate?: string; lines?: Line[]; partner?: { code?: string } | null };
   /** Phiếu trả: phiếu bán gốc của module phieu-ban; originalFullyReturned = sau phiếu trả này hàng bán của phiếu gốc đã trả hết. */
   originalDocId?: string; originalFullyReturned?: boolean;
 };
@@ -41,7 +41,8 @@ export default defineSubscriber({
       if (evt.type === 'phieu-ban.doc.cancelled') return releaseUses(tx, 'phieu-ban', d.docId, 'unapprove');
       const uses = usesOf(d.doc?.lines ?? []);
       if (!uses.length || !d.doc?.docDate) return;
-      await recordUses(tx, ctx.tenantId, { source: 'phieu-ban', refId: d.docId, refCode: d.doc.docNo ?? '', branch: d.branchCode, date: d.doc.docDate, uses });
+      // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): ghi mã khách để tính lượt theo khách (đóng góp)
+      await recordUses(tx, ctx.tenantId, { source: 'phieu-ban', refId: d.docId, refCode: d.doc.docNo ?? '', branch: d.branchCode, date: d.doc.docDate, uses, customer: d.doc.partner?.code || null });
     });
   },
 });

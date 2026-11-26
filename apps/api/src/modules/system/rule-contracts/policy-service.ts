@@ -75,11 +75,31 @@ export async function listPolicies(trx: Db, tenantId: string, q: { at?: string; 
 }
 
 /** `price`: đơn giá trọn (gồm thuế, trước giảm) trên một đơn vị nhỏ nhất — cần cho chương trình giảm giá. */
-export interface EvalLine { lineKey: string; sku: string; qty: number; itemId?: string; price?: number }
+export interface EvalLine { lineKey: string; sku: string; qty: number; itemId?: string; price?: number; groupCodes?: string[]; brandCode?: string | null }
 /** [2026-11-13 10:20 AM Võ Hoàng] POS-KM2 — 00 §18 mục 3: ngữ cảnh cho điều kiện của khuôn khuyến mại (giờ / thứ, khách, mã giảm giá). */
 export interface EvaluateRequest {
   docDate: string; branchCode?: string; channel?: string; lines: EvalLine[]; policies?: { key: string; version?: number }[];
   at?: { time?: string; weekday?: number }; customer?: { birthday?: string; memberLevel?: string }; coupons?: string[];
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: quà lựa chọn theo chương trình (khuôn @2) và loại đơn (lẻ / sỉ / đơn đặt hàng) (đóng góp)
+  /** Mã quà người bán đã chọn, theo mã chương trình: { "KM-QUA": ["Q2"] }. */
+  giftChoice?: Record<string, string[]>;
+  /** Loại đơn: retail (bán lẻ, mặc định máy bán), wholesale (bán sỉ), so (đơn đặt hàng). */
+  orderType?: string;
+}
+
+/**
+ * NT-BH-049: điền nhóm hàng (kèm mọi nhóm cha) và nhãn hàng của từng dòng từ danh mục — khuôn @2 có phạm vi nhóm / nhãn cần, nguồn
+ * bán không phải gửi. Mã không có ở danh mục → mảng rỗng / null (đã biết là không thuộc nhóm nào), không để `undefined`.
+ */
+async function withClasses(trx: Db, tenantId: string, lines: EvalLine[]): Promise<EvalLine[]> {
+  const skus = [...new Set(lines.map((l) => l.sku))];
+  if (!skus.length) return lines;
+  const prods = await trx.selectFrom('products').select(['sku', 'group_code', 'brand_code']).where('tenant_id', '=', tenantId).where('sku', 'in', skus).execute();
+  const groups = await trx.selectFrom('item_classes').select(['code', 'parent_code']).where('tenant_id', '=', tenantId).where('kind', '=', 'group').execute();
+  const parent = new Map(groups.map((g) => [g.code, g.parent_code]));
+  const chain = (g: string | null) => { const out: string[] = []; let c = g; while (c && !out.includes(c) && out.length < 20) { out.push(c); c = parent.get(c) ?? null; } return out; };
+  const by = new Map(prods.map((x) => [x.sku, x]));
+  return lines.map((l) => ({ ...l, groupCodes: l.groupCodes ?? chain(by.get(l.sku)?.group_code ?? null), brandCode: l.brandCode !== undefined ? l.brandCode : (by.get(l.sku)?.brand_code ?? null) }));
 }
 export interface PolicyRefOut { key: string; version: number; hash: string; policyId: string }
 
@@ -106,7 +126,12 @@ export async function evaluatePolicies(trx: Db, tenantId: string, req: EvaluateR
     }
   }
   // [2026-11-13 10:20 AM Võ Hoàng] POS-KM2 — 00 §18 mục 3: thứ tự theo ưu tiên (lớn trước) rồi mã; chương trình áp riêng giữ các dòng nó đã dùng.
-  const context = { docDate: req.docDate, ...(req.at ? { at: req.at } : {}), ...(req.customer ? { customer: req.customer } : {}), ...(req.coupons ? { coupons: req.coupons } : {}) };
+  const context = { docDate: req.docDate, ...(req.at ? { at: req.at } : {}), ...(req.customer ? { customer: req.customer } : {}), ...(req.coupons ? { coupons: req.coupons } : {}), ...(req.orderType ? { orderType: req.orderType } : {}) };
+  // NT-BH-049: chương trình @2 có phạm vi nhóm / nhãn → điền nhóm / nhãn của dòng trước khi tính.
+  const needClasses = items.some((i) => i.ruleContract.endsWith('@2') && i.params && typeof i.params === 'object'
+    && (((i.params as { scope?: { groupCodes?: unknown[]; brandCodes?: unknown[] } }).scope?.groupCodes?.length ?? 0) + ((i.params as { scope?: { brandCodes?: unknown[] } }).scope?.brandCodes?.length ?? 0)) > 0);
+  const lines = needClasses ? await withClasses(trx, tenantId, req.lines) : req.lines;
+  const pendingChoices: { key: string; version: number; choose: number; times: number; options: { sku: string; qty: number }[]; problem?: string }[] = [];
   const paramOf = (i: PolicyView) => (i.params && typeof i.params === 'object' ? (i.params as { priority?: number; exclusive?: boolean; legalCapPct?: number | null }) : {});
   const ordered = [...items].sort((a, b) => Number(paramOf(b).priority ?? 0) - Number(paramOf(a).priority ?? 0) || a.policyKey.localeCompare(b.policyKey));
   const taken = new Map<string, string>();
@@ -128,8 +153,12 @@ export async function evaluatePolicies(trx: Db, tenantId: string, req: EvaluateR
     const avail: { skip?: string; info?: Record<string, unknown> } = env ? await policyAvailability(trx, tenantId, env, { branchCode: req.branchCode, docDate: req.docDate }) : {};
     if (avail.skip) { skipped.push({ key: i.policyKey, version: i.version, reason: avail.skip }); continue; }
     const contract = getRuleContract(i.ruleContract)!;
-    const free = req.lines.filter((l) => !taken.has(l.lineKey));
-    const result = contract.evaluate(i.params, { lines: free, context });
+    const free = lines.filter((l) => !taken.has(l.lineKey));
+    const choice = req.giftChoice?.[i.policyKey];
+    const result = contract.evaluate(i.params, { lines: free, context: choice ? { ...context, giftChoice: choice } : context });
+    // Quà lựa chọn chưa chọn / chọn sai: báo máy bán hiện hộp "Chọn quà tặng" (không im lặng bỏ qua).
+    const pc = (result as { pendingChoice?: { choose: number; times: number; options: { sku: string; qty: number }[]; problem?: string } }).pendingChoice;
+    if (pc) { pendingChoices.push({ key: i.policyKey, version: i.version, ...pc }); skipped.push({ key: i.policyKey, version: i.version, reason: pc.problem ?? `chờ chọn ${pc.choose} món quà` }); continue; }
     if ((result as { indeterminate?: boolean }).indeterminate) { skipped.push({ key: i.policyKey, version: i.version, reason: contract.explain(i.params, result) }); continue; }
     const gift = (result as { gifts?: { sku: string; itemId?: string; qty: number }[] }).gifts ?? [];
     const disc = (result as { discounts?: { lineKey: string; sku: string; qty: number; amount: number }[] }).discounts ?? [];
@@ -165,7 +194,7 @@ export async function evaluatePolicies(trx: Db, tenantId: string, req: EvaluateR
   const finalDiscounts = discounts.filter((d) => d.amount > 0);
   return {
     docDate: req.docDate, applied, skipped, policyRefs: applied.map((a) => ({ key: a.policyRef.key, version: a.policyRef.version, hash: a.policyRef.hash, policyId: a.policyRef.policyId })),
-    gifts, discounts: finalDiscounts, ...(capped.length ? { capped } : {}),
+    gifts, discounts: finalDiscounts, ...(capped.length ? { capped } : {}), ...(pendingChoices.length ? { pendingChoices } : {}),
   };
 }
 

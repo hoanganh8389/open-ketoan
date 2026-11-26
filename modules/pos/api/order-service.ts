@@ -16,7 +16,7 @@ import { serviceSkus, stockAtWarehouse, stockOf, warehousesFor } from './catalog
 import { stockNeeds, stockShortages, stockShortMessage, type StockShort } from './domain/stock.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: hạn mức lượt khuyến mại theo cửa hàng (đóng góp)
 import { usesOf } from './domain/promo.js';
-import { checkQuota, quotaMessage, recordUses } from './promo.js';
+import { checkCustomerQuota, checkQuota, quotaMessage, recordUses } from './promo.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: voucher TGS / hãng, voucher lần mua sau tự phát (đóng góp)
 import type { QuotedVoucher } from './domain/voucher.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-031: kênh bán của đơn theo danh mục Kênh bán hàng (đóng góp)
@@ -227,6 +227,12 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
     if (quotaShort.length && !draft.offlineCreatedAt) {
       throw Errors.validation(quotaMessage(quotaShort, branch.code), { reason: 'POS_PROMO_QUOTA', items: quotaShort });
     }
+    // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): lượt khuyến mại theo khách — khách đã dùng hết lượt thì không nhận đơn còn áp (đóng góp)
+    const customerShort = await checkCustomerQuota(tx, computed.customer?.code ?? null, promoKeys, draft.id);
+    if (customerShort.length && !draft.offlineCreatedAt) {
+      throw Errors.validation(`Khách ${customerShort[0]!.customer} đã dùng hết lượt khuyến mại: ${customerShort.map((s) => `${s.key} (đã dùng ${s.used}/${s.quota})`).join('; ')} — bỏ khuyến mại đó khỏi đơn rồi thanh toán lại`,
+        { reason: 'POS_PROMO_QUOTA', items: customerShort });
+    }
 
     // Mã phiếu: dùng số máy đã được cấp trước (đúng khuôn, đã cấp, chưa dùng); không thì cấp số mới. Khoá theo số để hai máy
     // cùng dùng một số đã cấp không cùng qua bước "chưa dùng".
@@ -264,7 +270,7 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
                 ${JSON.stringify(draft)}::jsonb, ${ctx.actor.id}, ${ctx.actor.name || null})`.execute(tx);
       // Lượt dùng chương trình khuyến mại (NT-BH-025): một dòng mỗi chương trình của đơn, cùng giao dịch với đơn.
       const uses = usesOf(computed.lines.map((l) => ({ policyRef: l.draft.policyRef, isGift: l.draft.isGift, qty: l.draft.unitQty, discount: l.draft.promoDiscount })));
-      await recordUses(tx, ctx.tenant.id, { source: 'pos', refId: draft.id, refCode: code, branch: branch.code, date: draft.businessDate, uses, offlineOver: quotaShort.map((q) => q.key) });
+      await recordUses(tx, ctx.tenant.id, { source: 'pos', refId: draft.id, refCode: code, branch: branch.code, date: draft.businessDate, uses, offlineOver: quotaShort.map((q) => q.key), customer: computed.customer?.code ?? null });
       // Voucher TGS / hãng (NT-BH-026): mã đang dùng duy nhất (chỉ mục voucher_uses_live) — cùng giao dịch với đơn, còn giữ khoá theo mã.
       for (const v of computed.voucherUses) {
         await sql`INSERT INTO mod_pos.voucher_uses (tenant_id, code, order_id, order_code, branch_code, business_date, kind, method_code, amount, face_value, campaign_id)

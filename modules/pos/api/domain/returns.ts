@@ -148,7 +148,14 @@ export type PolicyListItem = { policyKey: string; version: number; ruleContract:
  */
 export function policyMainSkus(item: Pick<PolicyListItem, 'ruleContract' | 'params'> | undefined): string[] | null {
   if (!item || !item.params || typeof item.params !== 'object') return null;
-  const p = item.params as { buy?: { sku?: unknown }; skus?: unknown };
+  const p = item.params as { buy?: { sku?: unknown; items?: unknown }; skus?: unknown; scope?: { skus?: unknown } };
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: khuôn @2 — hàng chính là các mã mua (buy.items) / mã lẻ của phạm vi; chỉ nhóm / nhãn → null (đóng góp)
+  const strs = (v: unknown) => (Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && s !== '') : []);
+  if (item.ruleContract === 'sale.promo.buy_x_get_y@2') {
+    const s = [...new Set([...(Array.isArray(p.buy?.items) ? (p.buy!.items as { sku?: unknown }[]).map((x) => x?.sku) : []).filter((x): x is string => typeof x === 'string' && x !== ''), ...strs(p.scope?.skus)])];
+    return s.length ? s : null;
+  }
+  if (item.ruleContract === 'sale.promo.order_gift@2') { const s = strs(p.scope?.skus); return s.length ? s : null; }
   if (item.ruleContract.startsWith('sale.promo.buy_x_get_y@')) return typeof p.buy?.sku === 'string' && p.buy.sku ? [p.buy.sku] : null;
   // Chương trình bán BH12 kiểu tặng quà: hàng mua là `sku`.
   if (item.ruleContract.startsWith('sale.program.gift@')) return typeof (p as { sku?: unknown }).sku === 'string' && (p as { sku: string }).sku ? [(p as { sku: string }).sku] : null;

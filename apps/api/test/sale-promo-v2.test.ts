@@ -123,7 +123,9 @@ describe('NT-BH-040 — qua endpoint (phát hành nội tuyến → evaluate)', 
       for (const v of vs) {
         // Ca cửa nạp, ca phạm vi nhóm / nhãn (bộ tính tra danh mục) và ca chọn quà (giftChoice) chờ nối ở policy-service — xem báo cáo NT-BH-040.
         const needsEngine = v.input.context?.lenient || v.input.context?.giftChoice || v.input.lines.some((l) => 'groupCodes' in l || 'brandCode' in l)
-          || (v.output as { pendingChoice?: unknown }).pendingChoice || (v.output as { detail?: { unknown?: unknown } }).detail?.unknown;
+          || (v.output as { pendingChoice?: unknown }).pendingChoice || (v.output as { detail?: { unknown?: unknown } }).detail?.unknown
+          // NT-BH-049: ca có ngữ cảnh (giờ, khách, ngày) chạy ở hàm thuần — vòng này gọi evaluate không kèm ngữ cảnh.
+          || Object.keys(v.input.context ?? {}).length > 0;
         if (needsEngine) continue;
         const key = `KM2-${++n}`;
         const pub = await call(ctx, 'POST', '/api/v1/policies', { key, ruleContract: c.id, params: v.params, effectiveFrom: '2026-01-01', reason: 'Bộ ca chuẩn khuyến mại @2' });
@@ -154,6 +156,43 @@ describe('NT-BH-040 — qua endpoint (phát hành nội tuyến → evaluate)', 
     });
     expect(m.status).toBe(400);
     expect(m.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: bộ tính nhận giftChoice (chưa chọn → pendingChoices) và tự điền nhóm / nhãn của dòng (đóng góp)
+  it('NT-BH-049: quà lựa chọn — chưa chọn → pendingChoices; chọn Q2 → tặng Q2', async () => {
+    const params = { buy: { items: [{ sku: 'A' }, { sku: 'B' }], mode: 'any', qty: 3 }, get: { options: [{ sku: 'Q1', qty: 1 }, { sku: 'Q2', qty: 1 }], choose: 1 } };
+    const pub = await call(ctx, 'POST', '/api/v1/policies', { key: 'KM2-CHON', ruleContract: 'sale.promo.buy_x_get_y@2', params, effectiveFrom: '2026-01-01', reason: 'thử quà lựa chọn' });
+    expect(pub.status, JSON.stringify(pub.body)).toBe(201);
+    const lines = [{ lineKey: 'a', sku: 'A', qty: 2, price: 100_000 }, { lineKey: 'b', sku: 'B', qty: 1, price: 100_000 }];
+    const p1 = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines, policies: [{ key: 'KM2-CHON' }] });
+    expect(p1.status, JSON.stringify(p1.body)).toBe(200);
+    expect(p1.body.data.gifts).toEqual([]);
+    expect(p1.body.data.pendingChoices).toEqual([expect.objectContaining({ key: 'KM2-CHON', choose: 1, options: [{ sku: 'Q1', qty: 1 }, { sku: 'Q2', qty: 1 }] })]);
+    const p2 = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines, policies: [{ key: 'KM2-CHON' }], giftChoice: { 'KM2-CHON': ['Q2'] } });
+    expect(p2.status, JSON.stringify(p2.body)).toBe(200);
+    expect(p2.body.data.gifts.map((g: { sku: string; qty: number }) => [g.sku, g.qty])).toEqual([['Q2', 1]]);
+    expect(p2.body.data.pendingChoices).toBeUndefined();
+  });
+
+  it('NT-BH-049: phạm vi nhóm — bộ tính tự tra nhóm của dòng (mã không có ở danh mục = không thuộc nhóm, không còn "chưa biết nhóm")', async () => {
+    const pub = await call(ctx, 'POST', '/api/v1/policies', { key: 'KM2-NHOM', ruleContract: 'sale.promo.price_lines@2', effectiveFrom: '2026-01-01', reason: 'thử phạm vi nhóm',
+      params: { basis: 'qty', scope: { groupCodes: ['NHOM-KHONG-CO'] }, lines: [{ sku: 'ZZ-KHONG-CO', pct: 10 }] } });
+    expect(pub.status, JSON.stringify(pub.body)).toBe(201);
+    const r = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines: [{ lineKey: 'z', sku: 'ZZ-KHONG-CO', qty: 1, price: 100_000 }], policies: [{ key: 'KM2-NHOM' }] });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.data.skipped[0].reason).toContain('giỏ không có mã nào của chương trình');
+    expect(r.body.data.skipped[0].reason).not.toContain('chưa biết nhóm');
+  });
+
+  it('NT-BH-049: loại đơn — chương trình chỉ đơn sỉ không áp đơn máy bán, áp khi orderType = wholesale', async () => {
+    const pub = await call(ctx, 'POST', '/api/v1/policies', { key: 'KM2-SI', ruleContract: 'sale.promo.price_lines@2', effectiveFrom: '2026-01-01', reason: 'thử loại đơn',
+      params: { basis: 'qty', conditions: { orderTypes: ['wholesale'] }, lines: [{ sku: 'A', pct: 10 }] } });
+    expect(pub.status, JSON.stringify(pub.body)).toBe(201);
+    const lines = [{ lineKey: 'a', sku: 'A', qty: 1, price: 100_000 }];
+    const le = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines, policies: [{ key: 'KM2-SI' }], orderType: 'retail' });
+    expect(le.body.data.discounts).toEqual([]);
+    const si = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines, policies: [{ key: 'KM2-SI' }], orderType: 'wholesale' });
+    expect(si.body.data.discounts.map((d: { amount: number }) => d.amount)).toEqual([10_000]);
   });
 
   it('GET /rule-contracts/:id mô tả ba khuôn @2', async () => {

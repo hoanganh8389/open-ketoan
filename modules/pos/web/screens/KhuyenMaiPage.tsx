@@ -29,6 +29,16 @@ type Row = {
 const today = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
 const nextDay = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
 
+/** Mẫu dựng sẵn (NT-BH-049, K10): loại đặc biệt của plugin cũ dựng từ khuôn có sẵn, điền sẵn ô hay dùng. */
+const PRESETS: { id: string; label: string; hint: string; make: (d: string) => Form }[] = [
+  { id: 'flash', label: 'Flash sale (giá sốc theo giờ)', hint: 'Giá riêng từng mã trong khung giờ, giới hạn số lượng mỗi phiếu và số lượt mỗi cửa hàng',
+    make: (d) => ({ ...emptyForm('price_lines', d), reason: 'Flash sale', validTo: d, timeFrom: '11:00', timeTo: '13:00', quotaPerBranch: '50', exclusive: true }) },
+  { id: 'khai-truong', label: 'Khai trương cửa hàng', hint: 'Giảm % theo tổng đơn trong vài ngày đầu, chỉ cửa hàng mới (chọn cửa hàng)',
+    make: (d) => ({ ...emptyForm('order_discount', d), reason: 'Khai trương', validTo: new Date(Date.parse(`${d}T00:00:00Z`) + 6 * 86_400_000).toISOString().slice(0, 10), orderTiers: [{ minOrder: '0', mode: 'pct', value: '10', maxDiscount: '100000' }] }) },
+  { id: 'sinh-nhat', label: 'Sinh nhật khách hàng', hint: 'Giảm % tổng đơn cho khách có sinh nhật (chọn theo ngày / tuần / tháng ở Điều kiện)',
+    make: (d) => ({ ...emptyForm('order_discount', d), reason: 'Sinh nhật khách hàng', birthdayScope: 'week', orderTiers: [{ minOrder: '0', mode: 'pct', value: '10', maxDiscount: '' }] }) },
+];
+
 const cols: GridColumn<Row>[] = [
   { key: 'key', header: 'Mã', type: 'code', width: 150 },
   { key: 'kind', header: 'Loại', width: 230, value: (r) => KIND_INFO[r.kind].label },
@@ -105,6 +115,16 @@ export function KhuyenMaiPage() {
     },
     onSuccess: (f) => setForm({ f, editing: true }),
   });
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K11): nhân bản — mở form Thêm chép nội dung khuyến mại đang chọn, mã để trống, áp từ hôm nay (đóng góp)
+  const copy = useMutation({
+    mutationFn: async (r: Row) => {
+      const p = await loadParams(r);
+      const f = fromParams(r.contract, p.params!, { key: '', branchCodes: p.scope?.branchCodes, today: d0 });
+      if (!f) throw new Error('Loại khuyến mại này chưa nhân bản được ở màn');
+      return { ...f, key: '', effectiveFrom: d0, validFrom: f.validFrom && f.validFrom < d0 ? d0 : f.validFrom, reason: `Nhân bản từ ${r.key}` };
+    },
+    onSuccess: (f) => setForm({ f, editing: false }),
+  });
   const stop = useMutation({
     mutationFn: async ({ r, from }: { r: Row; from: string }) => {
       const p = await loadParams(r);
@@ -128,6 +148,7 @@ export function KhuyenMaiPage() {
       <div className="row" style={{ gap: 8, margin: '8px 0', alignItems: 'center' }}>
         {canAdd && <button type="button" className="btn btn-primary" onClick={() => setChooseKind(true)}>+ Thêm</button>}
         {tab === 'km' && writable && <button type="button" className="btn" disabled={!pick || edit.isPending} title={pick ? '' : 'Chọn một khuyến mại ở bảng'} onClick={() => pick && edit.mutate(pick)}>Sửa</button>}
+        {tab === 'km' && writable && <button type="button" className="btn" disabled={!pick || copy.isPending} title={pick ? 'Thêm khuyến mại mới chép nội dung khuyến mại đang chọn (mã để trống)' : 'Chọn một khuyến mại ở bảng'} onClick={() => pick && copy.mutate(pick)}>Nhân bản</button>}
         {tab === 'km' && writable && <button type="button" className="btn" disabled={!pick || pick.status === 'stopped' || pick.status === 'ended'} title={!pick ? 'Chọn một khuyến mại ở bảng' : pick.status === 'stopped' || pick.status === 'ended' ? 'Khuyến mại đã ngừng / đã hết' : ''} onClick={() => setStopOf(pick)}>Ngừng</button>}
         <button type="button" className="btn" title="Tính một giỏ hàng như máy bán — mọi chương trình đang chạy (cả có hạn mức), hoặc khuyến mại đang chọn; không ghi gì"
           onClick={() => setTrial(tab === 'km' && pick ? [pick.key] : [])}>Thử tính{tab === 'km' && pick ? ` ${pick.key}` : ' (mọi chương trình)'}</button>
@@ -136,6 +157,7 @@ export function KhuyenMaiPage() {
         {!canAdd && <span className="muted">Thêm / sửa cần quyền ghi cấu hình (khuyến mại) hoặc ghi danh mục (chương trình có hạn mức).</span>}
       </div>
       {edit.error && <ErrorBox error={errorText(edit.error)} />}
+      {copy.error && <ErrorBox error={errorText(copy.error)} />}
       {tab === 'km' && (
         <DataGrid rows={rows} columns={cols} rowKey={(r) => r.key} storageKey="pos.khuyen-mai" onRowClick={setPick} onRowDoubleClick={(r) => writable && edit.mutate(r)}
           rowClassName={(r) => (r.key === pick?.key ? 'selected' : '')} emptyText="Chưa có khuyến mại — bấm Thêm" exportName="khuyen-mai" exportTitle="Khuyến mại" />
@@ -152,6 +174,13 @@ export function KhuyenMaiPage() {
       {chooseKind && (
         <Modal title="Thêm chương trình — chọn loại" onClose={() => setChooseKind(false)}>
           <div style={{ display: 'grid', gap: 6, gridColumn: '1 / -1' }}>
+            {/* NT-BH-049 (K10): mẫu dựng sẵn từ loại có sẵn — flash sale = giá riêng từng mã + khung giờ + số lượng tối đa / phiếu + hạn mức lượt */}
+            {PRESETS.map((pr) => (
+              <button key={pr.id} type="button" className="btn" style={{ textAlign: 'left' }} disabled={!writable} title={writable ? pr.hint : 'Cần quyền ghi cấu hình (settings:write)'}
+                onClick={() => { setChooseKind(false); setForm({ f: pr.make(d0), editing: false }); }}>
+                <b>{pr.label}</b><br /><span className="muted">{pr.hint}</span>
+              </button>
+            ))}
             {(Object.keys(KIND_INFO) as PromoKind[]).map((k) => (
               <button key={k} type="button" className="btn" style={{ textAlign: 'left' }} disabled={!writable} title={writable ? '' : 'Cần quyền ghi cấu hình (settings:write)'}
                 onClick={() => { setChooseKind(false); setForm({ f: emptyForm(k, d0), editing: false }); }}>
@@ -197,6 +226,8 @@ type EvalOut = {
   applied: { policyRef: { key: string; version: number }; explain: string }[]; skipped: { key: string; reason: string }[];
   discounts: { lineKey: string; sku: string; amount: number; policyRef: { key: string } }[]; gifts: { sku: string; qty: number; policyRef: { key: string } }[];
   capped?: { lineKey: string; key: string; before: number; after: number; capPct: number }[];
+  /** NT-BH-049: chương trình quà lựa chọn chờ chọn quà. */
+  pendingChoices?: { key: string; choose: number; options: { sku: string; qty: number }[]; problem?: string }[];
 };
 
 /** Thử tính trên giỏ hàng: gọi bộ tính của Core (như máy bán) với các khuyến mại đã phát hành; không ghi gì. */
@@ -207,10 +238,14 @@ function TrialDialog({ keys, onClose }: { keys: string[]; onClose: () => void })
   const [time, setTime] = useState('');
   const [coupon, setCoupon] = useState('');
   const [lines, setLines] = useState<TrialLine[]>([{ sku: '', qty: '1', price: '' }]);
+  const [choice, setChoice] = useState<Record<string, string[]>>({});
+  const [orderType, setOrderType] = useState<'retail' | 'wholesale' | 'so'>('retail');
+  const [birthday, setBirthday] = useState('');
   const run = useMutation({
     mutationFn: () => api.post<EvalOut>('/api/v1/policies/evaluate', {
       docDate: date, ...(branch ? { branchCode: branch } : {}), ...(keys.length ? { policies: keys.map((key) => ({ key })) } : {}),
-      ...(time ? { at: { time } } : {}), ...(coupon.trim() ? { coupons: coupon.split(/[\s,]+/).filter(Boolean) } : {}),
+      ...(time ? { at: { time, weekday: ((new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7) + 1 } } : {}), ...(coupon.trim() ? { coupons: coupon.split(/[\s,]+/).filter(Boolean) } : {}),
+      ...(Object.keys(choice).length ? { giftChoice: choice } : {}), orderType, ...(birthday ? { customer: { birthday } } : {}),
       lines: lines.filter((l) => l.sku.trim()).map((l, i) => ({ lineKey: `L${i + 1}`, sku: l.sku.trim(), qty: Number(l.qty) || 0, ...(l.price.trim() ? { price: Number(l.price.replace(/\./g, '')) } : {}) })),
     }),
   });
@@ -225,6 +260,8 @@ function TrialDialog({ keys, onClose }: { keys: string[]; onClose: () => void })
           <Field label="Cửa hàng"><BranchPicker value={branch} onChange={setBranch} /></Field>
           <Field label="Giờ bán"><input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></Field>
           <Field label="Mã giảm giá khách đọc"><input className="input" value={coupon} onChange={(e) => setCoupon(e.target.value)} /></Field>
+          <Field label="Loại đơn"><select className="input" value={orderType} onChange={(e) => setOrderType(e.target.value as 'retail')}><option value="retail">Bán lẻ</option><option value="wholesale">Bán sỉ</option><option value="so">Đặt hàng</option></select></Field>
+          <Field label="Ngày sinh khách"><input className="input" type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} /></Field>
         </div>
         <b>Giỏ hàng</b>
         {lines.map((l, i) => (
@@ -244,6 +281,16 @@ function TrialDialog({ keys, onClose }: { keys: string[]; onClose: () => void })
             {r.discounts.map((d, i) => <div key={i} className="muted">— dòng {d.lineKey} {d.sku}: giảm {vnd(d.amount)} ({d.policyRef.key})</div>)}
             {r.gifts.map((g, i) => <div key={i} className="muted">— tặng {g.qty} {g.sku} ({g.policyRef.key})</div>)}
             {(r.capped ?? []).map((c, i) => <div key={i} className="muted">— dòng {c.lineKey}: {c.key} bị kẹp theo trần {c.capPct} % ({vnd(c.before)} → {vnd(c.after)})</div>)}
+            {(r.pendingChoices ?? []).map((pc) => (
+              <div key={pc.key} className="alert alert-warn" style={{ display: 'grid', gap: 4 }}>
+                <span>{pc.key}: khách chọn {pc.choose} quà{pc.problem ? ` — ${pc.problem}` : ''}</span>
+                <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>{pc.options.map((o) => (
+                  <label key={o.sku}><input type="checkbox" checked={(choice[pc.key] ?? []).includes(o.sku)}
+                    onChange={(e) => setChoice((c) => ({ ...c, [pc.key]: e.target.checked ? [...(c[pc.key] ?? []), o.sku] : (c[pc.key] ?? []).filter((x) => x !== o.sku) }))} /> {o.qty} {o.sku}</label>
+                ))}</div>
+                <span className="muted">Chọn xong bấm Tính lại.</span>
+              </div>
+            ))}
             {r.skipped.length > 0 && <><b>Không áp</b>{r.skipped.map((s, i) => <div key={i} className="muted">✘ {s.key}: {s.reason}</div>)}</>}
           </div>
         )}

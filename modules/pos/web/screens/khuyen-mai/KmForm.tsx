@@ -14,7 +14,7 @@ import { useState, type ReactNode } from 'react';
 import { BranchCheckList, DocSheet, DocSheetPanel, ErrorBox, Field, Loading, Modal, errorText, useApi, useMutation, useQuery } from '@bizcity/ui-kit';
 import { M } from '../../lib';
 import { OverlapList, type Overlap } from './Drafts';
-import { KIND_INFO, V2_KINDS, emptyPriceLine, toParams, toQuota, type Form, type PriceLineForm, type TierMode } from './model';
+import { KIND_INFO, V2_KINDS, emptyPriceLine, parsePriceLines, toParams, toQuota, type Form, type PriceLineForm, type TierMode } from './model';
 
 type ItemClass = { code: string; name: string; isActive: boolean };
 /**
@@ -50,6 +50,7 @@ function ClassPicker({ kind, value, onChange, label }: { kind: 'group' | 'brand'
 }
 
 const THU = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const list0 = (s: string) => s.split(/[\s,;]+/).filter(Boolean).length > 0;
 const Row = ({ children }: { children: ReactNode }) => <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>{children}</div>;
 const Box = ({ title, children }: { title: string; children: ReactNode }) => (
   <fieldset style={{ border: '1px solid var(--line, #ddd)', borderRadius: 6, padding: '8px 10px', display: 'grid', gap: 8 }}><legend style={{ padding: '0 4px' }}><b>{title}</b></legend>{children}</fieldset>
@@ -59,6 +60,8 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
   const api = useApi();
   const [f, setF] = useState<Form>(initial);
   const [warn, setWarn] = useState<{ msg: string; overlaps: Overlap[] } | null>(null);
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K11): dán bảng mã từ Excel vào "Giá riêng từng mã" (đóng góp)
+  const [paste, setPaste] = useState<string | null>(null);
   const set = (p: Partial<Form>) => setF((x) => ({ ...x, ...p }));
   const tp = toParams(f);
   const { params } = tp;
@@ -69,6 +72,15 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
   const close = () => { if (!dirty || window.confirm('Còn thay đổi chưa lưu — bỏ thay đổi và đóng? (Bấm Huỷ để quay lại, rồi Lưu nháp)')) onClose(); };
   // Bản nháp đã lưu: đọc cảnh báo trùng đang có (cùng API hộp Duyệt); bản mới thì máy chủ báo khi Lưu.
   const ov = useQuery({ queryKey: ['km', 'overlaps', draftId], enabled: Boolean(draftId), queryFn: () => api.get<Overlap[]>(`${M}/promo/drafts/${draftId}/overlaps`) });
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K5): cảnh báo hàng dưới 24 tháng (NĐ100/2014: không khuyến mại sản phẩm dinh dưỡng cho trẻ dưới 24 tháng) — chỉ cảnh báo (đóng góp)
+  const promoSkus = [...new Set([
+    ...f.skus.split(/[\s,;]+/), ...f.priceLines.map((x) => x.sku), ...f.buyItems.map((x) => x.sku), ...f.items.map((x) => x.sku), f.buy.sku,
+  ].map((x) => x.trim()).filter(Boolean))].sort();
+  const u24 = useQuery({
+    queryKey: ['km', 'u24', promoSkus.join(',')], enabled: promoSkus.length > 0, staleTime: 60_000,
+    queryFn: () => api.get<{ sku: string; name: string; isUnder24m?: boolean }[]>('/api/v1/products', { skus: promoSkus.join(','), pageSize: 1000 }),
+  });
+  const under24 = (u24.data ?? []).filter((x) => x.isUnder24m);
   const publish = useMutation({
     mutationFn: (submit: boolean) => {
       const body = {
@@ -129,8 +141,8 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
       default: return '';
     }
   })();
-  const quotaText = f.quotaPerBranch.trim() || f.quotaBranches.trim()
-    ? [f.quotaPerBranch.trim() && `${f.quotaPerBranch.trim()} đơn / cửa hàng`, f.quotaBranches.trim() && `riêng ${f.quotaBranches.trim()}`].filter(Boolean).join(' · ')
+  const quotaText = f.quotaPerBranch.trim() || f.quotaBranches.trim() || f.quotaPerCustomer.trim()
+    ? [f.quotaPerBranch.trim() && `${f.quotaPerBranch.trim()} đơn / cửa hàng`, f.quotaBranches.trim() && `riêng ${f.quotaBranches.trim()}`, f.quotaPerCustomer.trim() && `${f.quotaPerCustomer.trim()} lần / khách`].filter(Boolean).join(' · ')
     : 'Không giới hạn';
 
   return (
@@ -156,6 +168,12 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
             <li>Máy bán áp từ <b>ngày áp dụng</b>; đổi về sau thì Sửa (bản mới), không xoá</li>
           </ol>
         </DocSheetPanel>
+        {under24.length > 0 && (
+          <DocSheetPanel title="Hàng dưới 24 tháng" badge={<span className="badge badge-warn">{under24.length}</span>}>
+            <div className="mh-check warn">⚠ NĐ100/2014: không được khuyến mại (giảm giá, tặng quà) sản phẩm dinh dưỡng dùng cho trẻ dưới 24 tháng. Kiểm lại trước khi gửi duyệt:</div>
+            {under24.map((x) => <div key={x.sku} style={{ fontSize: 12.5 }}><b>{x.sku}</b> {x.name}</div>)}
+          </DocSheetPanel>
+        )}
         <DocSheetPanel title="Tóm tắt">
           <div className="mh-kv">
             <span>Áp cho</span><span>{branchText}</span>
@@ -240,7 +258,8 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
                   <b>{i + 1}.</b> Mã {inp(x.sku, (v) => setLine(i, { sku: v }), 150)}
                   <label><input type="checkbox" checked={x.useTiers} onChange={(e) => setLine(i, { useTiers: e.target.checked })} /> theo bậc</label>
                   {!x.useTiers && <>{modeSel(x.mode, (m) => setLine(i, { mode: m }))}{inp(x.value, (v) => setLine(i, { value: v }))}</>}
-                  Tối đa {inp(x.maxQty, (v) => setLine(i, { maxQty: v }), 80, 'không giới hạn')} cái / phiếu
+                  Tối đa {inp(x.maxQty, (v) => setLine(i, { maxQty: v }), 80, 'không giới hạn')} {x.unitName.trim() || 'cái'} / phiếu
+                  <span title="Khai theo đơn vị quy đổi: bậc số lượng, tối đa, giá / giảm tiền mỗi cái tính theo đơn vị này (vd Thùng = 48 hộp)">ĐVT {inp(x.unitName, (v) => setLine(i, { unitName: v }), 80, 'nhỏ nhất')} = {inp(x.unitRatio, (v) => setLine(i, { unitRatio: v }), 60, '1')} đv nhỏ nhất</span>
                   {f.priceLines.length > 1 && <button type="button" className="btn btn-xs" title="Bỏ mã" onClick={() => set({ priceLines: f.priceLines.filter((_, j) => j !== i) })}>×</button>}
                 </Row>
                 {x.useTiers && rows(x.tiers, (t, k) => <>Từ {inp(t.min, (v) => setLine(i, { tiers: x.tiers.map((y, j) => (j === k ? { ...y, min: v } : y)) }), 110, f.basis === 'qty' ? 'số cái' : 'số tiền')}
@@ -249,7 +268,28 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
                 () => setLine(i, { tiers: [...x.tiers, { min: '', mode: 'pct', value: '' }] }), (k) => setLine(i, { tiers: x.tiers.filter((_, j) => j !== k) }))}
               </div>
             ))}
-            <div><button type="button" className="btn btn-xs" onClick={() => set({ priceLines: [...f.priceLines, emptyPriceLine()] })}>+ Thêm mã</button></div>
+            <div className="row" style={{ gap: 6 }}>
+              <button type="button" className="btn btn-xs" onClick={() => set({ priceLines: [...f.priceLines, emptyPriceLine()] })}>+ Thêm mã</button>
+              <button type="button" className="btn btn-xs" title="Dán nhiều mã từ Excel: Mã | Cách (% / giá / tiền) | Mức | Tối đa / phiếu | ĐVT | Tỉ lệ" onClick={() => setPaste('')}>Dán từ Excel…</button>
+              <span className="muted">{f.priceLines.filter((x) => x.sku.trim()).length} mã</span>
+            </div>
+            {paste !== null && (() => {
+              const pr = parsePriceLines(paste);
+              return (
+                <div style={{ display: 'grid', gap: 4, border: '1px dashed var(--line, #ddd)', padding: 6, borderRadius: 4 }}>
+                  <span className="muted">Chép các cột từ Excel rồi dán: <b>Mã | Cách (% / giá / tiền) | Mức | Tối đa / phiếu | ĐVT | Tỉ lệ</b> — mỗi dòng một mã, dòng tiêu đề tự bỏ. Mã đã có được thay bằng dòng dán.</span>
+                  <textarea className="input" rows={6} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={'SP001\t%\t10\nSP002\tgiá\t95000\t5\nSP003\ttiền\t20000\t\tThùng\t24'} />
+                  {pr.problems.map((x) => <span key={x} className="mh-bad">{x}</span>)}
+                  <div className="row" style={{ gap: 6 }}>
+                    <button type="button" className="btn btn-xs btn-primary" disabled={!pr.lines.length || pr.problems.length > 0} onClick={() => {
+                      const keep = f.priceLines.filter((x) => x.sku.trim() && !pr.lines.some((y) => y.sku === x.sku.trim()));
+                      set({ priceLines: [...keep, ...pr.lines] }); setPaste(null);
+                    }}>Thêm {pr.lines.length} mã</button>
+                    <button type="button" className="btn btn-xs" onClick={() => setPaste(null)}>Bỏ</button>
+                  </div>
+                </div>
+              );
+            })()}
           </Box>
         )}
         {f.kind === 'buy_x_get_y2' && (
@@ -290,9 +330,14 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
           <Box title="Điều kiện và cách cộng">
             <Row>Thứ {THU.map((t, i) => <label key={t}><input type="checkbox" checked={f.weekdays.includes(i + 1)} onChange={(e) => set({ weekdays: e.target.checked ? [...f.weekdays, i + 1] : f.weekdays.filter((d) => d !== i + 1) })} /> {t}</label>)} <span className="muted">(không chọn = mọi ngày)</span></Row>
             <Row>Khung giờ <input className="input" type="time" value={f.timeFrom} onChange={(e) => set({ timeFrom: e.target.value })} /> – <input className="input" type="time" value={f.timeTo} onChange={(e) => set({ timeTo: e.target.value })} />
+              {f.timeFrom && f.timeTo && f.timeTo < f.timeFrom && <span className="badge badge-info" title="Giờ kết thúc trước giờ bắt đầu = qua nửa đêm">qua đêm</span>}
               Đơn tối thiểu {inp(f.minOrderAmount, (v) => set({ minOrderAmount: v }), 120)}</Row>
+            <Row>Loại đơn {(['retail', 'wholesale', 'so'] as const).map((t) => <label key={t}><input type="checkbox" checked={f.orderTypes.includes(t)} onChange={(e) => set({ orderTypes: e.target.checked ? [...f.orderTypes, t] : f.orderTypes.filter((x) => x !== t) })} /> {({ retail: 'bán lẻ (máy bán)', wholesale: 'bán sỉ', so: 'đơn đặt hàng' })[t]}</label>)}
+              <span className="muted">(không chọn = mọi loại)</span></Row>
             <Row>Mã giảm giá {inp(f.couponCodes, (v) => set({ couponCodes: v }), 220, 'KM50K, TET26 (khách đọc một mã)')}
-              <label><input type="checkbox" checked={f.birthdayMonth} onChange={(e) => set({ birthdayMonth: e.target.checked })} /> chỉ khách sinh nhật trong tháng</label>
+              <span className="muted" title="Plugin cũ: bỏ tích Tự động áp">{list0(f.couponCodes) ? '— chỉ áp khi khách đọc mã (không tự áp)' : '— tự áp khi đủ điều kiện'}</span>
+              Sinh nhật <select className="input" value={f.birthdayScope || (f.birthdayMonth ? 'month' : '')} onChange={(e) => set({ birthdayScope: e.target.value as Form['birthdayScope'], birthdayMonth: false })}>
+                <option value="">không theo sinh nhật</option><option value="day">đúng ngày sinh</option><option value="week">trong tuần sinh nhật</option><option value="month">trong tháng sinh nhật</option></select>
               Hạng thành viên {inp(f.memberLevels, (v) => set({ memberLevels: v }), 160, 'VANG, BAC')}</Row>
             <Row>Ưu tiên <input className="input" type="number" style={{ width: 80 }} value={f.priority} onChange={(e) => set({ priority: Math.round(Number(e.target.value) || 0) })} /> <span className="muted">(lớn tính trước)</span>
               <label><input type="checkbox" checked={f.exclusive} onChange={(e) => set({ exclusive: e.target.checked })} /> áp riêng — dòng đã được khuyến mại này giảm thì khuyến mại sau không áp</label></Row>
@@ -300,9 +345,11 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
               <label><input type="checkbox" checked={f.noCap} onChange={(e) => set({ noCap: e.target.checked })} /> miễn trần (người khai chịu trách nhiệm — ghi lý do ở ô ghi chú)</label></Row>
           </Box>
         )}
-        <Box title="Hạn mức lượt theo cửa hàng (không bắt buộc)">
+        <Box title="Hạn mức lượt (không bắt buộc)">
           <Row>Mỗi cửa hàng tối đa {inp(f.quotaPerBranch, (v) => set({ quotaPerBranch: v }), 90, 'không giới hạn')} đơn áp chương trình
             · riêng {inp(f.quotaBranches, (v) => set({ quotaBranches: v }), 220, 'CN01=2, CN02=5')}</Row>
+          <Row>Mỗi khách tối đa {inp(f.quotaPerCustomer, (v) => set({ quotaPerCustomer: v }), 90, 'không giới hạn')} lần
+            <span className="muted">(tính theo mã khách của đơn, mọi cửa hàng; khách lẻ không giới hạn)</span></Row>
           <span className="muted">Hết lượt: máy bán báo trước khi thanh toán và không nhận đơn còn áp chương trình này; phiếu bán BH10 không duyệt được. Trả cả đơn → trả lại lượt.</span>
         </Box>
       </div>

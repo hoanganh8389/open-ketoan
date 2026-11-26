@@ -40,7 +40,7 @@ export function draftToForm(d: Draft, today: string): Form | null {
 
 const quotaText = (q: Quota | null) => {
   if (!q) return '';
-  const parts = [...(q.perBranch !== undefined ? [`${q.perBranch} / cửa hàng`] : []), ...Object.entries(q.branches ?? {}).map(([b, n]) => `${b}: ${n}`)];
+  const parts = [...(q.perBranch !== undefined ? [`${q.perBranch} / cửa hàng`] : []), ...Object.entries(q.branches ?? {}).map(([b, n]) => `${b}: ${n}`), ...(q.perCustomer !== undefined ? [`${q.perCustomer} / khách`] : [])];
   return parts.join(' · ');
 };
 
