@@ -164,7 +164,7 @@ export const keToanMenu: MenuItem[] = [
       { key: 'vu-viec', label: 'Danh mục vụ việc', path: '/danh-muc/vu-viec', code: 'DM06' },
       { key: 'du-an', label: 'Danh mục dự án', path: '/danh-muc/du-an', code: 'DM07' },
       sec('dm-tai-san', 'Tài sản'),
-      { key: 'loai-ts', label: 'Loại tài sản', path: '/danh-muc/loai-tai-san', code: 'ACC37' },
+      { key: 'loai-ts', label: 'Nhóm, loại tài sản', path: '/danh-muc/loai-tai-san', code: 'ACC37' },
       { key: 'nhom-ccdc', label: 'DM Nhóm công cụ dụng cụ', path: '/danh-muc/nhom-ccdc', code: 'ACC19' },
       { key: 'dm-nguon-von', label: 'Danh mục Nguồn vốn', path: '/danh-muc/nguon-von', code: 'ACC20' },
       { key: 'muc-dich', label: 'DM Mục đích sử dụng', path: '/danh-muc/muc-dich-su-dung', code: 'ACC21' },

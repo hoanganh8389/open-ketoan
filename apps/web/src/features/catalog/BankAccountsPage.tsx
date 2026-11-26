@@ -5,6 +5,8 @@
  * sổ tiền gửi (ACC56) lọc theo từng tài khoản ngân hàng.
  */
 import { useMaTrung } from '@/lib/maTrung';
+import { useNavigate } from 'react-router-dom';
+import { BookOpen } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
@@ -35,6 +37,9 @@ export function BankAccountsPage() {
   const [editing, setEditing] = useState<(Partial<BankAccount> & { isNew?: boolean }) | null>(null);
   const [sel, setSel] = useState<BankAccount | null>(null);
   const exportRef = useRef<(() => void) | null>(null);
+  // [2026-11-26 11:20 AM Nguyễn Văn Thủy] DM — DM-007 danh mục ngân hàng liên kết tới báo cáo: chọn tài khoản → mở Sổ tiền gửi (ACC56) đúng TK hạch toán của nó (đóng góp)
+  const nav = useNavigate();
+  const moSo = (b: BankAccount | null) => b?.accountCode && nav(`/quy/so-tien-gui?account=${encodeURIComponent(b.accountCode)}`);
   const del = useMutation({ mutationFn: (code: string) => api.delete(`/api/v1/bank-accounts/${encodeURIComponent(code)}`), onSuccess: () => { setSel(null); void qc.invalidateQueries({ queryKey: ['bank-accounts'] }); } });
   return (
     <>
@@ -54,7 +59,7 @@ export function BankAccountsPage() {
           onRefresh={() => q.refetch()}
           onExport={() => exportRef.current?.()}
           // [2026-11-18 10:40 AM kiennt] NT-DM-005 — nút Nhập Excel (khứ hồi với tệp Xuất) (đóng góp)
-          extra={canWrite && <NutNhapExcel loai={nhapLoai('tk-ngan-hang')!} />}
+          extra={<>{canWrite && <NutNhapExcel loai={nhapLoai('tk-ngan-hang')!} />}<button className="btn btn-sm" disabled={!sel?.accountCode} onClick={() => moSo(sel)} title={sel ? `Mở Sổ tiền gửi ngân hàng (ACC56) của TK ${sel.accountCode} — ${sel.bankName}` : 'Chọn một tài khoản ngân hàng để xem sổ tiền gửi'}><BookOpen size={14} /> Sổ tiền gửi</button></>}
         />
         <ErrorBox error={q.error ? errorText(q.error) : del.error ? errorText(del.error) : null} />
         {q.isLoading ? <Loading /> : (
@@ -70,6 +75,7 @@ export function BankAccountsPage() {
               { key: 'contact', header: 'Người liên lạc', width: 140, hidden: true },
               { key: 'note', header: 'Ghi chú', width: 200 },
               { key: 'accountCode', header: 'Tài khoản hạch toán', type: 'code', width: 140 },
+              { key: 'so', header: 'Sổ tiền gửi', width: 110, value: (b) => b.accountCode, render: (b) => (b.accountCode ? <a href="#" onClick={(e) => { e.preventDefault(); e.stopPropagation(); moSo(b); }} title={`Mở Sổ tiền gửi của TK ${b.accountCode}`}>Xem sổ</a> : null) },
               { key: 'accountName', header: 'Tên tài khoản hạch toán', width: 200, hidden: true },
               { key: 'bankBranch', header: 'Chi nhánh ngân hàng', width: 150, hidden: true },
               { key: 'branchCode', header: 'Chi nhánh dùng', type: 'code', width: 110, hidden: true },

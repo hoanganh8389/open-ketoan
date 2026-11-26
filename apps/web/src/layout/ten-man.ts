@@ -102,7 +102,7 @@ export const TEN_MAN: Record<string, TenMan> = {
   '/danh-muc/hop-dong': { label: 'Hợp đồng' },
   '/danh-muc/vu-viec': { label: 'Vụ việc' },
   '/danh-muc/du-an': { label: 'Công trình, dự án' },
-  '/danh-muc/loai-tai-san': { label: 'Loại tài sản cố định' },
+  '/danh-muc/loai-tai-san': { label: 'Nhóm, loại tài sản' },
   '/danh-muc/nhom-ccdc': { label: 'Loại công cụ dụng cụ' },
   '/danh-muc/nguon-von': { label: 'Nguồn vốn' },
   '/danh-muc/muc-dich-su-dung': { label: 'Mục đích sử dụng' },

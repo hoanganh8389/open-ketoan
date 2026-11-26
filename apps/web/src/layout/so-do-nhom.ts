@@ -234,7 +234,7 @@ export const SO_DO: Record<string, SoDo> = {
       { label: 'Tổng hợp tài sản cố định', path: '/bao-cao/tai-san' }, { label: 'Sổ theo dõi tài sản, công cụ dụng cụ', path: '/bao-cao/theo-doi-tscd-ccdc' },
       { label: 'Thẻ tài sản cố định' },
     ],
-    links: [L.coCau, { label: 'Loại tài sản cố định', icon: 'Shapes', path: '/danh-muc/loai-tai-san' }, { label: 'Nguồn vốn', icon: 'Coins', path: '/danh-muc/nguon-von' }],
+    links: [L.coCau, { label: 'Nhóm, loại tài sản', icon: 'Shapes', path: '/danh-muc/loai-tai-san' }, { label: 'Nguồn vốn', icon: 'Coins', path: '/danh-muc/nguon-von' }],
   },
   thue: {
     title: 'Nghiệp vụ thuế',

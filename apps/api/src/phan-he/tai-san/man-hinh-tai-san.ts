@@ -42,7 +42,7 @@ dangKyManHinh({
 });
 
 dangKyManHinh({
-  key: 'tai-san.loai-tai-san', ma: 'ACC37', nhom, nhan: 'Loại tài sản', duongDan: '/danh-muc/loai-tai-san',
+  key: 'tai-san.loai-tai-san', ma: 'ACC37', nhom, nhan: 'Nhóm, loại tài sản', duongDan: '/danh-muc/loai-tai-san',
   thaoTac: {
     xem: T('loai-tai-san-xem', 'Xem', 'xem'),
     them: T('loai-tai-san-lap', 'Thêm', 'ghi', [L('POST', '/api/v1/asset-categories')]),
