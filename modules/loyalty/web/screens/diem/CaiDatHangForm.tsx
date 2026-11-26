@@ -33,6 +33,7 @@ export function CaiDatHangForm({ content, errs, readOnly, onChange }: Props) {
             <Lbl text="Mã hạng (*)"><TextIn errs={errs} path={`tiers.${i}.key`} value={t.key} width={100} disabled={readOnly} onChange={(v) => setT(i, { key: v })} /></Lbl>
             <Lbl text="Tên (*)"><TextIn errs={errs} path={`tiers.${i}.name`} value={t.name} width={140} disabled={readOnly} onChange={(v) => setT(i, { name: v })} /></Lbl>
             <Lbl text="Từ tổng điểm"><NumIn errs={errs} path={`tiers.${i}.minPoints`} value={t.minPoints} width={100} disabled={readOnly} onChange={(v) => setT(i, { minPoints: v })} /></Lbl>
+            <Lbl text="Màu" tip="Màu nhãn hạng ở máy bán / báo cáo (như plugin cũ)"><input className="input" type="color" style={{ width: 48, padding: 2 }} value={t.color || '#6b7280'} disabled={readOnly} onChange={(e) => setT(i, { color: e.target.value })} /></Lbl>
             <Lbl text="Hệ số (×)"><NumIn errs={errs} path={`tiers.${i}.multiplier`} value={t.multiplier} width={70} disabled={readOnly} onChange={(v) => setT(i, { multiplier: v })} /></Lbl>
             {!readOnly && content.tiers.length > 1 && <button type="button" className="btn btn-xs" onClick={() => onChange({ ...content, tiers: content.tiers.filter((_, j) => j !== i) })}>Bỏ</button>}
           </Row>

@@ -8,6 +8,8 @@
 import { useState } from 'react';
 import { ChinhSachKhung } from './diem/ChinhSachKhung';
 import { DieuChinhTab } from './diem/DieuChinhTab';
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thẻ Thành viên (tìm, lọc hạng, cộng / trừ, lịch sử trước / sau) như plugin cũ (đóng góp)
+import { ThanhVienTab } from './diem/ThanhVienTab';
 import { DataGrid, ErrorBox, FilterLayout, KpiCards, Loading, PageHeader, PeriodField, errorText, useApi, useQuery, type GridColumn } from '@bizcity/ui-kit';
 
 type Kinds = { earn: number; redeem: number; expire: number; reverse: number; adjust: number };
@@ -46,7 +48,7 @@ const customerCols: GridColumn<Report['customers'][number]>[] = [
   { key: 'expire', header: 'Hết hạn trong kỳ', type: 'number', sum: true, width: 120, value: (c) => c.period.expire },
 ];
 
-const TABS = [['tong-quan', 'Tổng quan'], ['chuong-trinh', 'Chương trình'], ['doi-diem', 'Đổi điểm'], ['cai-dat', 'Cài đặt + hạng'], ['dieu-chinh', 'Điều chỉnh']] as const;
+const TABS = [['tong-quan', 'Tổng quan'], ['thanh-vien', 'Thành viên'], ['chuong-trinh', 'Chương trình'], ['doi-diem', 'Đổi điểm'], ['cai-dat', 'Cài đặt + hạng'], ['dieu-chinh', 'Điều chỉnh']] as const;
 type Tab = (typeof TABS)[number][0];
 
 export function DiemThanhVienPage() {
@@ -59,7 +61,7 @@ export function DiemThanhVienPage() {
           <button key={k} type="button" className={`btn btn-xs${tab === k ? ' btn-primary' : ''}`} onClick={() => setTab(k)}>{label}</button>
         ))}
       </div>
-      {tab === 'tong-quan' ? <TongQuan /> : tab === 'dieu-chinh' ? <DieuChinhTab /> : <ChinhSachKhung view={tab} />}
+      {tab === 'tong-quan' ? <TongQuan /> : tab === 'thanh-vien' ? <ThanhVienTab /> : tab === 'dieu-chinh' ? <DieuChinhTab /> : <ChinhSachKhung view={tab} />}
     </div>
   );
 }
