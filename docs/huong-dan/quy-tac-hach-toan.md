@@ -37,6 +37,17 @@ Khung Nợ / Có không đổi được: đó là nguyên tắc hạch toán c�
 
 Nguồn chưa khai tài khoản thì dùng **tài khoản dự phòng** ghi cạnh dòng.
 
+<!-- [2026-11-26 01:00 AM Võ Hoàng] NT-BH-042 — hướng dẫn đổi tài khoản chênh lệch két ở ACC41 (đóng góp) -->
+## Chênh lệch két máy bán
+
+Chốt ca máy bán đếm thiếu / thừa tiền thì phần mềm lập phiếu kế toán theo lý do **POS-THIEU-KET** / **POS-THUA-KET**. Tài khoản nằm trên lý do:
+
+1. Bấm **Chi tiết**, chọn nghiệp vụ **Chênh lệch két máy bán** (từ Cài đặt bán hàng BH17 bấm **Khai ở Quy tắc hạch toán** là vào thẳng).
+2. Khối **Lý do phiếu kế toán** hiện TK Nợ / TK Có đang dùng; lý do chưa có tài khoản ghi *Chưa khai tài khoản*.
+3. Bấm **Đổi** (hoặc **Khai**), chọn TK Nợ, TK Có rồi **Ghi**. Chỉ chọn được tài khoản chi tiết trong phạm vi: thiếu Nợ 138 / 334 / 632 / 811, Có 111; thừa Nợ 111, Có 338 / 711. Sai thì ô báo đỏ.
+
+Chỉ người có quyền ghi cấu hình thấy nút Đổi. Đổi chỉ áp cho phiếu lập sau; phiếu đã ghi giữ nguyên.
+
 ## Mục đích xuất
 
 Ở nghiệp vụ **Xuất kho không bán** và **Nhập kho khác**. Phiếu ghi mục đích nào (hủy hàng hỏng, dùng cho bộ phận bán hàng, tặng khách dùng thử…) thì ghi vào tài khoản của mục đích đó. Phiếu không ghi mục đích: thiếu / thừa chờ xử lý.

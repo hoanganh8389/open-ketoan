@@ -1,5 +1,6 @@
 // @bizcity-layer P module-sdk
 // [2026-11-02 12:45 AM Johnny Chu - Chu Hoàng Anh] PHASE-011 — kiểu manifest tối thiểu cho defineModule (bizcity_module@1; schema đầy đủ ở docs/contracts/BIZCITY-MODULE-v1.schema.json)
+import { secretDeclErrors, type SecretDecl } from '@bizcity/platform/core/secrets';
 /** Phần manifest `bizcity.module.json` mà SDK đọc. Các trường khác giữ nguyên (bộ kiểm SC-CON-2 kiểm theo schema đầy đủ). */
 export interface ModuleManifestLike {
   contract: string;
@@ -11,6 +12,9 @@ export interface ModuleManifestLike {
   requires: { capabilities: string[] };
   actions?: string[];
   waivers?: { rule: string; reason?: string; adr?: string; expires?: string }[];
+  // [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets: bí mật module khai (BIZCITY-SECRETS-v1 §3) (đóng góp)
+  /** Bí mật module dùng qua ctx.secrets: `{ name: '<key>.<tên>', scope: 'tenant' | 'book' | 'branch', label }`. Tên không khai bị chặn. */
+  secrets?: SecretDecl[];
   [field: string]: unknown;
 }
 
@@ -53,3 +57,10 @@ export function screenErrors(m: ModuleManifestLike): string[] {
   }
   return bad;
 }
+
+// [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets: kiểm khai secrets[] (tên <key>.<tên>, phạm vi tenant / book / branch, nhãn, không trùng) (đóng góp)
+/** Bí mật module khai trong manifest (rỗng khi không khai). */
+export const moduleSecrets = (m: ModuleManifestLike): SecretDecl[] => (Array.isArray(m.secrets) ? m.secrets : []);
+/** Lỗi khai bí mật của module (rỗng = đúng). defineModule dừng nạp khi có lỗi. */
+export const secretsErrors = (m: ModuleManifestLike): string[] =>
+  m.secrets !== undefined && !Array.isArray(m.secrets) ? ['secrets phải là mảng'] : secretDeclErrors(m.key, moduleSecrets(m));

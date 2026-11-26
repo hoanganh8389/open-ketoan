@@ -33,6 +33,9 @@ Kế hoạch: `tgs_pos_react/docs/module-pos/` (repo của nhóm POS TGS — quy
 <!-- [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: voucher TGS / hãng trên đơn máy bán (đóng góp) -->
 **Voucher TGS / hãng (NT-BH-026).** Đơn gửi `vouchers: [mã]` (module `voucher`). Máy chủ khoá theo mã (`hashtext('voucher:'||mã)`), kiểm mã đang dùng ở đơn khác (`mod_pos.voucher_uses`, migration `0008`, mã đang dùng duy nhất), hỏi `voucher.order.quote` (ctx.actions.call) rồi trừ sau khuyến mại: TGS = chiết khấu chia vào dòng (`voucherDiscount`), hãng = dòng thanh toán theo hình thức của đợt (khách trả phần còn lại: `cashGiven` / các phần chia tiền / QR theo số còn phải trả). Đơn trả máy mang `voucherUses`, và `issuedVouchers` (voucher lần mua sau tự phát — in trên bill). Huỷ đơn chờ thanh toán trả mã; `pos.return.recorded` mang `orderFullyReturned` (module voucher thu hồi voucher lần mua sau chưa dùng).
 
+<!-- [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-042: tài khoản chênh lệch két khai ở Quy tắc hạch toán, BH17 chỉ xem (đóng góp) -->
+**Chênh lệch két khi chốt ca (NT-BH-014, NT-BH-042).** Chốt ca lệch → một `manual_journal` một dòng `reasonCode` = `POS-THIEU-KET` (thiếu) / `POS-THUA-KET` (thừa) — mã lấy ở khoá `bizcity.pos.cash_short_reason` / `cash_over_reason` (manifest `ledger.submits[manual_journal].reasonCodes`), khoá chứng từ `pos:shift:<ca>:cash-diff`. Module **không có số tài khoản nào** (kể cả giao diện): cặp Nợ / Có nằm trên lý do loại `journal`, Core cài sẵn (migration 0185, không đè lý do đơn vị đã khai) và kế toán đổi ở Quy tắc hạch toán ACC41, nghiệp vụ "Chênh lệch két máy bán" (`/cau-hinh/quy-tac-hach-toan?nghiep-vu=pos_cash_diff`). BH17 chỉ còn bật / tắt, ngưỡng báo, dòng chỉ đọc "Nợ … / Có …" và nút sang ACC41. Lý do chưa khai lúc chốt: ca vẫn chốt, biên bản ghi "chưa lập" → khai ở ACC41 rồi "Lập lại phiếu" ở Sổ ca.
+
 ## Chạy
 
 ```bash

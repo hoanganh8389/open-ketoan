@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [2026-11-25 Nguyễn Văn Thủy] Cron máy chủ (aaPanel, mỗi phút): có yêu cầu dựng lại ở HT20 thì chạy cap-nhat.sh --yes và báo kết quả — docs/ops/TU-DONG-SUA-LOI.md §4.1 (đóng góp)
+# [2026-11-25 12:00 AM Nguyễn Văn Thủy] HT20 — Cron máy chủ (aaPanel, mỗi phút): có yêu cầu dựng lại ở HT20 thì chạy cap-nhat.sh --yes và báo kết quả — docs/ops/TU-DONG-SUA-LOI.md §4.1 (đóng góp)
 #
 #   cd /www/wwwroot/<thu-muc-dev> && KET_NOI_URL=https://ketoan-dev.quantri.thegioisua.com KET_NOI_KEY=kn_… ./scripts/loi/dung-lai-theo-yeu-cau.sh
 #
@@ -21,6 +21,8 @@ echo "== $(date '+%F %T') dựng lại theo yêu cầu $ID" | tee "$LOG"
 if ./scripts/cap-nhat.sh --yes >>"$LOG" 2>&1; then OK=true; else OK=false; fi
 # Bộ thu trace đọc cấu hình lúc khởi động — khởi động lại để nhận cấu hình mới (nếu có bộ giám sát).
 docker compose ps --services 2>/dev/null | grep -q '^otel-collector$' && docker compose restart otel-collector >>"$LOG" 2>&1 || true
+# Promtail: biến môi trường đổi (vd LOKI_PROJECT) thì tạo lại; tệp cấu hình gắn ngoài đổi thì khởi động lại để đọc lại.
+docker compose ps --services 2>/dev/null | grep -q '^promtail$' && { docker compose up -d --no-deps promtail >>"$LOG" 2>&1; docker compose restart promtail >>"$LOG" 2>&1; } || true
 echo "== $(date '+%F %T') xong: $OK · commit $(git rev-parse --short HEAD)" | tee -a "$LOG"
 
 TAIL="$(tail -n 40 "$LOG")"

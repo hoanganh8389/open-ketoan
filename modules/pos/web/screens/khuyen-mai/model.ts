@@ -4,8 +4,11 @@
  * Không gọi API, không React — test ở modules/pos/test/khuyen-mai.test.ts.
  */
 // [2026-11-14 01:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: mô hình form khuyến mại 6 loại (đóng góp)
+// [2026-11-25 10:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: thêm ba loại khuôn @2 — giá riêng từng mã (K1), mua nhiều mã / quà lựa chọn (K2), quà nhân bội số (K4), phạm vi nhóm / nhãn (K3) (đóng góp)
 
-export type PromoKind = 'tiered' | 'order_discount' | 'order_gift' | 'combo' | 'cheapest_free' | 'buy_x_get_y';
+export type PromoKind = 'tiered' | 'order_discount' | 'order_gift' | 'combo' | 'cheapest_free' | 'buy_x_get_y' | 'price_lines' | 'buy_x_get_y2' | 'order_gift2';
+/** Ba loại khuôn @2 (NT-BH-040): có phạm vi nhóm / nhãn. */
+export const V2_KINDS: readonly PromoKind[] = ['price_lines', 'buy_x_get_y2', 'order_gift2'];
 
 export const KIND_INFO: Record<PromoKind, { contract: string; label: string; hint: string }> = {
   tiered: { contract: 'sale.promo.tiered@1', label: 'Giảm theo bậc (mua nhiều giảm nhiều)', hint: 'Nhóm mặt hàng: từ N cái (hoặc từ N đồng) giảm % / giá chương trình' },
@@ -14,6 +17,9 @@ export const KIND_INFO: Record<PromoKind, { contract: string; label: string; hin
   combo: { contract: 'sale.promo.combo@1', label: 'Combo', hint: 'Mua đủ bộ món: giá bộ / giảm % / giảm tiền' },
   cheapest_free: { contract: 'sale.promo.cheapest_free@1', label: 'Mua bất kỳ tặng món rẻ nhất', hint: 'Trong nhóm mặt hàng: mua N món tặng M món rẻ nhất' },
   buy_x_get_y: { contract: 'sale.promo.buy_x_get_y@1', label: 'Mua X tặng Y', hint: 'Mua đủ số lượng mặt hàng X tặng mặt hàng Y' },
+  price_lines: { contract: 'sale.promo.price_lines@2', label: 'Giá riêng từng mã (nhiều mã)', hint: 'Một chương trình nhiều mã, mỗi mã một giá / một mức giảm / một bảng bậc riêng' },
+  buy_x_get_y2: { contract: 'sale.promo.buy_x_get_y@2', label: 'Mua nhiều mã tặng quà (quà lựa chọn)', hint: 'Mua A hoặc B (gộp số lượng) / mua đủ A và B; khách chọn 1 (hoặc N) trong nhiều quà' },
+  order_gift2: { contract: 'sale.promo.order_gift@2', label: 'Quà theo tổng đơn (nhân bội số)', hint: 'Đơn từ … tặng quà; bật nhân bội số: đủ 2 lần ngưỡng tặng 2 lần quà' },
 };
 export const KIND_BY_CONTRACT: Record<string, PromoKind> = Object.fromEntries(Object.entries(KIND_INFO).map(([k, v]) => [v.contract, k as PromoKind]));
 
@@ -41,7 +47,19 @@ export type Form = {
   quotaPerBranch: string;
   /** Lượt riêng từng cửa hàng: "CN01=2, CN02=5". */
   quotaBranches: string;
+  // [2026-11-25 10:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: ô của ba loại @2 (đóng góp)
+  /** Phạm vi nhóm hàng / nhãn hàng (mã phân loại đang dùng); `skus` là các mã lẻ của phạm vi. */
+  groupCodes: string[]; brandCodes: string[];
+  /** K1: mỗi dòng một mã, một cách giảm hoặc một bảng bậc riêng. */
+  priceLines: PriceLineForm[];
+  /** K2: các mã mua, kiểu any / all, tổng số lượng (any), các quà lựa chọn, số món được chọn. */
+  buyItems: { sku: string; qty: string }[]; buyMode: 'any' | 'all'; buyTotal: string;
+  giftOptions: { sku: string; qty: string }[]; choose: string;
+  /** K4: nhân bội số ngưỡng, trần số lần. */
+  multiply: boolean; maxTimes: string;
 };
+export type PriceLineForm = { sku: string; useTiers: boolean; mode: TierMode; value: string; tiers: { min: string; mode: TierMode; value: string }[]; maxQty: string };
+export const emptyPriceLine = (): PriceLineForm => ({ sku: '', useTiers: false, mode: 'pct', value: '', tiers: [{ min: '', mode: 'pct', value: '' }], maxQty: '' });
 
 export function emptyForm(kind: PromoKind, today: string): Form {
   return {
@@ -51,6 +69,8 @@ export function emptyForm(kind: PromoKind, today: string): Form {
     giftTiers: [{ minOrder: '', gifts: '' }], items: [{ sku: '', qty: '1' }], comboMode: 'comboPrice', comboValue: '', maxCombos: '',
     buyQty: '2', freeQty: '1', repeat: true, buy: { sku: '', qty: '1' }, get: { sku: '', qty: '1' }, maxGiftQty: '',
     quotaPerBranch: '', quotaBranches: '',
+    groupCodes: [], brandCodes: [], priceLines: [emptyPriceLine()],
+    buyItems: [{ sku: '', qty: '' }], buyMode: 'any', buyTotal: '', giftOptions: [{ sku: '', qty: '1' }], choose: '1', multiply: false, maxTimes: '',
   };
 }
 
@@ -77,6 +97,13 @@ export function parseGifts(s: string): { sku: string; qty: number }[] | null {
 }
 
 type Params = Record<string, unknown>;
+
+/** Phạm vi của khuôn @2 từ ô mã lẻ + nhóm + nhãn; trống cả ba = không khai `scope` (mọi dòng). */
+export function scopeOf(f: Pick<Form, 'skus' | 'groupCodes' | 'brandCodes'>): { scope?: { skus?: string[]; groupCodes?: string[]; brandCodes?: string[] } } {
+  const skus = list(f.skus), groupCodes = [...new Set(f.groupCodes)], brandCodes = [...new Set(f.brandCodes)];
+  if (!skus.length && !groupCodes.length && !brandCodes.length) return {};
+  return { scope: { ...(skus.length ? { skus } : {}), ...(groupCodes.length ? { groupCodes } : {}), ...(brandCodes.length ? { brandCodes } : {}) } };
+}
 
 /** Form → `params` của khuôn. Lỗi rõ ràng theo ô (Core còn kiểm lại khi phát hành). */
 export function toParams(f: Form): { params: Params; problems: string[] } {
@@ -153,6 +180,59 @@ export function toParams(f: Form): { params: Params; problems: string[] } {
       };
       break;
     }
+    // [2026-11-25 10:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: form → params của ba khuôn @2 (đóng góp)
+    case 'price_lines': {
+      const used = f.priceLines.filter((x) => x.sku.trim());
+      if (!used.length) problems.push('Chưa nhập mã hàng nào');
+      const seen = new Set<string>();
+      const lines = used.map((x, i) => {
+        const s = x.sku.trim();
+        if (seen.has(s)) problems.push(`Dòng ${i + 1}: mã ${s} đã khai ở dòng trên`);
+        seen.add(s);
+        const way = x.useTiers
+          ? { tiers: x.tiers.map((t, j) => ({ min: need(num(t.min), `${s} bậc ${j + 1}: từ`), [t.mode]: need(num(t.value), `${s} bậc ${j + 1}: mức giảm`) })) }
+          : { [x.mode]: need(num(x.value), `${s}: mức giảm`) };
+        if (x.useTiers) {
+          const mins = x.tiers.map((t) => num(t.min) ?? 0);
+          if (mins.some((m, j) => j > 0 && m <= mins[j - 1]!)) problems.push(`${s}: các bậc phải tăng dần`);
+        }
+        return { sku: s, ...way, ...(x.maxQty.trim() ? { maxQty: need(num(x.maxQty), `${s}: số lượng tối đa được giảm`) } : {}) };
+      });
+      own = { basis: f.basis, lines, ...scopeOf({ ...f, skus: '' }) };
+      break;
+    }
+    case 'buy_x_get_y2': {
+      const items = f.buyItems.filter((x) => x.sku.trim()).map((x, i) => ({
+        sku: x.sku.trim(), ...(f.buyMode === 'all' ? { qty: need(num(x.qty), `Mã mua ${i + 1}: số lượng`) } : {}),
+      }));
+      const sc = scopeOf(f);
+      if (!items.length && !sc.scope) problems.push('Chưa nhập mã hàng phải mua (hoặc phạm vi nhóm / nhãn)');
+      if (f.buyMode === 'all' && !items.length) problems.push('Kiểu "mua đủ từng mã" cần danh sách mã phải mua');
+      if (new Set(items.map((x) => x.sku)).size !== items.length) problems.push('Mã phải mua bị trùng');
+      const options = f.giftOptions.filter((x) => x.sku.trim()).map((x, i) => ({ sku: x.sku.trim(), qty: need(num(x.qty), `Quà ${i + 1}: số lượng`) }));
+      if (!options.length) problems.push('Chưa nhập quà tặng');
+      if (new Set(options.map((x) => x.sku)).size !== options.length) problems.push('Quà tặng bị trùng mã');
+      const choose = need(num(f.choose), 'Số quà khách được chọn', { int: true, min: 1 });
+      if (choose !== undefined && options.length && choose > options.length) problems.push(`Số quà được chọn (${choose}) lớn hơn số quà khai (${options.length})`);
+      own = {
+        buy: { items, mode: f.buyMode, ...(f.buyMode === 'any' ? { qty: need(num(f.buyTotal), 'Tổng số lượng phải mua') } : {}) },
+        get: { options, choose }, repeat: f.repeat, ...(f.maxGiftQty.trim() ? { maxGiftQty: need(num(f.maxGiftQty), 'Trần quà / phiếu') } : {}), ...sc,
+      };
+      break;
+    }
+    case 'order_gift2': {
+      const tiers = f.giftTiers.map((t, i) => {
+        const gifts = parseGifts(t.gifts);
+        if (!gifts?.length) problems.push(`Bậc ${i + 1}: quà ghi dạng MÃ:số lượng, cách nhau dấu phẩy`);
+        const minOrder = need(num(t.minOrder), `Bậc ${i + 1}: đơn từ`);
+        if (f.multiply && minOrder === 0) problems.push(`Bậc ${i + 1}: nhân bội số cần ngưỡng tổng đơn > 0`);
+        return { minOrder, gifts: gifts ?? [] };
+      });
+      const mins = tiers.map((t) => t.minOrder ?? 0);
+      if (mins.some((m, i) => i > 0 && m <= mins[i - 1]!)) problems.push('Các bậc phải tăng dần');
+      own = { tiers, multiply: f.multiply, ...(f.multiply && f.maxTimes.trim() ? { maxTimes: need(num(f.maxTimes), 'Số lần tối đa', { int: true, min: 1 }) } : {}), ...scopeOf(f) };
+      break;
+    }
   }
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{1,63}$/.test(f.key.trim())) problems.push('Mã khuyến mại: 2–64 ký tự chữ, số, dấu chấm, gạch (vd KM-TET-2026)');
   if (!f.effectiveFrom) problems.push('Chưa chọn ngày bắt đầu áp');
@@ -189,6 +269,38 @@ export function fromParams(contract: string, p: Params, meta: { key: string; bra
   if (kind === 'buy_x_get_y') {
     const b = (p.buy ?? {}) as { sku?: string; qty?: number }, g = (p.get ?? {}) as { sku?: string; qty?: number };
     f.buy = { sku: s(b.sku), qty: s(b.qty) }; f.get = { sku: s(g.sku), qty: s(g.qty) }; f.repeat = p.repeat !== false; f.maxGiftQty = s(p.maxGiftQty);
+  }
+  // [2026-11-25 10:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: params @2 → form (Sửa / Ngừng) (đóng góp)
+  if (V2_KINDS.includes(kind)) {
+    const sc = (p.scope ?? {}) as { skus?: string[]; groupCodes?: string[]; brandCodes?: string[] };
+    f.skus = (sc.skus ?? []).join(', '); f.groupCodes = sc.groupCodes ?? []; f.brandCodes = sc.brandCodes ?? [];
+  }
+  const modeOf = (t: Record<string, unknown>): TierMode => (t.pct != null ? 'pct' : t.unitPrice != null ? 'unitPrice' : 'amountPerUnit');
+  if (kind === 'price_lines') {
+    f.basis = p.basis === 'amount' ? 'amount' : 'qty';
+    f.priceLines = ((p.lines ?? []) as Record<string, unknown>[]).map((x) => {
+      const ts = x.tiers as Record<string, unknown>[] | undefined;
+      const mode = modeOf(x);
+      return {
+        sku: s(x.sku), useTiers: Boolean(ts?.length), mode, value: ts?.length ? '' : s(x[mode]), maxQty: s(x.maxQty),
+        tiers: ts?.length ? ts.map((t) => ({ min: s(t.min), mode: modeOf(t), value: s(t[modeOf(t)]) })) : [{ min: '', mode: 'pct' as TierMode, value: '' }],
+      };
+    });
+    if (!f.priceLines.length) f.priceLines = [emptyPriceLine()];
+  }
+  if (kind === 'buy_x_get_y2') {
+    const b = (p.buy ?? {}) as { items?: { sku: string; qty?: number }[]; mode?: string; qty?: number };
+    const g = (p.get ?? {}) as { options?: { sku: string; qty: number }[]; choose?: number };
+    f.buyItems = (b.items ?? []).map((x) => ({ sku: x.sku, qty: s(x.qty) }));
+    if (!f.buyItems.length) f.buyItems = [{ sku: '', qty: '' }];
+    f.buyMode = b.mode === 'all' ? 'all' : 'any'; f.buyTotal = s(b.qty);
+    f.giftOptions = (g.options ?? []).map((x) => ({ sku: x.sku, qty: s(x.qty) }));
+    if (!f.giftOptions.length) f.giftOptions = [{ sku: '', qty: '1' }];
+    f.choose = s(g.choose ?? 1); f.repeat = p.repeat !== false; f.maxGiftQty = s(p.maxGiftQty);
+  }
+  if (kind === 'order_gift2') {
+    f.giftTiers = tiers.map((t) => ({ minOrder: s(t.minOrder), gifts: ((t.gifts ?? []) as { sku: string; qty: number }[]).map((g) => `${g.sku}:${g.qty}`).join(', ') }));
+    f.multiply = p.multiply === true; f.maxTimes = s(p.maxTimes);
   }
   return f;
 }

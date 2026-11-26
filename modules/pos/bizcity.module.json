@@ -219,7 +219,8 @@
       },
       {
         "docType": "manual_journal",
-        "contract": "bizcity_ledger_intake@1"
+        "contract": "bizcity_ledger_intake@1",
+        "reasonCodes": ["POS-THIEU-KET", "POS-THUA-KET"]
       }
     ]
   },

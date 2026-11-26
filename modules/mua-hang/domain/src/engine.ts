@@ -43,6 +43,8 @@ export interface PLine {
   mfgDate?: string;
   /** Chương trình KM của dòng quà (đối chiếu quà theo chương trình). */
   program?: string;
+  /** [2026-11-25 11:55 PM Nguyễn Văn Thủy] MH-KM — mã các chương trình khuyến mại / chiết khấu đang áp vào dòng, máy chủ ghi lúc lưu (ctkmCuaDong) — mở lại phiếu, báo cáo đọc lại (đóng góp) */
+  ctkm?: string[];
   /** Dòng quà phần mềm tự thêm theo chương trình: SL tự chạy theo hàng mua; người dùng sửa SL thì thôi tự chạy (false). */
   autoGift?: boolean;
   /** Nhãn hàng của mặt hàng — luôn lấy từ danh mục mặt hàng (máy chủ ghi lại khi lưu), không nhập tay. */
@@ -180,9 +182,9 @@ export interface Partner { code: string; name: string; taxCode?: string; group?:
 
 export type PolicyKind = 'trade_discount' | 'item_discount' | 'qty_tier' | 'payment_discount' | 'promo_gift' | 'period_rebate' | 'target_rebate' | 'stage_rebate'
   | 'credit_limit' | 'payment_term' | 'supply_target' | 'lot_tracking' | 'gift_budget';
-// [2026-11-13 Nguyễn Văn Thủy] withChildren: chính sách khai ở đơn vị mẹ áp cho mọi đơn vị con (cha – con 0132) (đóng góp)
-// [2026-11-18 Nguyễn Văn Thủy] contractCode: chính sách thuộc hợp đồng mua (Danh mục hợp đồng) — chỉ để gom, không đổi cách áp (đóng góp)
-// [2026-11-19 Nguyễn Văn Thủy] branchCodes: chính sách áp cho nhiều chi nhánh (chọn theo cây cơ cấu); branchCode một chi nhánh giữ cho dữ liệu cũ (đóng góp)
+// [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — withChildren: chính sách khai ở đơn vị mẹ áp cho mọi đơn vị con (cha – con 0132) (đóng góp)
+// [2026-11-18 12:00 AM Nguyễn Văn Thủy] MH — contractCode: chính sách thuộc hợp đồng mua (Danh mục hợp đồng) — chỉ để gom, không đổi cách áp (đóng góp)
+// [2026-11-19 12:00 AM Nguyễn Văn Thủy] MH — branchCodes: chính sách áp cho nhiều chi nhánh (chọn theo cây cơ cấu); branchCode một chi nhánh giữ cho dữ liệu cũ (đóng góp)
 export interface Scope { partnerCode?: string; brandCode?: string; sku?: string; branchCode?: string; branchCodes?: string[]; withChildren?: boolean; contractCode?: string }
 /** Các chi nhánh áp chính sách (trống = mọi chi nhánh): branchCodes, không có thì branchCode cũ. */
 export const scopeBranches = (s: Pick<Scope, 'branchCode' | 'branchCodes'>): string[] => (s.branchCodes?.length ? s.branchCodes : s.branchCode ? [s.branchCode] : []);
@@ -433,7 +435,7 @@ export const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b
 
 /* ------------------------------------------------------------------ chính sách */
 
-// [2026-11-21 Nguyễn Văn Thủy] hạn mức công nợ + điều khoản thanh toán là ĐIỀU KHOẢN HỢP ĐỒNG: gắn hợp đồng X thì chỉ áp phiếu của X (docs/nghiep-vu/28) (đóng góp)
+// [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — hạn mức công nợ + điều khoản thanh toán là ĐIỀU KHOẢN HỢP ĐỒNG: gắn hợp đồng X thì chỉ áp phiếu của X (docs/nghiep-vu/28) (đóng góp)
 /** Loại "điều khoản" của hợp đồng (khai ở bước Điều khoản hợp đồng, không ở danh sách chính sách). */
 export const CONTRACT_BOUND_KINDS: PolicyKind[] = ['credit_limit', 'payment_term'];
 /**
@@ -638,13 +640,16 @@ export function computeDoc(doc: PDoc, policies: Policy[], opts: { holidays?: str
   const ex = exclusiveBySku(doc, policies);
   const all = policies;
   // 1. CK dòng: % nhập tay → bảng chiết khấu theo mã hàng (item_discount) → bậc số lượng theo mã.
+  // [2026-11-26 12:05 AM Nguyễn Văn Thủy] MH-KM — ngưỡng SL (bậc số lượng, CK theo mã "mua từ N") xét TỔNG SL các dòng mua cùng mã + cùng ĐVT của phiếu:
+  // đơn giao nhiều chi nhánh (HDG 60 + AGG 40) vẫn là một đơn → được trọn bậc; tiền CK vẫn tính trên từng dòng theo đơn giá trước CK (đóng góp)
+  const slCaPhieu = (l: PLine) => doc.lines.filter((x) => x.lineType === 'buy' && x.sku === l.sku && x.unit.toLowerCase() === l.unit.toLowerCase()).reduce((t, x) => t + x.qty, 0);
   const lines = doc.lines.map((l) => {
     const policies = policiesForSku(ex, all, l.sku);
     const gross = l.lineType === 'buy' ? Math.round(l.qty * l.price) : 0;
     let pct = l.discountPct;
     let amt = l.discountAmt;
     if (pct === undefined && amt === undefined && l.lineType === 'buy') {
-      const hit = itemDiscountFor(policies, { ...ctxBase, brandCode: l.brandCode ?? doc.brandCode, sku: l.sku, unit: l.unit, qty: l.qty, units: opts.units?.[l.sku] });
+      const hit = itemDiscountFor(policies, { ...ctxBase, brandCode: l.brandCode ?? doc.brandCode, sku: l.sku, unit: l.unit, qty: slCaPhieu(l), units: opts.units?.[l.sku] });
       if (hit) {
         if (hit.item.pct) pct = hit.item.pct; else amt = Math.round((hit.item.amount ?? 0) * hit.factor * l.qty);
         trace.push({ policy: hit.policy.code, kind: 'item_discount', text: `${l.sku}: ${hit.item.pct ? `CK ${Number(hit.item.pct).toLocaleString('vi-VN')}%` : `giảm ${(hit.item.amount ?? 0).toLocaleString('vi-VN')}đ / ${hit.item.unit || l.unit}`}${hit.item.minQty ? ` (mua từ ${hit.item.minQty})` : ''} — ${hit.policy.name}` });
@@ -652,8 +657,9 @@ export function computeDoc(doc: PDoc, policies: Policy[], opts: { holidays?: str
     }
     if (pct === undefined && amt === undefined && l.lineType === 'buy') {
       const tier = findPolicy(policies, 'qty_tier', { ...ctxBase, brandCode: l.brandCode ?? doc.brandCode, sku: l.sku });
-      const t = tier ? pickTier((tier.rule.tiers as { from: number; pct: number }[]) ?? [], l.qty) : undefined;
-      if (tier && t && t.pct) { pct = t.pct; trace.push({ policy: tier.code, kind: 'qty_tier', text: `${l.sku}: SL ${l.qty} → bậc từ ${t.from}, CK ${Number(t.pct).toLocaleString('vi-VN')}%` }); }
+      const tong = slCaPhieu(l);
+      const t = tier ? pickTier((tier.rule.tiers as { from: number; pct: number }[]) ?? [], tong) : undefined;
+      if (tier && t && t.pct) { pct = t.pct; trace.push({ policy: tier.code, kind: 'qty_tier', text: `${l.sku}: SL ${tong !== l.qty ? `${l.qty} (cả phiếu ${tong})` : l.qty} → bậc từ ${t.from}, CK ${Number(t.pct).toLocaleString('vi-VN')}%` }); }
     }
     // CK trên đơn khai cho RIÊNG một mã (phạm vi có mã hàng): áp vào dòng mã đó như CK dòng (sau CK tay, bảng CK theo mã, bậc SL
     // — không cộng trùng). CK trên đơn không ghi mã vẫn áp cả đơn ở bước 2. Ghi vết là item_discount để không lẫn với CK đơn.
@@ -693,7 +699,7 @@ export function computeDoc(doc: PDoc, policies: Policy[], opts: { holidays?: str
     }
   }
   if (!fromPolicy && od && doc.orderDiscountLines) { buyIdx = buyIdx.filter((i) => doc.orderDiscountLines!.includes(lines[i]!.lineKey)); net = buyIdx.reduce((s, i) => s + lines[i]!.after, 0); }
-  // [2026-11-25 Nguyễn Văn Thủy] CK % trên đơn tính và làm tròn TỪNG DÒNG (như hoá đơn: dòng giống nhau → số giống nhau), tổng CK = cộng
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — CK % trên đơn tính và làm tròn TỪNG DÒNG (như hoá đơn: dòng giống nhau → số giống nhau), tổng CK = cộng
   // các dòng; trước đây tính trên tổng rồi chia → hai dòng y hệt lệch nhau 1 đồng. CK bằng số tiền cố định vẫn phân bổ theo giá trị (đóng góp)
   const pctParts = od?.pct ? buyIdx.map((i) => Math.round((lines[i]!.after * od!.pct!) / 100)) : null;
   const orderDisc = pctParts ? pctParts.reduce((t, x) => t + x, 0) : Math.round(od?.amount ?? 0);

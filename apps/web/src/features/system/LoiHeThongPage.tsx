@@ -1,4 +1,4 @@
-// [2026-11-25 Nguyễn Văn Thủy] HT20 LỖI HỆ THỐNG — lỗi trên máy chủ được gom thành mục theo phân hệ: lịch sử, Tra mã, Sửa lỗi này / Bỏ qua,
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] HT20 — HT20 LỖI HỆ THỐNG — lỗi trên máy chủ được gom thành mục theo phân hệ: lịch sử, Tra mã, Sửa lỗi này / Bỏ qua,
 // công tắc Tự sửa, Dựng lại ngay (cron máy chủ thực hiện). Thiết kế + quy trình cho cả team: docs/ops/TU-DONG-SUA-LOI.md (đóng góp)
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -12,7 +12,7 @@ type TrangThai = 'moi' | 'yeu_cau' | 'dang_sua' | 'da_sua' | 'bo_qua' | 'tai_pha
 interface MucLoi {
   fp: string; phanHe: string; tenPhanHe: string; loai: 'phan-mem' | 'tu-choi'; errCode: string; status: number; method: string; route: string; msg: string;
   count: number; first: string; last: string; lastReqId: string; trangThai: TrangThai; nguoi?: string; ghiChu?: string; commit?: string; doiLuc?: string;
-  may?: string; ip?: string; giuDen?: string;
+  may?: string; ip?: string; giuDen?: string; lastErrFp?: string; lastBan?: string;
 }
 interface May { luc: string; viec: string; ip: string; may: string }
 interface SuaXong { ts: string; tomTat: string; commit?: string; fps: string[]; chiTiet?: string; by: string; may?: string; ip?: string }
@@ -124,7 +124,7 @@ export function LoiHeThongPage() {
                 <tr key={x.fp}>
                   <td>{x.tenPhanHe}</td>
                   <td>{x.loai === 'phan-mem' ? <span className="badge badge-bad">Phần mềm</span> : <span className="badge badge-warn">Từ chối</span>}</td>
-                  <td style={{ maxWidth: 460 }}><b>{x.msg}</b><div className="muted mono" style={{ fontSize: 11 }}>{x.errCode} · mã mục {x.fp}</div></td>
+                  <td style={{ maxWidth: 460 }}><b>{x.msg}</b><div className="muted mono" style={{ fontSize: 11 }}>{x.errCode} · mã mục {x.fp}{x.lastErrFp ? <span title="Dấu lỗi trong log — gom các lần cùng chỗ hỏng"> · errFp {x.lastErrFp}</span> : null}{x.lastBan ? <span title="Commit của bản đang chạy lúc lỗi — đọc mã đúng commit này"> · bản {x.lastBan.slice(0, 8)}</span> : null}</div></td>
                   <td className="mono" style={{ fontSize: 11.5 }}>{x.method} {x.route}{x.status ? ` → ${x.status}` : ''}</td>
                   <td style={{ textAlign: 'right' }}>{x.count}</td>
                   <td style={{ whiteSpace: 'nowrap' }} title={`Lần đầu ${luc(x.first)}`}>{truoc(x.last)}<div className="muted" style={{ fontSize: 11 }}>{luc(x.last)}</div></td>

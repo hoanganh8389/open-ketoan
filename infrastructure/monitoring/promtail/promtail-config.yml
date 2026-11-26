@@ -23,10 +23,11 @@ scrape_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 15s
         filters:
-          # Chỉ container của dự án compose này — khớp `name: ketoan` trong docker-compose.yml.
-          # Đổi tên dự án thì sửa giá trị ở đây.
+          # Chỉ container của dự án compose này. Tên dự án = COMPOSE_PROJECT_NAME của site (docker-compose.monitoring.yml truyền vào
+          # LOKI_PROJECT), mặc định `ketoan` khớp `name: ketoan`. Máy nhiều site (dev / test / main) mỗi site đặt COMPOSE_PROJECT_NAME riêng
+          # — trước đây ghi cứng "ketoan" nên site dev gom nhầm log của site khác. [2026-11-25 Nguyễn Văn Thủy] (đóng góp)
           - name: label
-            values: ["com.docker.compose.project=ketoan"]
+            values: ["com.docker.compose.project=${LOKI_PROJECT:-ketoan}"]
     relabel_configs:
       # service = tên dịch vụ compose (api, db, web, grafana, …) — nhãn chính để lọc.
       - source_labels: [__meta_docker_container_label_com_docker_compose_service]

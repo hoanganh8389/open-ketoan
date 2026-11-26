@@ -9,6 +9,7 @@ import type { PolicyEnvelope } from '@bizcity/platform/core/policies';
 import { saleBuyXGetY } from './sale-promo-buy-x-get-y.js';
 import { saleProgramDiscount, saleProgramGift } from './sale-program.js';
 import { SALE_PROMO_CONTRACTS } from './sale-promo.js';
+import { SALE_PROMO_V2_CONTRACTS } from './sale-promo-v2.js';
 import { PURCHASE_CONTRACTS } from './purchase.js';
 import { approvalLevels } from './approval-levels.js';
 import type { AnyRuleContract } from './types.js';
@@ -19,7 +20,8 @@ export type { AnyRuleContract, FieldDoc, PublishIssue, RuleContract, Treatment, 
 // [2026-11-13 10:20 AM Võ Hoàng] POS-KM2 — PHASE-031 · 00 §18 (đóng góp): năm khuôn khuyến mại mở rộng (nội tuyến)
 // [2026-11-21 09:20 AM Võ Hoàng] PHASE-031 — S031-11 (30-S031-11): thêm mười ba khuôn purchase.<loại>@1 bọc bộ máy mua hàng
 // [2026-11-21 05:10 PM Võ Hoàng] PHASE-031 — S031-7 (31-S031-7 §1): thêm approval.levels@1 (ngưỡng duyệt, store = settings)
-export const RULE_CONTRACTS: readonly AnyRuleContract[] = [saleBuyXGetY, saleProgramGift, saleProgramDiscount, ...SALE_PROMO_CONTRACTS, ...PURCHASE_CONTRACTS, approvalLevels];
+// [2026-11-25 10:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: thêm ba khuôn sale.promo.*@2 (price_lines, buy_x_get_y, order_gift); khuôn @1 giữ nguyên (đóng góp)
+export const RULE_CONTRACTS: readonly AnyRuleContract[] = [saleBuyXGetY, saleProgramGift, saleProgramDiscount, ...SALE_PROMO_CONTRACTS, ...SALE_PROMO_V2_CONTRACTS, ...PURCHASE_CONTRACTS, approvalLevels];
 
 const byId = new Map(RULE_CONTRACTS.map((c) => [c.id, c]));
 export const getRuleContract = (id: string): AnyRuleContract | undefined => byId.get(id);

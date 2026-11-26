@@ -34,6 +34,8 @@ export const lineSchema = z.object({
   expDate: day.optional(),
   mfgDate: day.optional(),
   program: z.string().trim().max(64).optional(),
+  /** [2026-11-26 12:10 AM Nguyễn Văn Thủy] MH-KM — mã CTKM đang áp vào dòng, máy chủ ghi lúc lưu (đóng góp) */
+  ctkm: z.array(z.string().trim().max(64)).max(30).optional(),
   dir: z.enum(['out', 'in']).optional(),
   autoGift: z.boolean().optional(),
   /** Nhãn của mặt hàng — máy chủ ghi lại theo danh mục khi lưu (giá trị gửi lên chỉ dùng khi mã chưa có trong danh mục). */
@@ -46,7 +48,7 @@ export const lineSchema = z.object({
   newItem: z.boolean().optional(),
   refLineKey: z.string().trim().max(64).optional(),
   stockInfo: z.record(z.number().finite()).optional(),
-  // [2026-11-21 Nguyễn Văn Thủy] phân kho / chi nhánh nhận (đơn giao nhiều nơi) / khoản mục của từng dòng (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — phân kho / chi nhánh nhận (đơn giao nhiều nơi) / khoản mục của từng dòng (đóng góp)
   warehouseCode: z.string().trim().max(64).optional().or(z.literal('')).transform((x) => x || undefined),
   branchCode: z.string().trim().max(64).optional().or(z.literal('')).transform((x) => x || undefined),
   costItem: z.string().trim().max(64).optional().or(z.literal('')).transform((x) => x || undefined),
@@ -78,7 +80,7 @@ export const docInputSchema = z.object({
   brandCode: z.string().trim().max(64).optional().nullable().transform((x) => x || undefined),
   priceIncludesVat: z.boolean().default(true),
   invoice: z.object({ no: z.string().trim().min(1).max(32), serial: z.string().trim().max(32).optional(), date: day, total: z.number().finite().optional() }).optional(),
-  // [2026-11-21 Nguyễn Văn Thủy] phiếu nhập nhiều hoá đơn (hoá đơn đầu = invoice) + đơn giao nhiều kho (tham chiếu) (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — phiếu nhập nhiều hoá đơn (hoá đơn đầu = invoice) + đơn giao nhiều kho (tham chiếu) (đóng góp)
   invoices: z.array(z.object({ no: z.string().trim().min(1).max(32), serial: z.string().trim().max(32).optional().or(z.literal('')).transform((x) => x || undefined), date: day, total: z.number().finite().optional(),
     supplierInvoiceId: z.string().regex(/^[1-9][0-9]*$/).optional(), adjusts: z.string().trim().max(80).optional().or(z.literal('')).transform((x) => x || undefined), note: z.string().trim().max(300).optional(),
     by: z.string().max(120).optional(), at: z.string().max(40).optional() })).max(50).optional(),
@@ -373,7 +375,7 @@ export function rowValues(doc: PDoc & { invoiceTotal?: number }, calc: { beforeT
 export const POLICY_KINDS: PolicyKind[] = ['trade_discount', 'item_discount', 'qty_tier', 'payment_discount', 'promo_gift', 'period_rebate', 'target_rebate', 'stage_rebate', 'credit_limit', 'payment_term', 'supply_target', 'lot_tracking', 'gift_budget'];
 const num = z.number().finite().min(0);
 const pct = z.number().finite().min(0).max(100);
-// [2026-11-13 Nguyễn Văn Thủy] thưởng theo cha – con: tính doanh số trên cả nhóm, bên trả thưởng, chi nhánh mình nhận (đóng góp)
+// [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — thưởng theo cha – con: tính doanh số trên cả nhóm, bên trả thưởng, chi nhánh mình nhận (đóng góp)
 /**
  * Các bên của chính sách thưởng (ký với NCC = scope.partnerCode):
  *   family   — tính doanh số trên NCC ký và mọi đơn vị con của họ (vd ký với công ty mẹ, hàng do các chi nhánh giao);
@@ -437,7 +439,7 @@ export const policyInputSchema = z.object({
     if (rule.limit && sum > rule.limit) ctx.addIssue({ code: 'custom', path: ['rule'], message: `Tổng phân bổ chi nhánh ${sum.toLocaleString('vi-VN')} vượt hạn mức tổng ${rule.limit.toLocaleString('vi-VN')}` });
   }
   if (p.validFrom && p.validTo && p.validTo < p.validFrom) ctx.addIssue({ code: 'custom', path: ['validTo'], message: 'Ngày hết hiệu lực trước ngày bắt đầu' });
-  // [2026-11-21 Nguyễn Văn Thủy] điều kiện kích hoạt (tuỳ chọn) — docs/nghiep-vu/29 (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — điều kiện kích hoạt (tuỳ chọn) — docs/nghiep-vu/29 (đóng góp)
   const act = (p.rule as { activation?: unknown }).activation;
   if (act !== undefined && act !== null) {
     const r = ACTIVATION_SCHEMA.safeParse(act);
@@ -459,7 +461,7 @@ export async function listPolicies(trx: Db, tenantId: string, opts: { exclude?: 
   if (opts.exclude?.length) q = q.where('kind', 'not in', opts.exclude);
   const rows = await q.orderBy('kind').orderBy('code').execute();
   const versions = rows.length ? await policyVersionsByPolicy(trx, tenantId) : new Map<string, PolicyVersion[]>();
-  // [2026-11-13 Nguyễn Văn Thủy] chính sách đơn vị mẹ áp cho đơn vị con: điền mã mọi cấp con (không lưu) (đóng góp)
+  // [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — chính sách đơn vị mẹ áp cho đơn vị con: điền mã mọi cấp con (không lưu) (đóng góp)
   const heads = [...new Set(rows.filter((r) => (r.scope as Policy['scope'] | null)?.withChildren && (r.scope as Policy['scope']).partnerCode).map((r) => (r.scope as Policy['scope']).partnerCode!))];
   const fam = new Map<string, string[]>();
   for (const h of heads) fam.set(h, await partnerDescendants(trx, tenantId, h));
@@ -505,7 +507,7 @@ export function policySnapshot(p: PolicyInput): PolicySnapshot {
 
 type VersionRow = { policy_id: string; version: number; effective_from: string | null; content_hash: string; snapshot: PolicySnapshot };
 async function policyVersionsByPolicy(trx: Db, tenantId: string, policyId?: string): Promise<Map<string, PolicyVersion[]>> {
-  // [2026-11-18 Nguyễn Văn Thủy] nội dung bản ở document_versions chung, ngày áp ở phong bì policy_registry (0158, bỏ purchase_policy_versions) (đóng góp)
+  // [2026-11-18 12:00 AM Nguyễn Văn Thủy] MH — nội dung bản ở document_versions chung, ngày áp ở phong bì policy_registry (0158, bỏ purchase_policy_versions) (đóng góp)
   const r = await sql<VersionRow>`
     SELECT substr(v.doc_ref, length('mua-hang.policy:') + 1) AS policy_id, v.version, g.effective_from::text AS effective_from, v.content_hash, v.snapshot
     FROM document_versions v

@@ -1,7 +1,7 @@
 {
   "contract": "bizcity_posting_template@1",
   "id": "bizcity.vn-tt99.nen",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Gói nền TT99/2025 — cấu hình định khoản tối thiểu",
   "description": "Lý do, nhóm hạch toán, hình thức thanh toán, loại thuế, tài khoản ngầm định mà mọi đơn vị mới có (trước đây viết cứng trong apps/api/src/db/seed.ts). Hệ thống tài khoản ở db/seeds/tai-khoan.csv. Cài tự động khi khởi tạo đơn vị; gói ngành extends gói này.",
   "publisher": {
@@ -326,6 +326,26 @@
         "examples": [
           "Xuất bán hàng cho chi nhánh Hà Nội"
         ]
+      }
+    },
+    {
+      "code": "POS-THIEU-KET",
+      "name": "Thiếu tiền két chờ xử lý (máy bán POS)",
+      "kind": "journal",
+      "debitAccount": "1381",
+      "creditAccount": "1111",
+      "flags": {
+        "default": "manual_journal:pos_cash_short"
+      }
+    },
+    {
+      "code": "POS-THUA-KET",
+      "name": "Thừa tiền két chờ xử lý (máy bán POS)",
+      "kind": "journal",
+      "debitAccount": "1111",
+      "creditAccount": "3381",
+      "flags": {
+        "default": "manual_journal:pos_cash_over"
       }
     }
   ],

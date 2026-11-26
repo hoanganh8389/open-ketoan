@@ -1,4 +1,4 @@
-// [2026-11-20 Nguyễn Văn Thủy] Cơ cấu tổ chức (DM16) — Hộp thoại thêm / sửa đơn vị, phân kho, bộ phận và hộp xoá (xem ảnh hưởng trước). (đóng góp)
+// [2026-11-20 12:00 AM Nguyễn Văn Thủy] MH — Cơ cấu tổ chức (DM16) — Hộp thoại thêm / sửa đơn vị, phân kho, bộ phận và hộp xoá (xem ảnh hưởng trước). (đóng góp)
 import { useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Network, Plus, Trash2, Users, Warehouse as WarehouseIcon } from 'lucide-react';
@@ -98,7 +98,7 @@ export function DonViModal({ cc, code, cha, onClose, onSaved }: { cc: CC; code: 
 
 export function chonDonVi(cc: CC) { return cc.units.filter((x) => !ngung(x)).map((x) => ({ code: x.code, name: duongTen(cc, x) })); }
 
-export function PhanKhoModal({ cc, code, donVi, onClose, onSaved }: { cc: CC; code: string | null; donVi: string | null; onClose: () => void; onSaved: (text: string) => void }) {
+export function PhanKhoModal({ cc, code, donVi, onClose, onSaved }: { cc: CC; code: string | null; donVi: string | null; onClose: () => void; /** [2026-11-26 12:40 AM Nguyễn Văn Thủy] MH-NHAN — thêm mã kho vừa lưu (ô chọn kho ở chứng từ chọn luôn) (đóng góp) */ onSaved: (text: string, code?: string) => void }) {
   const lamMoi = useLamMoi();
   const w = code ? cc.warehouses.find((x) => x.code === code) ?? null : null;
   const [f, setF] = useState({ code: w?.code ?? '', name: w?.name ?? '', branchCode: w?.branchCode ?? donVi ?? '', typeCode: w?.typeCode || 'KHH', isDefault: w?.isDefault ?? false, address: w?.address ?? '', note: w?.note ?? '', isActive: w?.isActive ?? true });
@@ -119,7 +119,7 @@ export function PhanKhoModal({ cc, code, donVi, onClose, onSaved }: { cc: CC; co
       const body = { branchCode: f.branchCode, name: f.name.trim(), typeCode: f.typeCode || 'KHH', isDefault: f.isDefault, address: f.address, note: f.note, isActive: f.isActive };
       return w ? api.patch(`/api/v1/warehouses/${encodeURIComponent(w.code)}`, body) : api.post('/api/v1/warehouses', { ...body, code: f.code.trim() });
     },
-    onSuccess: () => { lamMoi(); onSaved(`Đã lưu phân kho ${f.code.trim()} · ${f.name.trim()}`); },
+    onSuccess: () => { lamMoi(); onSaved(`Đã lưu phân kho ${f.code.trim()} · ${f.name.trim()}`, f.code.trim()); },
   });
   const ok = () => { setDaBam(true); if (f.code.trim() && f.name.trim() && f.branchCode && !trung) luu.mutate(); };
   return (

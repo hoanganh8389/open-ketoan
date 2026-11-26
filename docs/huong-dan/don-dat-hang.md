@@ -1,6 +1,7 @@
 # Đơn đặt hàng (BH20)
 <!-- [2026-11-17 Võ Hoàng] NGHIEM-THU — NT-BH-023: hướng dẫn màn Đơn đặt hàng (đóng góp) -->
 <!-- [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-032: thông tin giao, chuyến giao qua kho KHG, phí ship, COD, copy đơn (đóng góp) -->
+<!-- [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: Lập chuyển kho + Giữ lại hàng khi kho bán thiếu (đóng góp) -->
 
 Lập đơn đặt hàng / báo giá cho khách buôn, khách nợ, đơn livestream; giữ hàng cho đơn; giao nhiều lần, mỗi lần sinh một **phiếu bán nháp (BH10)** để kế toán duyệt. Đơn đặt hàng **không** ghi doanh thu — doanh thu, giá vốn ghi khi duyệt phiếu bán. Phiếu nghiệm thu: [NT-BH-023](../nghiem-thu/ban-hang/NT-BH-023-don-dat-hang.md), giao hàng + copy đơn: [NT-BH-032](../nghiem-thu/ban-hang/NT-BH-032-giao-hang-copy-don.md).
 
@@ -36,6 +37,13 @@ Menu trái → **Phần riêng** → **Phiếu bán nhập tay** → **Đơn đ�
 Đơn Đã gửi được giữ hàng bằng **phiếu chuyển kho nội bộ** từ kho bán sang kho loại **KCB "Kho hàng chờ bán"** của cửa hàng (số lượng chưa giao). Sổ kho và báo cáo tồn theo kho thấy rõ hàng đang giữ; **máy bán chỉ bán tồn kho mặc định** nên không bán lấn hàng đã giữ. Sửa số lượng đơn → phiếu chuyển bù; Đóng / Huỷ → chuyển phần còn giữ về kho bán.
 
 Loại chứng từ "Chuyển kho" đặt chế độ *chờ duyệt* (ACC14) thì phiếu giữ hàng nằm chờ kế toán duyệt rồi mới chuyển tồn.
+
+### Kho bán thiếu hàng: Lập chuyển kho, Giữ lại hàng
+Khung **Giữ hàng** (cột phải của form đơn) báo "thiếu N" khi đơn Đã gửi chưa giữ đủ. Khi đó có hai nút ([NT-BH-041](../nghiem-thu/ban-hang/NT-BH-041-nut-chuyen-kho-bh20.md)):
+1. **Lập chuyển kho** — hộp thoại liệt kê kho có hàng các mã thiếu: kho khác của cùng cửa hàng (không tính kho bán, KCB, KHG) → chi nhánh cha → cửa hàng cùng cha, kèm tồn từng mã. Chọn **một** kho xuất; số lượng điền sẵn = số thiếu (trừ phần đang chuyển của phiếu trước, nếu có), không quá tồn kho xuất — sửa được. Bấm **Lưu** → phiếu chuyển kho **KHO01** về **kho bán của đơn**, xuất luôn, ghi chú "Chuyển hàng cho đơn đặt hàng DH…". Cùng chi nhánh thì nhận luôn; khác chi nhánh thì chờ thủ kho cửa hàng nhận ở KHO01. Thiếu ở nhiều kho thì lập nhiều lần.
+2. **Giữ lại hàng** — khi hàng đã về kho bán (phiếu đã nhận): phần mềm giữ phần còn thiếu sang KCB như lúc gửi. Chưa có thêm hàng thì báo "Kho bán … chưa có thêm hàng (phiếu CK… chưa nhận)".
+
+Dưới hai nút là các phiếu chuyển của đơn với trạng thái đọc ở KHO01 (Đang chuyển / Đã nhận / Từ chối / Huỷ). Phiếu bị từ chối thì lập lại. Sửa / huỷ phiếu chuyển làm ở KHO01. Cần quyền **Lập phiếu chuyển kho (KHO01)** — không có thì nút Lập chuyển kho mờ, rê chuột thấy quyền thiếu.
 
 ## Giao hàng qua chuyến giao (hai bước qua kho KHG)
 Ở đơn Đã gửi, nhập **Giao lần này** ở từng dòng (≤ số còn lại) rồi bấm **Lập chuyến giao** → chuyến ở trạng thái **Chờ lấy hàng** (hàng còn ở KCB). Bảng **Chuyến giao** dưới dòng hàng có nút theo trạng thái; mỗi lần đổi ghi nhật ký ai đổi, lúc nào:
@@ -73,6 +81,6 @@ Thẻ **Nạp đơn livestream**: chọn cửa hàng, dán bảng từ Excel —
 Thẻ **Cài đặt**: chọn kho KCB giữ hàng cho từng cửa hàng (cần quyền ghi cấu hình). Cửa hàng chưa có kho KCB → khai ở Danh mục kho trước; chưa chọn thì gửi đơn báo "Cửa hàng … chưa có kho loại KCB". Kho KHG, mã phí ship, hình thức COD theo hãng: **Cài đặt bán hàng (BH17)** khối ⑤.
 
 ## Chưa có (đợt sau)
-- Nút "Lập chuyển kho" từ đơn khi cửa hàng thiếu hàng (Q12) — tạm lập tay ở KHO01.
+- Tự giữ hàng ngay khi thủ kho nhận phiếu chuyển ở KHO01 (hiện bấm Giữ lại hàng tay — NT-BH-041 Q5).
 - Đơn đặt hàng ở máy bán (Q9).
 - Nối API hãng vận chuyển (tự cập nhật trạng thái chuyến, mã vận đơn) — NT-BH-032 để người dùng cập nhật tay.

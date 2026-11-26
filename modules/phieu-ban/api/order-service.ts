@@ -24,15 +24,15 @@ import { randomUUID } from 'node:crypto';
 import { Errors, roundMoney, type ActionContext } from '@bizcity/module-sdk';
 import { computeDoc, type DocInput, type Kind } from './domain/doc.js';
 import {
-  anyDelivered, anyShipping, applyDelivery, creditReasons, debtOf, deliveryLines, diffOrder, duplicatesOf, expired, feeBeforeTax, fullyDelivered, mergeProgress,
+  anyDelivered, anyShipping, applyDelivery, checkTransferLines, creditReasons, rankSources, shortSkus, transferText, debtOf, deliveryLines, diffOrder, duplicatesOf, expired, feeBeforeTax, fullyDelivered, mergeProgress,
   normPhone, normShipping, parseCarrierMap, parseHoldMap, r4, rebalanceHolds, reserveShipment, returnDelivery, shipmentDelivered, shipmentReturned, toHoldDoc,
   undeliveredValue, SELF_CARRIER, SHIPMENT_LABEL, SHIPMENT_NEXT,
-  type Change, type Move, type OrderBody, type OrderInput, type OrderLine, type OrderStatus, type Shipping, type ShipmentStatus, type Short,
+  type Change, type Move, type OrderBody, type OrderTransfer, type SourceCandidate, type SourceGroup, type OrderInput, type OrderLine, type OrderStatus, type Shipping, type ShipmentStatus, type Short,
 } from './domain/order.js';
 import {
-  addEvent, branchPriceRatios, branchPrices, getOrder, getShipment, insertOrder, insertShipment, listOrders, livestreamByPhone, lockedWarehouseStock, openOrdersOf,
+  activeWarehouses, addEvent, branchFamily, branchPriceRatios, branchPrices, getOrder, getShipment, insertOrder, insertShipment, listOrders, livestreamByPhone, lockedWarehouseStock, openOrdersOf,
   orderByNo, orderEvents, partnerByPhone, partnerTerms, shipmentByDoc, shipmentsOf, shippingOf, takeOrderNo, toOrder, toShipment, updateOrder, updateShipment,
-  warehousesOf, writeOf, type OrderFilter, type OrderRow, type ShipLog,
+  stockByWarehouse, warehousesOf, writeOf, type OrderFilter, type OrderRow, type ShipLog,
 } from './order-store.js';
 import { giftWarehouseOf, saveDraftIn, withChannel } from './service.js';
 import { activeMethods, branchExists, catalogFor, deleteDoc, getDoc, partnerByCode, saleByNo, serviceSkus, taxRates, type Tx } from './store.js';
@@ -157,7 +157,12 @@ export async function listOrdersOf(ctx: ActionContext, f: OrderFilter) {
 
 export async function orderDetail(ctx: ActionContext, id: string) {
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-032: chi tiết đơn kèm các chuyến giao (đóng góp)
-  return ctx.data.module(async (tx) => ({ ...toOrder(await getOrder(tx, id)), shipments: (await shipmentsOf(tx, id)).map(toShipment) }));
+  // [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: kèm mã còn thiếu để giữ (bỏ dòng dịch vụ) — màn hiện nút Lập chuyển kho / Giữ lại hàng (đóng góp)
+  return ctx.data.module(async (tx) => {
+    const r = await getOrder(tx, id);
+    const holdShort = r.status === 'open' ? shortSkus(r.body.lines, await serviceSkus(tx, r.body.lines.map((l) => l.sku), vnToday())) : [];
+    return { ...toOrder(r), shipments: (await shipmentsOf(tx, id)).map(toShipment), holdShort };
+  });
 }
 
 export async function orderHistory(ctx: ActionContext, id: string) {
@@ -898,4 +903,168 @@ async function withPromo(ctx: ActionContext, input: OrderInput): Promise<OrderIn
 /** Lập đơn từ màn / API: áp khuyến mại theo ngày đơn rồi lập (Copy đơn đã tự áp, gọi thẳng createOrder). */
 export async function createOrderWithPromo(ctx: ActionContext, input: OrderInput, dup: DupMode = { onDuplicate: 'ask' }) {
   return createOrder(ctx, await withPromo(ctx, input), dup);
+}
+
+// ------------------------------------------------------------------ chuyển kho cho đơn thiếu hàng (NT-BH-041)
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: Lập chuyển kho (KHO01) từ đơn Đã gửi thiếu hàng + Giữ lại hàng (đóng góp)
+/*
+ * Đơn Đã gửi thiếu hàng để giữ → kế toán chọn MỘT kho có hàng (cùng cửa hàng trừ KCB / KHG → chi nhánh cha → cửa hàng cùng cha) →
+ * phiếu chuyển kho KHO01 về KHO BÁN của đơn (Q2) → hàng về thì bấm "Giữ lại hàng" (Q5, chạy lại cân giữ hàng như lúc gửi).
+ *
+ * Phiếu KHO01 do MÀN gọi thẳng action Kho `kho.transfer.create` (POST /api/v1/kho/transfers) bằng phiên của người bấm: `ctx.actions.call`
+ * của Platform chỉ gọi action ĐỌC (callAction từ chối action ghi), module không tự lập được phiếu của phân hệ Kho. Action
+ * `phieu-ban.order.transfer-create` vì vậy có ba bước:
+ *   prepare — khoá đơn, kiểm (đơn Đã gửi, quyền kho:chuyen-kho-lap, kho xuất là ứng viên, mã đang thiếu, SL ≤ tồn kho xuất), giữ chỗ
+ *             "đang lập" cho đơn (người khác lập cùng lúc → CONFLICT PHIEU_BAN_ORDER_STATE, cause transfer_busy), trả khuôn phiếu KHO01 đã dựng sẵn;
+ *   record  — sau khi KHO01 lưu: nối phiếu vào đơn (body.transfers, lịch sử), bỏ chỗ "đang lập"; gửi lại cùng phiếu → không ghi hai lần;
+ *   abort   — KHO01 từ chối (kỳ khoá, thiếu quyền…): bỏ chỗ "đang lập" của chính mình, đơn không đổi.
+ */
+
+const KHO_TRANSFER_PERMISSION = 'kho:chuyen-kho-lap';
+/** Chỗ "đang lập" quá hạn này thì người khác lập được (người trước đóng trình duyệt giữa chừng). */
+const INTENT_TTL_MS = 120_000;
+const noKhoPermission = () => Errors.forbidden('Cần quyền Lập phiếu chuyển kho (KHO01) — nhờ quản trị cho quyền kho:chuyen-kho-lap');
+
+/** Kho ứng viên + tồn các mã thiếu của một đơn đang mở (đọc trong giao dịch của module). */
+async function sourcesIn(tx: Tx, r: OrderRow, maps: { hold: Map<string, string>; ship: Map<string, string> }) {
+  const short = shortSkus(r.body.lines, await serviceSkus(tx, r.body.lines.map((l) => l.sku), vnToday()));
+  const fam = await branchFamily(tx, r.branch_code);
+  const groupOf = (b: string): SourceGroup => (b === r.branch_code ? 'same' : b === fam.parent ? 'parent' : 'sibling');
+  const branches = [r.branch_code, ...(fam.parent ? [fam.parent] : []), ...fam.siblings];
+  // Trừ kho bán của đơn, kho KCB (giữ hàng) và KHG (hàng gửi bán) đã khai ở Cài đặt BH20 / BH17 của từng chi nhánh.
+  const skip = new Set([r.warehouse_code, r.hold_warehouse_code ?? '', ...maps.hold.values(), ...maps.ship.values()].filter(Boolean));
+  const whs = (await activeWarehouses(tx, branches)).filter((w) => !skip.has(w.code));
+  const stock = await stockByWarehouse(tx, whs, short.map((s) => s.sku));
+  const cands: SourceCandidate[] = whs.map((w) => ({ group: groupOf(w.branchCode), branchCode: w.branchCode, warehouseCode: w.code, name: w.name, stock: stock.get(w.code) ?? {} }));
+  return { short, sources: rankSources(cands, short) };
+}
+
+async function transferMaps(ctx: ActionContext) {
+  return { hold: await holdMapOf(ctx), ship: (await shipConfigOf(ctx)).warehouses };
+}
+
+const transferView = (r: OrderRow) => r.body.transfers ?? [];
+
+/**
+ * Danh sách kho ứng viên cho "Lập chuyển kho" (đọc): mã thiếu (SL còn phải giao − đang giữ, bỏ dịch vụ), kho có tồn ít nhất một mã thiếu
+ * theo thứ tự cùng cửa hàng → cha → cửa hàng cùng cha, các phiếu đã lập cho đơn (màn đọc trạng thái hiện tại ở KHO01 để trừ phần đang
+ * chuyển — Q-CHUNG-03). Đơn không Đã gửi → PHIEU_BAN_ORDER_STATE.
+ */
+export async function transferSources(ctx: ActionContext, id: string) {
+  const maps = await transferMaps(ctx);
+  return ctx.data.module(async (tx) => {
+    const r = await getOrder(tx, id);
+    if (r.status !== 'open') throw stateError(r, 'chỉ lập chuyển kho cho đơn đã gửi (đang giữ hàng)');
+    const s = await sourcesIn(tx, r, maps);
+    return {
+      orderNo: r.order_no, branchCode: r.branch_code, toWarehouse: r.warehouse_code, holdWarehouse: r.hold_warehouse_code,
+      short: s.short, sources: s.sources, transfers: transferView(r), canCreate: ctx.can(KHO_TRANSFER_PERMISSION),
+    };
+  });
+}
+
+export type TransferCreateInput = {
+  step: 'prepare' | 'record' | 'abort';
+  fromBranchCode: string; fromWarehouse: string; lines: { sku: string; qty: number }[]; note?: string;
+  transfer?: { id: string; docNo: string; status?: string };
+};
+
+type Findings = ReturnType<typeof checkTransferLines>['findings'];
+const findingsError = (message: string, findings: Findings) => Errors.validation(message, { findings }); // mã chi tiết ở findings[].code (→ error.fields), không thêm reason mới
+
+/** Lập chuyển kho cho đơn — ba bước prepare / record / abort (xem đầu mục). */
+export async function transferCreate(ctx: ActionContext, id: string, input: TransferCreateInput) {
+  if (input.step === 'abort') {
+    await ctx.data.module(async (tx) => {
+      const r = await getOrder(tx, id, true);
+      if (r.body.transferIntent?.by !== ctx.actor.id) return;
+      const { transferIntent: _i, ...body } = r.body;
+      await updateOrder(tx, id, { ...writeOf(r, ctx.actor.id), body });
+    });
+    return orderDetail(ctx, id);
+  }
+  if (input.step === 'record') return recordTransfer(ctx, id, input);
+  if (!ctx.can(KHO_TRANSFER_PERMISSION)) throw noKhoPermission();
+  const maps = await transferMaps(ctx);
+  return ctx.data.module(async (tx) => {
+    const r = await getOrder(tx, id, true);
+    if (r.status !== 'open') throw stateError(r, 'chỉ lập chuyển kho cho đơn đã gửi (đang giữ hàng)');
+    const it = r.body.transferIntent;
+    if (it && it.by !== ctx.actor.id && Date.now() - Date.parse(it.at) < INTENT_TTL_MS) {
+      throw Errors.conflict(`Đơn ${r.order_no} đang được ${it.byName || it.by} lập chuyển kho — chờ xong rồi tải lại đơn`,
+        { reason: 'PHIEU_BAN_ORDER_STATE', status: r.status, cause: 'transfer_busy', by: it.byName || it.by, at: it.at });
+    }
+    const s = await sourcesIn(tx, r, maps);
+    const src = s.sources.find((x) => x.warehouseCode === input.fromWarehouse && x.branchCode === input.fromBranchCode);
+    if (!src) {
+      throw findingsError(`Kho ${input.fromWarehouse} (${input.fromBranchCode}) không phải kho có hàng để chuyển cho đơn ${r.order_no} — chọn kho trong danh sách`,
+        [{ field: 'fromWarehouse', code: 'PHIEU_BAN_TRANSFER_SOURCE', title: `Kho ${input.fromWarehouse} không có trong danh sách kho có hàng`, level: 'block' }]);
+    }
+    const c = checkTransferLines(s.short, src.stock, src.warehouseCode, input.lines);
+    if (c.findings.length) throw findingsError(`Chưa lập được chuyển kho: ${c.findings.map((f) => f.title).join(' · ')}`, c.findings);
+    const seq = transferView(r).length + 1;
+    const intent = { seq, by: ctx.actor.id, ...(ctx.actor.name ? { byName: ctx.actor.name } : {}), at: new Date().toISOString() };
+    await updateOrder(tx, id, { ...writeOf(r, ctx.actor.id), body: { ...r.body, transferIntent: intent } });
+    const note = [`Chuyển hàng cho đơn đặt hàng ${r.order_no}`, input.note?.trim()].filter(Boolean).join(' · ');
+    return {
+      seq, orderNo: r.order_no,
+      /** Khuôn phiếu KHO01 (POST /api/v1/kho/transfers): về kho bán của đơn (Q2), xuất luôn (Q4); lô để trống → lõi chọn hạn sớm. */
+      payload: {
+        docDate: vnToday(), fromBranchCode: src.branchCode, fromWarehouse: src.warehouseCode, toBranchCode: r.branch_code, toWarehouse: r.warehouse_code,
+        note, mode: 'ship' as const, lines: c.lines.map((l, i) => ({ lineKey: `L${i + 1}`, sku: l.sku, name: l.name, unit: l.unit, qty: l.qty })),
+      },
+    };
+  });
+}
+
+/** Ghi phiếu KHO01 vừa lập vào đơn: body.transfers + lịch sử "Lập chuyển kho CK…: kho xuất → kho bán mã × SL". */
+async function recordTransfer(ctx: ActionContext, id: string, input: TransferCreateInput) {
+  const t = input.transfer;
+  if (!t || !/^\d{1,18}$/.test(t.id) || !t.docNo.trim()) return fail(['Thiếu số / mã phiếu chuyển kho KHO01 vừa lập']);
+  await ctx.data.module(async (tx) => {
+    const r = await getOrder(tx, id, true);
+    const list = transferView(r);
+    if (list.some((x) => x.id === t.id)) return; // gửi lại cùng phiếu: đã nối
+    const lines = input.lines.filter((l) => l.qty > 0).map((l) => ({ sku: l.sku, qty: r4(l.qty) }));
+    const row: OrderTransfer = {
+      id: t.id, docNo: t.docNo.trim(), from: `${input.fromBranchCode}/${input.fromWarehouse}`, fromBranchCode: input.fromBranchCode, fromWarehouse: input.fromWarehouse,
+      toWarehouse: r.warehouse_code, lines, qty: r4(lines.reduce((s, l) => s + l.qty, 0)), status: t.status || 'shipped', at: new Date().toISOString(),
+      by: ctx.actor.name || ctx.actor.id,
+    };
+    const { transferIntent: _i, ...rest } = r.body;
+    await updateOrder(tx, id, { ...writeOf(r, ctx.actor.id), body: { ...rest, transfers: [...list, row] } });
+    await ev(tx, ctx, id, 'transfer', lines.map((l) => ({ field: `transfer ${l.sku}`, from: null, to: l.qty })),
+      `Lập chuyển kho ${transferText(row.docNo, input.fromWarehouse, r.warehouse_code, lines)}`);
+  });
+  return orderDetail(ctx, id);
+}
+
+/**
+ * Giữ lại hàng: đơn Đã gửi → cân giữ hàng lại với tồn hiện tại của kho bán (chứng từ -G<n> kho bán → KCB như lúc gửi). Không giữ thêm
+ * được gì → meta.holdNothing (màn báo "Kho bán … chưa có thêm hàng", kèm các phiếu chuyển lúc lập còn "Đã xuất").
+ */
+export async function holdAgain(ctx: ActionContext, id: string) {
+  const plan = await ctx.data.module(async (tx) => {
+    const r = await getOrder(tx, id, true);
+    if (r.status !== 'open') throw stateError(r, 'chỉ giữ lại hàng cho đơn đã gửi');
+    const holdWh = r.hold_warehouse_code;
+    if (!holdWh) throw stateError(r, 'đơn chưa có kho giữ hàng (KCB)');
+    const skip = await serviceSkus(tx, r.body.lines.map((l) => l.sku), vnToday());
+    const rb = rebalanceHolds(r.body.lines, await stockFor(tx, r, r.body.lines.map((l) => l.sku)), { skip });
+    const { docs, seq } = holdDocsOf(r, holdWh, rb, r.hold_seq);
+    if (docs.length) {
+      await updateOrder(tx, id, { ...writeOf(r, ctx.actor.id), body: { ...r.body, lines: rb.lines }, holdSeq: seq });
+      if (rb.hold.length) await ev(tx, ctx, id, 'hold', moveChanges(rb.hold, 'held+'), `Giữ lại hàng: ${r.warehouse_code} → ${holdWh}`);
+      if (rb.release.length) await ev(tx, ctx, id, 'release', moveChanges(rb.release, 'held-'), `${holdWh} → ${r.warehouse_code}`);
+    }
+    const pending = transferView(r).filter((x) => x.status === 'shipped').map((x) => x.docNo);
+    const nothing = !rb.hold.length && rb.short.length
+      ? { warehouse: r.warehouse_code, pending, message: `Kho bán ${r.warehouse_code} chưa có thêm hàng${pending.length ? ` (phiếu ${pending.join(', ')} chưa nhận)` : ''}` }
+      : null;
+    return { docs, short: rb.short, nothing };
+  });
+  await submitHolds(ctx, plan.docs);
+  if (plan.short.length) ctx.meta('stockShort', plan.short);
+  if (plan.nothing) ctx.meta('holdNothing', plan.nothing);
+  return orderDetail(ctx, id);
 }

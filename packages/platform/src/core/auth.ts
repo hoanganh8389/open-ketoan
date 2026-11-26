@@ -151,7 +151,17 @@ export function withImplied<T extends Set<Permission>>(set: T): T {
   for (const base of [...set]) for (const p of impliedBy(base)) set.add(p as Permission);
   return set;
 }
-export const isKnownPermission = (p: string): p is Permission => (PERMISSIONS as readonly string[]).includes(p) || modulePermissions.has(p);
+// [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: quyền app secrets:read:<module> (BIZCITY-SECRETS-v1 §3) — có trong sổ quyền khi module khai secrets[] (defineModule đăng ký) (đóng góp)
+/** Quyền đọc bí mật của một module cho khoá API / khoá app: `secrets:read:<module>`. */
+export const SECRETS_READ_RE = /^secrets:read:([a-z][a-z0-9-]*)$/;
+const secretsReadModules = new Set<string>();
+/** Module khai `secrets[]` → quyền `secrets:read:<module>` có trong sổ quyền (cấp được cho khoá app; không vai trò nào nhận sẵn). */
+export function registerSecretsReadPermission(module: string): void {
+  secretsReadModules.add(module);
+}
+/** `p` là quyền đọc bí mật của một module đã đăng ký. */
+export const isSecretsReadPermission = (p: string): boolean => secretsReadModules.has(SECRETS_READ_RE.exec(p)?.[1] ?? '');
+export const isKnownPermission = (p: string): p is Permission => (PERMISSIONS as readonly string[]).includes(p) || modulePermissions.has(p) || isSecretsReadPermission(p);
 /** Quyền module rủi ro cao: không cấp cho trợ lý AI, khoá API (BIZCITY-MODULE §3). */
 export const isHighRiskPermission = (p: string): boolean => modulePermissions.get(p)?.risk === 'high';
 
@@ -219,7 +229,14 @@ const SCOPE_PERMISSIONS: Record<string, readonly Permission[]> = {
 /** Quyền mà một tập phạm vi khoá API mang theo (cùng bảng với lúc xác thực khoá). */
 export function scopePermissions(scopes: readonly string[]): Set<Permission> {
   // [2026-11-09 04:30 PM kiennt] PHASE-028 — giai đoạn 3.1: gồm cả quyền chứng từ kéo theo — người bị Cấm một loại phiếu không tạo được khoá documents:write để lách
-  return withImplied(new Set<Permission>(scopes.flatMap((s) => SCOPE_PERMISSIONS[s] ?? [])));
+  return withImplied(new Set<Permission>(scopes.flatMap(scopeToPermissions)));
+}
+
+// [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: phạm vi khoá API `secrets:read:<module>` mang đúng quyền đó (đóng góp)
+/** Một phạm vi khoá API → quyền: bảng SCOPE_PERMISSIONS, hoặc `secrets:read:<module>` của module đã khai bí mật. */
+function scopeToPermissions(scope: string): readonly Permission[] {
+  if (isSecretsReadPermission(scope)) return [scope as Permission];
+  return SCOPE_PERMISSIONS[scope] ?? [];
 }
 
 /**
@@ -286,9 +303,10 @@ async function resolveAuth(req: FastifyRequest): Promise<AuthContext | null> {
     // Ghi lần dùng cuối, không chặn request.
     void db.updateTable('api_keys').set({ last_used_at: new Date() }).where('id', '=', row.id).execute();
     // [2026-11-09 04:30 PM kiennt] PHASE-028 — giai đoạn 3.1 (80 D-AUTH-19): khoá API / app có documents:write giữ nguyên khả năng nộp mọi loại phiếu (kéo theo quyền chi tiết)
+    // [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: khoá app / khoá API mang được secrets:read:<module> (module đã khai bí mật) (đóng góp)
     const perms = withImplied(row.app_key
-      ? new Set<Permission>((row.app_permissions ?? []).filter((p): p is Permission => (PERMISSIONS as readonly string[]).includes(p)))
-      : new Set<Permission>(row.scopes.flatMap((s) => SCOPE_PERMISSIONS[s] ?? [])));
+      ? new Set<Permission>((row.app_permissions ?? []).filter((p): p is Permission => (PERMISSIONS as readonly string[]).includes(p) || isSecretsReadPermission(p)))
+      : new Set<Permission>(row.scopes.flatMap(scopeToPermissions)));
     return {
       tenantId: row.tenant_id, actor: `apikey:${row.id}`, actorName: row.name, kind: 'apikey', role: null, permissions: perms,
       ...(row.app_key ? { app: row.app_key } : {}),

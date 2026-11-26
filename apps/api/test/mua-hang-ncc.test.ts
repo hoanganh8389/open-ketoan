@@ -148,8 +148,12 @@ describe('Chiết khấu theo mã hàng (một chính sách — bảng nhiều m
     lines: lines.map((l, i) => ({ lineKey: `l${i}`, sku: 'A', name: '', unit: 'Hộp', qty: 10, price: 10000, taxCode: 'V08', lineType: 'buy', ...l })) }) as PDoc;
   it('dòng đúng mã tự được CK; SL đạt mức cao hơn lấy bậc cao hơn; giảm tiền / ĐVT chỉ khi đúng ĐVT; CK nhập tay trên dòng thắng bảng', () => {
     const c = computeDoc(doc([{ qty: 10 }, { qty: 120 }, { sku: 'B', qty: 4 }, { sku: 'B', unit: 'Thùng', qty: 1 }, { sku: 'C' }, { qty: 10, discountPct: 1 }]), [pol]);
-    expect(c.lines.map((l) => l.lineDiscount)).toEqual([3000, 60000, 2000, 0, 0, 1000]);
+    // [2026-11-26 12:30 AM Nguyễn Văn Thủy] MH-KM — mức "mua từ N" xét TỔNG SL các dòng cùng mã + ĐVT của phiếu (một phiếu được trọn khuyến mại):
+    // A 10 + 120 + 10 = 140 hộp ≥ 100 → cả dòng 10 hộp cũng 5%; dòng ghi tay vẫn theo tay (đóng góp)
+    expect(c.lines.map((l) => l.lineDiscount)).toEqual([5000, 60000, 2000, 0, 0, 1000]);
     expect(c.trace.filter((t) => t.kind === 'item_discount')).toHaveLength(3);
+    // Phiếu chỉ 10 hộp A: dưới mức 100 → 3%.
+    expect(computeDoc(doc([{ qty: 10 }]), [pol]).lines[0]!.lineDiscount).toBe(3000);
     // NCC khác: không áp.
     expect(computeDoc({ ...doc([{ qty: 10 }]), partnerCode: 'M' }, [pol]).lines[0]!.lineDiscount).toBe(0);
   });
