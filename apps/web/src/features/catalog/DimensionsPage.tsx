@@ -247,7 +247,8 @@ export function DimensionForm({ kind, value, parents, onClose, onSaved }: { kind
           </div>
         </Field>
       )}
-      <Field label="Mã (*)" error={maTrung || null}><input className="input mono" value={v.code ?? ''} disabled={!value.isNew} onChange={(e) => set({ code: e.target.value.trim() })} autoFocus /></Field>
+      {/* [2026-11-26 12:10 PM Nguyễn Văn Thủy] HT — HT19 "Số hợp đồng không được có dấu cách" lặp: ô mã hợp đồng tự bỏ dấu cách khi gõ (như MH29) (đóng góp) */}
+      <Field label="Mã (*)" error={maTrung || null} hint={isContract ? 'Số hợp đồng không có dấu cách — dùng - hoặc /' : undefined}><input className="input mono" value={v.code ?? ''} disabled={!value.isNew} onChange={(e) => set({ code: isContract ? e.target.value.replace(/\s+/g, '') : e.target.value.trim() })} autoFocus /></Field>
       <Field label="Tên" full={!isContract}><input className="input" value={v.name ?? ''} onChange={(e) => set({ name: e.target.value })} /></Field>
       <Field label={kind === 'cash_item' ? 'Diễn giải' : kind === 'cost_item' || kind === 'department' ? 'Chi chú' : 'Ghi chú'} full={!isContract}><input className="input" value={v.note ?? ''} onChange={(e) => set({ note: e.target.value })} /></Field>
       {isContract && (
