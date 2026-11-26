@@ -7,7 +7,7 @@
  * SL gợi ý làm tròn theo thùng (chọn lại xuống / lên), mang ghi chú mặt hàng NCC, quy cách, số liệu tồn để in đơn.
  */
 import { useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileSpreadsheet, ShoppingCart } from 'lucide-react';
 import type { PDoc, PLine } from '@bizcity/mua-hang-domain';
@@ -18,6 +18,7 @@ import { errorText } from '@/lib/api';
 import { purchaseApi, today, useMuaHang, useNames, type SupplierRow } from '../du-lieu';
 import { PhieuMuaForm, type GiuPhieuMua } from '../chung-tu/PhieuMuaForm';
 import { useMoLaiHopThoai } from '@/layout/WindowDock';
+import { useLocation } from 'react-router-dom';
 import { factsText, fold, num, qtyFmt, stockApi, stockSnapshot, useHierarchy, type AnalysisRow } from '../ton-max/api';
 import { ChonChiNhanhCha, ChuaPhanCap } from '../ton-max/chung';
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
