@@ -73,6 +73,7 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-MH-016](mua-hang/NT-MH-016-max-de-nghi-khong-dien-san.md) | MH17 phiếu shop: max đề nghị không điền sẵn gợi ý; nút "Điền max gợi ý" | Đã chốt |
 | [NT-MH-017](mua-hang/NT-MH-017-chon-lai-chi-nhanh.md) | MH18, MH16: chọn lại đúng chi nhánh đang xem không treo / không mất số đang sửa | Đã chốt |
 | [NT-MH-018](mua-hang/NT-MH-018-mh16-nhap-excel-kiem-ma.md) | MH16 nhập Excel: kiểm mã hàng, mã kho trước khi ghi | Đã chốt |
+| [NT-MH-020](mua-hang/NT-MH-020-mh16-bo-theo-ma-hang.md) | MH16: bỏ chế độ "Theo mã hàng", luôn xem theo chi nhánh / shop | Đã chốt |
 | [NT-MH-019](mua-hang/NT-MH-019-lap-phieu-chuyen-kho-tu-de-nghi.md) | MH19: nút "Lập phiếu chuyển kho" từ đề nghị (KHO01 điền sẵn; duyệt xuất → Đã lên phiếu) | Đã chốt |
 | [NT-HT-001](he-thong/NT-HT-001-so-do-to-chuc.md) | Sơ đồ tổ chức làm gốc: cây 3 cấp, gắn chi nhánh, mua hàng theo cây, bộ lọc cây chi nhánh / kho | Chờ nghiệm thu |
 | [NT-KHO-001](kho/NT-KHO-001-ton-o-chon-hang-theo-kho-xuat.md) | Ô chọn mặt hàng ở phiếu chuyển kho hiện tồn theo kho xuất, ngày phiếu | Đã chốt |
