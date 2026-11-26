@@ -7,6 +7,7 @@
  * Nút In (mẫu theo loại phiếu, mauIn.tsx): bảng chưa chọn được nhiều dòng nên in phiếu đang chọn.
  */
 import { dongChungTu } from '@/lib/trangThai';
+import { RefreshCw } from 'lucide-react';
 import { workBranch } from '@/lib/workBranch';
 import { restoreDock } from '@/layout/WindowDock';
 import { cloneElement, useEffect, useMemo, useRef, useState } from 'react';
@@ -398,7 +399,7 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
             getDocs={async () => (sel ? [await layPhieuIn(sel.id, { names, docs: data?.docs ?? [] })] : [])} />
           {report !== 'bao-cao' && tt.them && <button className="btn btn-sm" onClick={() => setExcel(true)}>Nhập từ Excel</button>}
           {report === 'bao-cao' && <Link className="btn btn-sm" to="/mua-hang/tong-hop" title="Lập / sửa / duyệt phiếu ở Chứng từ mua hàng (MH11)">Lập phiếu ở MH11 →</Link>}
-          <button className="btn btn-sm" onClick={() => void refresh()}>Nạp</button>
+          <button className="btn btn-sm btn-nap" onClick={() => void refresh()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
           <span className="row" style={{ gap: 0, marginLeft: 8 }} title="Xem cùng các phiếu đang lọc theo phiếu, theo từng dòng hàng (như BH01 Báo cáo bán hàng) hoặc cộng dồn theo mã hàng (như BH02 Tổng hợp bán hàng)">
             {VIEWS[report ?? ''].map(([k, l]) => <button key={k} type="button" className={`btn btn-sm ${view === k ? 'btn-primary' : ''}`} onClick={() => setView(k)}>{l}</button>)}
           </span>

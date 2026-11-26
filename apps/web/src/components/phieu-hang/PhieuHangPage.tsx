@@ -6,6 +6,7 @@
  *   - Nhãn "DỮ LIỆU GIẢ" khi loại phiếu đang chạy dữ liệu mẫu (đổi ở API → Nguồn dữ liệu màn hình).
  */
 import { dongChungTu } from '@/lib/trangThai';
+import { RefreshCw } from 'lucide-react';
 import { workBranch } from '@/lib/workBranch';
 import { useThemTuDiaChi } from '@/lib/themNhanh';
 import { useMemo, useRef, useState } from 'react';
@@ -110,7 +111,7 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
           <button className="btn btn-sm" disabled={!sel} onClick={() => { if (!sel) return; setStartEdit(sel.status !== 'approved'); void open(sel); }}>{sel?.status === 'approved' ? 'Xem' : 'Sửa'}</button>
           <button className="btn btn-sm" disabled={!sel || status.isPending} onClick={() => { if (!sel) return; const s = sel.status === 'approved' ? 'draft' : 'approved'; if (s === 'approved' && gate.advisories.length && !window.confirm(`Duyệt phiếu ${sel.docNo || '(mới)'}?` + advisoryText(gate.advisories))) return; status.mutate({ id: sel.id, s }); }}>{sel?.status === 'approved' ? 'Bỏ duyệt' : 'Duyệt'}</button>
           {TRADE_TEMPLATES[kind] && <PrintButton small screen={code} templates={TRADE_TEMPLATES[kind]!} disabled={!sel} title="In phiếu đang chọn" getDocs={async () => (sel ? [await svc.get(sel.id)] : [])} />}
-          <button className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
+          <button className="btn btn-sm btn-nap" onClick={() => void q.refetch()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
           <span style={{ flex: 1 }} />
           <form className="row" style={{ gap: 4 }} data-no-search onSubmit={(e) => { e.preventDefault(); setF((x) => ({ ...x, search: search.trim() })); }}>

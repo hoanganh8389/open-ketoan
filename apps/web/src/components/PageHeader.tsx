@@ -6,7 +6,8 @@
  * "Quay về dữ liệu gốc" (DEFAULT_DATA_SCREENS).
  */
 import { useState, type ReactNode } from 'react';
-import { HelpCircle, Info, Printer } from 'lucide-react';
+import { HelpCircle, Info, Printer, RefreshCw } from 'lucide-react';
+import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { useAppMenu } from '@/layout/useAppMenu';
 import { useAuth } from '@/lib/auth';
@@ -16,6 +17,9 @@ import { DEFAULT_DATA_SCREENS, RestoreDefaultsButton } from '@/features/flow/Def
 
 export function PageHeader({ title, code, subtitle, note, actions, helpKey, helpExtra }: { title: string; code?: string; subtitle?: string; /** Dòng luôn hiện dưới tiêu đề, dành cho thông tin theo dữ liệu đang xem. */ note?: string; actions?: ReactNode; helpKey?: string; /** Phần riêng của màn hiện trong ngăn Hướng dẫn, dưới thẻ hướng dẫn. */ helpExtra?: ReactNode }) {
   const [help, setHelp] = useState(false);
+  // [2026-11-26 06:40 PM Nguyễn Văn Thủy] UX — mọi màn có nút Nạp (tải lại số liệu mới nhất từ máy chủ); màn đã có nút Nạp riêng (.btn-nap) thì nút này ẩn (theme.css) (đóng góp)
+  const qc = useQueryClient();
+  const dangNap = useIsFetching() > 0;
   const { user } = useAuth();
   // Tên, mã của màn đặt ở một nơi (layout/ten-man.ts): khớp đúng đường dẫn đang mở thì dùng.
   const pathname = useLocation().pathname;
@@ -37,6 +41,9 @@ export function PageHeader({ title, code, subtitle, note, actions, helpKey, help
         {note && <div className="page-sub">{note}</div>}
       </div>
       <div className="page-actions">
+        <button type="button" className="btn nut-nap-man" onClick={() => void qc.invalidateQueries({ type: 'active' })} title="Nạp lại số liệu mới nhất của màn này từ máy chủ">
+          <RefreshCw size={16} className={dangNap ? 'spin' : undefined} /> Nạp
+        </button>
         {actions}
         {code && DEFAULT_DATA_SCREENS[code] && <RestoreDefaultsButton datasetKey={DEFAULT_DATA_SCREENS[code]!.key} title={DEFAULT_DATA_SCREENS[code]!.title} />}
         {code && (

@@ -7,6 +7,7 @@
  * Phiếu chuyển từ website bán hàng vẫn vào sổ qua cầu nối — xem ở Bảng kê chuyển kho (HH01).
  */
 import { useEffect, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
@@ -177,7 +178,7 @@ export function ChuyenKhoPage() {
             {tt.nhan && <button className="btn btn-sm" disabled={nhanLoat || !rows.some((r) => tich.has(r.id) && r.status === 'shipped' && !r.adjust)}
               title="Thủ kho nhập: xác nhận NHẬN ĐỦ số lượng các phiếu chờ nhận đã tích (ngày nhận = hôm nay). Nhận thiếu thì mở từng phiếu, bấm Nhận hàng."
               onClick={() => void nhanDu()}>{nhanLoat ? 'Đang nhận…' : `Nhận đủ ${rows.filter((r) => tich.has(r.id) && r.status === 'shipped' && !r.adjust).length || ''} phiếu đã tích`}</button>}
-            <button className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
+            <button className="btn btn-sm btn-nap" onClick={() => void q.refetch()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
             <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
             <span className="muted" style={{ marginLeft: 'auto', fontSize: 12 }}>Phiếu chuyển từ website xem ở <Link to="/bao-cao/chuyen-kho">Bảng kê chuyển kho (HH01)</Link></span>
           </div>
