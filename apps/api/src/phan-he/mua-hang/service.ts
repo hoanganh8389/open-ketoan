@@ -43,6 +43,21 @@ async function khoTrongNhanh(trx: Db, tenantId: string, goc: string[], whCode: s
   throw Errors.validation(`Phân kho ${whCode} (thuộc chi nhánh ${w.bcode}) không nằm trong chi nhánh nhận ${[...goc1].join(', ')} hay chi nhánh con của nó`);
 }
 
+/** Kho thuộc một chi nhánh CON CHÁU của `branchCode` (không phải chính nó) → mã chi nhánh chủ kho; còn lại undefined. */
+async function nhanhConCuaKho(trx: Db, tenantId: string, branchCode: string, whCode: string): Promise<string | undefined> {
+  const w = await trx.selectFrom('warehouses as w').innerJoin('branches as b', 'b.id', 'w.branch_id').select(['b.id as bid', 'b.code as bcode'])
+    .where('w.tenant_id', '=', tenantId).where('w.code', '=', whCode).executeTakeFirst();
+  if (!w || w.bcode === branchCode) return undefined;
+  const bs = (await sql<{ id: string; code: string; unit_parent_id: string | null }>`SELECT id, code, unit_parent_id FROM branches WHERE tenant_id = ${tenantId}`.execute(trx)).rows;
+  const byId = new Map(bs.map((b) => [String(b.id), b]));
+  const seen = new Set<string>();
+  for (let cur = byId.get(String(w.bid)); cur && !seen.has(String(cur.id)); cur = cur.unit_parent_id ? byId.get(String(cur.unit_parent_id)) : undefined) {
+    seen.add(String(cur.id));
+    if (cur.code === branchCode) return w.bcode;
+  }
+  return undefined;
+}
+
 /** Phiếu mua có hàng ra / vào kho (đơn đặt chưa vào kho; chi phí, thưởng chỉ điều chỉnh giá trị). */
 const STOCK_KINDS: string[] = ['receipt', 'return', 'exchange', 'gift_in', 'gift_out'];
 
@@ -187,6 +202,12 @@ export const purchaseService = {
       }
       if (doc.contractCode) await checkContract(trx, auth.tenantId, doc.contractCode, doc.partnerCode, cur?.contractCode === doc.contractCode);
       // Phiếu hàng (trừ đơn đặt): mọi dòng thuộc một phân kho của chi nhánh — trống thì kho mặc định, sai chi nhánh thì báo lỗi.
+      // [2026-11-26 04:40 PM Nguyễn Văn Thủy] MH — HT19 'Phân kho SH001-KHH không thuộc chi nhánh VPT': phiếu nhập lập từ đơn "Giao tại kho" của chi nhánh con
+      // → phiếu ghi ở chi nhánh con chủ kho (nơi hàng thực nhận, như đơn giao nhiều chi nhánh) thay vì báo lỗi (đóng góp)
+      if (STOCK_KINDS.includes(doc.kind) && doc.warehouseCode) {
+        const con = await nhanhConCuaKho(trx, auth.tenantId, doc.branchCode, doc.warehouseCode);
+        if (con) doc.branchCode = con;
+      }
       if (STOCK_KINDS.includes(doc.kind)) doc.warehouseCode = (await resolveWarehouse(trx, auth.tenantId, doc.branchCode, doc.warehouseCode)) || undefined;
       else delete doc.warehouseCode;
       // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — chi nhánh đang làm việc ghi một lần lúc lập; phân kho từng dòng phải thuộc chi nhánh nhận của dòng (đóng góp)

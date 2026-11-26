@@ -218,3 +218,21 @@ describe('Mua hàng — dữ liệu mẫu 25 tình huống', () => {
     await t.app.close();
   }, 60_000);
 });
+
+// [2026-11-26 04:40 PM Nguyễn Văn Thủy] MH — HT19 'Phân kho SH001-KHH không thuộc chi nhánh VPT': phiếu nhập (lập từ đơn "Giao tại kho" của shop con)
+// mang kho của chi nhánh con → phiếu ghi ở chi nhánh con chủ kho, không báo lỗi; kho chi nhánh ngoài cây vẫn chặn (đóng góp)
+describe('Mua hàng — kho của chi nhánh con trên phiếu nhập', () => {
+  it('phiếu nhập chi nhánh cha chọn kho shop con → ghi ở shop con; kho chi nhánh khác cây → chặn', async () => {
+    const tid = String((await db.selectFrom('tenants').select('id').where('code', '=', ctx.tenantCode).executeTakeFirstOrThrow()).id);
+    const cha = await db.selectFrom('branches').select(['id', 'accounting_unit_id']).where('tenant_id', '=', tid).where('code', '=', 'CN01').executeTakeFirstOrThrow();
+    const shop = await db.insertInto('branches').values({ tenant_id: tid, code: 'SHOPCON', name: 'Shop con thử', accounting_unit_id: cha.accounting_unit_id, unit_parent_id: cha.id } as never).returning('id').executeTakeFirstOrThrow();
+    await db.insertInto('warehouses').values({ tenant_id: tid, code: 'KHO-SHOPCON', branch_id: shop.id, name: 'Kho shop con', is_default: true }).execute();
+    const d = await save(receipt({ docDate: '2026-10-20', warehouseCode: 'KHO-SHOPCON' }));
+    expect(d).toMatchObject({ branchCode: 'SHOPCON', warehouseCode: 'KHO-SHOPCON', status: 'draft' });
+    const ngoai = await db.insertInto('branches').values({ tenant_id: tid, code: 'NGOAICAY', name: 'Chi nhánh ngoài cây', accounting_unit_id: cha.accounting_unit_id } as never).returning('id').executeTakeFirstOrThrow();
+    await db.insertInto('warehouses').values({ tenant_id: tid, code: 'KHO-NGOAI', branch_id: ngoai.id, name: 'Kho ngoài' }).execute();
+    const r = await call(ctx, 'POST', '/api/v1/purchase/documents', receipt({ docDate: '2026-10-20', warehouseCode: 'KHO-NGOAI' }));
+    expect(r.status).toBe(400);
+    expect(JSON.stringify(r.body)).toContain('không thuộc chi nhánh CN01');
+  });
+});
