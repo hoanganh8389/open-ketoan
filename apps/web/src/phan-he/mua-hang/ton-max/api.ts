@@ -33,6 +33,8 @@ export interface OrderAnalysis { rows: AnalysisRow[]; formula: FormulaConfig; pa
 export interface TransferSuggestLine {
   shopCode: string; shopName: string; toWarehouse: string; sku: string; name: string; baseUnit: string; pack?: number; packUnit?: string; mode: TransferMode;
   max: number; ton: number; diDuong: number; reserved: number; gap: number; want: number; qty: number; short: number; khoTon: number;
+  /** NT-MH-023 — NCC mặc định của mã (cùng quy tắc MH02); '' = chưa rõ NCC. */
+  partnerCode: string; partnerName: string;
 }
 export interface TransferSuggest { lines: TransferSuggestLine[]; fromWarehouse: string; parent: { code: string; name: string }; warehouses: WarehouseInfo[]; asOf: string; threshold: number }
 export interface TransferRequest {

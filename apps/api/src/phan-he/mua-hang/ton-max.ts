@@ -336,6 +336,20 @@ async function pendingOrders(trx: Db, tenantId: string, branchCodes: string[]) {
   return { qty: out, detail: byOrder, docs };
 }
 
+// [2026-11-26 kiennt] NT-MH-023 — tách quy tắc chọn NCC của MH02 thành hàm dùng chung (MH19 chia tab theo NCC dùng đúng quy tắc này) (đóng góp)
+/**
+ * NCC mặc định của một mã: lần nhập gần nhất (lastBuy) → NCC có bảng giá đang hiệu lực (có giá trước, hiệu lực từ mới nhất)
+ * → NCC bất kỳ khai bán mã → '' (chưa rõ). nccCount = số NCC khai bán mã.
+ */
+function nccMacDinh(sku: string, lastBuy: Map<string, { partner: string }>, sps: Awaited<ReturnType<typeof listSupplierProducts>>, asOf: string) {
+  const spRows = sps.filter((x) => x.sku === sku && x.partnerCode);
+  const live = spRows.filter((x) => x.isActive && (!x.validTo || x.validTo >= asOf) && (!x.validFrom || x.validFrom <= asOf))
+    .sort((a, b) => Number(b.price !== null && b.price !== undefined) - Number(a.price !== null && a.price !== undefined) || (b.validFrom ?? '').localeCompare(a.validFrom ?? ''));
+  const partnerCode = lastBuy.get(sku)?.partner ?? live[0]?.partnerCode ?? spRows[0]?.partnerCode ?? '';
+  const partnerSource: 'lan_nhap' | 'bang_gia' | '' = lastBuy.has(sku) ? 'lan_nhap' : partnerCode ? 'bang_gia' : '';
+  return { partnerCode, partnerSource, nccCount: new Set(spRows.map((x) => x.partnerCode)).size, spRows };
+}
+
 const sumWhs = (m: Map<string, number>, branch: string, whs: Set<string>, sku: string) => [...whs].reduce((s, w) => s + (m.get(`${branch}|${w}|${sku}`) ?? 0), 0);
 
 /* ------------------------------------------------------------------ phân tích đặt hàng */
@@ -426,12 +440,7 @@ export async function orderAnalysis(trx: Db, tenantId: string, parentCode: strin
     const us = units[sku];
     const pk = packOf(us);
     const res = orderNeed(input, cfg);
-    const spRows = sps.filter((x) => x.sku === sku && x.partnerCode);
-    const live = spRows.filter((x) => x.isActive && (!x.validTo || x.validTo >= asOf) && (!x.validFrom || x.validFrom <= asOf))
-      .sort((a, b) => Number(b.price !== null && b.price !== undefined) - Number(a.price !== null && a.price !== undefined) || (b.validFrom ?? '').localeCompare(a.validFrom ?? ''));
-    const partnerCode = lastBuy.get(sku)?.partner ?? live[0]?.partnerCode ?? spRows[0]?.partnerCode ?? '';
-    const partnerSource: AnalysisRow['partnerSource'] = lastBuy.has(sku) ? 'lan_nhap' : partnerCode ? 'bang_gia' : '';
-    const nccCount = new Set(spRows.map((x) => x.partnerCode)).size;
+    const { partnerCode, partnerSource, nccCount, spRows } = nccMacDinh(sku, lastBuy, sps, asOf);
     const spOf = spRows.find((x) => x.partnerCode === partnerCode);
     const fixed = priceFor(sps, { date: asOf, partnerCode, sku, unit: pk.baseUnit }, us ?? []);
     // Đơn giá chưa VAT theo ĐVT nhỏ nhất (giá gồm VAT thì bỏ thuế).
@@ -588,20 +597,38 @@ export async function transferSuggest(trx: Db, tenantId: string, parentCode: str
   const skus = new Set<string>();
   for (const k of snap.levels.keys()) { const [bc, , s] = k.split('|'); if (shops.some((x) => x.code === bc)) skus.add(s!); }
   const list = [...skus];
-  const [units, prods] = await Promise.all([unitsOf(trx, tenantId, list), list.length ? trx.selectFrom('products').select(['sku', 'name']).where('tenant_id', '=', tenantId).where('sku', 'in', list).execute() : []]);
+  const [units, prods] = await Promise.all([unitsOf(trx, tenantId, list), list.length ? trx.selectFrom('products').select(['sku', 'name', 'parent_sku']).where('tenant_id', '=', tenantId).where('sku', 'in', list).execute() : []]);
   const nameOf = new Map(prods.map((p) => [p.sku, p.name]));
-  const lines: (ReturnType<typeof allocateTransfers>[number] & { name: string; baseUnit: string; packUnit?: string; reserved: number; khoTon: number })[] = [];
+  // [2026-11-26 kiennt] NT-MH-023 — NCC của từng mã (để màn MH19 chia tab theo NCC như file Excel công thức đặt hàng): cùng quy tắc MH02 —
+  // lần nhập gần nhất trong cây chi nhánh → bảng giá đang hiệu lực → NCC khai bán mã; mã con (đuôi Z / Q…) chưa có thì lấy theo mã cha (đóng góp)
+  const parentSku = new Map(prods.filter((p) => p.parent_sku).map((p) => [p.sku, p.parent_sku!]));
+  const nccSkus = [...new Set([...list, ...parentSku.values()])];
+  const [pend, sps, partners] = list.length ? await Promise.all([
+    pendingOrders(trx, tenantId, tree.all.map((b) => b.code)),
+    listSupplierProducts(trx, tenantId, { skus: nccSkus }),
+    trx.selectFrom('partners').select(['code', 'name', 'company_name']).where('tenant_id', '=', tenantId).execute(),
+  ]) : [null, [], []];
+  const lastBuy = new Map<string, { partner: string }>();
+  for (const d of (pend?.docs ?? []).filter((x) => x.kind === 'receipt' && x.status !== 'draft').sort((a, b) => a.docDate.localeCompare(b.docDate))) for (const l of d.lines) if (l.sku && d.partnerCode) lastBuy.set(l.sku, { partner: d.partnerCode });
+  const pname = new Map(partners.map((p) => [p.code, p.company_name || p.name]));
+  const nccOf = (sku: string) => {
+    const own = nccMacDinh(sku, lastBuy, sps, snap.asOf);
+    const par = parentSku.get(sku);
+    return own.partnerCode || !par ? own.partnerCode : nccMacDinh(par, lastBuy, sps, snap.asOf).partnerCode;
+  };
+  const lines: (ReturnType<typeof allocateTransfers>[number] & { name: string; baseUnit: string; packUnit?: string; reserved: number; khoTon: number; partnerCode: string; partnerName: string })[] = [];
   for (const sku of list) {
     const pk = packOf(units[sku]);
     const mode = modeFor(f.rounding ?? 'sku', snap.settings.get(sku)?.transferMode ?? 'auto');
     const khoTon = (snap.stock.get(`${parentCode}|${fromWh}|${sku}`) ?? 0) - (reservedKho.get(sku) ?? 0);
+    const partnerCode = nccOf(sku);
     const needs = shops.map((s) => {
       const wh = snap.shopWh.get(s.code)!;
       return { shopCode: s.code, sku, max: snap.levels.get(`${s.code}|${wh}|${sku}`)?.max ?? 0, ton: snap.stock.get(`${s.code}|${wh}|${sku}`) ?? 0, diDuong: (snap.transit.get(`${s.code}|${sku}`) ?? 0) + (reserved.get(`${s.code}|${sku}`) ?? 0), pack: pk.pack, mode };
     }).filter((x) => x.max > 0);
     for (const l of allocateTransfers(needs, khoTon, cfg.packThreshold, { allocation: f.allocation, order })) {
       if (l.want <= 0) continue;
-      lines.push({ ...l, name: nameOf.get(sku) ?? sku, baseUnit: pk.baseUnit, packUnit: pk.packUnit, reserved: reserved.get(`${l.shopCode}|${sku}`) ?? 0, khoTon: r3(khoTon) });
+      lines.push({ ...l, name: nameOf.get(sku) ?? sku, baseUnit: pk.baseUnit, packUnit: pk.packUnit, reserved: reserved.get(`${l.shopCode}|${sku}`) ?? 0, khoTon: r3(khoTon), partnerCode, partnerName: pname.get(partnerCode) ?? '' });
     }
   }
   const shopName = new Map(tree.shops.map((s) => [s.code, s.name]));
