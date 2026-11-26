@@ -24,6 +24,8 @@ import { useBranches } from '@/components/filters';
 import { ChonSoDoToChuc } from '@/components/CayDonVi';
 
 interface Extra {
+  /** [2026-11-26 10:55 AM Nguyễn Văn Thủy] HT — #60 tab Test: Loại hợp đồng = Khác thì ghi tên loại cụ thể (typeOther) (đóng góp) */
+  typeOther?: string;
   type?: string; signedDate?: string; endDate?: string; value?: number; partnerCode?: string; partnerName?: string; landlordTax?: boolean; employeeCode?: string; createdBy?: string;
   /** Bộ phận, nhân viên: địa chỉ, điện thoại; nhân viên thêm di động, email, chức vụ, chi nhánh làm việc, mã phòng ban, nhóm. */
   address?: string; phone?: string; mobile?: string; email?: string; position?: string; branchCode?: string; departmentCode?: string; group?: string;
@@ -93,7 +95,7 @@ function columnsOf(kind: DimensionKind, employees: Map<string, string>, branchOf
     case 'contract': return [
       { ...code, width: 120 }, { ...name, width: 240 },
       { key: 'partnerCode', header: 'Khách hàng', type: 'code', width: 110, value: (r) => r.extra.partnerCode ?? '' },
-      { key: 'type', header: 'Loại HĐ', width: 120, value: (r) => TYPE_NAME[r.extra.type ?? ''] ?? '' },
+      { key: 'type', header: 'Loại HĐ', width: 120, value: (r) => (r.extra.type === 'other' && r.extra.typeOther ? r.extra.typeOther : TYPE_NAME[r.extra.type ?? ''] ?? '') },
       { key: 'employeeCode', header: 'Mã nhân viên', type: 'code', width: 100, value: (r) => r.extra.employeeCode ?? '' },
       { key: 'employeeName', header: 'Nhân viên', width: 150, value: (r) => employees.get(r.extra.employeeCode ?? '') ?? '' },
       parent,
@@ -236,7 +238,7 @@ export function DimensionForm({ kind, value, parents, onClose, onSaved }: { kind
   const total = sched.filter((x) => x.status !== 'cancelled').reduce((t, x) => t + x.amount, 0);
   return (
     <Modal viewAgain={viewAgain} viewFirst={!value.isNew} wide={isContract} title={meta.form} onClose={onClose}
-      footer={<><button className="btn btn-primary" disabled={save.isPending || !code || !v.name?.trim() || Boolean(maTrung)} title={maTrung || undefined} onClick={() => save.mutate()}>Ghi</button><button className="btn" onClick={onClose}>Thoát</button></>}>
+      footer={<><button className="btn btn-primary" disabled={save.isPending || !code || !v.name?.trim() || Boolean(maTrung) || (isContract && v.extra?.type === 'other' && !v.extra?.typeOther?.trim())} title={maTrung || (isContract && v.extra?.type === 'other' && !v.extra?.typeOther?.trim() ? 'Chọn loại Khác thì ghi Tên loại hợp đồng khác' : undefined)} onClick={() => save.mutate()}>Ghi</button><button className="btn" onClick={onClose}>Thoát</button></>}>
       {isContract && <div className="field-title full">Thông tin chung hợp đồng</div>}
       {kind === 'cash_item' && (
         <Field label="Loại" full>
@@ -288,10 +290,11 @@ export function DimensionForm({ kind, value, parents, onClose, onSaved }: { kind
         <>
           <Field label="Khách hàng"><PartnerPicker value={v.extra?.partnerCode ?? ''} onChange={(partnerCode) => setExtra({ partnerCode })} /></Field>
           <Field label="Loại hợp đồng">
-            <select className="select input" value={v.extra?.type ?? ''} onChange={(e) => setExtra({ type: e.target.value })}>
+            <select className="select input" value={v.extra?.type ?? ''} onChange={(e) => setExtra({ type: e.target.value, ...(e.target.value !== 'other' ? { typeOther: undefined } : {}) })}>
               <option value="">— Chọn —</option>{CONTRACT_TYPES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
           </Field>
+          {v.extra?.type === 'other' && <Field label="Tên loại hợp đồng khác (*)"><input className="input" autoFocus maxLength={100} value={v.extra?.typeOther ?? ''} placeholder="vd: Hợp đồng quảng cáo" onChange={(e) => setExtra({ typeOther: e.target.value })} /></Field>}
           <Field label="Ngày kết thúc"><input type="date" className="input" value={v.extra?.endDate ?? ''} onChange={(e) => setExtra({ endDate: e.target.value })} /></Field>
           {v.extra?.type === 'rent' && (
             <Field label="Thuế chủ nhà" hint="Đơn vị kê khai, nộp thay thuế GTGT, TNCN của cá nhân cho thuê">
