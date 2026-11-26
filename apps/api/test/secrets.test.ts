@@ -137,7 +137,10 @@ describe('platform.secrets', () => {
     expect(res.statusCode).toBe(403);
     expect(res.body).not.toContain(PLAIN);
     const routes = a.app.printRoutes({ commonPrefix: false });
-    expect(routes).not.toMatch(/secrets/);
+    // [2026-11-26 09:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-048: module đầu tiên khai secrets[] (hoa-don-dien-tu) có route đọc cho KHOÁ APP
+    // /api/v1/m/<key>/secrets/read (§6.2, phiên người dùng luôn 403 — ca 11 của NT-BH-048); ngoài route đó không route nào nhắc bí mật (đóng góp)
+    const lines = routes.split(/\r?\n/).filter((l) => /secrets/.test(l));
+    expect(lines.filter((l) => !/\/api\/v1\/m\/[a-z0-9-]+\/secrets\/read \(/.test(l))).toEqual([]);
   });
 
   it('đơn vị A không đọc được bí mật của B (RLS dưới ketoan_app)', async () => {

@@ -18,9 +18,10 @@ Ghi (nháp) ──► Duyệt ──► ctx.ledger.submit(sale | sale_return, do
   - thuế theo mã thuế đầu ra của mặt hàng;
   - tên / ĐVT theo danh mục;
   - báo đủ lỗi một lần: mã lạ, chưa có thuế, hình thức thanh toán lạ, thu quá tổng, ghi nợ mà chưa chọn khách.
-- **Trả hàng:**
-  - Số phiếu gốc là phiếu bán của module (cùng cửa hàng) → nối `originalDocKey`, không trả quá số đã bán trừ các phiếu trả đã duyệt.
-  - Số gốc khác (đơn máy bán, phiếu website) → chỉ tham khảo.
+- **Trả hàng** (NT-BH-046): <!-- [2026-11-26 09:40 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: trả theo dòng phiếu gốc (đóng góp) -->
+  - **Bắt buộc** số phiếu gốc là phiếu bán ĐÃ DUYỆT của module (cùng cửa hàng) → nối `originalDocKey`. Số khác (đơn máy bán, phiếu website) bị từ chối.
+  - Mỗi dòng trả mang `originalLineKey` (khoá dòng gốc): máy chủ lấy mã, tên, ĐVT, đơn giá, thuế theo dòng gốc; chiết khấu = chiết khấu dòng gốc × SL trả ÷ SL gốc (trả nốt dòng lấy phần còn lại).
+  - Còn trả tính **theo dòng** (`returnableByLine`): SL dòng gốc − SL đã trả ở các phiếu trả đã duyệt; phiếu trả cũ không có khoá dòng trừ theo mã vào dòng cùng mã, dòng trước trước. Kiểm lúc Ghi và lúc Duyệt.
   - Phiếu bán còn phiếu trả đã duyệt → không bỏ duyệt được.
 - **Kho:** `warehouseCode` của phiếu ghi xuống từng dòng. Tồn theo sổ open-ketoan (kho gốc — chữ chốt §1).
 
@@ -30,6 +31,7 @@ Ghi (nháp) ──► Duyệt ──► ctx.ledger.submit(sale | sale_return, do
 |---|---|---|
 | GET | `/docs?docType=&from=&to=&branchCodes=&status=&search=&page=&pageSize=` | `phieu-ban:read` |
 | GET | `/docs/:id`, `/docs/:id/returnable` | `phieu-ban:read` |
+| GET | `/return-sources?branch=&partnerCode=&search=&from=&to=&open=1` (phiếu bán đã duyệt để chọn làm phiếu gốc, kèm còn trả từng dòng — NT-BH-046) | `phieu-ban:read` |
 | GET | `/quote?branch=&warehouse=&skus=` (giá theo cửa hàng, tồn sổ — cho form) | `phieu-ban:read` |
 | POST / PUT / DELETE | `/docs`, `/docs/:id` (nháp) | `phieu-ban:write` |
 | POST | `/docs/:id/approve`, `/docs/:id/unapprove` | `phieu-ban:write` |

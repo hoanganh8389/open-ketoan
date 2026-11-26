@@ -34,6 +34,13 @@ export interface TradeLine {
   receivedQty?: number;
   /** Phiếu bán (module phieu-ban): dòng quà / dòng được giảm theo chương trình khuyến mại Core tính (NT-BH-015 §5 dòng 4). */
   policyRef?: { key: string; version: number; line?: 'gift' | 'discount' };
+  // [2026-11-26 08:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: dòng trả nối dòng phiếu gốc; NT-BH-047: ghi chú dòng, kho riêng của dòng (đóng góp)
+  /** Phiếu trả (BH11): khoá dòng của phiếu bán gốc mà dòng này trả. */
+  originalLineKey?: string;
+  /** Ghi chú của dòng. */
+  note?: string;
+  /** Kho riêng của dòng (máy chủ gán, vd dòng quà ở kho quà KKM); trống = kho của phiếu. */
+  warehouseCode?: string;
 }
 export interface TradePayment { methodCode: string; amount: number; reference?: string }
 export interface TradeDoc {
@@ -63,6 +70,10 @@ export interface TradeDoc {
   policyRefs?: { key: string; version: number; hash: string }[];
   createdAt?: string;
   updatedAt?: string;
+  // [2026-11-26 08:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-047: người lập / người duyệt (mã người dùng), ngày duyệt cho danh sách BH10 / BH11 (đóng góp)
+  approvedAt?: string;
+  createdBy?: string;
+  approvedBy?: string | null;
 }
 export interface TradeQuery { from?: string; to?: string; branchCodes?: string; status?: string; search?: string; page?: number; pageSize?: number }
 

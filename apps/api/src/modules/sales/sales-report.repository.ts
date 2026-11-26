@@ -1,6 +1,7 @@
 // @bizcity-layer D modules/ban-hang
 // [2026-10-31 08:24 PM Johnny Chu - Chu Hoàng Anh] PHASE-012 — ledger.query (PHASES 3.7): đọc sổ qua khung nhìn bizcity_read.* thay bảng ledger_* (SC-KERNEL-7)
 // [2026-11-03 04:30 PM Nguyễn Văn Thủy] NHOM — báo cáo bán hàng: lọc ?groups= theo nhóm hàng (gồm nhóm con), tổng hợp theo nhóm hàng cấp 1 / 2 / 3 (đóng góp)
+// [2026-11-26 09:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-047: BH01 thêm kho, nhóm hàng, lô, hạn dùng, SL theo ĐVT nhỏ nhất; BH02 thêm cách xem theo kho (đóng góp)
 /**
  * Truy vấn báo cáo bán hàng trên sales_lines / sales_payments.
  * Mọi số lượng, số tiền đã nhân sign → hàng trả lại ra số âm, cộng lại là số thuần.
@@ -26,7 +27,7 @@ export interface SalesFilter {
   wh?: { codes: string[]; defaultBranchIds: string[] } | null;
 }
 
-export const SALES_GROUPS = ['document', 'day', 'month', 'branch', 'product', 'customer', 'taxCode', 'brand', 'industry', 'itemGroup', 'itemGroup1', 'itemGroup2', 'itemGroup3', 'itemType', 'customerGroup', 'department', 'employee'] as const;
+export const SALES_GROUPS = ['document', 'day', 'month', 'branch', 'warehouse', 'product', 'customer', 'taxCode', 'brand', 'industry', 'itemGroup', 'itemGroup1', 'itemGroup2', 'itemGroup3', 'itemType', 'customerGroup', 'department', 'employee'] as const;
 export type SalesGroupBy = (typeof SALES_GROUPS)[number];
 
 // [2026-11-05 02:00 PM Nguyễn Văn Thủy] PHASE-026 — S026-21: nhóm theo mã hiện hành, một dòng qua đổi mã và gộp mã; mã trên chứng từ giữ nguyên ở dòng chi tiết (đóng góp)
@@ -46,12 +47,19 @@ const levelJoin = (n: number) => sql`LEFT JOIN products pr ON pr.tenant_id = l.t
         LEFT JOIN nhom gl ON gl.code = pr.group_code AND gl.lvl = ${n}
         LEFT JOIN item_classes ic ON ic.tenant_id = l.tenant_id AND ic.kind = 'group' AND ic.code = gl.anc`;
 /** Cột khoá, nhãn của từng cách nhóm; `join`: bảng nối thêm (phân loại hàng, nhóm khách) — mặt hàng chưa phân loại gom vào khoá rỗng. */
+/**
+ * NT-BH-047: kho của dòng bán — kho ghi trên dòng chứng từ; dòng không ghi kho = kho mặc định của chi nhánh (đúng luật Kernel ghi thẻ kho,
+ * cùng luật bộ lọc `wh`). Chi nhánh chưa có kho mặc định → rỗng.
+ */
+export const LINE_WH = sql`COALESCE(NULLIF(d.payload -> 'lines' -> (l.line_no - 1) ->> 'warehouseCode', ''),
+        (SELECT w.code FROM warehouses w WHERE w.tenant_id = l.tenant_id AND w.branch_id = l.branch_id AND w.is_default ORDER BY w.id LIMIT 1), '')`;
 export const GROUP_SQL: Record<SalesGroupBy, { key: RawBuilder<unknown>; label: RawBuilder<unknown>; extra: RawBuilder<unknown>; join?: RawBuilder<unknown>; level?: boolean }> = {
   // Theo phiếu: khoá = ngày + số phiếu (sắp theo thời gian), nhãn = số phiếu, thông tin thêm do byDocument() bổ sung.
   document: { key: sql`l.doc_date::text || ' ' || d.doc_no || ' ' || l.event_id::text`, label: sql`MAX(d.doc_no)`, extra: sql`MAX(l.event_id::text)` },
   day: { key: sql`l.doc_date::text`, label: sql`l.doc_date::text`, extra: sql`''` },
   month: { key: sql`to_char(l.doc_date, 'YYYY-MM')`, label: sql`MAX(to_char(l.doc_date, 'MM/YYYY'))`, extra: sql`''` },
   branch: { key: sql`br.code`, label: sql`MAX(br.name)`, extra: sql`''` },
+  warehouse: { key: LINE_WH, label: sql`COALESCE(MAX((SELECT w.name FROM warehouses w WHERE w.tenant_id = l.tenant_id AND w.code = ${LINE_WH})), '')`, extra: sql`MAX(br.code)` },
   product: { key: CUR_SKU, label: sql`MAX(l.name)`, extra: sql`MAX(l.unit)` },
   customer: { key: sql`COALESCE(p.code, '')`, label: sql`COALESCE(MAX(p.name), '')`, extra: sql`COALESCE(MAX(p.tax_code), '')` },
   taxCode: { key: sql`l.tax_code`, label: sql`l.tax_code`, extra: sql`''` },
@@ -125,6 +133,14 @@ export interface SalesDetailRow {
   invoice_serial: string | null;
   invoice_form: string | null;
   tax_rate: string | null;
+  /** NT-BH-047: kho của dòng, nhóm hàng, lô / hạn dùng (theo phân lô Kernel), SL theo ĐVT nhỏ nhất. */
+  warehouse_code: string;
+  group_code: string | null;
+  group_name: string | null;
+  lot_nos: string | null;
+  exp_date: string | null;
+  base_unit: string | null;
+  base_qty: string;
 }
 
 export interface SalesSummaryRow {
@@ -152,8 +168,19 @@ export const salesReportRepository = {
              l.amount_before_tax * l.sign AS amount, l.discount * l.sign AS discount,
              l.tax_code, l.tax_amount * l.sign AS tax, l.is_gift,
              d.payload->'invoice'->>'serial' AS invoice_serial, d.payload->'invoice'->>'form' AS invoice_form,
-             (SELECT tc.rate FROM tax_codes tc WHERE tc.tenant_id = l.tenant_id AND tc.code = l.tax_code) AS tax_rate
+             (SELECT tc.rate FROM tax_codes tc WHERE tc.tenant_id = l.tenant_id AND tc.code = l.tax_code) AS tax_rate,
+             ${LINE_WH} AS warehouse_code,
+             pr.group_code, (SELECT ic.name FROM item_classes ic WHERE ic.tenant_id = l.tenant_id AND ic.kind = 'group' AND ic.code = pr.group_code) AS group_name,
+             lot.lot_nos, lot.exp_date,
+             (SELECT pu.unit FROM product_units pu WHERE pu.tenant_id = l.tenant_id AND pu.sku = pr.sku AND pu.ratio = 1 ORDER BY pu.unit LIMIT 1) AS base_unit,
+             l.qty * l.sign * COALESCE((SELECT pu.ratio FROM product_units pu WHERE pu.tenant_id = l.tenant_id AND pu.sku = pr.sku AND pu.unit = l.unit LIMIT 1), 1) AS base_qty
         ${FROM}
+        LEFT JOIN products pr ON pr.tenant_id = l.tenant_id AND pr.sku = ${CUR_SKU}
+        LEFT JOIN LATERAL (
+          SELECT string_agg(DISTINCT il.lot_no, ', ' ORDER BY il.lot_no) AS lot_nos, MIN(il.exp_date)::text AS exp_date
+            FROM inventory_movements im JOIN inventory_lot_moves m ON m.movement_id = im.id JOIN item_lots il ON il.id = m.lot_id
+           WHERE im.event_id = l.event_id AND im.line_no = l.line_no
+        ) lot ON true
        WHERE ${where(f)}
        ORDER BY l.doc_date, d.doc_no, l.line_no
        LIMIT ${page.limit} OFFSET ${page.offset}`.execute(db);
