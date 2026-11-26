@@ -68,7 +68,7 @@ Kế toán: không đổi — điểm chỉ hạch toán lúc đổi (NT-BH-020)
 
 ## 7. Kết quả chạy
 
-- Test hàm `modules/loyalty/test/nt-bh-051.test.ts`: 5 ca đạt (cùng 29 ca cũ của module: 34/34).
+- Test hàm `modules/loyalty/test/nt-bh-051.test.ts`: 5 ca đạt (cùng 29 ca cũ của module: 34/34). (đề xuất — tệp test ở nhánh code `feat/nt-bh-051-tich-diem-du-nhu-cu`)
 - `npx bizcity module check loyalty`: luật module, kế toán, kiểu máy chủ, kiểu giao diện đạt; test hợp đồng (CSDL) chưa chạy được trên máy lúc làm (Docker tắt) — chạy lại trước khi merge.
 
 ## 8. Biên bản nghiệm thu
