@@ -84,8 +84,9 @@ export function OpeningBalancesPage() {
   const nhom = params.get('nhom') ?? '';
   const chonNhom = (k: string) => { const n = new URLSearchParams(params); if (k) n.set('nhom', k); else n.delete('nhom'); setParams(n, { replace: true }); };
   const [xem, setXem] = useState<'tai-khoan' | 'phieu'>('tai-khoan');
-  const [moQuyTrinh, setMoQuyTrinh] = useState(() => { try { return localStorage.getItem('acc15.quy-trinh') !== '0'; } catch { return true; } });
-  const doiQuyTrinh = () => setMoQuyTrinh((x) => { try { localStorage.setItem('acc15.quy-trinh', x ? '0' : '1'); } catch { /* nuot-loi: chế độ riêng tư — chỉ không nhớ */ } return !x; });
+  // Khung quy trình mặc định ĐÓNG, cần mới bấm mở; nhớ lựa chọn theo máy.
+  const [moQuyTrinh, setMoQuyTrinh] = useState(() => { try { return localStorage.getItem('acc15.quy-trinh.mo') === '1'; } catch { return false; } });
+  const doiQuyTrinh = () => setMoQuyTrinh((x) => { try { localStorage.setItem('acc15.quy-trinh.mo', x ? '0' : '1'); } catch { /* nuot-loi: chế độ riêng tư — chỉ không nhớ */ } return !x; });
   const [form, setForm] = useState<{ existing?: Existing; goiY?: string } | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
