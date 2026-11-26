@@ -8,9 +8,11 @@
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: màn Voucher (đóng góp)
 // [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: form đợt voucher dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 // [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: giảm % có trần, lô mã không SĐT, mỗi khách tối đa, cửa hàng áp dụng (như chính sách voucher cũ) (đóng góp)
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-050: giao diện theo lớp chung của Core — thẻ gạch chân (tabs), thanh nút catalog-toolbar trong card,
+//   bộ lọc FilterLayout, khối card / card-body (đóng góp)
 import { useState } from 'react';
 import {
-  BranchCheckList, DataGrid, DocSheet, DocSheetPanel, ErrorBox, Field, Loading, Modal, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient, type GridColumn,
+  BranchCheckList, DataGrid, DocSheet, DocSheetPanel, ErrorBox, Field, FilterLayout, Loading, Modal, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient, type GridColumn,
 } from '@bizcity/ui-kit';
 
 const M = '/api/v1/m/voucher';
@@ -220,8 +222,8 @@ function IssueBox({ campaign }: { campaign: Campaign }) {
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['voucher'] }); setText(''); },
   });
   return (
-    <div className="card" style={{ padding: 8, marginBottom: 8 }}>
-      <div className="row" style={{ gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+    <div className="card card-body" style={{ marginBottom: 12 }}>
+      <div className="row" style={{ gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <Field label="Phát mã">
           <select className="input" value={mode} onChange={(e) => setMode(e.target.value as 'generate' | 'import' | 'batch')} title="Cách phát mã">
             <option value="generate">Sinh mã cho SĐT</option><option value="import">Nạp mã có sẵn</option><option value="batch">Sinh lô mã không gắn SĐT</option>
@@ -230,7 +232,7 @@ function IssueBox({ campaign }: { campaign: Campaign }) {
         {mode === 'generate' && <Field label="Số mã mỗi SĐT"><input className="input" type="number" value={per} onChange={(e) => setPer(e.target.value)} style={{ width: 80 }} /></Field>}
         {mode === 'batch' && <Field label="Tiền tố"><input className="input" value={prefix} onChange={(e) => setPrefix(e.target.value.toUpperCase())} style={{ width: 110 }} title="Chữ không dấu và số, tối đa 12 ký tự — mã = tiền tố + 8 ký tự ngẫu nhiên" /></Field>}
         {mode === 'batch' && <Field label="Số lượng mã"><input className="input" type="number" min={1} max={5000} value={qty} onChange={(e) => setQty(e.target.value)} style={{ width: 100 }} title="Tối đa 5.000 mã mỗi lần" /></Field>}
-        <button type="button" className="btn btn-primary" disabled={(mode === 'batch' ? !(Number(qty) > 0) : !text.trim()) || run.isPending || campaign.status !== 'active'} onClick={() => run.mutate()}>Phát</button>
+        <button type="button" className="btn btn-sm btn-primary" title="Phát mã theo cách đã chọn" disabled={(mode === 'batch' ? !(Number(qty) > 0) : !text.trim()) || run.isPending || campaign.status !== 'active'} onClick={() => run.mutate()}>Phát</button>
       </div>
       {mode === 'batch' ? (
         <p className="muted" style={{ marginTop: 6 }}>Mã lô không gắn khách: in / phát tay, ai cầm mã cũng dùng được (máy bán vẫn phải chọn khách để đếm giới hạn mỗi khách{campaign.perCustomer ? ` — đợt này tối đa ${campaign.perCustomer} mã / khách` : ''}). Danh sách mã ở bảng dưới, bấm Xuất Excel để in.</p>
@@ -273,17 +275,23 @@ function CampaignTab() {
   const can = useCan();
   const q = useQuery({ queryKey: ['voucher', 'campaigns'], queryFn: () => api.get<Campaign[]>(`${M}/campaigns`) });
   const [pick, setPick] = useState<Campaign | null>(null);
+  const [sel, setSel] = useState<Campaign | null>(null);
   const [form, setForm] = useState<{ initial: Form; id?: string } | null>(null);
   return (
-    <div>
-      {can('voucher:write') && <div style={{ margin: '4px 0 8px' }}><button type="button" className="btn btn-primary" onClick={() => setForm({ initial: emptyForm() })}>Thêm đợt</button></div>}
+    <section className="card">
+      <div className="catalog-toolbar">
+        {can('voucher:write') && <button type="button" className="btn btn-sm btn-primary" title="Lập đợt phát voucher mới" onClick={() => setForm({ initial: emptyForm() })}>+ Thêm đợt</button>}
+        <button type="button" className="btn btn-sm" disabled={!sel} title={sel ? 'Xem đợt đang chọn: mã đã phát, phát thêm mã (bấm đúp dòng cũng mở)' : 'Chọn một đợt ở bảng dưới'} onClick={() => sel && setPick(sel)}>Xem / phát mã</button>
+        {can('voucher:write') && <button type="button" className="btn btn-sm" disabled={!sel} title={sel ? 'Sửa / ngừng đợt đang chọn' : 'Chọn một đợt ở bảng dưới'} onClick={() => sel && setForm({ initial: toForm(sel), id: sel.id })}>Sửa</button>}
+        <button type="button" className="btn btn-sm btn-nap" disabled={q.isFetching} title="Nạp lại danh sách đợt" onClick={() => void q.refetch()}>{q.isFetching ? 'Đang nạp…' : '⟳ Nạp'}</button>
+      </div>
       {q.isLoading ? <Loading /> : q.error ? <ErrorBox error={errorText(q.error)} /> : (
-        <DataGrid rows={q.data ?? []} columns={campaignCols} rowKey={(r) => r.id} storageKey="voucher.campaigns" onRowClick={setPick}
-          exportName="dot-phat-voucher" exportTitle="Đợt phát voucher" emptyText="Chưa có đợt phát" />
+        <DataGrid rows={q.data ?? []} columns={campaignCols} rowKey={(r) => r.id} storageKey="voucher.campaigns" onRowClick={setSel} onRowDoubleClick={setPick}
+          exportName="dot-phat-voucher" exportTitle="Đợt phát voucher" emptyText='Chưa có đợt phát — bấm "+ Thêm đợt"' />
       )}
       {pick && !form && <CampaignDetail campaign={(q.data ?? []).find((c) => c.id === pick.id) ?? pick} onClose={() => setPick(null)} onEdit={() => setForm({ initial: toForm(pick), id: pick.id })} />}
       {form && <CampaignForm initial={form.initial} {...(form.id ? { id: form.id } : {})} onClose={() => { setForm(null); setPick(null); }} />}
-    </div>
+    </section>
   );
 }
 
@@ -315,15 +323,19 @@ function LookupTab() {
   const d = one.data;
   return (
     <div>
-      <div className="row" style={{ gap: 8, margin: '4px 0 8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <Field label="Mã voucher"><input className="input" value={code} onChange={(e) => setCode(e.target.value)} /></Field>
-        <button type="button" className="btn btn-primary" onClick={() => setFind({ code: code.trim().toUpperCase() })} disabled={!code.trim()}>Tra mã</button>
-        <Field label="SĐT khách"><input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
-        <button type="button" className="btn" onClick={() => setFind({ phone: phone.trim() })} disabled={!phone.trim()}>Mã của khách</button>
-      </div>
+      <section className="card card-body">
+        <div className="row" style={{ gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <Field label="Mã voucher"><input className="input" value={code} title="Gõ mã in trên voucher, Enter để tra" onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && code.trim()) setFind({ code: code.trim().toUpperCase() }); }} /></Field>
+          <button type="button" className="btn btn-sm btn-primary" title="Xem đợt, khách, hạn, nơi dùng, nhật ký của mã" onClick={() => setFind({ code: code.trim().toUpperCase() })} disabled={!code.trim()}>Tra mã</button>
+          <span style={{ width: 16 }} />
+          <Field label="SĐT khách"><input className="input" value={phone} title="SĐT khách, Enter để xem mọi mã của khách" onChange={(e) => setPhone(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && phone.trim()) setFind({ phone: phone.trim() }); }} /></Field>
+          <button type="button" className="btn btn-sm" title="Mọi mã voucher gắn SĐT này" onClick={() => setFind({ phone: phone.trim() })} disabled={!phone.trim()}>Mã của khách</button>
+        </div>
+      </section>
       {find.code && (one.isLoading ? <Loading /> : one.error ? <ErrorBox error={errorText(one.error)} /> : d && (
-        <div className="card" style={{ padding: 8 }}>
-          <p>
+        <section className="card">
+          <div className="card-body" style={{ paddingBottom: 6 }}>
+          <p style={{ margin: 0 }}>
             <b>{d.code}</b> {stateBadge(d.state)} · đợt {d.campaign.code} ({d.campaign.name}) · {d.campaign.issuer === 'brand' ? 'hãng phát' : 'TGS phát'} · {valueText(d.campaign)}
             · SĐT {d.phone ?? 'không gắn (mã lô)'}{d.usedPhone ? ` · khách dùng ${d.usedPhone}` : ''} · hạn {d.expiresOn ?? 'không hạn'}
           </p>
@@ -333,11 +345,15 @@ function LookupTab() {
             <button type="button" className="btn btn-xs" onClick={() => { const r = window.prompt('Lý do thu hồi'); if (r) revoke.mutate(r); }}>Thu hồi</button>
           )}
           <ErrorBox error={revoke.error ? errorText(revoke.error) : null} />
+          </div>
           <DataGrid rows={d.log} columns={logCols} rowKey={(r, i) => `${r.at}-${i}`} storageKey="voucher.log" maxHeight="30vh" exportName={`nhat-ky-${d.code}`} />
-        </div>
+        </section>
       ))}
       {find.phone && (many.isLoading ? <Loading /> : many.error ? <ErrorBox error={errorText(many.error)} /> : (
-        <DataGrid rows={many.data ?? []} columns={codeCols} rowKey={(r) => r.code} storageKey="voucher.codes-phone" exportName={`voucher-${find.phone}`} emptyText="Khách chưa có voucher" />
+        <section className="card">
+          <div className="card-body" style={{ paddingBottom: 0 }}><b>Mã của khách {find.phone}</b></div>
+          <DataGrid rows={many.data ?? []} columns={codeCols} rowKey={(r) => r.code} storageKey="voucher.codes-phone" exportName={`voucher-${find.phone}`} emptyText="Khách chưa có voucher" />
+        </section>
       ))}
     </div>
   );
@@ -375,29 +391,30 @@ function ReportTab() {
   const [f, setF] = useState(draft);
   const q = useQuery({ queryKey: ['voucher', 'report', f], queryFn: () => api.get<{ campaigns: RepCampaign[]; byBranch: RepBranch[] }>(`${M}/report`, Object.fromEntries(Object.entries(f).filter(([, v]) => v))) });
   return (
-    <div>
-      <div className="row" style={{ gap: 8, margin: '4px 0 8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <Field label="Từ ngày"><input className="input" type="date" value={draft.from} onChange={(e) => setDraft({ ...draft, from: e.target.value })} /></Field>
-        <Field label="Đến ngày"><input className="input" type="date" value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} /></Field>
-        <Field label="Người phát">
-          <select className="input" value={draft.issuer} onChange={(e) => setDraft({ ...draft, issuer: e.target.value })}><option value="">Tất cả</option><option value="tgs">TGS</option><option value="brand">Hãng / NCC</option></select>
-        </Field>
-        <Field label="Cửa hàng"><BranchCheckList value={draft.branches} onChange={(branches) => setDraft({ ...draft, branches })} /></Field>
-        <button type="button" className="btn btn-primary" onClick={() => setF(draft)}>Xem</button>
-      </div>
+    <FilterLayout onSearch={() => setF(draft)} filters={<>
+      <Field label="Từ ngày"><input className="input" type="date" value={draft.from} onChange={(e) => setDraft({ ...draft, from: e.target.value })} /></Field>
+      <Field label="Đến ngày"><input className="input" type="date" value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} /></Field>
+      <Field label="Người phát">
+        <select className="input" value={draft.issuer} onChange={(e) => setDraft({ ...draft, issuer: e.target.value })}><option value="">Tất cả</option><option value="tgs">TGS</option><option value="brand">Hãng / NCC</option></select>
+      </Field>
+      <Field label="Cửa hàng"><BranchCheckList value={draft.branches} onChange={(branches) => setDraft({ ...draft, branches })} /></Field>
+    </>}>
       {q.isLoading ? <Loading /> : q.error ? <ErrorBox error={errorText(q.error)} /> : (
         <>
-          <DataGrid rows={q.data?.campaigns ?? []} columns={repCols} rowKey={(r) => r.campaignId} storageKey="voucher.report" maxHeight="36vh"
-            exportName="bao-cao-voucher" exportTitle={`Báo cáo voucher theo đợt ${f.from} – ${f.to}`} emptyText="Không có đợt phát" />
-          <div className="card" style={{ marginTop: 8, padding: 8 }}>
-            <b>Đã dùng theo cửa hàng</b>
+          <section className="card">
+            <div className="card-body" style={{ paddingBottom: 0 }}><b title="Đếm mã phát trong kỳ (ngày phát)">Theo đợt phát</b></div>
+            <DataGrid rows={q.data?.campaigns ?? []} columns={repCols} rowKey={(r) => r.campaignId} storageKey="voucher.report" maxHeight="36vh"
+              exportName="bao-cao-voucher" exportTitle={`Báo cáo voucher theo đợt ${f.from} – ${f.to}`} emptyText="Không có đợt phát" />
+          </section>
+          <section className="card">
+            <div className="card-body" style={{ paddingBottom: 0 }}><b title="Đếm mã dùng trong kỳ (ngày bán)">Đã dùng theo cửa hàng</b></div>
             <DataGrid rows={q.data?.byBranch ?? []} columns={branchCols} rowKey={(r) => `${r.campaignId}|${r.branchCode}|${r.source}`} storageKey="voucher.report.branch" maxHeight="30vh"
               exportName="voucher-theo-cua-hang" exportTitle={`Voucher đã dùng theo cửa hàng ${f.from} – ${f.to}`} emptyText="Chưa có voucher dùng trong kỳ" />
-          </div>
+          </section>
         </>
       )}
-      <p className="muted">Phần theo đợt đếm mã phát trong kỳ (ngày phát); phần theo cửa hàng đếm mã dùng trong kỳ (ngày bán). Còn / hết hạn tính tới hôm nay.</p>
-    </div>
+      <p className="muted" style={{ marginTop: 8 }}>Phần theo đợt đếm mã phát trong kỳ (ngày phát); phần theo cửa hàng đếm mã dùng trong kỳ (ngày bán). Còn / hết hạn tính tới hôm nay.</p>
+    </FilterLayout>
   );
 }
 
@@ -409,8 +426,8 @@ export function VoucherPage() {
   return (
     <div>
       <PageHeader title="Voucher" code="BH21" subtitle="Voucher tương đương tiền / lần mua sau sản phẩm – nhãn; mệnh giá hoặc giảm % có trần; TGS hoặc hãng phát; gắn SĐT khách hoặc lô mã; dùng một lần (voucher đổi điểm ở Điểm thành viên; mã giảm giá chung cho mọi khách khai ở Khuyến mại BH18)" />
-      <div className="row" style={{ gap: 4, marginBottom: 8 }}>
-        {TABS.map(([k, label]) => <button key={k} type="button" className={`btn ${tab === k ? 'btn-primary' : ''}`} onClick={() => setTab(k)}>{label}</button>)}
+      <div className="tabs" role="tablist" style={{ margin: '8px 0' }}>
+        {TABS.map(([k, label]) => <button key={k} type="button" role="tab" className={`tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{label}</button>)}
       </div>
       {tab === 'dot' && <CampaignTab />}
       {tab === 'tra-cuu' && <LookupTab />}
