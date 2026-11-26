@@ -140,7 +140,8 @@ export function PhieuHangPage({ kind, code, seed, helpKey = 'phieu-hang', subtit
           </select></div>
       </>}>
       <div className="card">
-        <div className="row ck-toolbar" style={{ gap: 6, padding: '6px 0', flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* [2026-11-26 10:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-045: hàng nút sát bảng (không khoảng trống dưới); hàng lọc 1 giữ nguyên (đóng góp) */}
+        <div className="row ck-toolbar" style={{ gap: 6, padding: '6px 0 0', marginBottom: 0, flexWrap: 'wrap', alignItems: 'center' }}>
           {tt.them && <button className="btn btn-sm btn-primary" title={`Lập ${info.label.toLowerCase()} mới — chi nhánh điền sẵn chi nhánh đang làm việc`}
             onClick={() => { save.reset(); setStartEdit(false); setEditing(emptyDoc(kind, workBranch.get() || (f.branchCodes.split(',')[0] ?? ''))); setFormKey((x) => x + 1); }}>+ Thêm</button>}
           <button className="btn btn-sm" disabled={!sel} title={!sel ? 'Chọn một phiếu ở bảng dưới' : sel.status === 'approved' ? 'Phiếu đã duyệt — mở xem; Bỏ duyệt ở chân phiếu' : tt.sua ? 'Mở phiếu để sửa' : 'Mở phiếu (chỉ xem — chưa có quyền Sửa)'}
