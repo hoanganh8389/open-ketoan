@@ -16,7 +16,8 @@ import { Loading } from '@/components/ui';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { PartnerPicker } from '@/components/pickers';
 import { ALL_KINDS, PolicyForm } from './PolicyForm';
-import { purchaseApi, today, useMuaHang, useNames } from '../du-lieu';
+import { P, purchaseApi, today, useMuaHang, useNames } from '../du-lieu';
+import { api } from '@/lib/api';
 import { dmy } from '../chung';
 import '../mua-hang.css';
 
@@ -68,6 +69,25 @@ export function ChiTietChinhSachPage() {
   const [state, setState] = useState('Đang áp');
   const [editing, setEditing] = useState<Policy | null>(null);
   const now = today();
+  // [2026-11-26 08:00 PM Nguyễn Văn Thủy] MH14 — tổng hợp thực hiện từng chính sách trong kỳ: số / giá trị đơn đặt, doanh số luỹ kế, quyền lợi được hưởng, đã nhận, còn phải nhận (cùng nguồn MH32) (đóng góp)
+  const [tu, setTu] = useState(`${now.slice(0, 4)}-01-01`);
+  const [den, setDen] = useState(now);
+  const exec = useQuery({ queryKey: ['mua-hang', 'policy-execution', 'mh14', tu, den], staleTime: 30_000,
+    queryFn: () => api.get<{ policy: string; base: number; entitled: number; expected: number; received: number; remaining: number }[]>(`${P}/policy-execution`, { from: tu, to: den }) });
+  const thucHien = useMemo(() => new Map((exec.data ?? []).map((x) => [x.policy, x])), [exec.data]);
+  /** Đơn đặt hàng (chưa huỷ, không nháp) thuộc phạm vi chính sách trong kỳ: cùng NCC, cùng hợp đồng, trong hiệu lực, đúng nhãn / mã nếu chính sách ghi. */
+  const donDat = useMemo(() => {
+    const m = new Map<string, { so: number; giaTri: number }>();
+    for (const p of data?.policies ?? []) {
+      const a = [tu, p.validFrom ?? ''].sort()[1]!, b = [den, p.validTo || '9999-12-31'].sort()[0]!;
+      const ds = (data?.docs ?? []).filter((d) => d.kind === 'order' && d.status !== 'cancelled' && d.status !== 'draft' && d.docDate >= a && d.docDate <= b
+        && (!p.scope.partnerCode || d.partnerCode === p.scope.partnerCode) && (d.contractCode ?? '') === (p.scope.contractCode ?? '')
+        && (!p.scope.brandCode || d.brandCode === p.scope.brandCode || d.lines.some((l) => l.brandCode === p.scope.brandCode))
+        && (!p.scope.sku || d.lines.some((l) => l.sku === p.scope.sku)));
+      m.set(p.code, { so: ds.length, giaTri: Math.round(ds.reduce((t, d) => t + d.totals.beforeTax, 0)) });
+    }
+    return m;
+  }, [data, tu, den]);
   const stateOf = (p: Policy) => (!p.isActive ? 'Tắt' : p.validTo && p.validTo < now ? 'Hết hiệu lực' : p.validFrom && p.validFrom > now ? 'Chưa tới hiệu lực' : 'Đang áp');
   const rows: Row[] = useMemo(() => {
     const out: Row[] = [];
@@ -108,6 +128,13 @@ export function ChiTietChinhSachPage() {
     { key: 'line', header: 'Dòng', width: 70, value: (r) => (r.lines > 1 ? `${r.line}/${r.lines}` : '') },
     { key: 'brand', header: 'Nhãn', width: 90, value: (r) => r.p.scope.brandCode ?? '' },
     { key: 'note', header: 'Ghi chú', width: 160, value: (r) => r.note ?? '' },
+    // Số tổng hợp của cả chính sách: chỉ ghi ở dòng đầu của chính sách (cộng cột không bị trùng).
+    { key: 'soDon', header: 'Số đơn đặt hàng', type: 'money', width: 90, sum: true, title: 'Đơn đặt hàng đã gửi duyệt / đã duyệt trong kỳ, thuộc phạm vi chính sách (NCC, hợp đồng, nhãn / mã, hiệu lực)', value: (r) => (r.line === 1 ? donDat.get(r.p.code)?.so ?? 0 : '') },
+    { key: 'giaTriDon', header: 'Giá trị đơn đặt', type: 'money', width: 120, sum: true, title: 'Tiền hàng chưa thuế của các đơn đặt trên', value: (r) => (r.line === 1 ? donDat.get(r.p.code)?.giaTri ?? 0 : '') },
+    { key: 'doanhSo', header: 'Doanh số luỹ kế', type: 'money', width: 130, sum: true, title: 'Tiền hàng chưa thuế đủ điều kiện tính ưu đãi / thưởng trong kỳ (phiếu nhập đã duyệt) — cùng số MH32', value: (r) => (r.line === 1 ? thucHien.get(r.p.code)?.base ?? '' : '') },
+    { key: 'duocHuong', header: 'Quyền lợi được hưởng', type: 'money', width: 130, sum: true, title: 'Chiết khấu / thưởng / quà được hưởng trong kỳ (đã chốt + tạm tính kỳ chưa lập phiếu thưởng)', value: (r) => (r.line === 1 ? thucHien.get(r.p.code)?.entitled ?? '' : '') },
+    { key: 'daNhan', header: 'Đã nhận', type: 'money', width: 120, sum: true, title: 'Đã trừ trên hoá đơn / đã hạch toán phiếu thưởng', value: (r) => (r.line === 1 ? thucHien.get(r.p.code)?.received ?? '' : '') },
+    { key: 'conNhan', header: 'Còn phải nhận', type: 'money', width: 120, sum: true, title: 'Được hưởng − đã nhận (gồm phần tạm tính chưa lập phiếu thưởng)', value: (r) => { const x = thucHien.get(r.p.code); return r.line === 1 && x ? Math.max(0, Math.round(x.entitled - x.received)) : ''; } },
     { key: 'validFrom', header: 'Hiệu lực từ', width: 90, value: (r) => dmy(r.p.validFrom) },
     { key: 'validTo', header: 'Đến', width: 90, value: (r) => dmy(r.p.validTo) },
     { key: 'state', header: 'Trạng thái', width: 110, render: (r) => <span className={`badge ${r.state === 'Đang áp' ? 'badge-ok' : r.state === 'Hết hiệu lực' ? 'badge-warn' : 'badge-gray'}`}>{r.state}</span>, value: (r) => r.state },
@@ -122,6 +149,7 @@ export function ChiTietChinhSachPage() {
         subtitle="Mỗi chính sách trải ra từng dòng ưu đãi: từng mã hàng, từng bậc, từng chi nhánh — lọc, xuất Excel; bấm đúp một dòng để mở chính sách" />
       <div className="card">
         <div className="row" style={{ gap: 8, padding: '8px 12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <label className="row" style={{ gap: 4, alignItems: 'center' }} title="Kỳ tính số đơn đặt, doanh số, quyền lợi">Từ <input type="date" className="input" value={tu} onChange={(e) => setTu(e.target.value || tu)} /> đến <input type="date" className="input" value={den} onChange={(e) => setDen(e.target.value || den)} /></label>
           <div style={{ width: 260 }}><PartnerPicker kind="supplier" value={partner} onChange={setPartner} placeholder="Lọc theo nhà cung cấp" /></div>
           <select className="select input" style={{ width: 230 }} value={kind} onChange={(e) => setKind(e.target.value as PolicyKind | '')}><option value="">Mọi loại chính sách</option>{ALL_KINDS.map((k) => <option key={k} value={k}>{POLICY_LABEL[k]}</option>)}</select>
           <select className="select input" style={{ width: 170 }} value={state} onChange={(e) => setState(e.target.value)}><option value="">Mọi trạng thái</option><option>Đang áp</option><option>Hết hiệu lực</option><option>Chưa tới hiệu lực</option><option>Tắt</option></select>
@@ -130,7 +158,7 @@ export function ChiTietChinhSachPage() {
         {isLoading || !data ? <Loading /> : (
           <DataGrid storageKey="mh-chi-tiet-chinh-sach-v2" exportName="bao-cao-chi-tiet-chinh-sach-mua-hang" exportTitle="BÁO CÁO CHI TIẾT CHÍNH SÁCH MUA HÀNG"
             rows={rows} rowKey={(r) => r.key} columns={columns} onRowDoubleClick={(r) => setEditing(r.p)} groupable
-            rowClassName={(r) => (r.state === 'Đang áp' ? '' : 'muted')} footerLabel={false} emptyText="Chưa có chính sách khớp bộ lọc" />
+            rowClassName={(r) => (r.state === 'Đang áp' ? '' : 'muted')} footerLabel="Cộng" emptyText="Chưa có chính sách khớp bộ lọc" />
         )}
       </div>
       {editing && <PolicyForm value={editing} all={data?.policies ?? []} onClose={() => setEditing(null)} onSaved={(_code, stay) => { if (!stay) setEditing(null); void refresh(); }} />}
