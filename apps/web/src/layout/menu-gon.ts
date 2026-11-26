@@ -59,7 +59,8 @@ export const GON_DEFS: GonDef[] = [
   {
     key: 'tien-mat', label: 'Tiền mặt', icon: 'Banknote', description: 'Thu tiền, chi tiền, sổ quỹ tiền mặt', color: '#0f9d58', module: 'quy', homeLabel: 'Quy trình',
     the: ['/quy/thu-chi'],
-    sections: [{ paths: ['/quy/thu-chi'], soon: ['Đề nghị chi tiền', 'Kiểm kê quỹ'] }],
+    // [2026-11-26 01:40 PM Nguyễn Văn Thủy] HT — rà yeucauketoanlantruoc (AP/AR, RP-002, RP-003, thuế): màn công nợ có lối vào ở nhóm nghiệp vụ (không chỉ Phần riêng); bỏ mục mờ "đang phát triển" khi màn đã có (đóng góp)
+    sections: [{ paths: ['/quy/thu-chi', '/cong-no/yeu-cau-thanh-toan'], soon: ['Kiểm kê quỹ'] }],
     reports: [{ label: 'Tiền mặt', paths: ['/quy/so-du-tien', '/quy/nhat-ky-thu-tien', '/quy/so-chi-tiet-quy', '/quy/nhat-ky-chi-tien', '/quy/so-quy-tien-mat', '/quy/dong-tien'] }],
   },
   {
@@ -78,6 +79,7 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Hằng ngày', paths: ['/mua-hang/tong-hop', '/mua-hang/hoa-don-ncc', '/mua-hang/doi-chieu-hoa-don', '/mua-hang/han-muc'] },
       { label: 'Đặt hàng', paths: ['/mua-hang/dang-ky-max', '/mua-hang/ton-max', '/mua-hang/cong-thuc', '/mua-hang/dat-hang', '/mua-hang/chuyen-shop'] },
       { label: 'Định kỳ', paths: ['/mua-hang/thuong', '/mua-hang/phan-bo', '/mua-hang/lo-han', '/mua-hang/qua-tang'] },
+      { label: 'Công nợ phải trả', paths: ['/cong-no/phai-tra', '/cong-no/dat-coc', '/cong-no/yeu-cau-thanh-toan', '/nghiep-vu/can-tru-cong-no'] },
       // [2026-11-21 kiennt] NT-MH-005 — nhóm Khai báo của Mua hàng đổi tên thành Danh mục (đóng góp)
       // [2026-11-21 kiennt] NT-MH-005 — Cài đặt mua hàng (MH12) chuyển sang Phần riêng → Cấu hình (đóng góp)
       // [2026-11-21 kiennt] NT-MH-005 — MH01 bỏ khỏi menu, thay bằng Nhà cung cấp của Danh mục (DM13); hồ sơ NCC mở từ mã NCC (đóng góp)
@@ -101,6 +103,7 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Bán lẻ máy POS', paths: ['/app/pos/don-ban', '/app/pos/tra-hang', '/app/pos/ca-ban', '/app/pos/tong-quan', '/app/pos/kenh-ban'] },
       // [2026-11-14 01:20 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: Khuyến mại hết mờ, mở BH18 (đóng góp)
       { label: 'Chính sách bán', paths: ['/app/pos/khuyen-mai', '/danh-muc/bang-gia', '/app/voucher', '/app/loyalty/diem'], soon: ['Hạn mức nợ khách'] },
+      { label: 'Công nợ phải thu', paths: ['/cong-no/phai-thu', '/cong-no/dat-coc', '/nghiep-vu/can-tru-cong-no'] },
       { label: 'Danh mục', paths: ['/danh-muc/khach-hang', '/danh-muc/mat-hang', '/cau-hinh/hinh-thuc-thanh-toan'] },
       // [2026-11-13 09:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-014: bỏ mục mờ "Định khoản bán hàng" — tài khoản bán hàng xem ở khối ④ của BH17, sửa ở ACC41 (đóng góp)
       // [2026-11-21 kiennt] NT-MH-005 — bỏ mục Cài đặt: Cài đặt bán hàng (BH17) chuyển sang Phần riêng → Cấu hình (đóng góp)
@@ -138,7 +141,7 @@ export const GON_DEFS: GonDef[] = [
     the: ['/thue/to-khai-gtgt', '/thue/quyet-toan-tndn', '/thue/hoa-don-rui-ro'],
     sections: [
       { label: 'Khai thuế', paths: ['/thue/to-khai-gtgt', '/thue/quyet-toan-tndn', '/thue/bo-sung-thong-tin', '/thue/nguoi-nop-thue'], soon: ['Giấy nộp tiền vào ngân sách'] },
-      { paths: ['/thue/hoa-don-rui-ro'] },
+      { label: 'Hoá đơn', paths: ['/thue/hoa-don-co-quan-thue', '/thue/hoa-don-rui-ro'] },
     ],
     reports: [{ label: 'Thuế', paths: ['/thue/bang-ke-ban-ra', '/thue/bang-ke-mua-vao', '/thue/tong-hop'] }],
   },
@@ -146,7 +149,10 @@ export const GON_DEFS: GonDef[] = [
     key: 'tong-hop', label: 'Tổng hợp', icon: 'Network', description: 'Chứng từ nghiệp vụ khác, kết chuyển lãi lỗ, khóa sổ, báo cáo tài chính', color: '#1f66a3', module: 'ke-toan', homeLabel: 'Quy trình',
     // [2026-11-15 Nguyễn Văn Thủy] cổng chờ vào sổ (ACC14) về nhóm kế toán: kế toán nhìn một chỗ biết cái gì chưa vào sổ (đóng góp)
     the: ['/chung-tu', '/nghiep-vu/phieu-ke-toan', '/nghiep-vu/ket-chuyen', '/tong-hop/lap-bctc', '/cau-hinh/ky-ke-toan'],
-    sections: [{ paths: ['/chung-tu', '/nghiep-vu/phieu-ke-toan', '/nghiep-vu/ket-chuyen', '/tong-hop/lap-bctc', '/cau-hinh/ky-ke-toan'], soon: ['Đề nghị quyết toán tạm ứng'] }],
+    sections: [
+      { paths: ['/chung-tu', '/nghiep-vu/phieu-ke-toan', '/nghiep-vu/ket-chuyen', '/tong-hop/lap-bctc', '/cau-hinh/ky-ke-toan'], soon: ['Đề nghị quyết toán tạm ứng'] },
+      { label: 'Công nợ', paths: ['/cong-no/khoan-cong-no', '/cong-no/phai-thu', '/cong-no/phai-tra', '/cong-no/dat-coc', '/cong-no/yeu-cau-thanh-toan', '/nghiep-vu/can-tru-cong-no', '/cong-no/chung-tu-nguon', '/cong-no/doi-chieu'] },
+    ],
     reports: [
       { label: 'Sổ kế toán', paths: ['/bao-cao/so-chi-tiet', '/bao-cao/nhat-ky-chung', '/bao-cao/so-cai', '/bao-cao/bang-ke-chung-tu', '/bao-cao/tong-hop-chung-tu'] },
       { label: 'Báo cáo tài chính', paths: ['/bao-cao/can-doi-ke-toan', '/bao-cao/ket-qua-kinh-doanh', '/bao-cao/luu-chuyen-tien-te', '/bao-cao/thuyet-minh', '/bao-cao/can-doi-phat-sinh'] },
@@ -159,7 +165,7 @@ export const GON_DEFS: GonDef[] = [
     key: 'ngan-sach', label: 'Ngân sách', icon: 'PiggyBank', description: 'Kế hoạch ngân sách, định mức chi phí', color: '#6a1b9a',
     the: ['/ke-hoach/thu-chi', '/ke-hoach/dinh-muc'],
     sections: [{ paths: ['/ke-hoach/thu-chi', '/ke-hoach/dinh-muc'] }],
-    reports: [{ label: 'Ngân sách', paths: [], soon: ['Tình hình thực hiện ngân sách'] }],
+    reports: [{ label: 'Ngân sách', paths: ['/ke-hoach/thu-chi'] }],
   },
   {
     key: 'phan-tich', label: 'Phân tích tài chính', icon: 'ChartLine', description: 'Doanh thu, chi phí, lợi nhuận, chỉ số tài chính', color: '#283593',
