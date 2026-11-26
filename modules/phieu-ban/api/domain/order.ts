@@ -88,6 +88,17 @@ export type OrderBody = {
   rejection?: { by: string; at: string; note: string };
   /** NT-BH-032: đơn copy từ đơn / hoá đơn khác (loại + số gốc). */
   copiedFrom?: { kind: 'order' | 'sale' | 'pos'; no: string };
+  // [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: phiếu chuyển kho KHO01 lập từ đơn + lần lập đang dở (đóng góp)
+  /** NT-BH-041: phiếu chuyển kho KHO01 lập từ đơn (về kho bán của đơn) — trạng thái lúc lập; trạng thái hiện tại đọc ở KHO01. */
+  transfers?: OrderTransfer[];
+  /** NT-BH-041: lần "Lập chuyển kho" đang dở (đã kiểm, chưa ghi phiếu KHO01) — người khác lập cùng lúc thì chờ. */
+  transferIntent?: { seq: number; by: string; byName?: string; at: string };
+};
+
+/** NT-BH-041: một phiếu chuyển kho KHO01 lập từ đơn. `from` = "<chi nhánh>/<kho xuất>". */
+export type OrderTransfer = {
+  id: string; docNo: string; from: string; fromBranchCode: string; fromWarehouse: string; toWarehouse: string;
+  lines: { sku: string; qty: number }[]; qty: number; status: string; at: string; by: string;
 };
 
 export const r4 = (n: number) => Math.round(n * 10_000) / 10_000;
@@ -388,3 +399,71 @@ export const feeBeforeTax = (fee: number, ratePct: number) => roundMoney(fee / (
 export function parseCarrierMap(v: unknown): Map<string, string> {
   return new Map([...parseHoldMap(v)].map(([k, x]) => [k.toUpperCase(), x]));
 }
+
+// ------------------------------------------------------------------ chuyển kho cho đơn thiếu hàng (NT-BH-041)
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: dòng thiếu, xếp kho ứng viên, kiểm số lượng chuyển (đóng góp)
+
+/** Mã đơn còn thiếu để giữ: Σ(còn phải giao − đang giữ) theo mã, bỏ dòng dịch vụ (NT-BH-035) — thứ tự như dòng đơn. */
+export type ShortSku = { sku: string; name: string; unit: string; need: number };
+export function shortSkus(lines: readonly OrderLine[], skip: ReadonlySet<string> = new Set()): ShortSku[] {
+  const out = new Map<string, ShortSku>();
+  for (const l of lines) {
+    if (skip.has(l.sku)) continue;
+    const gap = r4(remainingOf(l) - l.held);
+    if (gap <= 0) continue;
+    const cur = out.get(l.sku);
+    out.set(l.sku, cur ? { ...cur, need: r4(cur.need + gap) } : { sku: l.sku, name: l.name, unit: l.unit, need: gap });
+  }
+  return [...out.values()];
+}
+
+/** Nhóm kho ứng viên: cùng cửa hàng → chi nhánh cha → cửa hàng cùng cha (NT-BH-041 §3 dòng 1). */
+export const SOURCE_GROUPS = ['same', 'parent', 'sibling'] as const;
+export type SourceGroup = (typeof SOURCE_GROUPS)[number];
+export const SOURCE_GROUP_LABEL: Record<SourceGroup, string> = { same: 'Cùng cửa hàng', parent: 'Chi nhánh cha', sibling: 'Cửa hàng cùng cha' };
+export type SourceCandidate = { group: SourceGroup; branchCode: string; warehouseCode: string; name: string; stock: Record<string, number> };
+
+/**
+ * Kho ứng viên có tồn > 0 ít nhất một mã thiếu; xếp theo nhóm, trong nhóm theo số mã đủ hàng giảm dần, rồi mã kho.
+ * `stock` chỉ giữ các mã thiếu (số dương; không có / âm → 0).
+ */
+export function rankSources(cands: readonly SourceCandidate[], short: readonly ShortSku[]) {
+  const out = cands.map((c) => {
+    const stock = Object.fromEntries(short.map((s) => [s.sku, r4(Math.max(0, c.stock[s.sku] ?? 0))]));
+    const full = short.filter((s) => (stock[s.sku] ?? 0) >= s.need).length;
+    const any = short.some((s) => (stock[s.sku] ?? 0) > 0);
+    return { ...c, stock, full, any };
+  }).filter((c) => c.any);
+  out.sort((a, b) => SOURCE_GROUPS.indexOf(a.group) - SOURCE_GROUPS.indexOf(b.group) || b.full - a.full || a.warehouseCode.localeCompare(b.warehouseCode));
+  return out.map(({ any: _any, ...c }) => c);
+}
+
+/** Lỗi theo ô (details.findings → error.fields, màn tô đúng ô). */
+export type Finding = { field: string; code: string; title: string; level: 'block' };
+
+/**
+ * Kiểm dòng chuyển: mã phải là mã đơn đang thiếu, SL > 0, SL ≤ tồn kho xuất (Q-KHO-02 — chặn xuất quá tồn); ít nhất một dòng.
+ * Trả dòng hợp lệ (SL > 0) và lỗi theo ô `lines[i].qty` / `lines[i].sku`.
+ */
+export function checkTransferLines(short: readonly ShortSku[], stock: Readonly<Record<string, number>>, warehouse: string, lines: readonly { sku: string; qty: number }[]) {
+  const findings: Finding[] = [];
+  const bySku = new Map(short.map((s) => [s.sku, s]));
+  const ok: (ShortSku & { qty: number })[] = [];
+  const used = new Map<string, number>();
+  lines.forEach((l, i) => {
+    const s = bySku.get(l.sku);
+    if (!s) { findings.push({ field: `lines[${i}].sku`, code: 'PHIEU_BAN_TRANSFER_SKU', title: `${l.sku} không phải mã đơn đang thiếu hàng`, level: 'block' }); return; }
+    if (!(l.qty > 0)) return;
+    const total = r4((used.get(l.sku) ?? 0) + l.qty);
+    used.set(l.sku, total);
+    const have = r4(Math.max(0, stock[l.sku] ?? 0));
+    if (total > have + 1e-9) { findings.push({ field: `lines[${i}].qty`, code: 'PHIEU_BAN_TRANSFER_OVER_STOCK', title: `${warehouse} chỉ còn ${have}`, level: 'block' }); return; }
+    ok.push({ ...s, qty: r4(l.qty) });
+  });
+  if (!ok.length && !findings.length) findings.push({ field: 'lines', code: 'PHIEU_BAN_TRANSFER_EMPTY', title: 'Nhập số lượng chuyển (> 0) ít nhất một dòng', level: 'block' });
+  return { lines: ok, findings };
+}
+
+/** Câu lịch sử / ghi chú cho một phiếu chuyển: "CK…: CN01-KT → CH02-K1 SUA01 × 6, …". */
+export const transferText = (docNo: string, from: string, to: string, lines: readonly { sku: string; qty: number }[]) =>
+  `${docNo}: ${from} → ${to} ${lines.map((l) => `${l.sku} × ${l.qty}`).join(', ')}`;

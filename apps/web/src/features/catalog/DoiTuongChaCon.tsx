@@ -1,4 +1,4 @@
-// [2026-11-13 Nguyễn Văn Thủy] Nhà cung cấp / khách hàng theo cha – con: xem dạng cây, ô Đơn vị cha, danh sách đơn vị con, lịch sử (đóng góp)
+// [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — Nhà cung cấp / khách hàng theo cha – con: xem dạng cây, ô Đơn vị cha, danh sách đơn vị con, lịch sử (đóng góp)
 /**
  * Cha – con của đối tượng (0132): một nhà cung cấp / khách hàng lớn có công ty mẹ và các chi nhánh (cùng hoặc khác MST).
  *   - Chứng từ ghi vào ĐƠN VỊ NHỎ NHẤT (đơn vị xuất / nhận hoá đơn); cha dùng để gom doanh số, công nợ, tính thưởng.
@@ -103,7 +103,8 @@ export function CayDoiTuong<T extends PartnerNode>({ rows, selected, onSelect, o
 export function ODonViCha({ value, onChange, self, isNew, disabled, groupCode, kind }: { value: string | null | undefined; onChange: (code: string | null) => void; self?: string; isNew: boolean; disabled?: boolean;
   /** Nhóm để tìm đơn vị cha (form truyền nhóm cha của nhóm đang chọn); trống thì khoá ô. */ groupCode?: string | null;
   /** Chỉ đối tượng có vai trò này; trống = mọi vai trò (tích cả khách hàng và nhà cung cấp). */ kind?: 'customer' | 'supplier' }) {
-  const chuaNhom = !groupCode && !value;
+  // [2026-11-26 12:55 AM Nguyễn Văn Thủy] PART-CHA — không khoá chờ nhóm; groupCode (nếu truyền) chỉ là lọc thêm (đóng góp)
+  const chuaNhom = false;
   return (
     <div className="field full">
       <label>Thuộc đơn vị cha <Hoi text={'Chọn khi đối tượng này là chi nhánh / đơn vị con của một nhà cung cấp hoặc khách hàng lớn (vd Công ty mẹ → Chi nhánh Hà Nội). '

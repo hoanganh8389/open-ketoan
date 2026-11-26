@@ -73,7 +73,7 @@ export function PartnersPage({ fixedKind }: { fixedKind?: 'customer' | 'supplier
   const [back, setBack] = useState<(Partial<Partner> & { isNew?: boolean })[]>([]);
   const setEditing = (v: (Partial<Partner> & { isNew?: boolean }) | null) => { setBack([]); setEditingRaw(v); };
   const [sel, setSel] = useState<Partner | null>(null);
-  // [2026-11-13 Nguyễn Văn Thủy] kiểu xem: danh sách / cây cha – con (đóng góp)
+  // [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — kiểu xem: danh sách / cây cha – con (đóng góp)
   const [xem, setXem] = useState<'ds' | 'cay'>('ds');
   const exportRef = useRef<(() => void) | null>(null);
   const groups = useGroups();
@@ -96,7 +96,7 @@ export function PartnersPage({ fixedKind }: { fixedKind?: 'customer' | 'supplier
     // [2026-11-19 10:28 AM khanhtd] DM12/DM13 — đơn vị cha chưa có tên thì chỉ hiện mã, không thừa " - "
     { key: 'parentCode', header: 'Thuộc đơn vị cha', width: 200, title: 'Đơn vị mẹ của chi nhánh / đơn vị con; trống = đơn vị độc lập', value: (p) => [p.parentCode, p.parentName?.trim()].filter(Boolean).join(' - ') },
     { key: 'childCount', header: 'Số đơn vị con', type: 'number', width: 90, title: 'Số chi nhánh / đơn vị con trực tiếp', hidden: true },
-    // [2026-11-11 Nguyễn Văn Thủy] cột Chức năng: lập chứng từ cho đối tượng ngay từ danh sách (đóng góp)
+    // [2026-11-11 12:00 AM Nguyễn Văn Thủy] MH — cột Chức năng: lập chứng từ cho đối tượng ngay từ danh sách (đóng góp)
     { key: 'chuc-nang', header: 'Chức năng', width: 120, hidden: true, noFilter: true, noSort: true, value: () => '', render: (p) => {
       const to = p.kind === 'supplier' ? `/mua-hang/tong-hop?moi=receipt&ncc=${encodeURIComponent(p.code)}` : p.kind === 'customer' ? `/ban-hang/phieu-ban?them=1&kh=${encodeURIComponent(p.code)}` : null;
       return to ? <Link className="row-act" to={to} onClick={(e) => e.stopPropagation()} title={p.kind === 'supplier' ? 'Lập phiếu nhập mua của nhà cung cấp này' : 'Lập phiếu bán hàng cho khách này'}>{p.kind === 'supplier' ? 'Lập phiếu nhập' : 'Lập phiếu bán'}</Link> : null;
@@ -243,7 +243,9 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
   const noun = NOUN[kind] ?? 'đối tượng';
   const choices = groups.filter((g) => (g.isActive && (g.kind === 'any' || g.kind === kind)) || g.code === v.groupCode);
   // [2026-11-19 08:49 AM khanhtd] ô Đơn vị cha: tìm trong nhóm cha của nhóm đang chọn; vai trò theo ô tích (tích cả hai = không lọc vai trò)
-  const parentGroupCode = v.groupCode ? (groups.find((g) => g.code === v.groupCode)?.parentCode || v.groupCode) : null;
+  // [2026-11-26 12:55 AM Nguyễn Văn Thủy] PART-CHA — đơn vị cha (công ty mẹ → chi nhánh) độc lập với NHÓM (chỉ là phân loại): liệt kê mọi đối tượng cùng vai trò,
+  // không bắt chọn nhóm trước, không lọc theo nhóm cha (lọc cũ làm mất cả công ty mẹ cùng nhóm). Chọn cha khi thêm mới thì nhóm tự theo cha (changeParent) (đóng góp)
+  void groups;
   const laNcc = kind === 'supplier' || (v.alsoKinds ?? []).includes('supplier');
   const laKh = kind === 'customer' || (v.alsoKinds ?? []).includes('customer');
   const parentKind: 'customer' | 'supplier' | undefined = laNcc && laKh ? undefined : laNcc ? 'supplier' : laKh ? 'customer' : undefined;
@@ -278,7 +280,7 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
     set({ groupCode, ...(boCha ? { parentCode: null, parentName: null } : {}) });
     void fetchCode(groupCode, kind, boCha, boCha ? null : v.parentCode);
   };
-  // [2026-11-13 Nguyễn Văn Thủy] chọn đơn vị cha: thêm mới thì mã thành mã cha-00x, mang theo vai trò + nhóm của cha (đóng góp)
+  // [2026-11-13 12:00 AM Nguyễn Văn Thủy] MH — chọn đơn vị cha: thêm mới thì mã thành mã cha-00x, mang theo vai trò + nhóm của cha (đóng góp)
   const changeParent = async (parentCode: string | null) => {
     set({ parentCode, parentName: null });
     setSuggest(null);
@@ -288,6 +290,7 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
     if (par) set({ parentName: par.name, ...(isNew ? { groupCode: v.groupCode || par.groupCode } : {}) });
     if (isNew) void fetchCode(v.groupCode || par?.groupCode, kind, true, parentCode);
   };
+  const oCha = <ODonViCha value={v.parentCode} self={v.code} isNew={isNew} kind={parentKind} onChange={(c) => void changeParent(c)} />;
   /** MST chi nhánh (10 số-3 số) mà đã có đơn vị mang MST gốc: gợi ý gắn làm đơn vị con. */
   const [suggest, setSuggest] = useState<Partner | null>(null);
   const checkBranchMst = async (mst: string) => {
@@ -405,8 +408,7 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
         })()}
         {!isNew && <span className="muted">Sửa {noun} {v.code}</span>}
       </div>
-      {/* [2026-11-19 08:49 AM khanhtd] đơn vị cha: đối tượng thuộc nhóm cha của nhóm đang chọn (nhóm không có cha thì cùng nhóm), lọc theo vai trò đã tích */}
-      <ODonViCha value={v.parentCode} self={v.code} isNew={isNew} groupCode={parentGroupCode} kind={parentKind} onChange={(c) => void changeParent(c)} />
+      {/* [2026-11-26 12:55 AM Nguyễn Văn Thủy] PART-CHA — ô Thuộc đơn vị cha dời xuống ngay dưới Thuộc nhóm (oCha), không còn khoá chờ nhóm (đóng góp) */}
       {doiThuocTinh && <div className="alert full" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <span>Đang đổi <b>{[(v.taxCode ?? '').trim() !== goc.taxCode && 'MST', (v.name ?? '').trim() !== goc.name && 'tên', (v.address ?? '').trim() !== goc.address && 'địa chỉ'].filter(Boolean).join(', ')}</b>. Hiệu lực từ ngày</span>
         <input type="date" className="input" style={{ width: 160 }} value={validFrom} max={homNay()} onChange={(e) => setValidFrom(e.target.value)} title="Trống = từ hôm nay. Không chọn ngày sau hôm nay; phải sau ngày bắt đầu của phiên bản đang dùng" />
@@ -417,7 +419,7 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
         <button type="button" className="btn btn-sm btn-primary" onClick={() => void changeParent(suggest.code)}>Gắn làm đơn vị con</button>
         <button type="button" className="btn btn-sm" onClick={() => setSuggest(null)}>Không</button>
       </div>}
-      {kind === 'supplier' && <NccFields v={v} set={set} txt={txt} choices={choices} isNew={isNew} codeHint={codeHint} noun={noun}
+      {kind === 'supplier' && <NccFields oCha={oCha} v={v} set={set} txt={txt} choices={choices} isNew={isNew} codeHint={codeHint} noun={noun}
         changeGroup={changeGroup} fetchCode={() => void fetchCode(v.groupCode, kind, true)} setCode={(c) => { set({ code: c }); setCodeTouched(true); }} checkDuplicate={checkDuplicate} checkBranchMst={checkBranchMst} />}
       {kind !== 'supplier' && <div className="tabs full" role="tablist">
         <button role="tab" className={`tab ${tab === 'general' ? 'active' : ''}`} onClick={() => setTab('general')}>Thông tin chung</button>
@@ -437,6 +439,7 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
           <div style={{ ...half, display: 'grid', gap: 8 }}>
             <Field label="Ngày tạo KH"><input className="input" value={v.createdAt ? new Date(v.createdAt).toLocaleDateString('vi-VN') : todayText()} disabled /></Field>
             <Field label="Thuộc nhóm (*)"><ChonNhomDoiTuong kind={kind} choices={choices} value={v.groupCode ?? ''} onChange={changeGroup} noun={noun} /></Field>
+            {oCha}
             <Field label={`Mã ${noun} (*)`} hint={isNew ? codeHint : undefined}>
               <div className="row" style={{ gap: 6 }}>
                 <input className="input mono" style={{ flex: 1 }} value={v.code ?? ''} disabled={!isNew} onChange={(e) => { set({ code: e.target.value }); setCodeTouched(true); }} />
@@ -542,8 +545,8 @@ function PartnerForm({ value, groups, employees, onClose, onSaved, onSwitch, onB
  * tài khoản ngân hàng. Không có các ô chỉ dành cho khách lẻ (ngày sinh, giới tính, khách tiềm năng, loại khách hàng, fax, alias)
  * và không khai hạn mức / hạn trả ở đây — khai ở Hồ sơ NCC → chính sách (một nơi, tránh lệch). Người tạo / ngày giờ tạo ở chân form.
  */
-function NccFields({ v, set, txt, choices, isNew, codeHint, noun, changeGroup, fetchCode, setCode, checkDuplicate, checkBranchMst }: {
-  v: Partial<Partner>; set: (p: Partial<Partner>) => void; txt: (k: keyof Partner, label: string, full?: boolean, mono?: boolean, onBlur?: (val: string) => void) => ReactNode;
+function NccFields({ oCha, v, set, txt, choices, isNew, codeHint, noun, changeGroup, fetchCode, setCode, checkDuplicate, checkBranchMst }: {
+  oCha: ReactNode; v: Partial<Partner>; set: (p: Partial<Partner>) => void; txt: (k: keyof Partner, label: string, full?: boolean, mono?: boolean, onBlur?: (val: string) => void) => ReactNode;
   choices: Group[]; isNew: boolean; codeHint: string; noun: string; changeGroup: (g: string | null) => void; fetchCode: () => void; setCode: (c: string) => void;
   checkDuplicate: (field: 'phone' | 'taxCode', val: string, label: string) => Promise<void>;
   checkBranchMst?: (val: string) => Promise<void>;
@@ -552,6 +555,7 @@ function NccFields({ v, set, txt, choices, isNew, codeHint, noun, changeGroup, f
     <fieldset className="fgroup full">
       <legend>Thông tin nhà cung cấp (đúng như trên hoá đơn)</legend>
       <Field label="Thuộc nhóm (*)"><ChonNhomDoiTuong kind="supplier" choices={choices} value={v.groupCode ?? ''} onChange={changeGroup} noun={noun} /></Field>
+      {oCha}
       <Field label={`Mã ${noun} (*)`} hint={isNew ? codeHint : undefined}>
         <div className="row" style={{ gap: 6 }}>
           <input className="input mono" style={{ flex: 1 }} value={v.code ?? ''} disabled={!isNew} onChange={(e) => setCode(e.target.value)} />
@@ -676,7 +680,7 @@ export function PartnerGroupsPage() {
   );
 }
 
-// [2026-11-25 Nguyễn Văn Thủy] #9 tab Test: ô Thuộc nhóm có + thêm nhanh nhóm (lưu DM08) rồi chọn luôn (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — #9 tab Test: ô Thuộc nhóm có + thêm nhanh nhóm (lưu DM08) rồi chọn luôn (đóng góp)
 function ChonNhomDoiTuong({ kind, choices, value, onChange, noun }: { kind: string; choices: Group[]; value: string; onChange: (g: string | null) => void; noun: string }) {
   const [them, setThem] = useState<string | null>(null);
   return <>

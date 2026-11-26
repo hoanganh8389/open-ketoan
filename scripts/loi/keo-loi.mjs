@@ -1,12 +1,11 @@
 #!/usr/bin/env node
-// [2026-11-25 Nguyễn Văn Thủy] Kéo lỗi hệ thống (HT20) của con dev về máy local / đánh dấu đã sửa / yêu cầu dựng lại — docs/ops/TU-DONG-SUA-LOI.md (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] HT20 — Kéo lỗi hệ thống (HT20) của con dev về máy local / đánh dấu đã sửa / yêu cầu dựng lại — docs/ops/TU-DONG-SUA-LOI.md (đóng góp)
 //
 //   KET_NOI_URL=https://ketoan-dev.quantri.thegioisua.com  KET_NOI_KEY=kn_…   (hoặc ghi vào tệp .loi/ket-noi.env: KET_NOI_URL=… / KET_NOI_KEY=…)
 //   node scripts/loi/keo-loi.mjs danh-sach [--phan-he mua-hang] [--loai phan-mem|tu-choi] [--tat-ca] [--co-the-nhan]
 //      --co-the-nhan: bỏ mục máy khác đang giữ. danh-dau dang_sua bị máy khác giữ → thoát mã 3 (né mục đó).
 //   node scripts/loi/keo-loi.mjs danh-dau <mã-mục> <moi|yeu_cau|dang_sua|da_sua|bo_qua> [--commit <sha>] [--ghi-chu "…"]
 //   node scripts/loi/keo-loi.mjs dung-lai [--ghi-chu "…"]
-//   node scripts/loi/keo-loi.mjs tra-ma <mã-tra-cứu> [mốc-giờ-ISO]       (log + chỗ lỗi trong mã, ghi .loi/tra-ma-<mã>.json)
 //   node scripts/loi/keo-loi.mjs nhat-ky "<tóm tắt>" [--commit <sha>] [--muc fp1,fp2] [--chi-tiet "…"]   (hiện ở HT20 → Nhật ký sửa)
 //   node scripts/loi/keo-loi.mjs nhip "<đang làm gì>"                    (báo HT20 lịch tự sửa vẫn chạy)
 //
@@ -55,6 +54,7 @@ if (lenh === 'danh-sach') {
     if (x.giuDen) console.log(`  ${x.mayKhacGiu ? '⚠ MÁY KHÁC ĐANG SỬA — bỏ qua' : 'máy này đang giữ'}: ${x.may} (${x.ip ?? '?'}) tới ${x.giuDen}`);
     console.log(`  ${x.errCode} ${x.method} ${x.route} → ${x.status}`);
     console.log(`  ${x.msg}`);
+    if (x.lastErrFp || x.lastBan) console.log(`  errFp ${x.lastErrFp ?? '—'} · bản ${x.lastBan ?? '—'} · mã tra cứu ${x.lastReqId}`);
     console.log(`  tra mã: ${URL_}/dev/tra-ma?ma=${x.lastReqId}&at=${encodeURIComponent(x.last)}`);
   }
   console.log(`\nĐã ghi ${path.join('.loi', 'danh-sach.json')}`);
@@ -66,21 +66,6 @@ if (lenh === 'danh-sach') {
 } else if (lenh === 'dung-lai') {
   const d = await goi('/api/v1/ket-noi/dung-lai/yeu-cau', lay('--ghi-chu') ? { note: lay('--ghi-chu') } : {});
   console.log(`Đã yêu cầu dựng lại (${d.id}) — cron máy chủ nhận trong ~1 phút, xem kết quả ở HT20`);
-} else if (lenh === 'tra-ma') {
-  const [, ma, at] = args;
-  if (!ma) { console.error('Dùng: tra-ma <mã-tra-cứu> [mốc-giờ-ISO]'); process.exit(2); }
-  const d = await goi(`/api/v1/ket-noi/tra-ma?ma=${encodeURIComponent(ma)}${at ? `&at=${encodeURIComponent(at)}` : ''}`);
-  mkdirSync(thuMuc, { recursive: true });
-  const f = path.join(thuMuc, `tra-ma-${ma.replace(/[^0-9A-Za-z_-]/g, '')}.json`);
-  writeFileSync(f, JSON.stringify(d, null, 2), 'utf8');
-  for (const l of d.logs) {
-    const { time, level, msg, err, ...rest } = l;
-    console.log(`${time ?? ''} ${level ?? ''} ${msg ?? ''}`);
-    const e = err ?? rest.raw?.err;
-    if (e) console.log(typeof e === 'string' ? e : JSON.stringify(e, null, 2));
-  }
-  console.log(`
-${d.logs.length} dòng · đầy đủ ở ${path.relative(goc, f)}`);
 } else if (lenh === 'nhat-ky') {
   const tomTat = args[1];
   if (!tomTat) { console.error('Dùng: nhat-ky "<tóm tắt>" [--commit sha] [--muc fp1,fp2] [--chi-tiet "…"]'); process.exit(2); }
@@ -91,5 +76,5 @@ ${d.logs.length} dòng · đầy đủ ở ${path.relative(goc, f)}`);
   await goi('/api/v1/ket-noi/loi?status=__');
   console.log('Đã báo nhịp');
 } else {
-  console.error('Lệnh: danh-sach | danh-dau | dung-lai | tra-ma | nhat-ky | nhip (xem đầu tệp)'); process.exit(2);
+  console.error('Lệnh: danh-sach | danh-dau | dung-lai | nhat-ky | nhip (xem đầu tệp)'); process.exit(2);
 }

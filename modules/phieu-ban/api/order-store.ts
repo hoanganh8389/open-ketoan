@@ -269,3 +269,50 @@ export async function branchPriceRatios(tx: Tx, branch: string, skus: readonly s
     SELECT sku, price, ratio FROM bizcity_read.branch_prices WHERE branch_code = ${branch} AND sku IN (${sql.join(list)}) AND is_default_unit`.execute(tx)).rows;
   return new Map(rows.filter((r) => r.price !== null).map((r) => [r.sku, { price: Number(r.price), ratio: r.ratio === null ? 1 : Number(r.ratio) || 1 }]));
 }
+
+// ------------------------------------------------------------------ kho ứng viên cho chuyển kho (NT-BH-041)
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: chi nhánh cha / cửa hàng cùng cha, kho đang dùng và tồn theo kho (chỉ đọc) (đóng góp)
+
+/** Chi nhánh cha của cửa hàng và các cửa hàng cùng cha (đang dùng, trừ chính nó). Không có cha → parent null, không anh em. */
+export async function branchFamily(tx: Tx, branch: string): Promise<{ parent: string | null; siblings: string[] }> {
+  const me = (await sql<{ parent_code: string | null }>`SELECT parent_code FROM bizcity_read.branches WHERE code = ${branch} LIMIT 1`.execute(tx)).rows[0];
+  const parent = me?.parent_code ?? null;
+  if (!parent) return { parent: null, siblings: [] };
+  const sib = (await sql<{ code: string }>`SELECT code FROM bizcity_read.branches
+     WHERE parent_code = ${parent} AND code <> ${branch} AND is_active IS DISTINCT FROM false ORDER BY code`.execute(tx)).rows.map((r) => r.code);
+  const active = (await sql<{ code: string }>`SELECT code FROM bizcity_read.branches WHERE code = ${parent} AND is_active IS DISTINCT FROM false`.execute(tx)).rows.length > 0;
+  return { parent: active ? parent : null, siblings: sib };
+}
+
+/** Kho đang dùng của các chi nhánh (kèm cờ mặc định — dòng thẻ kho cũ không ghi kho tính vào kho mặc định như báo cáo kho). */
+export async function activeWarehouses(tx: Tx, branches: readonly string[]) {
+  const list = [...new Set(branches)];
+  if (!list.length) return [];
+  const ws = (await sql<{ code: string; name: string; branch_code: string; is_default: boolean | null; is_active: boolean | null }>`
+    SELECT code, name, branch_code, is_default, is_active FROM bizcity_read.warehouses WHERE branch_code IN (${sql.join(list)}) ORDER BY branch_code, code`.execute(tx)).rows;
+  const out: { code: string; name: string; branchCode: string; isDefault: boolean }[] = [];
+  for (const b of list) {
+    const active = ws.filter((w) => w.branch_code === b && w.is_active !== false);
+    const def = (active.find((w) => w.is_default) ?? (active.length === 1 ? active[0] : undefined))?.code ?? '';
+    for (const w of active) out.push({ code: w.code, name: w.name, branchCode: b, isDefault: w.code === def });
+  }
+  return out;
+}
+
+/** Tồn hiện có theo chi nhánh × kho × mã (không khoá — chỉ để chọn kho; KHO01 / sổ kho kiểm lại khi xuất). Kho trống → kho mặc định. */
+export async function stockByWarehouse(tx: Tx, whs: readonly { code: string; branchCode: string; isDefault: boolean }[], skus: readonly string[]): Promise<Map<string, Record<string, number>>> {
+  const out = new Map<string, Record<string, number>>(whs.map((w) => [w.code, {}]));
+  const list = [...new Set(skus)];
+  const branches = [...new Set(whs.map((w) => w.branchCode))];
+  if (!list.length || !branches.length) return out;
+  const rows = (await sql<{ branch_code: string; warehouse_code: string | null; sku: string; qty: string }>`
+    SELECT branch_code, coalesce(warehouse_code, '') AS warehouse_code, sku, SUM(qty)::text AS qty FROM bizcity_read.stock_on_hand
+     WHERE branch_code IN (${sql.join(branches)}) AND sku IN (${sql.join(list)}) GROUP BY branch_code, coalesce(warehouse_code, ''), sku`.execute(tx)).rows;
+  for (const r of rows) {
+    const w = r.warehouse_code ? whs.find((x) => x.code === r.warehouse_code && x.branchCode === r.branch_code) : whs.find((x) => x.branchCode === r.branch_code && x.isDefault);
+    if (!w) continue;
+    const m = out.get(w.code)!;
+    m[r.sku] = Math.round(((m[r.sku] ?? 0) + Number(r.qty)) * 10_000) / 10_000;
+  }
+  return out;
+}
