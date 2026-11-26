@@ -40,7 +40,8 @@ export const TEN_MAN: Record<string, TenMan> = {
   // Kho
   '/kho/chuyen-kho': { label: 'Chuyển kho' },
   '/kho/kiem-ke': { label: 'Kiểm kê kho' },
-  '/ban-hang/xuat-dieu-chinh': { label: 'Xuất kho điều chỉnh' },
+  // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: BH06 nay ở /app/xuat-dieu-chinh (module) (đóng góp)
+  '/app/xuat-dieu-chinh': { label: 'Xuất kho điều chỉnh' },
   '/nghiep-vu/tinh-gia-von': { label: 'Tính giá vốn' },
   '/bao-cao/nhap-xuat-ton': { label: 'Tổng hợp tồn kho' },
   '/bao-cao/so-chi-tiet-hang-hoa': { label: 'Sổ chi tiết vật tư hàng hóa' },

@@ -12,6 +12,15 @@ Mỗi bản ghi đủ sáu mục:
 
 ## [Chưa phát hành]
 
+### BH06 Phiếu xuất điều chỉnh lập ở kế toán — module xuat-dieu-chinh (NT-BH-044) <!-- [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — mục CHANGELOG NT-BH-044 (đóng góp) -->
+
+- **Thêm:** module `xuat-dieu-chinh` (màn BH06 `/app/xuat-dieu-chinh`): danh sách đủ phiếu 0 đ và có giá (kèm phiếu cũ của cầu nối), lập / Lưu nháp / Lưu = ghi sổ và trừ kho, Huỷ (bút toán đảo, lý do bắt buộc), Chép thành phiếu mới, In 02-VT. Quyền `xuat-dieu-chinh:phieu-xem`, `phieu-lap` (gồm `staff` theo chi nhánh được gán), `phieu-huy`. Bản đồ lỗi `PhieuXuatForm.failure-map.json`.
+- **Đổi:** đường cũ `/ban-hang/xuat-dieu-chinh` chuyển hướng sang màn mới; menu Bán hàng bỏ mục BH06 cũ (mục mới lên từ manifest module); lối tắt menu gọn, sơ đồ nhóm Kho, quy trình bán hàng trỏ đường mới.
+- **Sửa:** danh sách BH06 cũ không hiện phiếu 0 đ (`stock_adjustment`) — màn mới hiện đủ.
+- **Thay đổi định khoản:** — (module nộp docType có sẵn `stock_adjustment` / `sale` qua `ctx.ledger.submit`; phiếu 0 đ gửi `purposeCode` theo bảng lý do → mục đích như cầu nối).
+- **Nâng cấp cần làm:** chạy migration module (`npm run module -w @ketoan/api -- migrate xuat-dieu-chinh`); `npm install` để liên kết gói `@bizcity-module/xuat-dieu-chinh` (cập nhật `package-lock.json` ở PR riêng). Đơn vị cần khai mục đích xuất (Quy tắc hạch toán) cho các lý do dùng ở phiếu 0 đ.
+- **Bảo mật:** —
+
 ### Bí mật mã hoá theo đơn vị — platform.secrets (BIZCITY-SECRETS-v1) <!-- [2026-11-25 09:05 PM Võ Hoàng] FLOW — mục CHANGELOG platform.secrets (đóng góp) --> <!-- [2026-11-25 11:32 PM Võ Hoàng] FLOW — mục CHANGELOG cập nhật: nối ctx.secrets, quyền khoá app, lệnh đổi khoá (đóng góp) -->
 
 - **Thêm:** năng lực `platform.secrets` (available). Module dùng `ctx.secrets.set / get / has / delete` trong action: tên `<module>.<tên>` khai ở manifest `secrets[]` (lược đồ `BIZCITY-MODULE-v1.schema.json` có trường `secrets`), phạm vi tenant / book / branch; `get` chỉ phía máy chủ, giao diện chỉ thấy "đã đặt lúc … bởi …"; set / delete chỉ trong action ghi. Module khai bí mật thì có sẵn action `<key>.secrets.read` (`/api/v1/m/<key>/secrets/read`, GET) cho khoá app có quyền `secrets:read:<key>` (manifest app xin ở `app.scopes`), mỗi lần đọc một dòng nhật ký. Lệnh `scripts/doi-khoa-bi-mat.mjs` đổi khoá gốc (có `--dry-run`). Mã `packages/platform/src/core/secrets.ts`; test `apps/api/test/secrets.test.ts` (13 ca, có ca đầu-cuối với khoá app thật).
