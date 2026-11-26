@@ -3,7 +3,7 @@
  * Ô chọn chi nhánh / shop là ô gõ tìm (mã hoặc tên, không dấu); chi nhánh / shop đã ngừng ghi rõ "ngừng".
  */
 import { workBranch } from '@/lib/workBranch';
-import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ListPicker } from '@/components/pickers';
 import { docSo, fold, lastParent, useHierarchy, type BranchNode } from './api';
@@ -149,4 +149,66 @@ export function OSo({ value, onChange, className, style, ...rest }: { value: num
       onChange={(e) => { const t = e.target.value; setText(t); const v = read(t); if (v >= 0) onChange(v); }}
       onBlur={(e) => { setText(null); rest.onBlur?.(e); }} />
   );
+}
+
+// [2026-11-26 kiennt] NT-MH-022 — ô Chi nhánh chung (thanh lọc chuẩn) ở các màn tồn max: chỉ MỘT chi nhánh một lúc (đóng góp)
+/** Giá trị "không chi nhánh nào" của ô Chi nhánh chung. */
+export const CN_NONE = '-';
+/**
+ * Giữ ô Chi nhánh chung (BranchSelect trong FilterLayout) ở MỘT chi nhánh: chi nhánh + các shop của nó.
+ *  - Tích mã thuộc chi nhánh khác → bỏ chi nhánh cũ; tích nút lớn (Miền…) → giữ chi nhánh đầu tiên bên dưới.
+ *  - caNhom: luôn cả chi nhánh (bỏ tích một shop không có tác dụng) — màn làm việc theo chi nhánh cha (MH02, MH16, MH19).
+ *    Không caNhom (MH17): bỏ tích shop được, để lọc riêng shop còn lại.
+ *  - Mở màn / lựa chọn nhớ từ lần trước nhiều chi nhánh → thu về chi nhánh đang làm việc, không thì chi nhánh đầu tiên.
+ * Trả `value` / `onChange` cho BranchSelect và `parent` = mã chi nhánh cha ('' nếu chưa rõ).
+ */
+export function useMotChiNhanh({ caNhom = false }: { caNhom?: boolean } = {}) {
+  const h = useHierarchy();
+  const nodes = h.data?.branches;
+  const [value, setValue] = useState('');
+  const nhomCua = useCallback((code: string) => {
+    const b = nodes?.find((x) => x.code === code);
+    return b?.level === 'branch' ? b.code : b?.level === 'shop' ? b.parentCode || code : code;
+  }, [nodes]);
+  const caChiNhanh = useCallback((g: string) => {
+    const codes = (nodes ?? []).filter((b) => (b.isActive || b.code === g) && nhomCua(b.code) === g).map((b) => b.code);
+    return codes.length ? codes : [g];
+  }, [nodes, nhomCua]);
+  const onChange = (v: string) => {
+    if (v === CN_NONE) { setValue(v); return; }
+    const tatCa = (nodes ?? []).map((b) => b.code);
+    const cu = new Set(!value ? tatCa : value === CN_NONE ? [] : value.split(','));
+    const moi = v ? v.split(',') : tatCa;
+    // Mã vừa tích thêm quyết định chi nhánh; chỉ bỏ tích thì giữ chi nhánh của mã còn lại đầu tiên.
+    const goc = moi.find((c) => !cu.has(c)) ?? moi[0];
+    if (!goc) { setValue(CN_NONE); return; }
+    const g = nhomCua(goc);
+    setValue((caNhom ? caChiNhanh(g) : moi.filter((c) => nhomCua(c) === g)).join(','));
+  };
+  useEffect(() => {
+    if (!nodes?.length || value === CN_NONE) return;
+    const codes = value ? value.split(',') : [];
+    const groups = new Set(codes.map(nhomCua));
+    let g = '';
+    if (codes.length && groups.size === 1) {
+      if (!caNhom) return;
+      g = [...groups][0] ?? '';
+      const du = caChiNhanh(g);
+      if (du.length === codes.length && du.every((c) => codes.includes(c))) return;
+    } else if (codes[0]) g = nhomCua(codes[0]);
+    else {
+      const wb = workBranch.get();
+      const gw = wb ? nhomCua(wb) : '';
+      g = nodes.some((b) => b.code === gw && b.level === 'branch') ? gw : nodes.find((b) => b.level === 'branch')?.code ?? '';
+    }
+    if (!g) return;
+    setValue((caNhom || !codes.length ? caChiNhanh(g) : codes.filter((c) => nhomCua(c) === g)).join(','));
+  }, [value, nodes, nhomCua, caChiNhanh, caNhom]);
+  const parent = useMemo(() => {
+    if (!value || value === CN_NONE) return '';
+    const groups = new Set(value.split(',').map(nhomCua));
+    const g = groups.size === 1 ? [...groups][0] ?? '' : '';
+    return nodes?.some((b) => b.code === g && b.level === 'branch') ? g : '';
+  }, [value, nodes, nhomCua]);
+  return { value, onChange, parent };
 }

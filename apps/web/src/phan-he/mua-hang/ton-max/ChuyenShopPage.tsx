@@ -16,8 +16,11 @@ import { ErrorBox, Loading, Modal } from '@/components/ui';
 import { api, errorText } from '@/lib/api';
 import { monthStart, today } from '../du-lieu';
 import { num, qtyFmt, stockApi, useHierarchy, type TransferRequest, type TransferSuggest, type TransferSuggestLine } from './api';
-import { ChonChiNhanhCha, ChuaPhanCap } from './chung';
+import { ChuaPhanCap, useMotChiNhanh } from './chung';
 import { useThaoTac } from '@/lib/manHinh';
+// [2026-11-26 kiennt] NT-MH-022 — bảng tham số + thanh lọc chuẩn (Chi nhánh · Kỳ) như MH11 / MH17 (đóng góp)
+import { FilterLayout } from '@/components/ReportPanel';
+import { BranchSelect, DateRange } from '@/components/filters';
 
 type Row = TransferSuggestLine & { _group?: boolean; _key: string };
 const lk = (l: TransferSuggestLine) => `${l.shopCode}|${l.sku}`;
@@ -32,18 +35,27 @@ const saveOpts = (o: { rounding: TransferRounding; allocation: TransferAllocatio
 export function ChuyenShopPage() {
   const [tab, setTab] = useState<'suggest' | 'list'>('suggest');
   const h = useHierarchy();
-  const [parent, setParent] = useState('');
+  // [2026-11-26 kiennt] NT-MH-022 — ô Chi nhánh chung, MỘT chi nhánh một lúc (cả chi nhánh); Kỳ chỉ dùng ở thẻ Đề nghị đã chốt (đóng góp)
+  const cn = useMotChiNhanh({ caNhom: true });
+  const parent = cn.parent;
+  const [from, setFrom] = useState(monthStart());
+  const [to, setTo] = useState(today());
   return (
     <>
       <PageHeader title="Chuyển hàng xuống shop" code="MH19" helpKey="mua-hang-chuyen-shop" subtitle="Tự tính shop nào thiếu bao nhiêu so với tồn max (trừ hàng đang đi đường), làm tròn theo thùng, không vượt tồn kho — chốt thành đề nghị cho kho lên phiếu chuyển" />
-      <div className="card">
-        <ChuaPhanCap branches={h.data?.branches} />
-        <div className="tm-bar">
-          <ChonChiNhanhCha value={parent} onChange={setParent} />
-          <div className="tm-sign"><button className={tab === 'suggest' ? 'on' : ''} onClick={() => setTab('suggest')}>Đề xuất chuyển</button><button className={tab === 'list' ? 'on' : ''} onClick={() => setTab('list')}>Đề nghị đã chốt</button></div>
+      <FilterLayout filters={<>
+        {tab === 'list' && <DateRange from={from} to={to} remember={false} onChange={(a, b) => { setFrom(a); setTo(b); }} />}
+        <BranchSelect value={cn.value} onChange={cn.onChange} />
+      </>}>
+        <div className="card">
+          <ChuaPhanCap branches={h.data?.branches} />
+          <div className="tm-bar">
+            <div className="tm-sign"><button className={tab === 'suggest' ? 'on' : ''} onClick={() => setTab('suggest')}>Đề xuất chuyển</button><button className={tab === 'list' ? 'on' : ''} onClick={() => setTab('list')}>Đề nghị đã chốt</button></div>
+          </div>
+          {!parent ? <div className="muted" style={{ padding: '8px 12px' }}>Chọn một chi nhánh ở ô Chi nhánh.</div>
+            : tab === 'suggest' ? <DeXuat parent={parent} onDone={() => setTab('list')} /> : <DaChot parent={parent} from={from} to={to} />}
         </div>
-        {parent && (tab === 'suggest' ? <DeXuat parent={parent} onDone={() => setTab('list')} /> : <DaChot parent={parent} />)}
-      </div>
+      </FilterLayout>
     </>
   );
 }
@@ -155,12 +167,10 @@ function DeXuat({ parent, onDone }: { parent: string; onDone: () => void }) {
   );
 }
 
-function DaChot({ parent }: { parent: string }) {
+function DaChot({ parent, from, to }: { parent: string; from: string; to: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const tt = useThaoTac('mua-hang.chuyen-shop'); // [2026-11-13 08:00 PM kiennt] NT-HT-003 — Huỷ / Mở lại / Đã lên phiếu theo thao tác màn MH19 (đóng góp)
-  const [from, setFrom] = useState(monthStart());
-  const [to, setTo] = useState(today());
   const [status, setStatus] = useState('open');
   const [open, setOpen] = useState<TransferRequest | null>(null);
   const [err, setErr] = useState('');
@@ -189,8 +199,6 @@ function DaChot({ parent }: { parent: string }) {
   return (
     <>
       <div className="tm-bar" style={{ paddingTop: 0 }}>
-        <label className="tm-parent"><span>Từ</span><input type="date" className="input" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-        <label className="tm-parent"><span>Đến</span><input type="date" className="input" value={to} onChange={(e) => setTo(e.target.value)} /></label>
         <select className="select input" value={status} onChange={(e) => setStatus(e.target.value)}><option value="open">Chờ lên phiếu</option><option value="done">Đã lên phiếu</option><option value="cancelled">Đã huỷ</option><option value="">Tất cả</option></select>
         {/* [2026-11-26 kiennt] NT-MH-014 — bỏ dòng chú thích API (Kho / POS đọc danh sách…) trên thẻ Đề nghị đã chốt (đóng góp) */}
       </div>

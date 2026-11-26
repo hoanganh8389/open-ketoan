@@ -6,7 +6,7 @@
  * Lọc nhanh mã cần nhập / đang dư; bấm SL cần nhập xem "vì sao ra số này". Chọn dòng → Lập đơn đặt: mỗi NCC một đơn nháp,
  * SL gợi ý làm tròn theo thùng (chọn lại xuống / lên), mang ghi chú mặt hàng NCC, quy cách, số liệu tồn để in đơn.
  */
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileSpreadsheet, ShoppingCart } from 'lucide-react';
@@ -18,7 +18,10 @@ import { errorText } from '@/lib/api';
 import { purchaseApi, today, useMuaHang, useNames, type SupplierRow } from '../du-lieu';
 import { PhieuMuaForm } from '../chung-tu/PhieuMuaForm';
 import { factsText, fold, num, qtyFmt, stockApi, stockSnapshot, useHierarchy, type AnalysisRow } from '../ton-max/api';
-import { ChonChiNhanhCha, ChuaPhanCap } from '../ton-max/chung';
+import { ChuaPhanCap, useMotChiNhanh } from '../ton-max/chung';
+// [2026-11-26 kiennt] NT-MH-022 — bảng tham số + thanh lọc chuẩn (Chi nhánh · Nhóm hàng) như MH11 / MH17 (đóng góp)
+import { FilterLayout } from '@/components/ReportPanel';
+import { BranchSelect } from '@/components/filters';
 import { ChonNhomHang, useLocNhomHang } from '@/components/CayNhomHang';
 import { roundPrice } from '@/lib/format';
 import '../mua-hang.css';
@@ -30,7 +33,9 @@ export function DatHangPage() {
   const qc = useQueryClient();
   const names = useNames();
   const h = useHierarchy();
-  const [parent, setParent] = useState('');
+  // [2026-11-26 kiennt] NT-MH-022 — ô Chi nhánh chung, MỘT chi nhánh một lúc (cả chi nhánh); bỏ xem gộp nhiều chi nhánh (đóng góp)
+  const cn = useMotChiNhanh({ caNhom: true });
+  const parent = cn.parent;
   const [params] = useSearchParams();
   const [search, setSearch] = useState(params.get('ncc') ?? '');
   const [quick, setQuick] = useState<Quick>('need');
@@ -39,6 +44,8 @@ export function DatHangPage() {
   const ln = useLocNhomHang(nhom);
   const [sel, setSel] = useState<Record<string, boolean>>({});
   const [buy, setBuy] = useState<Record<string, number>>({});
+  // Đổi chi nhánh thì bỏ các mã đã chọn / SL đã sửa (như trước khi chọn chi nhánh khác).
+  useEffect(() => { setSel({}); setBuy({}); }, [parent]);
   const [why, setWhy] = useState<AnalysisRow | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: React.ReactNode } | null>(null);
   // Lập đơn xong mở xem trước ngay tại chỗ (form đơn đặt: sửa, duyệt, xem mẫu gửi NCC) — không phải sang MH11.
@@ -165,11 +172,13 @@ export function DatHangPage() {
   return (
     <>
       <PageHeader title="Phân tích đặt hàng" code="MH02" helpKey="mua-hang-dat-hang" subtitle="SL cần nhập từng mã theo công thức của chi nhánh: tồn max kho + shop, tồn, đi đường, đơn đang đặt, doanh số dự phòng. Chọn mã → lập đơn đặt cho từng NCC" />
+      <FilterLayout filters={<>
+        <BranchSelect value={cn.value} onChange={cn.onChange} />
+        <ChonNhomHang value={nhom} onChange={setNhom} />
+      </>}>
       <div className="card">
         <ChuaPhanCap branches={h.data?.branches} />
         <div className="tm-bar">
-          <ChonChiNhanhCha multiple value={parent} onChange={(v) => { setParent(v); setSel({}); setBuy({}); }} />
-          <ChonNhomHang value={nhom} onChange={setNhom} />
           <label className="tm-parent" title="Lọc nhanh theo SL cần nhập (công thức MH18)"><span>Hiện</span><select className="select input" value={quick} onChange={(e) => setQuick(e.target.value as Quick)}>
             <option value="need">Mã cần nhập ({stats.need.toLocaleString('vi-VN')})</option>
             <option value="over">Mã đang dư ({stats.over.toLocaleString('vi-VN')})</option>
@@ -193,6 +202,7 @@ export function DatHangPage() {
             emptyText={!parent ? 'Chọn chi nhánh.' : search.trim() ? 'Không thấy mã khớp: mã chưa có tồn max, tồn, bán hay đơn đặt ở chi nhánh này.' : quick === 'need' ? 'Không có mã nào cần nhập theo công thức hiện tại.' : 'Không có mã nào.'} /></div>
         )}
       </div>
+      </FilterLayout>
       {why && <Modal title={`Vì sao ${why.sku} cần nhập ${qtyFmt(why.need)} ${why.baseUnit}`} onClose={() => setWhy(null)} footer={<button className="btn" onClick={() => setWhy(null)}>Đóng</button>}>
         <div className="full"><div className="muted" style={{ marginBottom: 6 }}>{why.name}</div>
           <table className="tm-terms tm-example"><tbody>
