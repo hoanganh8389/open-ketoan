@@ -1,7 +1,7 @@
 // [2026-11-25 10:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-040 §4, §5: khuôn sale.promo.*@2 qua hàm thuần và qua endpoint; @1 giữ nguyên (đóng góp)
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  buyXGetYV2Vectors, orderGiftV2Vectors, priceLinesVectors, saleBuyXGetYV2, saleOrderGiftV2, salePriceLines, scopeLines,
+  buyXGetYV2Vectors, orderGiftV2Vectors, poolComboVectors, priceLinesVectors, saleBuyXGetYV2, saleOrderGiftV2, salePoolCombo, salePriceLines, scopeLines,
 } from '../src/modules/system/rule-contracts/sale-promo-v2.js';
 import {
   cheapestFreeVectors, comboVectors, orderDiscountVectors, orderGiftVectors, saleCheapestFree, saleCombo, saleOrderDiscount, saleOrderGift, saleTiered, tieredVectors,
@@ -16,6 +16,46 @@ const vs = (x: unknown) => x as Vec[];
 const SETS: [AnyRuleContract, Vec[]][] = [[salePriceLines, vs(priceLinesVectors)], [saleBuyXGetYV2, vs(buyXGetYV2Vectors)], [saleOrderGiftV2, vs(orderGiftV2Vectors)]];
 const run = (c: AnyRuleContract, v: Vec) => c.evaluate(c.params.parse(v.params), v.input);
 const byName = (vs: Vec[], start: string) => vs.find((v) => v.name.startsWith(start))!;
+
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): ngữ nghĩa plugin cũ — trần tiền giảm (Tối đa đ), mua X tặng Y "mỗi mã tính riêng",
+// quà theo giá trị đơn cho chọn quà, combo bộ sản phẩm (pool) (đóng góp)
+describe('NT-BH-049 — khuôn theo plugin chính sách cũ', () => {
+  const L = (lineKey: string, sku: string, qty: number, price?: number) => ({ lineKey, sku, qty, ...(price !== undefined ? { price } : {}) });
+  const base = { priority: 0, exclusive: false, legalCapPct: null };
+  it('price_lines: Tối đa (đ) của dòng kẹp tiền giảm cả mã; bậc có trần riêng', () => {
+    const p = salePriceLines.params.parse({ ...base, lines: [{ sku: 'A', pct: 20, maxDiscount: 50_000 }, { sku: 'B', tiers: [{ min: 1, pct: 10 }, { min: 3, pct: 20, maxDiscount: 30_000 }] }] });
+    const o = salePriceLines.evaluate(p, { lines: [L('a1', 'A', 2, 100_000), L('a2', 'A', 2, 100_000), L('b', 'B', 3, 100_000)] }) as { discounts: { lineKey: string; amount: number }[]; total: number };
+    expect(o.discounts.map((d) => [d.lineKey, d.amount])).toEqual([['a1', 40_000], ['a2', 10_000], ['b', 30_000]]);
+    expect(o.total).toBe(80_000);
+  });
+  it('buy_x_get_y@2 each: mỗi mã tính riêng — 4 A (mua 2) + 3 B (mua 3) → 3 lần quà', () => {
+    const p = saleBuyXGetYV2.params.parse({ ...base, buy: { items: [{ sku: 'A', qty: 2 }, { sku: 'B', qty: 3 }], mode: 'each' }, get: { options: [{ sku: 'Q', qty: 1 }], choose: 1 } });
+    const o = saleBuyXGetYV2.evaluate(p, { lines: [L('a', 'A', 4, 10_000), L('b', 'B', 3, 10_000)] }) as { gifts: unknown[] };
+    expect(o.gifts).toEqual([{ sku: 'Q', qty: 3 }]);
+    const none = saleBuyXGetYV2.evaluate(p, { lines: [L('a', 'A', 1, 10_000), L('b', 'B', 2, 10_000)] }) as { gifts: unknown[]; blocked: string };
+    expect(none.gifts).toEqual([]);
+    expect(none.blocked).toContain('2 A hoặc 3 B');
+    expect(saleBuyXGetYV2.publishChecks(saleBuyXGetYV2.params.parse({ ...base, buy: { items: [{ sku: 'A' }], mode: 'each' }, get: { options: [{ sku: 'Q', qty: 1 }] } })).map((x) => x.path)).toContain('buy.items.0.qty');
+  });
+  it('order_gift@2 choose: hai quà, chọn 1 — chưa chọn → pendingChoice; chọn Q2 → tặng Q2 × số lần', () => {
+    const p = saleOrderGiftV2.params.parse({ ...base, tiers: [{ minOrder: 500_000, gifts: [{ sku: 'Q1', qty: 1 }, { sku: 'Q2', qty: 1 }] }], multiply: true, choose: 1 });
+    const lines = [L('a', 'A', 1, 1_100_000)];
+    const o = saleOrderGiftV2.evaluate(p, { lines }) as { gifts: unknown[]; pendingChoice: { choose: number; times: number; options: { sku: string; qty: number }[] } };
+    expect(o.gifts).toEqual([]);
+    expect(o.pendingChoice.times).toBe(2);
+    expect(o.pendingChoice.options).toEqual([{ sku: 'Q1', qty: 2 }, { sku: 'Q2', qty: 2 }]);
+    const c = saleOrderGiftV2.evaluate(p, { lines, context: { giftChoice: ['Q2'] } }) as { gifts: unknown[] };
+    expect(c.gifts).toEqual([{ sku: 'Q2', qty: 2 }]);
+  });
+  it('pool_combo@2: bộ ca chuẩn, đăng ký, kiểm phát hành', () => {
+    expect(getRuleContract('sale.promo.pool_combo@2')).toBe(salePoolCombo);
+    for (const v of vs(poolComboVectors)) {
+      expect(run(salePoolCombo, v), v.name).toEqual(v.output);
+      expect(salePoolCombo.publishChecks(salePoolCombo.params.parse(v.params))).toEqual([]);
+    }
+    expect(salePoolCombo.publishChecks(salePoolCombo.params.parse({ ...base, skus: ['A'], combo: { minDistinct: 3, pct: 10 } })).map((x) => x.path)).toEqual(['combo.minDistinct']);
+  });
+});
 
 describe('NT-BH-040 — hàm thuần, bộ ca chuẩn', () => {
   it('đăng ký đủ ba khuôn @2, miền sale; describe() trả đúng bộ ca', () => {

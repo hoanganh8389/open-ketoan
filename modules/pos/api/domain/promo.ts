@@ -11,6 +11,8 @@ export const PROMO_CONTRACTS = [
   'sale.promo.tiered@1', 'sale.promo.order_discount@1', 'sale.promo.order_gift@1',
   'sale.promo.combo@1', 'sale.promo.cheapest_free@1', 'sale.promo.buy_x_get_y@1',
   'sale.promo.price_lines@2', 'sale.promo.buy_x_get_y@2', 'sale.promo.order_gift@2',
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): combo bộ sản phẩm (pool) — loại 13 của plugin cũ (đóng góp)
+  'sale.promo.pool_combo@2',
 ] as const;
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày dạng YYYY-MM-DD');

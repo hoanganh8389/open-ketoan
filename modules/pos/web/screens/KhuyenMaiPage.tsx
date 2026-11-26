@@ -18,18 +18,26 @@ import { HanMucList, HanMucReport } from './khuyen-mai/HanMucTab';
 import { QUOTA_KINDS, type Program } from './khuyen-mai/han-muc';
 import { KmForm } from './khuyen-mai/KmForm';
 import { KIND_BY_CONTRACT, KIND_INFO, STATUS_LABEL, STOP_REASON, emptyForm, fromParams, statusOf, stopParams, type Form, type PromoKind } from './khuyen-mai/model';
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-14, S-CD-15, S-CD-18): Thêm mở form kiểu plugin cũ (loại chọn trong form, chỉ 7 loại cũ);
+// loại mới của màn (bậc, combo món, flash sale, hạn mức…) ẩn khỏi Thêm — chương trình đã có vẫn mở bằng form cũ; thanh nút như màn danh mục (đóng góp)
+import { PolicyForm } from './khuyen-mai/PolicyForm';
+import { OLD_TYPE, emptyOld, oldFromParams, type OldForm } from './khuyen-mai/old-types';
+import type { Draft } from './khuyen-mai/Drafts';
 
 type Version = { version: number; effectiveFrom: string | null; effectiveTo: string | null; status: string; scope: { branchCodes?: string[] }; reason: string | null; applied: number; publishedBy: string; publishedAt: string };
 type RegPolicy = { policyKey: string; ruleContract: string; versions: Version[]; current: number | null };
 type PolicyView = { policyKey: string; version: number; ruleContract: string; params: Record<string, unknown> | null; scope: { branchCodes?: string[] }; effectiveFrom: string | null };
 type Row = {
   key: string; kind: PromoKind; contract: string; version: number; branches: string; from: string; to: string; status: keyof typeof STATUS_LABEL; applied: number; note: string; last: Version;
+  /** Tên loại theo plugin cũ khi nội dung khớp một loại cũ. */
+  oldLabel?: string;
 };
 
 const today = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10);
 const nextDay = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
 
-/** Mẫu dựng sẵn (NT-BH-049, K10): loại đặc biệt của plugin cũ dựng từ khuôn có sẵn, điền sẵn ô hay dùng. */
+/** Mẫu dựng sẵn (NT-BH-049, K10) — ẨN khỏi Thêm từ 27/11 (S-CD-14: chỉ loại plugin cũ đang chạy); giữ code để bật lại sau. */
+const SHOW_PRESETS = false;
 const PRESETS: { id: string; label: string; hint: string; make: (d: string) => Form }[] = [
   { id: 'flash', label: 'Flash sale (giá sốc theo giờ)', hint: 'Giá riêng từng mã trong khung giờ, giới hạn số lượng mỗi phiếu và số lượt mỗi cửa hàng',
     make: (d) => ({ ...emptyForm('price_lines', d), reason: 'Flash sale', validTo: d, timeFrom: '11:00', timeTo: '13:00', quotaPerBranch: '50', exclusive: true }) },
@@ -41,7 +49,7 @@ const PRESETS: { id: string; label: string; hint: string; make: (d: string) => F
 
 const cols: GridColumn<Row>[] = [
   { key: 'key', header: 'Mã', type: 'code', width: 150 },
-  { key: 'kind', header: 'Loại', width: 230, value: (r) => KIND_INFO[r.kind].label },
+  { key: 'kind', header: 'Loại', width: 230, value: (r) => r.oldLabel ?? KIND_INFO[r.kind].label },
   { key: 'branches', header: 'Cửa hàng', width: 150 },
   { key: 'from', header: 'Từ ngày', width: 100 },
   { key: 'to', header: 'Đến ngày', width: 100 },
@@ -76,6 +84,7 @@ export function KhuyenMaiPage() {
   const cur = useQuery({ queryKey: ['km', 'current'], queryFn: () => api.get<{ items: PolicyView[] }>('/api/v1/policies', { domain: 'sale' }) });
   const [pick, setPick] = useState<Row | null>(null);
   const [form, setForm] = useState<{ f: Form; editing: boolean; draftId?: string } | null>(null);
+  const [oldForm, setOldForm] = useState<{ f: OldForm; editing: boolean; draftId?: string } | null>(null);
   const [chooseKind, setChooseKind] = useState(false);
   const [trial, setTrial] = useState<string[] | null>(null);
   const [stopOf, setStopOf] = useState<Row | null>(null);
@@ -88,7 +97,9 @@ export function KhuyenMaiPage() {
       const last = p.versions[p.versions.length - 1]!;
       const shown = p.versions.find((v) => v.version === p.current) ?? last;
       const pr = (params.get(p.policyKey) ?? {}) as { validFrom?: string; validTo?: string };
+      const old = oldFromParams(p.ruleContract, (params.get(p.policyKey) ?? {}) as Record<string, unknown>, { key: p.policyKey, today: d0 });
       return {
+        ...(old ? { oldLabel: OLD_TYPE[old.type].label } : {}),
         key: p.policyKey, kind: KIND_BY_CONTRACT[p.ruleContract]!, contract: p.ruleContract, version: last.version,
         branches: (shown.scope?.branchCodes ?? []).join(', ') || 'Mọi cửa hàng', from: pr.validFrom ?? shown.effectiveFrom ?? '', to: pr.validTo ?? last.effectiveTo ?? '',
         status: statusOf({ validFrom: pr.validFrom ?? last.effectiveFrom, validTo: pr.validTo, lastReason: last.reason, effectiveTo: last.effectiveTo }, d0),
@@ -106,24 +117,35 @@ export function KhuyenMaiPage() {
     return p;
   };
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['km'] })]);
+  /** Bản nháp đã phát hành gần nhất của mã (tên, hạn mức lượt). */
+  const lastPublished = async (key: string): Promise<Draft | undefined> => {
+    const x = await api.get<{ items?: Draft[] } | Draft[]>(`${M}/promo/drafts`, { status: 'published', q: key });
+    return (Array.isArray(x) ? x : x.items ?? []).filter((d) => d.key === key)[0];
+  };
   const edit = useMutation({
-    mutationFn: async (r: Row) => {
+    mutationFn: async (r: Row): Promise<{ old?: OldForm; f?: Form }> => {
       const p = await loadParams(r);
+      const eff = d0 > (r.last.effectiveFrom ?? '') ? nextDay(d0) : (r.last.effectiveFrom ?? d0);
+      const pub = await lastPublished(r.key).catch(() => undefined);
+      const old = oldFromParams(r.contract, p.params!, { key: r.key, reason: pub?.reason ?? r.note, branchCodes: p.scope?.branchCodes, quota: pub?.quota ?? null, today: d0, effectiveFrom: eff });
+      if (old) return { old };
       const f = fromParams(r.contract, p.params!, { key: r.key, branchCodes: p.scope?.branchCodes, today: d0 });
       if (!f) throw new Error('Loại khuyến mại này chưa sửa được ở màn');
-      return { ...f, effectiveFrom: d0 > (r.last.effectiveFrom ?? '') ? nextDay(d0) : (r.last.effectiveFrom ?? d0), reason: '' };
+      return { f: { ...f, effectiveFrom: eff, reason: '' } };
     },
-    onSuccess: (f) => setForm({ f, editing: true }),
+    onSuccess: (x) => (x.old ? setOldForm({ f: x.old, editing: true }) : setForm({ f: x.f!, editing: true })),
   });
   // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K11): nhân bản — mở form Thêm chép nội dung khuyến mại đang chọn, mã để trống, áp từ hôm nay (đóng góp)
   const copy = useMutation({
-    mutationFn: async (r: Row) => {
+    mutationFn: async (r: Row): Promise<{ old?: OldForm; f?: Form }> => {
       const p = await loadParams(r);
+      const old = oldFromParams(r.contract, p.params!, { key: '', reason: `${r.note || r.key} (bản sao)`, branchCodes: p.scope?.branchCodes, today: d0, effectiveFrom: d0 });
+      if (old) return { old: { ...old, key: '', validFrom: old.validFrom && old.validFrom < d0 ? d0 : old.validFrom } };
       const f = fromParams(r.contract, p.params!, { key: '', branchCodes: p.scope?.branchCodes, today: d0 });
       if (!f) throw new Error('Loại khuyến mại này chưa nhân bản được ở màn');
-      return { ...f, key: '', effectiveFrom: d0, validFrom: f.validFrom && f.validFrom < d0 ? d0 : f.validFrom, reason: `Nhân bản từ ${r.key}` };
+      return { f: { ...f, key: '', effectiveFrom: d0, validFrom: f.validFrom && f.validFrom < d0 ? d0 : f.validFrom, reason: `Nhân bản từ ${r.key}` } };
     },
-    onSuccess: (f) => setForm({ f, editing: false }),
+    onSuccess: (x) => (x.old ? setOldForm({ f: x.old, editing: false }) : setForm({ f: x.f!, editing: false })),
   });
   const stop = useMutation({
     mutationFn: async ({ r, from }: { r: Row; from: string }) => {
@@ -145,12 +167,13 @@ export function KhuyenMaiPage() {
       <div className="tabs" role="tablist" style={{ margin: '8px 0' }}>
         {TABS.map(([k, l, t]) => <button key={k} type="button" role="tab" className={`tab ${tab === k ? 'active' : ''}`} title={t} onClick={() => setTab(k)}>{l}</button>)}
       </div>
-      <div className="row" style={{ gap: 8, margin: '8px 0', alignItems: 'center' }}>
-        {canAdd && <button type="button" className="btn btn-primary" onClick={() => setChooseKind(true)}>+ Thêm</button>}
-        {tab === 'km' && writable && <button type="button" className="btn" disabled={!pick || edit.isPending} title={pick ? '' : 'Chọn một khuyến mại ở bảng'} onClick={() => pick && edit.mutate(pick)}>Sửa</button>}
-        {tab === 'km' && writable && <button type="button" className="btn" disabled={!pick || copy.isPending} title={pick ? 'Thêm khuyến mại mới chép nội dung khuyến mại đang chọn (mã để trống)' : 'Chọn một khuyến mại ở bảng'} onClick={() => pick && copy.mutate(pick)}>Nhân bản</button>}
-        {tab === 'km' && writable && <button type="button" className="btn" disabled={!pick || pick.status === 'stopped' || pick.status === 'ended'} title={!pick ? 'Chọn một khuyến mại ở bảng' : pick.status === 'stopped' || pick.status === 'ended' ? 'Khuyến mại đã ngừng / đã hết' : ''} onClick={() => setStopOf(pick)}>Ngừng</button>}
-        <button type="button" className="btn" title="Tính một giỏ hàng như máy bán — mọi chương trình đang chạy (cả có hạn mức), hoặc khuyến mại đang chọn; không ghi gì"
+      <div className="catalog-toolbar canh-phai" style={{ border: '1px solid var(--line-soft, #e3e8ee)', borderRadius: 6 }}>
+        {canAdd && <button type="button" className="btn btn-sm btn-primary" title={tab === 'han-muc' ? 'Thêm chương trình có hạn mức cửa hàng' : 'Thêm chương trình khuyến mại (loại chọn trong form, như plugin cũ)'}
+          onClick={() => (tab === 'han-muc' ? setChooseKind(true) : setOldForm({ f: emptyOld('ck', d0), editing: false }))}>+ Thêm</button>}
+        {tab === 'km' && writable && <button type="button" className="btn btn-sm" disabled={!pick || edit.isPending} title={pick ? '' : 'Chọn một khuyến mại ở bảng'} onClick={() => pick && edit.mutate(pick)}>Sửa</button>}
+        {tab === 'km' && writable && <button type="button" className="btn btn-sm" disabled={!pick || copy.isPending} title={pick ? 'Thêm khuyến mại mới chép nội dung khuyến mại đang chọn (mã để trống)' : 'Chọn một khuyến mại ở bảng'} onClick={() => pick && copy.mutate(pick)}>Nhân bản</button>}
+        {tab === 'km' && writable && <button type="button" className="btn btn-sm" disabled={!pick || pick.status === 'stopped' || pick.status === 'ended'} title={!pick ? 'Chọn một khuyến mại ở bảng' : pick.status === 'stopped' || pick.status === 'ended' ? 'Khuyến mại đã ngừng / đã hết' : ''} onClick={() => setStopOf(pick)}>Ngừng</button>}
+        <button type="button" className="btn btn-sm" title="Tính một giỏ hàng như máy bán — mọi chương trình đang chạy (cả có hạn mức), hoặc khuyến mại đang chọn; không ghi gì"
           onClick={() => setTrial(tab === 'km' && pick ? [pick.key] : [])}>Thử tính{tab === 'km' && pick ? ` ${pick.key}` : ' (mọi chương trình)'}</button>
         {tab === 'han-muc' && <span className="muted">Bấm một dòng để xem / sửa hạn mức.</span>}
         {msg && <span className="muted">{msg}</span>}
@@ -163,6 +186,8 @@ export function KhuyenMaiPage() {
           rowClassName={(r) => (r.key === pick?.key ? 'selected' : '')} emptyText="Chưa có khuyến mại — bấm Thêm" exportName="khuyen-mai" exportTitle="Khuyến mại" />
       )}
       {tab === 'nhap' && <DraftsTab today={d0} onMsg={setMsg} onEdit={(d) => {
+        const old = oldFromParams(d.ruleContract, d.params, { key: d.key, reason: d.reason, branchCodes: d.branchCodes, quota: d.quota, today: d0, effectiveFrom: d.effectiveFrom });
+        if (old) return setOldForm({ f: old, editing: d.publishedVersion !== null, draftId: d.id });
         const f = draftToForm(d, d0);
         if (!f) return setMsg('Loại khuyến mại này chưa sửa được ở màn');
         setForm({ f, editing: d.publishedVersion !== null, draftId: d.id });
@@ -172,16 +197,16 @@ export function KhuyenMaiPage() {
       {tab === 'bao-cao' && <HanMucReport today={d0} />}
 
       {chooseKind && (
-        <Modal title="Thêm chương trình — chọn loại" onClose={() => setChooseKind(false)}>
+        <Modal title="Thêm chương trình có hạn mức — chọn loại" onClose={() => setChooseKind(false)}>
           <div style={{ display: 'grid', gap: 6, gridColumn: '1 / -1' }}>
             {/* NT-BH-049 (K10): mẫu dựng sẵn từ loại có sẵn — flash sale = giá riêng từng mã + khung giờ + số lượng tối đa / phiếu + hạn mức lượt */}
-            {PRESETS.map((pr) => (
+            {SHOW_PRESETS && PRESETS.map((pr) => (
               <button key={pr.id} type="button" className="btn" style={{ textAlign: 'left' }} disabled={!writable} title={writable ? pr.hint : 'Cần quyền ghi cấu hình (settings:write)'}
                 onClick={() => { setChooseKind(false); setForm({ f: pr.make(d0), editing: false }); }}>
                 <b>{pr.label}</b><br /><span className="muted">{pr.hint}</span>
               </button>
             ))}
-            {(Object.keys(KIND_INFO) as PromoKind[]).map((k) => (
+            {SHOW_PRESETS && (Object.keys(KIND_INFO) as PromoKind[]).map((k) => (
               <button key={k} type="button" className="btn" style={{ textAlign: 'left' }} disabled={!writable} title={writable ? '' : 'Cần quyền ghi cấu hình (settings:write)'}
                 onClick={() => { setChooseKind(false); setForm({ f: emptyForm(k, d0), editing: false }); }}>
                 <b>{KIND_INFO[k].label}</b><br /><span className="muted">{KIND_INFO[k].hint}</span>
@@ -200,6 +225,8 @@ export function KhuyenMaiPage() {
         <HanMucForm key={quotaForm.program?.id ?? `new-${quotaForm.mode}`} program={quotaForm.program} mode={quotaForm.mode} today={d0} writable={quotaWritable}
           onClose={() => setQuotaForm(null)} onDone={(code) => { setQuotaForm(null); setMsg(`Đã lưu chương trình ${code}.`); void refresh(); }} />
       )}
+      {oldForm && <PolicyForm initial={oldForm.f} editing={oldForm.editing} {...(oldForm.draftId ? { draftId: oldForm.draftId } : {})} onClose={() => setOldForm(null)}
+        onDone={(m) => { setOldForm(null); setMsg(m); setTab('nhap'); void refresh(); }} />}
       {form && <KmForm initial={form.f} editing={form.editing} {...(form.draftId ? { draftId: form.draftId } : {})} onClose={() => setForm(null)}
         onDone={(m) => { setForm(null); setMsg(m); setTab('nhap'); void refresh(); }} />}
       {stopOf && <StopDialog row={stopOf} pending={stop.isPending} error={stop.error ? errorText(stop.error) : ''} onClose={() => setStopOf(null)} onStop={(from) => stop.mutate({ r: stopOf, from })} />}
