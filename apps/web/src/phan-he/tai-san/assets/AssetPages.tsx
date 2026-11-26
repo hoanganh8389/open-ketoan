@@ -194,6 +194,11 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
   const allocTotal = allocations.reduce((s, a) => s + Number(a.percent || 0), 0);
   const setAlloc = (i: number, p: Partial<Allocation>) => set({ allocations: allocations.map((a, j) => (j === i ? { ...a, ...p } : a)) });
   const viewAgain = useViewAgain();
+  const thieuGhi = !v.code ? 'Chưa nhập mã thẻ' : !v.name ? 'Chưa nhập tên' : !v.startDate ? 'Chưa nhập ngày bắt đầu trích' : !v.originalCost ? 'Chưa nhập nguyên giá'
+    : !v.usefulLifeMonths ? (kind === 'fixed_asset' ? 'Chưa nhập số tháng khấu hao' : 'Chưa nhập số tháng phân bổ')
+    : kind === 'fixed_asset' && !v.assetAccount ? 'Chưa chọn TK nguyên giá (211x, 213x) — chọn Nhóm tài sản để điền sẵn'
+    : !v.depreciationAccount ? (kind === 'fixed_asset' ? 'Chưa chọn TK hao mòn' : 'Chưa chọn TK chờ phân bổ') : !v.expenseAccount ? 'Chưa chọn TK chi phí'
+    : allocations.length > 0 && Math.abs(allocTotal - 100) > 0.001 ? `Tổng tỷ lệ phân bổ phải bằng 100% (đang ${allocTotal}%)` : '';
   const save = useMutation({
     mutationFn: () => {
       const body = {
@@ -221,7 +226,8 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       footer={<>
         {!value.isNew && value.code && <span data-view-ok><PrintButton screen={printScreen} templates={assetTemplates(kind, value.status === 'disposed' ? 'first' : false)} title="In thẻ theo nội dung đã ghi" getDocs={() => loadAssetCards([value as Asset])} /></span>}
         <button className="btn" onClick={onClose}>Đóng</button>
-        {!readOnly && <button className="btn btn-primary" disabled={save.isPending || !v.code || !v.name || !v.startDate || !v.originalCost || !v.usefulLifeMonths || !v.depreciationAccount || !v.expenseAccount || (allocations.length > 0 && Math.abs(allocTotal - 100) > 0.001)} onClick={() => save.mutate()}>Ghi</button>}
+        {/* [2026-11-26 01:05 PM Nguyễn Văn Thủy] TSCD — #62 tab Test: thiếu ô bắt buộc (vd TK nguyên giá của TSCĐ) thì nút Ghi khoá và nói thiếu gì — trước: gửi lên mới bị chặn "Thẻ tài sản chưa đúng" (đóng góp) */}
+        {!readOnly && <button className="btn btn-primary" disabled={save.isPending || Boolean(thieuGhi)} title={thieuGhi || undefined} onClick={() => save.mutate()}>Ghi</button>}
       </>}>
       <Field label="Mã thẻ (*)"><input className="input mono" value={v.code ?? ''} disabled={!value.isNew} onChange={(e) => set({ code: e.target.value.trim() })} autoFocus={value.isNew} /></Field>
       <Field label="Tên (*)" full><input className="input" value={v.name ?? ''} onChange={(e) => set({ name: e.target.value })} /></Field>
@@ -799,7 +805,7 @@ export function DepreciationPage() {
   return (
     <>
       <PageHeader title="Tính khấu hao, phân bổ" code="ACC31" subtitle="Khấu hao tài sản cố định, phân bổ công cụ dụng cụ và chi phí trả trước trong tháng; ghi sổ một chứng từ cho mỗi chi nhánh" helpKey="tai-san"
-        actions={can('periods:lock') && tt.tinh && <button className="btn btn-primary" disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? 'Đang tính…' : `Tính tháng ${mm}`}</button>} />
+        actions={<button className="btn btn-primary" disabled={run.isPending || !can('periods:lock') || !tt.tinh} title={!can('periods:lock') || !tt.tinh ? 'Tài khoản chưa được quyền tính khấu hao, phân bổ (cần quyền khoá sổ + thao tác Tính ở ACC31) — nhờ quản trị cấp quyền' : 'Tính khấu hao TSCĐ, phân bổ CCDC và chi phí trả trước của tháng, ghi sổ một chứng từ cho mỗi chi nhánh'} onClick={() => run.mutate()}>{run.isPending ? 'Đang tính…' : `Tính và ghi sổ tháng ${mm}`}</button>} />
       <div className="card">
         <div className="filters">
           <div className="field"><label>Tháng</label><input type="month" className="input w-md" value={period} onChange={(e) => e.target.value && setPeriod(e.target.value)} /></div>
