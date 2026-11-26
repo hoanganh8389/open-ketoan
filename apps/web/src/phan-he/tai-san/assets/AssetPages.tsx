@@ -149,7 +149,9 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
   const tt = useThaoTac('tai-san.the-tai-san');
   const ttBd = useThaoTac('tai-san.bien-dong');
   const readOnly = !can('catalog:write') || (value.isNew ? !tt.them : !tt.sua);
-  const [v, setV] = useState(value);
+  // [2026-11-26 10:25 AM Nguyễn Văn Thủy] TSCD — thẻ mới cũng chọn được ảnh ngay (ghi thẻ xong tự lưu ảnh) và có sẵn dòng Kích thước (đóng góp)
+  const [v, setV] = useState(value.isNew && !value.specs?.length ? { ...value, specs: [{ name: 'Kích thước', value: '' }] } : value);
+  const [anhMoi, setAnhMoi] = useState<string | null>(null);
   const [eventKind, setEventKind] = useState<'revaluation' | 'transfer' | 'audit' | null>(null);
   const [posting, setPosting] = useState<'increase' | 'decrease' | null>(null);
   const [showPlan, setShowPlan] = useState(false);
@@ -188,7 +190,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       };
       return value.isNew ? api.post('/api/v1/assets', body) : api.put(`/api/v1/assets/${value.code}`, body);
     },
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['assets'] }); if (value.isNew) onClose(); else viewAgain[1](); },
+    onSuccess: async () => { if (value.isNew && anhMoi && v.code) { try { await api.put(`/api/v1/assets/${encodeURIComponent(v.code)}/photo`, { photo: anhMoi }); } catch { /* ảnh lỗi không chặn thẻ — chọn lại ở thẻ */ } } void qc.invalidateQueries({ queryKey: ['assets'] }); if (value.isNew) onClose(); else viewAgain[1](); },
   });
   const remove = useMutation({
     mutationFn: () => api.delete(`/api/v1/assets/${value.code}`),
@@ -223,10 +225,11 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       <Field label={kind === 'fixed_asset' ? 'Số tháng khấu hao (*)' : 'Số tháng phân bổ (*)'} hint={kind === 'fixed_asset' ? 'Theo khung Phụ lục I Thông tư 45/2013/TT-BTC' : undefined}>
         <input className="input num" inputMode="numeric" value={v.usefulLifeMonths ?? ''} onChange={(e) => set({ usefulLifeMonths: num(e.target.value) })} />
       </Field>
-      <Field label="Mức trích mỗi tháng" hint={`Trống = giá trị tính khấu hao ÷ số tháng${monthly ? ` = ${money(monthly)}` : ''}`}>
+      {/* [2026-11-26 10:15 AM Nguyễn Văn Thủy] TSCD — đổi tên theo yêu cầu kế toán: Mức trích mỗi tháng → Khấu hao mỗi tháng, Luỹ kế đã trích → KH luỹ kế (đóng góp) */}
+      <Field label={kind === 'fixed_asset' ? 'Khấu hao mỗi tháng' : 'Phân bổ mỗi tháng'} hint={`Trống = giá trị tính khấu hao ÷ số tháng${monthly ? ` = ${money(monthly)}` : ''}`}>
         <input className="input num" inputMode="numeric" value={v.monthlyAmount ? money(v.monthlyAmount, { decimals: true }) : ''} onChange={(e) => set({ monthlyAmount: e.target.value.trim() ? Number(e.target.value.replace(/\./g, '').replace(',', '.')) || null : null })} placeholder={monthly ? money(monthly) : ''} />
       </Field>
-      <Field label="Luỹ kế đã trích trước khi dùng phần mềm" hint="Tài sản chuyển từ sổ cũ"><input className="input num" inputMode="numeric" value={v.openingAccumulated ? money(v.openingAccumulated) : ''} onChange={(e) => set({ openingAccumulated: num(e.target.value) ?? 0 })} /></Field>
+      <Field label={kind === 'fixed_asset' ? 'KH luỹ kế' : 'Luỹ kế đã phân bổ'} hint="Đã trích trước khi dùng phần mềm (tài sản chuyển từ sổ cũ)"><input className="input num" inputMode="numeric" value={v.openingAccumulated ? money(v.openingAccumulated) : ''} onChange={(e) => set({ openingAccumulated: num(e.target.value) ?? 0 })} /></Field>
       <Field label="Luỹ kế tính tới ngày"><input type="date" className="input" value={v.openingAsOf ?? ''} onChange={(e) => set({ openingAsOf: e.target.value || null })} /></Field>
       <Field label="Số tháng còn lại (sau ngày trên)" hint="Hết số tháng này thì trích nốt phần còn lại"><input className="input num" inputMode="numeric" value={v.openingRemainingMonths ?? ''} onChange={(e) => set({ openingRemainingMonths: e.target.value === '' ? null : num(e.target.value) ?? null })} /></Field>
       {kind === 'fixed_asset' && <Field label="TK nguyên giá (*)"><AccountPicker postingOnly value={v.assetAccount ?? ''} onChange={(assetAccount) => set({ assetAccount })} placeholder="211x, 213x" /></Field>}
@@ -270,7 +273,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       </div>
 
       <SpecsEditor specs={v.specs ?? []} readOnly={readOnly} onChange={(specs) => set({ specs })} />
-      {!value.isNew && value.code && <PhotoBox code={value.code} readOnly={readOnly} />}
+      {!value.isNew && value.code ? <PhotoBox code={value.code} readOnly={readOnly} /> : !readOnly && <AnhThe photo={anhMoi} onChange={setAnhMoi} />}
       {!value.isNew && (
         <div className="full">
           <div className="muted" style={{ marginBottom: 6 }}>
@@ -326,6 +329,31 @@ function SpecsEditor({ specs, readOnly, onChange }: { specs: { name: string; val
       )}
       {!readOnly && <button className="btn btn-sm" style={{ marginTop: 6 }} onClick={() => onChange([...specs, { name: specs.length ? '' : 'Kích thước', value: '' }])}><Plus size={14} /> Thêm thông số</button>}
       {readOnly && !specs.length && <div className="muted">Chưa khai thông số.</div>}
+    </div>
+  );
+}
+
+/** Ảnh của thẻ đang thêm mới: giữ tạm, ghi thẻ xong mới lưu ảnh. */
+function AnhThe({ photo, onChange }: { photo: string | null; onChange: (p: string | null) => void }) {
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <div className="full">
+      <label className="field-title">Ảnh tài sản</label>
+      <div className="row" style={{ gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
+        <div style={{ width: 220, height: 150, border: '1px dashed var(--line)', borderRadius: 6, display: 'grid', placeItems: 'center', background: '#fff', overflow: 'hidden' }}>
+          {photo ? <img src={photo} alt="Ảnh tài sản" style={{ maxWidth: 216, maxHeight: 146 }} /> : <span className="muted">Chưa có ảnh</span>}
+        </div>
+        <div style={{ display: 'grid', gap: 6 }}>
+          <label className="btn btn-sm">
+            Chọn ảnh…
+            <input type="file" accept="image/png,image/jpeg,image/webp" style={{ display: 'none' }}
+              onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; setErr(null); try { onChange(await shrinkImage(f, 800)); } catch (x) { setErr((x as Error).message); } }} />
+          </label>
+          {photo && <button className="btn btn-sm" onClick={() => onChange(null)}>Bỏ ảnh</button>}
+          <span className="muted" style={{ fontSize: 12 }}>Ảnh lưu cùng lúc bấm Ghi thẻ.</span>
+        </div>
+      </div>
+      <ErrorBox error={err} />
     </div>
   );
 }
@@ -405,7 +433,7 @@ function EventDialog({ kind, assetCode, onClose }: { kind: AssetEvent['kind']; a
         <Field label="Chênh lệch nguyên giá" hint="Tăng ghi số dương, giảm ghi số âm"><input className="input num" value={f.costDelta} onChange={(e) => set({ costDelta: e.target.value })} /></Field>
         <Field label="Chênh lệch luỹ kế khấu hao"><input className="input num" value={f.accumulatedDelta} onChange={(e) => set({ accumulatedDelta: e.target.value })} /></Field>
         <Field label="Số tháng còn phải trích" hint="Tính từ tháng đánh giá lại; trống = giữ thời gian cũ"><input className="input num" value={f.remainingMonths} onChange={(e) => set({ remainingMonths: e.target.value.replace(/\D/g, '') })} /></Field>
-        <Field label="Mức trích tháng mới" hint="Trống = phần còn lại ÷ số tháng còn lại"><input className="input num" value={f.monthlyAmount} onChange={(e) => set({ monthlyAmount: e.target.value })} /></Field>
+        <Field label="Khấu hao / phân bổ mỗi tháng (mới)" hint="Trống = phần còn lại ÷ số tháng còn lại"><input className="input num" value={f.monthlyAmount} onChange={(e) => set({ monthlyAmount: e.target.value })} /></Field>
         <div className="full muted">Có hiệu lực từ tháng đánh giá lại. Bút toán chênh lệch (Nợ / Có 211, 214, 412…) lập bằng phiếu kế toán.</div>
       </>}
       {kind === 'transfer' && <>
