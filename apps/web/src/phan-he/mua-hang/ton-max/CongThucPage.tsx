@@ -74,7 +74,8 @@ export function CongThucPage() {
       <div className="card">
         <ChuaPhanCap branches={h.data?.branches} />
         <div className="tm-bar">
-          <ChonChiNhanhCha value={parent} onChange={(v) => { setParent(v); setCfg(null); }} />
+          {/* [2026-11-26 kiennt] NT-MH-017 — chọn lại đúng chi nhánh đang xem: không xoá cấu hình (trước đây treo "Đang tải…" vì không tải lại) (đóng góp) */}
+          <ChonChiNhanhCha value={parent} onChange={(v) => { if (v === parent) return; setParent(v); setCfg(null); }} />
           {f.data && <span className="muted" style={{ fontSize: 12 }}>{f.data.saved ? `Lưu lần cuối bởi ${f.data.updatedBy} lúc ${new Date(f.data.updatedAt!).toLocaleString('vi-VN')}` : 'Chưa lưu riêng — đang dùng công thức chuẩn'}</span>}
           <span className="grow" />
           {/* [2026-11-25 kiennt] NT-MH-013 — nút "Về công thức chuẩn" đổi tên "Về công thức gợi ý" (đóng góp) */}
