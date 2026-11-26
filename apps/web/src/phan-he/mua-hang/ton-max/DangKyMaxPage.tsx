@@ -18,20 +18,41 @@ import { monthStart, today } from '../du-lieu';
 import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { docSo, fold, num, qtyFmt, stockApi, useHierarchy, type BranchNode, type MaxRequest } from './api';
-import { ChonChiNhanhCha, ChuaPhanCap, OSo } from './chung'; // [2026-11-25 kiennt] NT-MH-009 — ô số gõ tay (đóng góp)
+import { ChonChiNhanhCha, ChuaPhanCap, CN_NONE, OSo, useMotChiNhanh } from './chung'; // [2026-11-25 kiennt] NT-MH-009 — ô số gõ tay (đóng góp)
 import { useThaoTac } from '@/lib/manHinh';
+// [2026-11-26 kiennt] NT-MH-022 — bảng tham số + thanh lọc chuẩn (Chi nhánh · Kỳ) dùng chung như MH11 (đóng góp)
+import { FilterLayout } from '@/components/ReportPanel';
+import { BranchSelect, DateRange } from '@/components/filters';
 
 const TONE: Record<MaxRequestStatus, string> = { draft: 'info', submitted: 'warn', approved: 'ok', cancelled: 'bad' };
+
+type MoPhieu = { id?: string; kind: MaxRequestKind; branchCode?: string; parent: string };
 
 export function DangKyMaxPage() {
   const tt = useThaoTac('mua-hang.dang-ky-max'); // [2026-11-13 08:00 PM kiennt] NT-HT-003 — nút lập phiếu theo thao tác "them" của màn MH17 (đóng góp)
   const h = useHierarchy();
-  const [parent, setParent] = useState('');
+  // [2026-11-26 kiennt] NT-MH-022 — ô Chi nhánh chung, MỘT chi nhánh một lúc (useMotChiNhanh); lọc phía trình duyệt (shop hoặc chi nhánh cha của phiếu), API không đổi (đóng góp)
+  const cn = useMotChiNhanh();
+  const branchCodes = cn.value;
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
-  const [open, setOpen] = useState<{ id?: string; kind: MaxRequestKind; branchCode?: string } | null>(null);
-  const q = useQuery({ queryKey: ['ton-max', 'max-requests', parent, from, to], enabled: Boolean(parent), queryFn: () => stockApi.maxRequests({ from, to, branchCode: parent }) });
-  const all = q.data ?? [];
+  const [open, setOpen] = useState<MoPhieu | null>(null);
+  const [sel, setSel] = useState<MaxRequest | null>(null);
+  const q = useQuery({ queryKey: ['ton-max', 'max-requests', from, to], queryFn: () => stockApi.maxRequests({ from, to }) });
+  const all = useMemo(() => {
+    const rows = q.data ?? [];
+    if (!branchCodes) return rows;
+    if (branchCodes === CN_NONE) return [];
+    const picked = new Set(branchCodes.split(','));
+    return rows.filter((r) => picked.has(r.branchCode) || (r.parentCode && picked.has(r.parentCode)));
+  }, [q.data, branchCodes]);
+  // Lập phiếu cần MỘT chi nhánh cha; chưa rõ (bỏ chọn hết, mã chưa phân cấp) thì hỏi ở hộp "Lập phiếu cho chi nhánh".
+  const parent = cn.parent;
+  // [2026-11-26 kiennt] NT-MH-022 — nút lập phiếu luôn bấm được; chưa rõ chi nhánh thì hỏi chọn (thay cho nút mờ) (đóng góp)
+  const [hoiCN, setHoiCN] = useState<{ kind: MaxRequestKind; code: string } | null>(null);
+  const lap = (kind: MaxRequestKind, p: string) => setOpen(kind === 'new_item' ? { kind, branchCode: p, parent: p } : { kind, parent: p });
+  const batDauLap = (kind: MaxRequestKind) => (parent ? lap(kind, parent) : setHoiCN({ kind, code: '' }));
+  const moPhieu = (r: MaxRequest) => setOpen({ id: r.id, kind: r.kind, parent: r.parentCode || r.branchCode });
   const cols: Column<MaxRequest>[] = [
     { key: 'code', header: 'Số phiếu', type: 'code', width: 120 },
     { key: 'createdAt', header: 'Ngày lập', width: 130, value: (r) => r.createdAt, render: (r) => new Date(r.createdAt).toLocaleString('vi-VN') },
@@ -48,21 +69,34 @@ export function DangKyMaxPage() {
   return (
     <>
       <PageHeader title="Phiếu đăng ký tồn max (shop)" code="MH17" helpKey="mua-hang-dang-ky-max" subtitle="Shop lập phiếu đề nghị max; kế toán mua hàng duyệt (duyệt = ghi tồn max). Hàng mới chưa có mã: chi nhánh đăng ký max cho từng shop" />
-      <div className="card">
-        <ChuaPhanCap branches={h.data?.branches} />
-        <div className="tm-bar">
-          <ChonChiNhanhCha value={parent} onChange={setParent} />
-          <label className="tm-parent"><span>Từ</span><input type="date" className="input" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-          <label className="tm-parent"><span>Đến</span><input type="date" className="input" value={to} onChange={(e) => setTo(e.target.value)} /></label>
-          <span className="grow" />
-          {tt.them && <button className="btn btn-sm" disabled={!parent} onClick={() => setOpen({ kind: 'new_item', branchCode: parent })}><Plus size={14} /> Phiếu hàng mới</button>}
-          {tt.them && <button className="btn btn-primary" disabled={!parent} onClick={() => setOpen({ kind: 'existing' })}><Plus size={14} /> Phiếu shop đăng ký max</button>}
+      {/* [2026-11-26 kiennt] NT-MH-022 — thanh lọc chuẩn + hàng nút trên lưới như MH11 (đóng góp) */}
+      <FilterLayout filters={<>
+        <DateRange from={from} to={to} remember={false} onChange={(a, b) => { setFrom(a); setTo(b); }} />
+        <BranchSelect value={cn.value} onChange={cn.onChange} />
+      </>}>
+        <div className="card">
+          <ChuaPhanCap branches={h.data?.branches} />
+          <div className="row" style={{ gap: 6, padding: '6px 12px', flexWrap: 'wrap' }}>
+            {tt.them && <button type="button" className="btn btn-sm btn-primary" onClick={() => batDauLap('existing')}>+ Phiếu shop đăng ký max</button>}
+            {tt.them && <button type="button" className="btn btn-sm" onClick={() => batDauLap('new_item')}>+ Phiếu hàng mới</button>}
+            <button type="button" className="btn btn-sm" disabled={!sel} title={sel ? `Mở phiếu ${sel.code}` : 'Bấm chọn một phiếu trong lưới'} onClick={() => sel && moPhieu(sel)}>{sel?.status === 'approved' || sel?.status === 'cancelled' ? 'Xem' : 'Mở / sửa'}</button>
+            <button type="button" className="btn btn-sm" onClick={() => void q.refetch()}>Nạp</button>
+            <span className="muted" style={{ fontSize: 12, alignSelf: 'center' }}>{all.length} phiếu{parent ? ` · lập phiếu cho chi nhánh ${parent}` : ''}</span>
+          </div>
+          {/* [2026-11-25 kiennt] NT-MH-006 — bỏ dải ô đếm Tất cả / Chờ duyệt / Nháp / Đã duyệt / Hàng mới chờ gắn mã; lọc trạng thái ở cột Trạng thái của lưới (đóng góp) */}
+          <ErrorBox error={q.error ? errorText(q.error) : null} />
+          {q.isLoading ? <Loading /> : <DataGrid rows={all} columns={cols} rowKey={(r) => r.id} storageKey="dang-ky-max" onSelect={setSel} onRowClick={moPhieu} exportName="phieu-dang-ky-max" emptyText="Chưa có phiếu nào trong kỳ và chi nhánh đang chọn." />}
         </div>
-        {/* [2026-11-25 kiennt] NT-MH-006 — bỏ dải ô đếm Tất cả / Chờ duyệt / Nháp / Đã duyệt / Hàng mới chờ gắn mã; lọc trạng thái ở cột Trạng thái của lưới (đóng góp) */}
-        <ErrorBox error={q.error ? errorText(q.error) : null} />
-        {q.isLoading ? <Loading /> : <DataGrid rows={all} columns={cols} rowKey={(r) => r.id} storageKey="dang-ky-max" onRowClick={(r) => setOpen({ id: r.id, kind: r.kind })} exportName={`phieu-dang-ky-max-${parent}`} emptyText="Chưa có phiếu nào trong khoảng ngày này." />}
-      </div>
-      {open && parent && <PhieuDangKy key={open.id ?? open.kind} parent={parent} init={open} branches={h.data?.branches ?? []} onClose={() => setOpen(null)} />}
+      </FilterLayout>
+      {hoiCN && <Modal title={hoiCN.kind === 'new_item' ? 'Lập phiếu hàng mới cho chi nhánh' : 'Lập phiếu shop đăng ký max cho chi nhánh'} onClose={() => setHoiCN(null)}
+        footer={<>
+          <button type="button" className="btn" onClick={() => setHoiCN(null)}>Huỷ</button>
+          <button type="button" className="btn btn-primary" disabled={!hoiCN.code} title={hoiCN.code ? '' : 'Chọn một chi nhánh'} onClick={() => { lap(hoiCN.kind, hoiCN.code); setHoiCN(null); }}>Lập phiếu</button>
+        </>}>
+        <p className="muted" style={{ marginTop: 0 }}>Ô Chi nhánh chưa chọn chi nhánh nào — phiếu lập cho một chi nhánh, chọn chi nhánh:</p>
+        <ChonChiNhanhCha value={hoiCN.code} onChange={(code) => setHoiCN((x) => (x ? { ...x, code } : x))} />
+      </Modal>}
+      {open && open.parent && <PhieuDangKy key={open.id ?? open.kind} parent={open.parent} init={open} branches={h.data?.branches ?? []} onClose={() => setOpen(null)} />}
     </>
   );
 }
