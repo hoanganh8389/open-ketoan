@@ -108,7 +108,7 @@ export const SO_DO: Record<string, SoDo> = {
     title: 'Nghiệp vụ tiền mặt',
     rows: [
       [{ label: 'Thu tiền', icon: 'ArrowDownLeft', path: '/nghiep-vu/phieu-thu' }, { label: 'Kiểm kê quỹ', icon: 'ListChecks' }],
-      [{ label: 'Đề nghị chi tiền', icon: 'Send' }, { label: 'Chi tiền', icon: 'ArrowUpRight', path: '/nghiep-vu/phieu-chi' }],
+      [{ label: 'Đề nghị chi tiền', icon: 'Send', path: '/cong-no/yeu-cau-thanh-toan' }, { label: 'Chi tiền', icon: 'ArrowUpRight', path: '/nghiep-vu/phieu-chi' }],
     ],
     reports: [
       { label: 'Bảng kê số dư tiền theo ngày', path: '/quy/so-du-tien' }, { label: 'Dòng tiền', path: '/quy/dong-tien' }, { label: 'Sổ nhật ký thu tiền', path: '/quy/nhat-ky-thu-tien' },
@@ -203,7 +203,7 @@ export const SO_DO: Record<string, SoDo> = {
     rows: [
       // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: Xuất kho → màn BH06 của module (đóng góp)
       [{ label: 'Xuất kho', icon: 'PackageMinus', path: '/app/xuat-dieu-chinh' }, { label: 'Chuyển kho', icon: 'ArrowLeftRight', path: '/kho/chuyen-kho' }],
-      [{ label: 'Nhập kho', icon: 'PackagePlus' }, { label: 'Tính giá vốn', icon: 'Calculator', path: '/nghiep-vu/tinh-gia-von' }, { label: 'Kiểm kê', icon: 'ListChecks', path: '/kho/kiem-ke' }],
+      [{ label: 'Nhập kho', icon: 'PackagePlus', path: '/mua-hang/tong-hop' }, { label: 'Tính giá vốn', icon: 'Calculator', path: '/nghiep-vu/tinh-gia-von' }, { label: 'Kiểm kê', icon: 'ListChecks', path: '/kho/kiem-ke' }],
     ],
     reports: [
       { label: 'Sổ chi tiết vật tư hàng hóa', path: '/bao-cao/so-chi-tiet-hang-hoa' }, { label: 'Tổng hợp tồn kho', path: '/bao-cao/nhap-xuat-ton' },
@@ -216,10 +216,11 @@ export const SO_DO: Record<string, SoDo> = {
     title: 'Nghiệp vụ công cụ dụng cụ, chi phí trả trước',
     rows: [
       [{ label: 'Ghi tăng', icon: 'CirclePlus', path: '/tai-san/cong-cu' }, { label: 'Phân bổ chi phí trả trước', icon: 'Timer', path: '/tai-san/chi-phi-tra-truoc' }],
-      [{ label: 'Điều chuyển', icon: 'ArrowLeftRight' }, { label: 'Ghi giảm', icon: 'CircleMinus' }, { label: 'Kiểm kê', icon: 'ListChecks' }],
+      // [2026-11-26 03:40 PM Nguyễn Văn Thủy] TSCD — sơ đồ CCDC gắn màn đã có (Điều chuyển ACC33, Ghi giảm CCDC, Kiểm kê ACC35) — trước để trống nên trang Đang phát triển còn liệt kê (đóng góp)
+      [{ label: 'Điều chuyển', icon: 'ArrowLeftRight', path: '/tai-san/dieu-chuyen' }, { label: 'Ghi giảm', icon: 'CircleMinus', path: '/tai-san/ghi-giam-ccdc' }, { label: 'Kiểm kê', icon: 'ListChecks', path: '/tai-san/kiem-ke' }],
     ],
     reports: [
-      { label: 'Bảng tính phân bổ chi phí trả trước', path: '/bao-cao/phan-bo-chi-phi' }, { label: 'Bảng tính phân bổ công cụ dụng cụ' },
+      { label: 'Bảng tính phân bổ chi phí trả trước', path: '/bao-cao/phan-bo-chi-phi' }, { label: 'Bảng tính phân bổ công cụ dụng cụ', path: '/bao-cao/phan-bo-chi-phi' },
       { label: 'Sổ theo dõi tài sản, công cụ dụng cụ', path: '/bao-cao/theo-doi-tscd-ccdc' }, { label: 'Báo cáo chi tiết giảm công cụ dụng cụ' },
     ],
     links: [L.coCau, { label: 'Loại công cụ dụng cụ', icon: 'Hammer', path: '/danh-muc/nhom-ccdc' }],
@@ -231,11 +232,11 @@ export const SO_DO: Record<string, SoDo> = {
       [{ label: 'Đánh giá lại', icon: 'Star', path: '/tai-san/danh-gia-lai' }, { label: 'Ghi giảm', icon: 'CircleMinus', path: '/tai-san/ghi-giam' }, { label: 'Kiểm kê tài sản', icon: 'ListChecks', path: '/tai-san/kiem-ke' }],
     ],
     reports: [
-      { label: 'Sổ tài sản cố định', path: '/bao-cao/so-tai-san' }, { label: 'Bảng tính khấu hao tài sản cố định theo năm' },
+      { label: 'Sổ tài sản cố định', path: '/bao-cao/so-tai-san' }, { label: 'Bảng tính khấu hao tài sản cố định', path: '/tai-san/khau-hao' },
       { label: 'Tổng hợp tài sản cố định', path: '/bao-cao/tai-san' }, { label: 'Sổ theo dõi tài sản, công cụ dụng cụ', path: '/bao-cao/theo-doi-tscd-ccdc' },
-      { label: 'Thẻ tài sản cố định' },
+      { label: 'Thẻ tài sản cố định', path: '/tai-san/tscd' },
     ],
-    links: [L.coCau, { label: 'Loại tài sản cố định', icon: 'Shapes', path: '/danh-muc/loai-tai-san' }, { label: 'Nguồn vốn', icon: 'Coins', path: '/danh-muc/nguon-von' }],
+    links: [L.coCau, { label: 'Nhóm, loại tài sản', icon: 'Shapes', path: '/danh-muc/loai-tai-san' }, { label: 'Nguồn vốn', icon: 'Coins', path: '/danh-muc/nguon-von' }],
   },
   thue: {
     title: 'Nghiệp vụ thuế',
@@ -264,8 +265,8 @@ export const SO_DO: Record<string, SoDo> = {
   },
   'ngan-sach': {
     title: 'Nghiệp vụ ngân sách',
-    rows: [[{ label: 'Kế hoạch ngân sách', icon: 'CalendarRange', path: '/ke-hoach/thu-chi' }, { label: 'Định mức chi phí', icon: 'Gauge', path: '/ke-hoach/dinh-muc' }, { label: 'Theo dõi thực hiện', icon: 'ChartColumn' }]],
-    reports: [{ label: 'Tình hình thực hiện ngân sách' }],
+    rows: [[{ label: 'Kế hoạch ngân sách', icon: 'CalendarRange', path: '/ke-hoach/thu-chi' }, { label: 'Định mức chi phí', icon: 'Gauge', path: '/ke-hoach/dinh-muc' }, { label: 'Theo dõi thực hiện', icon: 'ChartColumn', path: '/ke-hoach/thu-chi' }]],
+    reports: [{ label: 'Tình hình thực hiện ngân sách', path: '/ke-hoach/thu-chi' }],
     links: [{ label: 'Khoản mục chi phí', icon: 'Coins', path: '/danh-muc/khoan-muc' }, L.coCau],
   },
 };

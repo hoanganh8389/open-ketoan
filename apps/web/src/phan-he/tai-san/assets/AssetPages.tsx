@@ -68,8 +68,10 @@ const META: Record<AssetKind, { title: string; code: string; subtitle: string; c
 
 /* ------------------------------------------------------------------ Danh sách thẻ */
 export function AssetsPage({ kind, decrease = false }: { kind: AssetKind; decrease?: boolean }) {
+  // [2026-11-26 01:55 PM Nguyễn Văn Thủy] TSCD — FA-002/003/004 (yeucauketoanlantruoc): ghi giảm / thanh lý có màn riêng cho CCDC và chi phí trả trước; điều chuyển, kiểm kê CCDC mở ACC33 / ACC35 (đã chọn được mọi loại thẻ) (đóng góp)
   const meta = decrease
-    ? { ...META[kind], title: 'Giảm tài sản cố định', code: 'ACC30', subtitle: 'Thanh lý, nhượng bán, mất mát: chọn tài sản, ghi ngày ghi giảm; khấu hao trích tới hết ngày trước ngày đó' }
+    ? { ...META[kind], title: kind === 'fixed_asset' ? 'Giảm tài sản cố định' : kind === 'tool' ? 'Ghi giảm công cụ dụng cụ' : 'Ghi giảm chi phí trả trước', code: 'ACC30',
+      subtitle: kind === 'fixed_asset' ? 'Thanh lý, nhượng bán, mất mát: chọn tài sản, ghi ngày ghi giảm; khấu hao trích tới hết ngày trước ngày đó' : 'Hỏng, mất, thanh lý, kết thúc sớm: chọn thẻ, ghi ngày ghi giảm; phân bổ tới hết ngày trước ngày đó, phần còn lại ghi một lần' }
     : META[kind];
   const { can } = useAuth();
   const tt = useThaoTac('tai-san.the-tai-san');
@@ -100,7 +102,7 @@ export function AssetsPage({ kind, decrease = false }: { kind: AssetKind; decrea
         <div className="card-body" style={{ paddingTop: 10, paddingBottom: 6 }}>
           <p className="muted" style={{ margin: 0 }}>
             {decrease
-              ? 'Bấm vào tài sản, đổi Trạng thái thành "Đã ghi giảm" và ghi Ngày ghi giảm, rồi Ghi. Sau đó lập phiếu kế toán ghi giảm: Nợ 2141 (hao mòn luỹ kế), Nợ 811 (giá trị còn lại) / Có 211x; thu tiền thanh lý (nếu có): Nợ 111, 112 / Có 711, 33311.'
+              ? 'Bấm vào thẻ → nút "Ghi giảm / thanh lý" (cuối thẻ): phần mềm lập phiếu kế toán ghi giảm (TSCĐ: Nợ 2141 hao mòn luỹ kế, Nợ 811 giá trị còn lại / Có 211x; CCDC, trả trước: Nợ TK chi phí phần còn lại / Có 242x) và chuyển thẻ sang "Đã ghi giảm". Thu tiền thanh lý (nếu có) lập phiếu thu: Nợ 111, 112 / Có 711, 3331. Xem phiếu đã ghi giảm: chọn "Tài sản đã ghi giảm".'
               : kind === 'fixed_asset'
               ? 'Ghi tăng tài sản (Nợ 211x, 1331 / Có 331, 112…) lập bằng phiếu kế toán hoặc phiếu chi; thẻ ở đây dùng để trích khấu hao hằng tháng. Thanh lý, nhượng bán: sửa thẻ, chọn "Đã ghi giảm" kèm ngày, rồi lập phiếu kế toán ghi giảm (Nợ 2141, Nợ 811 / Có 211x). Đánh giá lại, điều chuyển, kiểm kê: mở thẻ, phần Lịch sử.'
               : 'Xuất công cụ dụng cụ dùng hoặc trả trước (Nợ 242x / Có 153, 111, 331…) lập bằng phiếu; thẻ ở đây dùng để phân bổ dần vào chi phí hằng tháng. Phân bổ tới 12 tháng dùng 2421x, trên 12 tháng dùng 2422x.'}
@@ -149,7 +151,9 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
   const tt = useThaoTac('tai-san.the-tai-san');
   const ttBd = useThaoTac('tai-san.bien-dong');
   const readOnly = !can('catalog:write') || (value.isNew ? !tt.them : !tt.sua);
-  const [v, setV] = useState(value);
+  // [2026-11-26 10:25 AM Nguyễn Văn Thủy] TSCD — thẻ mới cũng chọn được ảnh ngay (ghi thẻ xong tự lưu ảnh) và có sẵn dòng Kích thước (đóng góp)
+  const [v, setV] = useState(value.isNew && !value.specs?.length ? { ...value, specs: [{ name: 'Kích thước', value: '' }] } : value);
+  const [anhMoi, setAnhMoi] = useState<string | null>(null);
   const [eventKind, setEventKind] = useState<'revaluation' | 'transfer' | 'audit' | null>(null);
   const [posting, setPosting] = useState<'increase' | 'decrease' | null>(null);
   const [showPlan, setShowPlan] = useState(false);
@@ -158,28 +162,52 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
   const { data: categories = [] } = useCategories();
   const { data: costItems = [] } = useDim('cost_item');
   const { data: departments = [] } = useDim('department');
+  const { data: contracts = [] } = useDim('contract');
   const { data: toolGroups = [] } = useDim('tool_group');
   const { data: usagePurposes = [] } = useDim('usage_purpose');
   const events = useQuery({ queryKey: ['asset-events', value.code], enabled: !value.isNew, queryFn: () => api.get<AssetEvent[]>('/api/v1/asset-events', { assetCode: value.code }) });
   const cats = categories.filter((c) => c.kind === kind && (c.isActive || c.code === v.categoryCode));
   const branchItems = branches.map((b) => ({ code: b.code, name: b.name }));
+  // [2026-11-26 11:30 AM Nguyễn Văn Thủy] TSCD — DM-008/009: Nhóm tài sản (dòng cấp trên ở ACC37, gắn tài khoản) + Loại tài sản (dòng con thuộc nhóm);
+  // chọn loại không khai tài khoản thì lấy tài khoản của nhóm (đóng góp)
+  const catOf = (code: string | null | undefined) => (code ? categories.find((x) => x.code === code) : undefined);
+  const curCat = catOf(v.categoryCode);
+  const nhomCode = curCat ? (curCat.parentCode && catOf(curCat.parentCode) ? curCat.parentCode : curCat.code) : '';
+  const nhoms = cats.filter((c) => !c.parentCode || !catOf(c.parentCode));
+  const loais = cats.filter((c) => c.parentCode && c.parentCode === nhomCode);
   const pickCategory = (code: string) => {
-    const c = categories.find((x) => x.code === code);
-    set({ categoryCode: code || null, ...(c && value.isNew ? { assetAccount: c.assetAccount, depreciationAccount: c.depreciationAccount, expenseAccount: c.expenseAccount, usefulLifeMonths: v.usefulLifeMonths || c.usefulLifeMonths || undefined } : {}) });
+    const c = catOf(code);
+    const n = c?.parentCode ? catOf(c.parentCode) : undefined;
+    const tk = (k: 'assetAccount' | 'depreciationAccount' | 'expenseAccount') => c?.[k] || n?.[k] || null;
+    set({ categoryCode: code || null, ...(c && value.isNew ? { assetAccount: tk('assetAccount'), depreciationAccount: tk('depreciationAccount') ?? '', expenseAccount: tk('expenseAccount') ?? '', usefulLifeMonths: v.usefulLifeMonths || c.usefulLifeMonths || n?.usefulLifeMonths || undefined } : {}) });
   };
   const base = v.depreciableAmount || v.originalCost;
-  const monthly = v.monthlyAmount || (base && v.usefulLifeMonths ? Math.round(base / v.usefulLifeMonths) : 0);
+  // [2026-11-26 11:30 AM Nguyễn Văn Thủy] TSCD — công thức theo kế toán: Giá trị còn lại = Giá trị tính KH − KH luỹ kế;
+  // Số tháng còn lại = Số tháng KH − số tháng đã trích (Ngày bắt đầu trích → ngày luỹ kế, ÷ 30); Khấu hao mỗi tháng = Giá trị còn lại ÷ Số tháng còn lại.
+  // Phần mềm tự điền, sửa tay được (đóng góp)
+  const luyKe = v.openingAccumulated || 0;
+  const giaTriConLai = base ? Math.max(base - luyKe, 0) : 0;
+  const ngay = (d: string) => Date.parse(d + 'T00:00:00Z') / 86_400_000;
+  const thangDaTrich = luyKe > 0 && v.startDate && v.openingAsOf ? Math.max(0, Math.round((ngay(v.openingAsOf) - ngay(v.startDate) + 1) / 30)) : 0;
+  const thangConLaiTu = v.usefulLifeMonths ? Math.max(v.usefulLifeMonths - thangDaTrich, 0) : 0;
+  const thangConLai = v.openingRemainingMonths ?? thangConLaiTu;
+  const khTu = thangConLai > 0 ? Math.round(giaTriConLai / thangConLai) : giaTriConLai;
   const allocations = v.allocations ?? [];
   const allocTotal = allocations.reduce((s, a) => s + Number(a.percent || 0), 0);
   const setAlloc = (i: number, p: Partial<Allocation>) => set({ allocations: allocations.map((a, j) => (j === i ? { ...a, ...p } : a)) });
   const viewAgain = useViewAgain();
+  const thieuGhi = !v.code ? 'Chưa nhập mã thẻ' : !v.name ? 'Chưa nhập tên' : !v.startDate ? 'Chưa nhập ngày bắt đầu trích' : !v.originalCost ? 'Chưa nhập nguyên giá'
+    : !v.usefulLifeMonths ? (kind === 'fixed_asset' ? 'Chưa nhập số tháng khấu hao' : 'Chưa nhập số tháng phân bổ')
+    : kind === 'fixed_asset' && !v.assetAccount ? 'Chưa chọn TK nguyên giá (211x, 213x) — chọn Nhóm tài sản để điền sẵn'
+    : !v.depreciationAccount ? (kind === 'fixed_asset' ? 'Chưa chọn TK hao mòn' : 'Chưa chọn TK chờ phân bổ') : !v.expenseAccount ? 'Chưa chọn TK chi phí'
+    : allocations.length > 0 && Math.abs(allocTotal - 100) > 0.001 ? `Tổng tỷ lệ phân bổ phải bằng 100% (đang ${allocTotal}%)` : '';
   const save = useMutation({
     mutationFn: () => {
       const body = {
         code: v.code, name: v.name, kind, categoryCode: v.categoryCode || null, branchCode: v.branchCode || branches.find((b) => b.isActive)?.code, unit: v.unit ?? '', quantity: v.quantity ?? 1,
         acquiredDate: v.acquiredDate || null, startDate: v.startDate, originalCost: v.originalCost, depreciableAmount: v.depreciableAmount || null, usefulLifeMonths: v.usefulLifeMonths,
-        monthlyAmount: v.monthlyAmount || null, openingAccumulated: v.openingAccumulated ?? 0, openingAsOf: v.openingAsOf || null,
-        openingRemainingMonths: v.openingRemainingMonths ?? null, assetAccount: v.assetAccount || null, depreciationAccount: v.depreciationAccount, expenseAccount: v.expenseAccount,
+        monthlyAmount: v.monthlyAmount || (luyKe > 0 && khTu ? khTu : null), openingAccumulated: v.openingAccumulated ?? 0, openingAsOf: v.openingAsOf || null,
+        openingRemainingMonths: v.openingRemainingMonths ?? (luyKe > 0 && v.openingAsOf ? thangConLaiTu : null), assetAccount: v.assetAccount || null, depreciationAccount: v.depreciationAccount, expenseAccount: v.expenseAccount,
         costItemCode: v.costItemCode || null, departmentCode: v.departmentCode || null, contractCode: v.contractCode || null,
         toolGroupCode: v.toolGroupCode || null, usagePurposeCode: v.usagePurposeCode || null,
         specs: (v.specs ?? []).filter((s) => s.name.trim() && s.value.trim()),
@@ -188,7 +216,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       };
       return value.isNew ? api.post('/api/v1/assets', body) : api.put(`/api/v1/assets/${value.code}`, body);
     },
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['assets'] }); if (value.isNew) onClose(); else viewAgain[1](); },
+    onSuccess: async () => { if (value.isNew && anhMoi && v.code) { try { await api.put(`/api/v1/assets/${encodeURIComponent(v.code)}/photo`, { photo: anhMoi }); } catch (e) { window.alert(`Đã ghi thẻ nhưng chưa lưu được ảnh: ${errorText(e)} — mở thẻ ${v.code} chọn lại ảnh`); } } void qc.invalidateQueries({ queryKey: ['assets'] }); if (value.isNew) onClose(); else viewAgain[1](); },
   });
   const remove = useMutation({
     mutationFn: () => api.delete(`/api/v1/assets/${value.code}`),
@@ -200,12 +228,17 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       footer={<>
         {!value.isNew && value.code && <span data-view-ok><PrintButton screen={printScreen} templates={assetTemplates(kind, value.status === 'disposed' ? 'first' : false)} title="In thẻ theo nội dung đã ghi" getDocs={() => loadAssetCards([value as Asset])} /></span>}
         <button className="btn" onClick={onClose}>Đóng</button>
-        {!readOnly && <button className="btn btn-primary" disabled={save.isPending || !v.code || !v.name || !v.startDate || !v.originalCost || !v.usefulLifeMonths || !v.depreciationAccount || !v.expenseAccount || (allocations.length > 0 && Math.abs(allocTotal - 100) > 0.001)} onClick={() => save.mutate()}>Ghi</button>}
+        {/* [2026-11-26 01:05 PM Nguyễn Văn Thủy] TSCD — #62 tab Test: thiếu ô bắt buộc (vd TK nguyên giá của TSCĐ) thì nút Ghi khoá và nói thiếu gì — trước: gửi lên mới bị chặn "Thẻ tài sản chưa đúng" (đóng góp) */}
+        {!readOnly && <button className="btn btn-primary" disabled={save.isPending || Boolean(thieuGhi)} title={thieuGhi || undefined} onClick={() => save.mutate()}>Ghi</button>}
       </>}>
       <Field label="Mã thẻ (*)"><input className="input mono" value={v.code ?? ''} disabled={!value.isNew} onChange={(e) => set({ code: e.target.value.trim() })} autoFocus={value.isNew} /></Field>
       <Field label="Tên (*)" full><input className="input" value={v.name ?? ''} onChange={(e) => set({ name: e.target.value })} /></Field>
-      <Field label="Loại tài sản" hint="Chọn loại để điền sẵn tài khoản và số tháng">
-        <ListPicker items={cats.map((c) => ({ code: c.code, name: c.name }))} value={v.categoryCode ?? ''} onChange={pickCategory} placeholder="Bấm để chọn" />
+      <Field label="Nhóm tài sản" hint="Nhóm gắn tài khoản nguyên giá / khấu hao / chi phí (khai ở ACC37) — chọn là điền sẵn tài khoản và số tháng">
+        <ListPicker items={nhoms.map((c) => ({ code: c.code, name: c.name }))} value={nhomCode} onChange={pickCategory} placeholder="Bấm để chọn" />
+      </Field>
+      <Field label="Loại tài sản" hint="Loại chi tiết thuộc nhóm (khai ở ACC37); loại không khai tài khoản thì lấy theo nhóm">
+        {nhomCode ? <ListPicker items={loais.map((c) => ({ code: c.code, name: c.name }))} value={curCat?.parentCode ? curCat.code : ''} onChange={(code) => pickCategory(code || nhomCode)} placeholder={loais.length ? 'Bấm để chọn' : 'Nhóm chưa khai loại'} />
+          : <input className="input" disabled title="Chọn Nhóm tài sản trước — loại hiện theo nhóm đã chọn" placeholder="Chọn nhóm trước" />}
       </Field>
       <Field label="Chi nhánh đang dùng" hint={value.isNew ? undefined : 'Đổi chi nhánh bằng Điều chuyển ở phần Lịch sử'}>
         <BranchPicker activeOnly value={v.branchCode ?? branches.find((b) => b.isActive)?.code ?? ''} disabled={!value.isNew} onChange={(branchCode) => set({ branchCode })} />
@@ -223,17 +256,21 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       <Field label={kind === 'fixed_asset' ? 'Số tháng khấu hao (*)' : 'Số tháng phân bổ (*)'} hint={kind === 'fixed_asset' ? 'Theo khung Phụ lục I Thông tư 45/2013/TT-BTC' : undefined}>
         <input className="input num" inputMode="numeric" value={v.usefulLifeMonths ?? ''} onChange={(e) => set({ usefulLifeMonths: num(e.target.value) })} />
       </Field>
-      <Field label="Mức trích mỗi tháng" hint={`Trống = giá trị tính khấu hao ÷ số tháng${monthly ? ` = ${money(monthly)}` : ''}`}>
-        <input className="input num" inputMode="numeric" value={v.monthlyAmount ? money(v.monthlyAmount, { decimals: true }) : ''} onChange={(e) => set({ monthlyAmount: e.target.value.trim() ? Number(e.target.value.replace(/\./g, '').replace(',', '.')) || null : null })} placeholder={monthly ? money(monthly) : ''} />
+      <Field label={kind === 'fixed_asset' ? 'KH luỹ kế' : 'Luỹ kế đã phân bổ'} hint="Đã trích trước khi dùng phần mềm (tài sản chuyển từ sổ cũ)"><input className="input num" inputMode="numeric" value={v.openingAccumulated ? money(v.openingAccumulated) : ''} onChange={(e) => set({ openingAccumulated: num(e.target.value) ?? 0 })} /></Field>
+      <Field label="Luỹ kế tính tới ngày" hint="KH luỹ kế đã gồm cả tháng của ngày này — phần mềm trích từ tháng sau (vd ngày 31/10 → trích từ tháng 11)"><input type="date" className="input" value={v.openingAsOf ?? ''} onChange={(e) => set({ openingAsOf: e.target.value || null })} /></Field>
+      <Field label="Giá trị còn lại" hint="= Giá trị tính khấu hao − KH luỹ kế (tự tính)"><input className="input num" disabled title="Ô tự tính = Giá trị tính khấu hao − KH luỹ kế; sửa nguyên giá / giá trị tính KH / KH luỹ kế để đổi" value={giaTriConLai ? money(giaTriConLai) : ''} /></Field>
+      <Field label="Số tháng còn lại" hint={`= Số tháng khấu hao − số tháng đã trích (Ngày bắt đầu trích → Luỹ kế tính tới ngày, ÷ 30)${thangDaTrich ? ` = ${v.usefulLifeMonths} − ${thangDaTrich}` : ''}; trống = tự tính, sửa tay được`}><input className="input num" inputMode="numeric" value={v.openingRemainingMonths ?? ''} placeholder={thangConLaiTu ? String(thangConLaiTu) : ''} onChange={(e) => set({ openingRemainingMonths: e.target.value === '' ? null : num(e.target.value) ?? null })} /></Field>
+      {/* [2026-11-26 10:15 AM Nguyễn Văn Thủy] TSCD — đổi tên theo yêu cầu kế toán: Mức trích mỗi tháng → Khấu hao mỗi tháng, Luỹ kế đã trích → KH luỹ kế (đóng góp) */}
+      <Field label={kind === 'fixed_asset' ? 'Khấu hao mỗi tháng' : 'Phân bổ mỗi tháng'} hint={`= Giá trị còn lại ÷ Số tháng còn lại${khTu ? ` = ${money(khTu)}` : ''}; trống = tự tính, sửa tay được`}>
+        <input className="input num" inputMode="numeric" value={v.monthlyAmount ? money(v.monthlyAmount, { decimals: true }) : ''} onChange={(e) => set({ monthlyAmount: e.target.value.trim() ? Number(e.target.value.replace(/\./g, '').replace(',', '.')) || null : null })} placeholder={khTu ? money(khTu) : ''} />
       </Field>
-      <Field label="Luỹ kế đã trích trước khi dùng phần mềm" hint="Tài sản chuyển từ sổ cũ"><input className="input num" inputMode="numeric" value={v.openingAccumulated ? money(v.openingAccumulated) : ''} onChange={(e) => set({ openingAccumulated: num(e.target.value) ?? 0 })} /></Field>
-      <Field label="Luỹ kế tính tới ngày"><input type="date" className="input" value={v.openingAsOf ?? ''} onChange={(e) => set({ openingAsOf: e.target.value || null })} /></Field>
-      <Field label="Số tháng còn lại (sau ngày trên)" hint="Hết số tháng này thì trích nốt phần còn lại"><input className="input num" inputMode="numeric" value={v.openingRemainingMonths ?? ''} onChange={(e) => set({ openingRemainingMonths: e.target.value === '' ? null : num(e.target.value) ?? null })} /></Field>
       {kind === 'fixed_asset' && <Field label="TK nguyên giá (*)"><AccountPicker postingOnly value={v.assetAccount ?? ''} onChange={(assetAccount) => set({ assetAccount })} placeholder="211x, 213x" /></Field>}
       <Field label={kind === 'fixed_asset' ? 'TK hao mòn (*)' : 'TK chờ phân bổ (*)'}><AccountPicker postingOnly value={v.depreciationAccount ?? ''} onChange={(depreciationAccount) => set({ depreciationAccount })} placeholder={kind === 'fixed_asset' ? '2141, 2143' : '24218, 24228'} /></Field>
       <Field label="TK chi phí (*)"><AccountPicker postingOnly value={v.expenseAccount ?? ''} onChange={(expenseAccount) => set({ expenseAccount })} placeholder="6424, 6414, 64231…" /></Field>
       <Field label="Khoản mục"><ListPicker items={costItems.filter((d) => d.isActive || d.code === v.costItemCode)} value={v.costItemCode ?? ''} onChange={(costItemCode) => set({ costItemCode })} placeholder={costItems.length ? 'Bấm để chọn' : 'Chưa khai danh mục'} /></Field>
       <Field label="Bộ phận"><ListPicker items={departments.filter((d) => d.isActive || d.code === v.departmentCode)} value={v.departmentCode ?? ''} onChange={(departmentCode) => set({ departmentCode })} placeholder={departments.length ? 'Bấm để chọn' : 'Chưa khai danh mục'} /></Field>
+      {/* [2026-11-26 11:30 AM Nguyễn Văn Thủy] TSCD — DM-008: thẻ khai mã danh mục quản lý liên quan (Hợp đồng mua / thuê tài sản) (đóng góp) */}
+      <Field label="Hợp đồng"><ListPicker items={contracts.filter((d) => d.isActive || d.code === v.contractCode)} value={v.contractCode ?? ''} onChange={(contractCode) => set({ contractCode })} placeholder={contracts.length ? 'Bấm để chọn' : 'Chưa khai danh mục'} /></Field>
       {kind !== 'fixed_asset' && <Field label="Nhóm công cụ dụng cụ"><ListPicker items={toolGroups.filter((d) => d.isActive || d.code === v.toolGroupCode)} value={v.toolGroupCode ?? ''} onChange={(toolGroupCode) => set({ toolGroupCode })} placeholder={toolGroups.length ? 'Bấm để chọn' : 'Chưa khai danh mục'} /></Field>}
       <Field label="Mục đích sử dụng"><ListPicker items={usagePurposes.filter((d) => d.isActive || d.code === v.usagePurposeCode)} value={v.usagePurposeCode ?? ''} onChange={(usagePurposeCode) => set({ usagePurposeCode })} placeholder={usagePurposes.length ? 'Bấm để chọn' : 'Chưa khai danh mục'} /></Field>
       <Field label="Trạng thái">
@@ -270,7 +307,7 @@ function AssetForm({ value, kind, printScreen, onClose }: { value: Partial<Asset
       </div>
 
       <SpecsEditor specs={v.specs ?? []} readOnly={readOnly} onChange={(specs) => set({ specs })} />
-      {!value.isNew && value.code && <PhotoBox code={value.code} readOnly={readOnly} />}
+      {!value.isNew && value.code ? <PhotoBox code={value.code} readOnly={readOnly} /> : !readOnly && <AnhThe photo={anhMoi} onChange={setAnhMoi} />}
       {!value.isNew && (
         <div className="full">
           <div className="muted" style={{ marginBottom: 6 }}>
@@ -326,6 +363,31 @@ function SpecsEditor({ specs, readOnly, onChange }: { specs: { name: string; val
       )}
       {!readOnly && <button className="btn btn-sm" style={{ marginTop: 6 }} onClick={() => onChange([...specs, { name: specs.length ? '' : 'Kích thước', value: '' }])}><Plus size={14} /> Thêm thông số</button>}
       {readOnly && !specs.length && <div className="muted">Chưa khai thông số.</div>}
+    </div>
+  );
+}
+
+/** Ảnh của thẻ đang thêm mới: giữ tạm, ghi thẻ xong mới lưu ảnh. */
+function AnhThe({ photo, onChange }: { photo: string | null; onChange: (p: string | null) => void }) {
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <div className="full">
+      <label className="field-title">Ảnh tài sản</label>
+      <div className="row" style={{ gap: 12, alignItems: 'flex-start', marginTop: 4 }}>
+        <div style={{ width: 220, height: 150, border: '1px dashed var(--line)', borderRadius: 6, display: 'grid', placeItems: 'center', background: '#fff', overflow: 'hidden' }}>
+          {photo ? <img src={photo} alt="Ảnh tài sản" style={{ maxWidth: 216, maxHeight: 146 }} /> : <span className="muted">Chưa có ảnh</span>}
+        </div>
+        <div style={{ display: 'grid', gap: 6 }}>
+          <label className="btn btn-sm">
+            Chọn ảnh…
+            <input type="file" accept="image/png,image/jpeg,image/webp" style={{ display: 'none' }}
+              onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; setErr(null); try { onChange(await shrinkImage(f, 800)); } catch (x) { setErr((x as Error).message); } }} />
+          </label>
+          {photo && <button className="btn btn-sm" onClick={() => onChange(null)}>Bỏ ảnh</button>}
+          <span className="muted" style={{ fontSize: 12 }}>Ảnh lưu cùng lúc bấm Ghi thẻ.</span>
+        </div>
+      </div>
+      <ErrorBox error={err} />
     </div>
   );
 }
@@ -405,7 +467,7 @@ function EventDialog({ kind, assetCode, onClose }: { kind: AssetEvent['kind']; a
         <Field label="Chênh lệch nguyên giá" hint="Tăng ghi số dương, giảm ghi số âm"><input className="input num" value={f.costDelta} onChange={(e) => set({ costDelta: e.target.value })} /></Field>
         <Field label="Chênh lệch luỹ kế khấu hao"><input className="input num" value={f.accumulatedDelta} onChange={(e) => set({ accumulatedDelta: e.target.value })} /></Field>
         <Field label="Số tháng còn phải trích" hint="Tính từ tháng đánh giá lại; trống = giữ thời gian cũ"><input className="input num" value={f.remainingMonths} onChange={(e) => set({ remainingMonths: e.target.value.replace(/\D/g, '') })} /></Field>
-        <Field label="Mức trích tháng mới" hint="Trống = phần còn lại ÷ số tháng còn lại"><input className="input num" value={f.monthlyAmount} onChange={(e) => set({ monthlyAmount: e.target.value })} /></Field>
+        <Field label="Khấu hao / phân bổ mỗi tháng (mới)" hint="Trống = phần còn lại ÷ số tháng còn lại"><input className="input num" value={f.monthlyAmount} onChange={(e) => set({ monthlyAmount: e.target.value })} /></Field>
         <div className="full muted">Có hiệu lực từ tháng đánh giá lại. Bút toán chênh lệch (Nợ / Có 211, 214, 412…) lập bằng phiếu kế toán.</div>
       </>}
       {kind === 'transfer' && <>
@@ -519,10 +581,16 @@ export function AssetCategoriesPage() {
   const [sel, setSel] = useState<Category | null>(null);
   const exportRef = useRef<(() => void) | null>(null);
   const q = useCategories();
+  // [2026-11-26 11:45 AM Nguyễn Văn Thủy] TSCD — DM-009 Nhóm tài sản (dòng cấp trên, gắn tài khoản hạch toán) và Loại tài sản (dòng thuộc nhóm) xem tách hai thẻ (đóng góp)
+  const [cap, setCap] = useState<'nhom' | 'loai'>('nhom');
+  const all = q.data ?? [];
+  const coCha = (c: Category) => Boolean(c.parentCode && all.some((p) => p.code === c.parentCode));
+  const rows = all.filter((c) => (cap === 'nhom' ? !coCha(c) : coCha(c)));
+  const tenNhom = (code: string | null) => all.find((p) => p.code === code)?.name ?? '';
   const del = useMutation({ mutationFn: (code: string) => api.delete(`/api/v1/asset-categories/${encodeURIComponent(code)}`), onSuccess: () => { setSel(null); void qc.invalidateQueries({ queryKey: ['asset-categories'] }); } });
   return (
     <>
-      <PageHeader title="Loại tài sản" code="ACC37" subtitle="Tài khoản và số tháng ngầm định khi thêm thẻ tài sản, công cụ dụng cụ, chi phí trả trước" helpKey="tai-san" />
+      <PageHeader title="Nhóm, loại tài sản" code="ACC37" subtitle="Nhóm tài sản gắn tài khoản hạch toán (sinh bút toán tự động lên sổ cái) và số tháng ngầm định; loại tài sản là phân loại chi tiết thuộc nhóm" helpKey="tai-san" />
       <div className="card">
         <CatalogToolbar
           trash={{ catalog: 'asset-categories', title: 'Loại tài sản', sel: sel ? { key: sel.code, label: sel.name } : null }}
@@ -530,35 +598,39 @@ export function AssetCategoriesPage() {
           canWrite={canWrite}
           hasSelection={Boolean(sel)}
           busy={del.isPending}
-          onAdd={() => setEditing({ isNew: true, kind: 'fixed_asset', isActive: true, parentCode: sel?.parentCode ?? null })}
+          onAdd={() => setEditing({ isNew: true, kind: sel?.kind ?? 'fixed_asset', isActive: true, parentCode: cap === 'nhom' ? null : (sel?.parentCode ?? null) })}
           onEdit={() => sel && setEditing(sel)}
           onDelete={() => { if (sel && window.confirm(`Bạn có chắc chắn muốn xoá loại ${sel.code} - ${sel.name}?`)) del.mutate(sel.code); }}
           onRefresh={() => q.refetch()}
           onExport={() => exportRef.current?.()}
         />
         <ErrorBox error={q.error ? errorText(q.error) : del.error ? errorText(del.error) : null} />
+        <div className="tabs" style={{ margin: '4px 0' }}>
+          <button type="button" className={cap === 'nhom' ? 'tab active' : 'tab'} onClick={() => { setCap('nhom'); setSel(null); }} title="Nhóm tài sản: gắn tài khoản nguyên giá / khấu hao / chi phí để sinh bút toán tự động lên sổ cái">Nhóm tài sản ({all.filter((c) => !coCha(c)).length})</button>
+          <button type="button" className={cap === 'loai' ? 'tab active' : 'tab'} onClick={() => { setCap('loai'); setSel(null); }} title="Loại tài sản: phân loại chi tiết thuộc một nhóm; không khai tài khoản thì dùng tài khoản của nhóm">Loại tài sản ({all.filter(coCha).length})</button>
+        </div>
         {q.isLoading ? <Loading /> : (
-          <DataGrid storageKey="acc37-v2" exportName="loai-tai-san" groupable exportRef={exportRef} rows={q.data ?? []} rowKey={(r) => r.code}
+          <DataGrid key={cap} storageKey={cap === 'nhom' ? 'acc37-nhom' : 'acc37-loai'} exportName={cap === 'nhom' ? 'nhom-tai-san' : 'loai-tai-san'} groupable exportRef={exportRef} rows={rows} rowKey={(r) => r.code}
             onSelect={setSel} onRowDoubleClick={(r) => canWrite && tt.sua && setEditing(r)} rowClassName={(r) => (r.isActive ? '' : 'muted')} footerLabel={false}
             columns={[
-              { key: 'code', header: 'Mã loại TS', type: 'code', width: 150 },
-              { key: 'name', header: 'Tên loại TS', width: 280 },
+              { key: 'code', header: cap === 'nhom' ? 'Mã nhóm TS' : 'Mã loại TS', type: 'code', width: 150 },
+              { key: 'name', header: cap === 'nhom' ? 'Tên nhóm TS' : 'Tên loại TS', width: 280 },
+              ...(cap === 'loai' ? [{ key: 'parentName', header: 'Thuộc nhóm', width: 220, value: (r: Category) => (r.parentCode ? `${r.parentCode} · ${tenNhom(r.parentCode)}` : '') }] : []),
               { key: 'assetAccount', header: 'Tài khoản nguyên giá', type: 'code', width: 150 },
               { key: 'depreciationAccount', header: 'Tài khoản khấu hao', type: 'code', width: 140 },
               { key: 'hidden', header: 'Ẩn', type: 'check', width: 50, value: (r) => !r.isActive },
-              { key: 'parentCode', header: 'Loại cha', type: 'code', width: 120 },
-              { key: 'kindLabel', header: 'Nhóm', width: 150, hidden: true },
-              { key: 'expenseAccount', header: 'TK chi phí', type: 'code', width: 100, hidden: true },
+              { key: 'kindLabel', header: 'Áp dụng cho', width: 150, hidden: cap === 'loai' },
+              { key: 'expenseAccount', header: 'TK chi phí', type: 'code', width: 100 },
               { key: 'usefulLifeMonths', header: 'Số tháng', type: 'number', width: 80, hidden: true },
             ] satisfies Column<Category>[]} />
         )}
       </div>
-      {editing && <CategoryForm value={editing} parents={q.data ?? []} onClose={() => setEditing(null)} />}
+      {editing && <CategoryForm value={editing} parents={all} cap={editing.isNew ? cap : editing.parentCode && all.some((p) => p.code === editing.parentCode) ? 'loai' : 'nhom'} onClose={() => setEditing(null)} />}
     </>
   );
 }
 
-function CategoryForm({ value, parents, onClose }: { value: Partial<Category> & { isNew?: boolean }; parents: Category[]; onClose: () => void }) {
+function CategoryForm({ value, parents, cap = 'nhom', onClose }: { value: Partial<Category> & { isNew?: boolean }; parents: Category[]; cap?: 'nhom' | 'loai'; onClose: () => void }) {
   const qc = useQueryClient();
   const [v, setV] = useState(value);
   const set = (p: Partial<Category>) => setV((x) => ({ ...x, ...p }));
@@ -572,15 +644,16 @@ function CategoryForm({ value, parents, onClose }: { value: Partial<Category> & 
   });
   const isGroup = !value.isNew && parents.some((p) => p.parentCode === value.code);
   return (
-    <Modal viewAgain={viewAgain} viewFirst={!value.isNew} title="Loại tài sản" onClose={onClose}
-      footer={<><button className="btn btn-primary" disabled={save.isPending || !v.code || !v.name || !v.depreciationAccount || !v.expenseAccount} onClick={() => save.mutate()}>Ghi</button><button className="btn" onClick={onClose}>Thoát</button></>}>
+    <Modal viewAgain={viewAgain} viewFirst={!value.isNew} title={cap === 'nhom' ? 'Nhóm tài sản' : 'Loại tài sản'} onClose={onClose}
+      footer={<><button className="btn btn-primary" disabled={save.isPending || !v.code || !v.name || !v.depreciationAccount || !v.expenseAccount || (cap === 'loai' && !v.parentCode)} title={cap === 'loai' && !v.parentCode ? 'Chọn nhóm tài sản cho loại này' : undefined} onClick={() => save.mutate()}>Ghi</button><button className="btn" onClick={onClose}>Thoát</button></>}>
       <Field label="Mã (*)"><input className="input mono" value={v.code ?? ''} disabled={!value.isNew} onChange={(e) => set({ code: e.target.value.trim() })} /></Field>
       <Field label="Tên" full><input className="input" value={v.name ?? ''} onChange={(e) => set({ name: e.target.value })} /></Field>
-      <Field label="Loại cha"><ListPicker items={parents.filter((p) => p.code !== v.code).map((p) => ({ code: p.code, name: p.name }))} value={v.parentCode ?? ''} onChange={(parentCode) => set({ parentCode })} placeholder="Không" /></Field>
+      {cap === 'loai' && <Field label="Thuộc nhóm (*)" hint="Chọn nhóm là điền sẵn tài khoản, số tháng của nhóm (sửa được)"><ListPicker items={parents.filter((p) => p.code !== v.code && (!p.parentCode || !parents.some((x) => x.code === p.parentCode))).map((p) => ({ code: p.code, name: p.name }))} value={v.parentCode ?? ''}
+        onChange={(parentCode) => { const n = parents.find((p) => p.code === parentCode); set({ parentCode: parentCode || null, ...(n ? { kind: n.kind, assetAccount: v.assetAccount || n.assetAccount, depreciationAccount: v.depreciationAccount || n.depreciationAccount, expenseAccount: v.expenseAccount || n.expenseAccount, usefulLifeMonths: v.usefulLifeMonths || n.usefulLifeMonths } : {}) }); }} placeholder="Bấm để chọn" /></Field>}
       <Field label=" "><label className="checkbox"><input type="checkbox" checked={v.isActive !== false} onChange={(e) => set({ isActive: e.target.checked })} /> Theo dõi</label></Field>
       {v.kind === 'fixed_asset' && <Field label="Tài khoản nguyên giá"><AccountPicker postingOnly={!isGroup} value={v.assetAccount ?? ''} onChange={(assetAccount) => set({ assetAccount })} /></Field>}
       <Field label={v.kind === 'fixed_asset' ? 'Tài khoản khấu hao' : 'Tài khoản chờ phân bổ'}><AccountPicker postingOnly={!isGroup} value={v.depreciationAccount ?? ''} onChange={(depreciationAccount) => set({ depreciationAccount })} /></Field>
-      <Field label="Nhóm">
+      <Field label="Áp dụng cho">
         <select className="select input" value={v.kind} onChange={(e) => set({ kind: e.target.value as AssetKind })}>
           {Object.entries(KIND_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
         </select>
@@ -734,7 +807,7 @@ export function DepreciationPage() {
   return (
     <>
       <PageHeader title="Tính khấu hao, phân bổ" code="ACC31" subtitle="Khấu hao tài sản cố định, phân bổ công cụ dụng cụ và chi phí trả trước trong tháng; ghi sổ một chứng từ cho mỗi chi nhánh" helpKey="tai-san"
-        actions={can('periods:lock') && tt.tinh && <button className="btn btn-primary" disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? 'Đang tính…' : `Tính tháng ${mm}`}</button>} />
+        actions={<button className="btn btn-primary" disabled={run.isPending || !can('periods:lock') || !tt.tinh} title={!can('periods:lock') || !tt.tinh ? 'Tài khoản chưa được quyền tính khấu hao, phân bổ (cần quyền khoá sổ + thao tác Tính ở ACC31) — nhờ quản trị cấp quyền' : 'Tính khấu hao TSCĐ, phân bổ CCDC và chi phí trả trước của tháng, ghi sổ một chứng từ cho mỗi chi nhánh'} onClick={() => run.mutate()}>{run.isPending ? 'Đang tính…' : `Tính và ghi sổ tháng ${mm}`}</button>} />
       <div className="card">
         <div className="filters">
           <div className="field"><label>Tháng</label><input type="month" className="input w-md" value={period} onChange={(e) => e.target.value && setPeriod(e.target.value)} /></div>
@@ -754,6 +827,13 @@ export function DepreciationPage() {
             {[run.data].map((b) => (
               <div key="kq" style={{ marginBottom: 8 }}>
                 Đã ghi sổ: {b.items.length} thẻ · tổng trích <b>{money(b.total)}</b>
+                {/* [2026-11-26 01:20 PM Nguyễn Văn Thủy] TSCD — #64 tab Test: tính ra 0 thẻ thì nói vì sao (thẻ có KH luỹ kế tính tới ngày trong / sau tháng này trích từ tháng sau; thẻ bắt đầu trích sau tháng; thẻ tạm ngừng / đã trích hết) (đóng góp) */}
+                {b.items.length === 0 && (preview.data?.rows.length ?? 0) > 0 && (
+                  <div className="alert alert-info" style={{ marginTop: 6 }}>
+                    Tháng {mm} không thẻ nào phải trích. Thường do: thẻ đã khai <b>KH luỹ kế</b> với <b>Luỹ kế tính tới ngày</b> nằm trong tháng {mm} hoặc sau đó — luỹ kế đã gồm tháng này, phần mềm trích từ tháng sau;
+                    thẻ có <b>Ngày bắt đầu trích</b> sau tháng {mm}; thẻ <b>Tạm ngừng</b>; hoặc đã trích hết giá trị. Mở thẻ (ACC28) kiểm hai ô trên rồi tính lại.
+                  </div>
+                )}
                 {b.items.some((i) => i.overridden) && <span className="muted"> · {b.items.filter((i) => i.overridden).length} thẻ sửa tay</span>}
                 {b.catchUpTotal > 0 && <span> · trong đó trích bổ sung các tháng chưa trích của {b.catchUpAssets} thẻ: <b>{money(b.catchUpTotal)}</b></span>}
                 {b.branches.length > 0 && <span className="muted"> ({b.branches.map((x) => `${x.branchCode}: ${money(x.total)}`).join('; ')})</span>}

@@ -174,12 +174,14 @@ export const CONTRACT_STATUS_LABEL: Record<ContractStatus, string> = { draft: 'N
 export interface ContractRow {
   code: string; name: string; partnerCode: string; partnerName: string; signedDate: string | null; startDate: string | null; endDate: string | null;
   status: ContractStatus; statusText: string; branchCodes: string[]; brandCodes: string[]; skus: string[]; value: number | null; paymentTermDays: number | null;
+  /** Giá ghi trên văn bản hợp đồng gồm thuế (chỉ để nhập / đối chiếu); giá trị + bảng giá lưu chưa thuế. */
+  pricesIncludeVat: boolean; vatRate: number | null;
   note: string; createdBy: string; createdAt: string | null; updatedAt: string | null; updatedBy: string; prices: number; policies: number; documents: number; debt: number; purchased: number; pricedItems: number;
   signerSeller: string; signerBuyer: string; deliveryPlace: string; freightBy: string; returnTerms: string;
   penaltyPct: number | null; lateInterestPct: number | null; liquidatedDate: string | null; liquidationNote: string;
 }
 export type ContractInput = Pick<ContractRow, 'name' | 'partnerCode' | 'status' | 'branchCodes' | 'brandCodes' | 'skus' | 'note' | 'signerSeller' | 'signerBuyer' | 'deliveryPlace' | 'returnTerms' | 'liquidationNote'> & {
-  signedDate?: string | null; startDate?: string | null; endDate?: string | null; value?: number | null; paymentTermDays?: number | null;
+  signedDate?: string | null; startDate?: string | null; endDate?: string | null; value?: number | null; paymentTermDays?: number | null; pricesIncludeVat?: boolean; vatRate?: number | null;
   freightBy: '' | 'seller' | 'buyer'; penaltyPct?: number | null; lateInterestPct?: number | null; liquidatedDate?: string | null;
 };
 export interface ContractDetail { contract: ContractRow; items: { sku: string; name: string; brandCode: string }[]; prices: (SupplierProduct & { name: string })[]; policies: Policy[]; documents: StoredDoc[] }

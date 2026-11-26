@@ -18,8 +18,8 @@ import { CongNoDieuKhoan, DIEU_KHOAN_TT } from './CongNoDieuKhoan';
 /** Chính sách mua của hợp đồng / ngoài hợp đồng: bỏ công nợ + điều khoản thanh toán (là điều khoản, khai ở khối riêng). */
 const KINDS = CONTRACT_KINDS.filter((k) => !DIEU_KHOAN_TT.includes(k));
 
-export function GiaVaChinhSach({ partnerCode, contractCode, brands, skus, start, end, readOnly }: {
-  partnerCode: string; contractCode: string; brands?: string[]; start?: string; end?: string;
+export function GiaVaChinhSach({ partnerCode, contractCode, brands, skus, start, end, readOnly, gomThue }: {
+  partnerCode: string; contractCode: string; /** Hợp đồng ghi giá gồm thuế. */ gomThue?: boolean; brands?: string[]; start?: string; end?: string;
   /** Hàng hoá của hợp đồng: bảng giá / chính sách chỉ chọn được các mã này. */
   skus?: string[];
   /** Hợp đồng đã thanh lý: chỉ xem. */
@@ -39,7 +39,7 @@ export function GiaVaChinhSach({ partnerCode, contractCode, brands, skus, start,
       <section className="hd-box">
         <h4 className="mh-h4">Giá mua <span className="muted" style={{ fontWeight: 400 }}>(NCC × mã × ĐVT{contractCode ? ', thuộc hợp đồng' : ''})</span></h4>
         <fieldset disabled={readOnly} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-          <BangGiaMua partnerCode={partnerCode} contractCode={contractCode} brands={brands} skus={skus} data={mh} onChanged={reload} />
+          <BangGiaMua partnerCode={partnerCode} contractCode={contractCode} gomThue={gomThue} brands={brands} skus={skus} data={mh} onChanged={reload} />
         </fieldset>
       </section>
       <section className="hd-box">

@@ -17,7 +17,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
 import { BranchSelect, DateRange, useBranches } from '@/components/filters';
 import { Empty, ErrorBox, Loading } from '@/components/ui';
-import { AccountPicker } from '@/components/pickers';
+import { AccountPicker, useAccountList } from '@/components/pickers';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { BOOK_SIGNS, LedgerForm, mb, screenTemplate, PrintButton, type PrintTemplate } from '@/components/print';
 import { EntryOpen } from '../../../features/ledger/EntriesPage';
@@ -38,6 +38,8 @@ function buildRows(list: Data[], soCai = false): Row[] {
   let td = 0; let tc = 0;
   for (const d of list) {
     const a = d.account.code;
+    // Xem nhiều tài khoản (vd Tất cả TK): bỏ tài khoản không số dư, không phát sinh trong kỳ.
+    if (list.length > 1 && !d.rows.length && !d.opening.debit && !d.opening.credit && !d.closing.debit && !d.closing.credit) continue;
     out.push({ key: `g${a}`, acc: a, kind: 'group', label: `Tài khoản: ${a} - ${d.account.name}`, debit: 0, credit: 0, dn: 0, dc: 0 });
     if (soCai) {
       out.push({ key: `o${a}`, acc: a, kind: 'open', description: 'Số dư đầu kỳ', debit: d.opening.debit, credit: d.opening.credit, dn: 0, dc: 0 });
@@ -49,7 +51,8 @@ function buildRows(list: Data[], soCai = false): Row[] {
     if (d.opening.debit || d.opening.credit) out.push({ key: `o${a}`, acc: a, kind: 'open', description: 'Số dư đầu kỳ', debit: 0, credit: 0, dn: d.opening.debit, dc: d.opening.credit });
     d.rows.forEach((r, i) => out.push({ key: `d${a}-${i}`, acc: a, kind: 'data', entryId: r.entryId, lineCount: r.lineCount, postingDate: r.postingDate, docDate: r.docDate || r.postingDate, docNo: r.docNo, description: r.description, counter: r.counterAccounts, branchCode: r.branchCode, debit: r.debit, credit: r.credit, dn: r.balanceDebit, dc: r.balanceCredit }));
     out.push({ key: `s${a}`, acc: a, kind: 'sub', description: 'Cộng', debit: d.totals.debit, credit: d.totals.credit, dn: d.closing.debit, dc: d.closing.credit });
-    td += d.totals.debit; tc += d.totals.credit;
+    // [2026-11-26 12:35 PM Nguyễn Văn Thủy] HT — #61: TK nằm dưới một TK khác cũng đang chọn (vd 1111 dưới 111) vẫn hiện chi tiết nhưng không cộng thêm vào Tổng cộng (đóng góp)
+    if (!list.some((x) => x.account.code !== a && a.startsWith(x.account.code))) { td += d.totals.debit; tc += d.totals.credit; }
   }
   if (list.length > 1 && !soCai) out.push({ key: 'tong', acc: '', kind: 'total', description: 'Tổng cộng', debit: td, credit: tc, dn: 0, dc: 0 });
   return out;
@@ -117,7 +120,10 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
   const [f, setF] = useState({ from: params.get('from') ?? periodFrom(), to: params.get('to') ?? defaultTo(), accounts: params.get('account') ?? '111', branchCodes: '', gop: gopMacDinh(soCai ? 'ACC88' : 'ACC12', soCai) });
   const [entryId, setEntryId] = useState<string | null>(null);
   const set = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
-  const accounts = [...new Set(f.accounts.split(',').map((s) => s.trim()).filter(Boolean))];
+  // [2026-11-26 12:00 PM Nguyễn Văn Thủy] HT — #61 tab Test: nhiều tài khoản cách nhau phẩy / chấm phẩy / dấu cách; nút Tất cả TK = mọi tài khoản cấp 1 (đóng góp)
+  const accounts = [...new Set(f.accounts.split(/[,;s]+/).map((s) => s.trim()).filter(Boolean))];
+  const dsTk = useAccountList().data ?? [];
+  const tkCap1 = dsTk.filter((a) => a.level === 1 && a.isActive !== false).map((a) => a.code);
   const qs = useQueries({ queries: accounts.map((account) => ({
     queryKey: ['account-ledger', soCai ? 'so-cai' : 'sctk', account, f.from, f.to, f.branchCodes, f.gop],
     queryFn: () => api.get<Data>('/api/v1/reports/account-ledger', { account, from: f.from, to: f.to, branchCodes: f.branchCodes, kind: soCai ? 'ledger' : 'detail', groupMode: f.gop ? '2' : '1' }),
@@ -128,6 +134,9 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
   const title = soCai ? 'Sổ cái' : 'Sổ chi tiết các tài khoản';
   const code = soCai ? 'ACC88' : 'ACC12';
   const money = (r: Row, v: number) => (r.kind === 'group' ? null : v);
+  // Tổng cộng: bỏ dòng của TK nằm dưới một TK khác cũng đang chọn (không cộng trùng 111 và 1111).
+  const duoiTkKhac = (acc: string) => accounts.some((x) => x !== acc && acc.startsWith(x));
+  const tongCot = (k: 'debit' | 'credit') => (rs: Row[]) => rs.filter((r) => !duoiTkKhac(r.acc)).reduce((t, r) => t + Math.round(r[k] * 100), 0) / 100;
   // [2026-11-23 khanhtd] Tổng cộng tách khỏi bảng → dòng tổng dính đáy của DataGrid (cộng phát sinh Nợ / Có của các dòng đang hiện,
   //   tính lại khi lọc theo TK đối ứng, số chứng từ…); trước: dòng 'total' nằm trong bảng, lọc là mất. Mẫu in giữ dòng Tổng cộng như cũ.
   const gridRows = rows.filter((r) => r.kind !== 'total');
@@ -137,8 +146,8 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
     { key: 'docDate', header: 'Ngày tháng', band: 'Chứng từ', type: 'date', width: 104, noSort: true },
     { key: 'description', header: 'Diễn giải', width: 320, noSort: true },
     { key: 'counter', header: 'Số hiệu TK đối ứng', type: 'code', width: 110, noSort: true },
-    { key: 'debit', header: 'Nợ', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, value: (r) => money(r, r.debit) },
-    { key: 'credit', header: 'Có', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, value: (r) => money(r, r.credit) },
+    { key: 'debit', header: 'Nợ', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, footerValue: tongCot('debit'), value: (r) => money(r, r.debit) },
+    { key: 'credit', header: 'Có', band: 'Số tiền', type: 'money', width: 140, noSort: true, sum: true, footerValue: tongCot('credit'), value: (r) => money(r, r.credit) },
     { key: 'lineCount', header: 'Số dòng', type: 'number', width: 70, noSort: true, hidden: !f.gop, title: 'Số dòng chi tiết (từng mã hàng) đã cộng gộp vào dòng này. Bấm vào dòng để xem bút toán với từng dòng mã hàng.' },
     { key: 'branchCode', header: 'Chi nhánh', type: 'code', width: 90, hidden: !multi, noSort: true },
   ] : [
@@ -147,8 +156,8 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
     { key: 'docNo', header: 'Số chứng từ', type: 'code', width: 130, noSort: true },
     { key: 'description', header: 'Diễn giải', width: 300, noSort: true },
     { key: 'counter', header: 'TK đối ứng', type: 'code', width: 90, noSort: true },
-    { key: 'debit', header: 'Phát sinh Nợ', type: 'money', width: 130, noSort: true, sum: true, value: (r) => money(r, r.debit) },
-    { key: 'credit', header: 'Phát sinh Có', type: 'money', width: 130, noSort: true, sum: true, value: (r) => money(r, r.credit) },
+    { key: 'debit', header: 'Phát sinh Nợ', type: 'money', width: 130, noSort: true, sum: true, footerValue: tongCot('debit'), value: (r) => money(r, r.debit) },
+    { key: 'credit', header: 'Phát sinh Có', type: 'money', width: 130, noSort: true, sum: true, footerValue: tongCot('credit'), value: (r) => money(r, r.credit) },
     { key: 'lineCount', header: 'Số dòng', type: 'number', width: 70, noSort: true, hidden: !f.gop, title: 'Số dòng chi tiết (từng mã hàng) đã cộng gộp vào dòng này. Bấm vào dòng để xem bút toán với từng dòng mã hàng.' },
     { key: 'dn', header: 'Dư Nợ', type: 'money', width: 130, noSort: true, value: (r) => (r.kind === 'total' ? null : money(r, r.dn)) },
     { key: 'dc', header: 'Dư Có', type: 'money', width: 130, noSort: true, value: (r) => (r.kind === 'total' ? null : money(r, r.dc)) },
@@ -162,7 +171,12 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
         filters={
           <>
             <DateRange from={f.from} to={f.to} onChange={(from, to) => set({ from, to })} />
-            <div className="field"><label>Tài khoản (chọn nhiều)</label><AccountPicker multiple className="input w-lg mono" value={f.accounts} onChange={(accounts) => set({ accounts })} /></div>
+            <div className="field"><label title="Chọn nhiều tài khoản: chọn lần lượt trong danh sách, hoặc gõ cách nhau dấu phẩy / chấm phẩy, vd 1561;111">Tài khoản (chọn nhiều)</label><AccountPicker multiple className="input w-lg mono" value={f.accounts} onChange={(accounts) => set({ accounts })} />
+              <div className="row" style={{ gap: 6, marginTop: 4 }}>
+                <button type="button" className="btn btn-xs" disabled={!tkCap1.length} title={tkCap1.length ? `Xem toàn bộ ${tkCap1.length} tài khoản cấp 1 (gồm cả tài khoản chi tiết bên dưới)` : 'Đang tải danh mục tài khoản'} onClick={() => set({ accounts: tkCap1.join(',') })}>Tất cả TK</button>
+                {accounts.length > 1 && <button type="button" className="btn btn-xs" title="Bỏ chọn, chỉ giữ tài khoản đầu tiên" onClick={() => set({ accounts: accounts[0] ?? '' })}>Bỏ bớt</button>}
+              </div>
+            </div>
             <label className="checkbox"><input type="checkbox" checked={f.gop} onChange={(e) => { nhoGop(soCai ? 'ACC88' : 'ACC12', e.target.checked); set({ gop: e.target.checked }); }} /> Cộng gộp các bút toán giống nhau</label>
             {multi && <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} />}
           </>

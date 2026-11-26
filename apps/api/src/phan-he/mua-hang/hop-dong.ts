@@ -30,7 +30,13 @@ export const contractInput = z.object({
   branchCodes: z.array(z.string().trim().min(1).max(64)).max(500).default([]),
   brandCodes: z.array(z.string().trim().min(1).max(64)).max(500).default([]),
   skus: z.array(z.string().trim().min(1).max(64)).max(5000).default([]),
+  /** Giá trị hợp đồng — luôn lưu CHƯA THUẾ (chuẩn chung). */
   value: z.number().min(0).nullish(),
+  // [2026-11-26 05:30 PM Nguyễn Văn Thủy] MH29 — giá chưa thuế là chuẩn xuyên suốt: hợp đồng ghi giá gồm thuế thì khai ở đây, giá trị / bảng giá quy về chưa thuế theo thuế suất (đóng góp)
+  /** Giá ghi trên hợp đồng (văn bản) gồm thuế GTGT — chỉ để nhập / đối chiếu; mọi số lưu và tính vẫn chưa thuế. */
+  pricesIncludeVat: z.boolean().default(false),
+  /** Thuế suất quy đổi giá trị hợp đồng gồm thuế ↔ chưa thuế (bảng giá dùng thuế suất từng mặt hàng). */
+  vatRate: z.number().min(0).max(100).nullish(),
   paymentTermDays: z.number().int().min(0).max(3650).nullish(),
   note: z.string().trim().max(1000).default(''),
   // [2026-11-18 Nguyễn Văn Thủy] điều khoản hợp đồng mua bán hàng hoá (Luật Thương mại 2005) — ghi nhận để đối chiếu (đóng góp)
@@ -56,6 +62,7 @@ export interface ContractRow {
   code: string; name: string; partnerCode: string; partnerName: string; signedDate: string | null; startDate: string | null; endDate: string | null;
   status: (typeof CONTRACT_STATUS)[number]; statusText: string; branchCodes: string[]; brandCodes: string[]; skus: string[];
   value: number | null; paymentTermDays: number | null; note: string; createdBy: string;
+  pricesIncludeVat: boolean; vatRate: number | null;
   /** Thời gian tạo / sửa lần cuối, người sửa lần cuối (ghi trong extra của hợp đồng; nhật ký đầy đủ ở JSONL mua hàng). */
   createdAt: string | null; updatedAt: string | null; updatedBy: string;
   signerSeller: string; signerBuyer: string; deliveryPlace: string; freightBy: string; returnTerms: string;
@@ -106,7 +113,7 @@ export async function listContracts(trx: Db, tenantId: string, f: { partnerCode?
       code: r.code, name: r.name, partnerCode: String(x.partnerCode ?? ''), partnerName: pName.get(String(x.partnerCode ?? '')) ?? '',
       signedDate: iso(x.signedDate), startDate: iso(x.startDate), endDate, status, statusText: statusText(status, endDate, f.asOf),
       branchCodes: arr(x.branchCodes), brandCodes: arr(x.brandCodes), skus: arr(x.skus),
-      value: typeof x.value === 'number' ? x.value : null, paymentTermDays: typeof x.paymentTermDays === 'number' ? x.paymentTermDays : null,
+      value: typeof x.value === 'number' ? x.value : null, pricesIncludeVat: x.pricesIncludeVat === true, vatRate: typeof x.vatRate === 'number' ? x.vatRate : null, paymentTermDays: typeof x.paymentTermDays === 'number' ? x.paymentTermDays : null,
       note: r.note ?? '', createdBy: String(x.createdBy ?? ''), createdAt: typeof x.createdAt === 'string' ? x.createdAt : null, updatedAt: typeof x.updatedAt === 'string' ? x.updatedAt : null, updatedBy: String(x.updatedBy ?? x.createdBy ?? ''),
       signerSeller: String(x.signerSeller ?? ''), signerBuyer: String(x.signerBuyer ?? ''), deliveryPlace: String(x.deliveryPlace ?? ''), freightBy: String(x.freightBy ?? ''),
       returnTerms: String(x.returnTerms ?? ''), penaltyPct: typeof x.penaltyPct === 'number' ? x.penaltyPct : null, lateInterestPct: typeof x.lateInterestPct === 'number' ? x.lateInterestPct : null,
@@ -163,7 +170,7 @@ export async function saveContract(trx: Db, tenantId: string, actorName: string,
   }
   const extra = Object.fromEntries(Object.entries({
     ...old, type: 'goods_supplier', partnerCode: b.partnerCode, signedDate: b.signedDate ?? undefined, startDate: b.startDate ?? undefined, endDate: b.endDate ?? undefined,
-    status: b.status, branchCodes: b.branchCodes, brandCodes: b.brandCodes, skus: [...new Set(b.skus)], value: b.value ?? undefined, paymentTermDays: b.paymentTermDays ?? undefined,
+    status: b.status, branchCodes: b.branchCodes, brandCodes: b.brandCodes, skus: [...new Set(b.skus)], value: b.value ?? undefined, pricesIncludeVat: b.pricesIncludeVat || undefined, vatRate: b.pricesIncludeVat ? (b.vatRate ?? undefined) : undefined, paymentTermDays: b.paymentTermDays ?? undefined,
     signerSeller: b.signerSeller, signerBuyer: b.signerBuyer, deliveryPlace: b.deliveryPlace, freightBy: b.freightBy, returnTerms: b.returnTerms,
     penaltyPct: b.penaltyPct ?? undefined, lateInterestPct: b.lateInterestPct ?? undefined,
     liquidatedDate: b.status === 'liquidated' ? (b.liquidatedDate ?? undefined) : undefined, liquidationNote: b.status === 'liquidated' ? b.liquidationNote : undefined,
@@ -180,11 +187,11 @@ export async function saveContract(trx: Db, tenantId: string, actorName: string,
 
 const LABEL: Record<string, string> = {
   name: 'Tên', note: 'Ghi chú', partnerCode: 'NCC', signedDate: 'Ngày ký', startDate: 'Hiệu lực từ', endDate: 'Hiệu lực đến', status: 'Trạng thái', branchCodes: 'Chi nhánh', brandCodes: 'Nhãn hàng',
-  skus: 'Mặt hàng', value: 'Giá trị', signerSeller: 'Người ký bên bán', signerBuyer: 'Người ký bên mua', deliveryPlace: 'Địa điểm giao', freightBy: 'Chi phí vận chuyển', returnTerms: 'Đổi trả',
+  skus: 'Mặt hàng', value: 'Giá trị (chưa thuế)', pricesIncludeVat: 'Giá ghi gồm thuế', vatRate: 'Thuế suất quy đổi %', signerSeller: 'Người ký bên bán', signerBuyer: 'Người ký bên mua', deliveryPlace: 'Địa điểm giao', freightBy: 'Chi phí vận chuyển', returnTerms: 'Đổi trả',
   penaltyPct: 'Phạt vi phạm %', lateInterestPct: 'Lãi chậm trả %', liquidatedDate: 'Ngày thanh lý', liquidationNote: 'Ghi chú thanh lý',
 };
 const text = (k: string, v: unknown) => (v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length) ? '—'
-  : k === 'status' ? statusText(v as ContractRow['status'], null, '9999-12-31') : k === 'freightBy' ? (v === 'seller' ? 'Bên bán chịu' : v === 'buyer' ? 'Bên mua chịu' : String(v))
+  : k === 'status' ? statusText(v as ContractRow['status'], null, '9999-12-31') : k === 'pricesIncludeVat' ? (v ? 'Có' : 'Không') : k === 'freightBy' ? (v === 'seller' ? 'Bên bán chịu' : v === 'buyer' ? 'Bên mua chịu' : String(v))
   : /Date$/.test(k) ? String(v).slice(0, 10).split('-').reverse().join('/') : Array.isArray(v) ? v.join(', ') : String(v));
 /** Đổi gì của một lần ghi hợp đồng: "Hiệu lực đến: — → 31/12/2027", "Mặt hàng: thêm 100021001; bỏ 100046002". */
 export function contractChanges(before: Record<string, unknown>, after: Record<string, unknown>): string[] {

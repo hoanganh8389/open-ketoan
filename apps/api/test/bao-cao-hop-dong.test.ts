@@ -64,6 +64,13 @@ for (const mode of ['none', 'contract'] as const) describe(`Báo cáo hợp đ�
     expect(row.ordered).toBeGreaterThan(0);
     expect(row.invoiced).toBeGreaterThanOrEqual(0);
     expect(row.debt).toBeGreaterThan(0);
+    // [2026-11-26 05:30 PM Nguyễn Văn Thủy] MH35 — đã nhận = tiền hàng CHƯA THUẾ (phiếu nhập − trả hàng), cùng chuẩn giá trị hợp đồng (đóng góp)
+    const ds = (await call<{ data: { kind: string; status: string; docDate: string; partnerCode: string; contractCode?: string; totals: { beforeTax: number; total: number } }[] }>(t, 'GET', '/api/v1/purchase/documents')).body.data
+      .filter((d) => d.status === 'approved' && d.partnerCode === 'NCC-TRUNGHAU' && d.docDate >= '2026-01-01' && d.docDate <= '2026-12-31' && (mode === 'contract' ? d.contractCode === 'HD-NCC-TRUNGHAU' : !d.contractCode));
+    const cong = (k: string) => ds.filter((d) => d.kind === k).reduce((x, d) => x + d.totals.beforeTax, 0);
+    expect(row.received).toBe(Math.round(cong('receipt') - cong('return')));
+    expect(row.ordered).toBe(Math.round(cong('order')));
+    expect(ds.some((d) => d.totals.total > d.totals.beforeTax)).toBe(true);
     const ngoai = (await call<{ data: Hd[] }>(t, 'GET', '/api/v1/purchase/contract-execution?from=2026-01-01&to=2026-12-31&contractCode=')).body.data;
     expect(ngoai.every((x) => x.code === '')).toBe(true);
     if (mode === 'contract') expect(ngoai.some((x) => x.partnerCode === 'NCC-TRUNGHAU')).toBe(false);
@@ -81,5 +88,22 @@ for (const mode of ['none', 'contract'] as const) describe(`Báo cáo hợp đ�
     expect(r.status).toBe(200);
     const p = await call<{ data: unknown[] }>(t, 'GET', `/api/v1/purchase/policy-execution?from=2026-01-01&to=2026-12-31&branchCodes=${cn}&warehouseCodes=KHONG-CO`);
     expect(p.status).toBe(200);
+  });
+
+  it('hợp đồng ghi giá gồm thuế: lưu cờ + thuế suất quy đổi; giá trị vẫn lưu chưa thuế; nhật ký ghi thay đổi', async () => {
+    if (mode !== 'contract') return;
+    const ds = (await call<{ data: Record<string, unknown>[] }>(t, 'GET', '/api/v1/purchase/contracts')).body.data;
+    const c = ds.find((x) => x.code === 'HD-NCC-TRUNGHAU')!;
+    expect(c.pricesIncludeVat).toBe(false);
+    const keys = ['name', 'partnerCode', 'status', 'branchCodes', 'brandCodes', 'skus', 'note', 'signedDate', 'startDate', 'endDate', 'paymentTermDays', 'signerSeller', 'signerBuyer', 'deliveryPlace', 'freightBy', 'returnTerms', 'penaltyPct', 'lateInterestPct', 'liquidatedDate', 'liquidationNote'];
+    const body = { ...Object.fromEntries(keys.map((k) => [k, c[k]])), value: 100_000_000, pricesIncludeVat: true, vatRate: 8 };
+    const w = await call(t, 'PUT', '/api/v1/purchase/contracts', { code: c.code, isNew: false, contract: body });
+    expect(w.status, JSON.stringify(w.body).slice(0, 300)).toBe(200);
+    const sau = (await call<{ data: Record<string, unknown>[] }>(t, 'GET', '/api/v1/purchase/contracts')).body.data.find((x) => x.code === c.code)!;
+    expect(sau).toMatchObject({ pricesIncludeVat: true, vatRate: 8, value: 100_000_000 });
+    const tat = await call(t, 'PUT', '/api/v1/purchase/contracts', { code: c.code, isNew: false, contract: { ...body, pricesIncludeVat: false } });
+    expect(tat.status).toBe(200);
+    const lai = (await call<{ data: Record<string, unknown>[] }>(t, 'GET', '/api/v1/purchase/contracts')).body.data.find((x) => x.code === c.code)!;
+    expect(lai).toMatchObject({ pricesIncludeVat: false, vatRate: null });
   });
 });

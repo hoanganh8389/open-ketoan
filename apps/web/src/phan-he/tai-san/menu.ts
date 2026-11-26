@@ -19,6 +19,8 @@ export const taiSanMenu: MenuItem[] = [
       { key: 'tang-ts', label: 'Tăng tài sản cố định', path: '/tai-san/tscd', code: 'ACC28' },
       { key: 'giam-ts', label: 'Giảm tài sản cố định', path: '/tai-san/ghi-giam', code: 'ACC30' },
       { key: 'khau-hao', label: 'Tính khấu hao, phân bổ', path: '/tai-san/khau-hao', code: 'ACC31' },
+      { key: 'ghi-giam-ccdc', label: 'Ghi giảm công cụ dụng cụ', path: '/tai-san/ghi-giam-ccdc', code: 'ACC30' },
+      { key: 'ghi-giam-tra-truoc', label: 'Ghi giảm chi phí trả trước', path: '/tai-san/ghi-giam-tra-truoc', code: 'ACC30' },
       { key: 'ke-hoach-kh', label: 'Kế hoạch khấu hao, phân bổ', path: '/tai-san/ke-hoach-khau-hao', code: 'TS01' },
       { key: 'danh-gia-ts', label: 'Đánh giá lại tài sản', path: '/tai-san/danh-gia-lai', code: 'ACC32' },
       { key: 'dieu-chuyen-ts', label: 'Điều chuyển tài sản', path: '/tai-san/dieu-chuyen', code: 'ACC33' },

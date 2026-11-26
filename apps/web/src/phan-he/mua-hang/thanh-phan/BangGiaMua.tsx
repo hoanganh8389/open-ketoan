@@ -44,7 +44,7 @@ const SPEC: ['sku' | 'unit' | 'price' | 'vat' | 'nccSku' | 'nccName' | 'from' | 
 const isoOf = (s: string) => { const m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/.exec(s.trim()); return m ? `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}` : /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : undefined; };
 
 // [2026-11-18 Nguyễn Văn Thủy] contractCode: chỉ dòng giá của hợp đồng đó ('' = không theo hợp đồng); dòng thêm mới thuộc hợp đồng đó (đóng góp)
-export function BangGiaMua({ partnerCode, sku, skuName, data, onChanged, contractCode, brands, skus: maHd }: { partnerCode?: string; sku?: string; skuName?: string; data: MhData; onChanged?: () => void; contractCode?: string; /** Chỉ thêm mã thuộc các nhãn này (hợp đồng có ghi nhãn). */ brands?: string[]; /** Chỉ thêm các mã này (hàng hoá của hợp đồng). */ skus?: string[] }) {
+export function BangGiaMua({ partnerCode, sku, skuName, data, onChanged, contractCode, brands, skus: maHd, gomThue }: { /** Hợp đồng ghi giá gồm thuế: Excel không có cột Gồm thuế thì hiểu là gồm thuế; lưu vẫn quy về chưa thuế. */ gomThue?: boolean; partnerCode?: string; sku?: string; skuName?: string; data: MhData; onChanged?: () => void; contractCode?: string; /** Chỉ thêm mã thuộc các nhãn này (hợp đồng có ghi nhãn). */ brands?: string[]; /** Chỉ thêm các mã này (hàng hoá của hợp đồng). */ skus?: string[] }) {
   const theoHd = contractCode !== undefined;
   const byPartner = Boolean(partnerCode);
   const names = useNames();
@@ -247,7 +247,7 @@ Trong khoảng chồng, đơn / phiếu lấy dòng có "Hiệu lực từ" mu�
       {paste && <DanMa onClose={() => setPaste(false)} onAdd={(list) => { setPaste(false); void addRows(list); }} />}
       {pick && <ChonMatHang brands={brands} skus={maHd} title="Thêm mã NCC bán — bấm vào dòng để thêm" prefer={nccBrands} repeat existing={new Map(active.map((r) => [r.sku, 'đã có · bấm để thêm dòng (đợt giá / ĐVT khác)']))}
         onPick={(p) => void addRows([{ sku: p.sku }])} onPickAll={(ps) => void addRows(ps.map((p) => ({ sku: p.sku })))} onClose={() => setPick(false)} />}
-      {excel && <NhapExcel partnerName={names.partnerName(partnerCode ?? '')} onClose={() => setExcel(false)} onAdd={(list) => { setExcel(false); void addRows(list); }} />}
+      {excel && <NhapExcel gomThue={gomThue} partnerName={names.partnerName(partnerCode ?? '')} onClose={() => setExcel(false)} onAdd={(list) => { setExcel(false); void addRows(list); }} />}
     </div>
   );
 }
@@ -278,7 +278,7 @@ function DanMa({ onClose, onAdd }: { onClose: () => void; onAdd: (l: { sku: stri
     </Modal>
   );
 }
-function NhapExcel({ partnerName, onClose, onAdd }: { partnerName: string; onClose: () => void; onAdd: (l: { sku: string; unit?: string; price?: number | null; priceIncludesVat?: boolean; nccSku?: string; nccName?: string; validFrom?: string; note?: string }[]) => void }) {
+function NhapExcel({ partnerName, onClose, onAdd, gomThue }: { gomThue?: boolean; partnerName: string; onClose: () => void; onAdd: (l: { sku: string; unit?: string; price?: number | null; priceIncludesVat?: boolean; nccSku?: string; nccName?: string; validFrom?: string; note?: string }[]) => void }) {
   const [list, setList] = useState<{ sku: string; unit?: string; price?: number | null; priceIncludesVat?: boolean; nccSku?: string; nccName?: string; validFrom?: string; note?: string; row: number }[]>([]);
   const [file, setFile] = useState('');
   const [err, setErr] = useState('');
@@ -291,7 +291,7 @@ function NhapExcel({ partnerName, onClose, onAdd }: { partnerName: string; onClo
       const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
       for (const name of wb.SheetNames) {
         const t = readTable(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[name]!, { header: 1, raw: true, defval: '' }), SPEC, 'sku');
-        if (t.rows.length) { setList(t.rows.map((r) => ({ row: r.row, sku: r.sku, unit: r.unit || undefined, price: r.price === '' ? null : Number(String(r.price).replace(/\./g, '').replace(',', '.')) || null, priceIncludesVat: /^(c|co|có|x|1|true)/i.test(r.vat), nccSku: r.nccSku || undefined, nccName: r.nccName || undefined, validFrom: isoOf(r.from), note: r.note || undefined }))); return; }
+        if (t.rows.length) { setList(t.rows.map((r) => ({ row: r.row, sku: r.sku, unit: r.unit || undefined, price: r.price === '' ? null : Number(String(r.price).replace(/\./g, '').replace(',', '.')) || null, priceIncludesVat: String(r.vat ?? '').trim() ? /^(c|co|có|x|1|true)/i.test(r.vat) : Boolean(gomThue), nccSku: r.nccSku || undefined, nccName: r.nccName || undefined, validFrom: isoOf(r.from), note: r.note || undefined }))); return; }
       }
       throw new Error('Không thấy bảng có cột "Mã hàng"');
     } catch (e) { setErr(e instanceof Error ? e.message : String(e)); setList([]); }

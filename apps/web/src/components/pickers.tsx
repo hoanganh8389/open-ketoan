@@ -83,7 +83,110 @@ interface CodePickerProps extends BaseProps {
 const MAX_SHOWN = 300;
 const fmtCell = (v: string | number | null | undefined) => (typeof v === 'number' ? v.toLocaleString('vi-VN', { maximumFractionDigits: 2 }) : v ?? '');
 
-export function CodePicker({ value, onChange, options, nameOf, onSearch, loading, emptyText, placeholder, className = 'input', style, disabled, multiple, autoFocus, title, hideName, nameFirst, nameOnly, strict, onAdd, addLabel = 'Thêm mới', columns, nameWidth = 240 }: CodePickerProps) {
+// [2026-11-26 12:20 PM Nguyễn Văn Thủy] HT — #61 tab Test: chọn nhiều làm lại kiểu tích — danh sách có ô tích, bấm là thêm / bỏ (không đóng),
+//   đã chọn hiện thành thẻ có ×; ô gõ chỉ để tìm; gõ / dán "1561;111" Enter là thêm cả loạt (trước: chọn xong gõ tiếp bị dính "1561111") (đóng góp)
+export function CodePicker(p: CodePickerProps) {
+  return p.multiple ? <MultiCodePicker {...p} /> : <SingleCodePicker {...p} />;
+}
+
+const tachMa = (v: string) => [...new Set(v.split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean))];
+
+function MultiCodePicker({ value, onChange, options, nameOf, onSearch, loading, emptyText, placeholder, className = 'input', style, disabled, title }: CodePickerProps) {
+  const sel = tachMa(value);
+  const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number; up: boolean } | null>(null);
+  const box = useRef<HTMLSpanElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const query = q.trim();
+  useEffect(() => { onSearch?.(query); }, [query, onSearch]);
+  useEffect(() => { setActive(0); }, [query]);
+  const shown = options.slice(0, MAX_SHOWN);
+  const place = () => {
+    const r = box.current?.getBoundingClientRect();
+    if (!r) return;
+    const below = window.innerHeight - r.bottom;
+    const width = Math.min(Math.max(r.width, 380), window.innerWidth - 16);
+    setPos({ left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)), top: below < 260 && r.top > below ? r.top : r.bottom, width, up: below < 260 && r.top > below });
+  };
+  useLayoutEffect(() => {
+    if (!open) return;
+    place();
+    const h = () => place();
+    window.addEventListener('scroll', h, true);
+    window.addEventListener('resize', h);
+    return () => { window.removeEventListener('scroll', h, true); window.removeEventListener('resize', h); };
+  }, [open, value]);
+  useEffect(() => { list.current?.querySelector<HTMLElement>(`[data-i="${active}"]`)?.scrollIntoView({ block: 'nearest' }); }, [active]);
+  const dat = (ds: string[]) => { const v = [...new Set(ds)].join(','); if (v !== value) onChange(v); };
+  const tich = (code: string) => dat(sel.includes(code) ? sel.filter((x) => x !== code) : [...sel, code]);
+  // Gõ / dán nhiều mã (phẩy, chấm phẩy, dấu cách): thêm cả loạt.
+  const themGo = () => { const ds = tachMa(q); if (ds.length > 1 || (ds.length === 1 && (shown.some((o) => o.code === ds[0]) || nameOf(ds[0]!) !== undefined))) { dat([...sel, ...ds]); setQ(''); return true; } return false; };
+  return (
+    <span ref={box} className="picker" style={{ ...style, display: 'block' }} title={title ?? (sel.length ? sel.map((c) => `${c} — ${nameOf(c) ?? ''}`).join('\n') : undefined)}>
+      {sel.length > 0 && (
+        <span style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}>
+          {sel.map((c) => (
+            <span key={c} className="badge badge-info mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title={nameOf(c) ?? c}>
+              {c}{!disabled && <button type="button" className="btn-ghost" style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', lineHeight: 1 }} title={`Bỏ ${c}`} onClick={() => tich(c)}>×</button>}
+            </span>
+          ))}
+          {!disabled && sel.length > 1 && <button type="button" className="btn btn-xs" title="Bỏ chọn tất cả" onClick={() => dat([])}>Bỏ hết</button>}
+        </span>
+      )}
+      <input
+        ref={input}
+        className={className}
+        value={q}
+        disabled={disabled}
+        placeholder={sel.length ? 'Gõ để tìm, bấm để thêm / bỏ…' : placeholder ?? 'Gõ mã hoặc tên, bấm để chọn (chọn được nhiều)'}
+        type="search"
+        autoComplete="off"
+        data-lpignore="true"
+        data-form-type="other"
+        spellCheck={false}
+        role="combobox"
+        aria-expanded={open}
+        onFocus={() => setOpen(true)}
+        onClick={() => setOpen(true)}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onBlur={() => { themGo(); setOpen(false); setQ(''); }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setActive((a) => Math.min(a + 1, shown.length - 1)); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
+          else if (e.key === 'Enter') { e.preventDefault(); if (!themGo() && shown[active]) { tich(shown[active].code); setQ(''); } }
+          else if (e.key === 'Backspace' && !q && sel.length) dat(sel.slice(0, -1));
+          else if (e.key === 'Escape') { e.preventDefault(); if (open) e.stopPropagation(); setOpen(false); setQ(''); }
+        }}
+      />
+      {open && pos && !disabled && createPortal(
+        <div ref={list} className="picker-drop" role="listbox" aria-multiselectable="true"
+          style={{ left: pos.left, width: pos.width, ...(pos.up ? { bottom: window.innerHeight - pos.top + 2 } : { top: pos.top + 2 }) }}
+          onMouseDown={(e) => e.preventDefault()}>
+          {shown.map((o, i) => (
+            <div key={o.code} data-i={i} role="option" aria-selected={sel.includes(o.code)}
+              className={`picker-opt ${i === active ? 'active' : ''} ${o.strong ? 'strong' : ''}`}
+              style={o.level ? { paddingLeft: 8 + (o.level - 1) * 12 } : undefined}
+              onMouseEnter={() => setActive(i)} onClick={() => tich(o.code)}>
+              <input type="checkbox" readOnly tabIndex={-1} checked={sel.includes(o.code)} style={{ margin: 0, alignSelf: 'center' }} />
+              <span className="mono picker-code">{o.code}</span>
+              <span className="picker-label">{o.name}</span>
+              {o.hint && <span className="picker-hint">{o.hint}</span>}
+            </div>
+          ))}
+          {shown.length === 0 && <div className="picker-empty">{loading ? 'Đang tải…' : emptyText ?? 'Không tìm thấy'}</div>}
+          {options.length > MAX_SHOWN && <div className="picker-empty">Còn {options.length - MAX_SHOWN} dòng nữa — gõ thêm để thu hẹp</div>}
+          <div className="picker-foot"><span>Đã chọn {sel.length} · bấm dòng để tích / bỏ (chọn được nhiều) · gõ "1561;111" Enter để thêm nhanh · Esc đóng</span></div>
+        </div>,
+        document.body,
+      )}
+    </span>
+  );
+}
+
+function SingleCodePicker({ value, onChange, options, nameOf, onSearch, loading, emptyText, placeholder, className = 'input', style, disabled, multiple, autoFocus, title, hideName, nameFirst, nameOnly, strict, onAdd, addLabel = 'Thêm mới', columns, nameWidth = 240 }: CodePickerProps) {
   const [text, setTextState] = useState(value);
   // Giữ chữ mới nhất ngoài state: rời ô ngay sau khi chọn dòng vẫn đọc đúng mã vừa chọn.
   const textRef = useRef(value);
@@ -101,7 +204,8 @@ export function CodePicker({ value, onChange, options, nameOf, onSearch, loading
   useEffect(() => { const tuNgoai = value !== committed.current; committed.current = value; if (!focused.current || tuNgoai) setText(value); }, [value]);
 
   // Chữ dùng để lọc: cả ô, hoặc phần sau dấu phẩy cuối khi chọn nhiều.
-  const query = multiple ? (text.split(',').pop() ?? '').trim() : text.trim();
+  // [2026-11-26 11:55 AM Nguyễn Văn Thủy] HT — #61 tab Test: chọn nhiều nhận cả dấu chấm phẩy / dấu cách (gõ '1561;111' trước đây thành một mã) (đóng góp)
+  const query = multiple ? (text.split(/[,;]/).pop() ?? '').trim() : text.trim();
   useEffect(() => { onSearch?.(query); }, [query, onSearch]);
   const shown = options.slice(0, MAX_SHOWN);
   useEffect(() => { setActive(0); }, [query]);
@@ -125,14 +229,14 @@ export function CodePicker({ value, onChange, options, nameOf, onSearch, loading
   useEffect(() => { list.current?.querySelector<HTMLElement>(`[data-i="${active}"]`)?.scrollIntoView({ block: 'nearest' }); }, [active]);
 
   const commit = (v: string) => {
-    const clean = multiple ? v.split(',').map((s) => s.trim()).filter(Boolean).join(',') : v.trim();
+    const clean = multiple ? [...new Set(v.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean))].join(',') : v.trim();
     if (strict && !multiple && clean && nameOf(clean) === undefined) { setText(committed.current); return; }
     setText(clean);
     if (clean !== committed.current) { committed.current = clean; onChange(clean); }
   };
   const pick = (o: PickOption) => {
     if (multiple) {
-      const parts = textRef.current.split(',').map((s) => s.trim());
+      const parts = textRef.current.split(/[,;]/).map((s) => s.trim());
       parts[parts.length - 1] = o.code;
       const next = [...new Set(parts.filter(Boolean))].join(',');
       setText(next + ',');
