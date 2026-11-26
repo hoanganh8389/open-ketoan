@@ -51,9 +51,27 @@ type Quote = { enabled: boolean; tierKey?: string; tierName?: string; balance?: 
  * quyền của thu ngân). Đơn có đổi điểm hoặc voucher mà module chưa bật / báo lỗi → chặn, nói rõ. Đơn chỉ có khách: hỏi để in điểm
  * trên bill, module chưa bật thì bỏ qua. `base`: đơn tính thử chưa có voucher (tổng để kiểm đơn tối thiểu, chia tiền giảm).
  */
+/** Bỏ các mã là "mã giảm giá" của chương trình khuyến mại đơn đang áp (theo policyRefs) — Core đã tính, không phải voucher đổi điểm. */
+async function nonPolicyCoupons(ctx: ActionContext, draft: OrderDraft, coupons: string[]): Promise<string[]> {
+  const keys = new Set((draft.policyRefs ?? []).map((r) => r.key));
+  if (!coupons.length || !keys.size) return coupons;
+  let items: { policyKey: string; params: unknown }[] = [];
+  try {
+    items = (await ctx.actions.call<{ items: { policyKey: string; params: unknown }[] }>('core.policy.list', { domain: 'sale', at: draft.businessDate })).items;
+  } catch { return coupons; }
+  const used = new Set(items.filter((i) => keys.has(i.policyKey)).flatMap((i) => {
+    const c = (i.params as { conditions?: { couponCodes?: unknown } } | null)?.conditions?.couponCodes;
+    return Array.isArray(c) ? c.filter((x): x is string => typeof x === 'string').map((x) => x.trim().toUpperCase()) : [];
+  }));
+  return coupons.filter((c) => !used.has(c));
+}
+
 async function quoteLoyalty(ctx: ActionContext, draft: OrderDraft, branchCode: string, base: ReturnType<typeof computeOrder>) {
   if ('problem' in base) raise(base.problem);
-  const coupons = couponCodes(draft);
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: mã giảm giá CHUNG của chương trình khuyến mại (BH18, ô "Mã giảm giá" / loại Voucher – Mã giảm giá
+  // của plugin cũ) đã được Core tính theo dòng (policyRef + promoDiscount) — không đem tra như voucher đổi điểm (trước: đơn bị từ chối
+  // "Không có voucher …"). Chỉ mã KHÔNG thuộc chương trình nào đơn đang áp mới hỏi module loyalty (đóng góp)
+  const coupons = await nonPolicyCoupons(ctx, draft, couponCodes(draft));
   const redeem = draft.loyalty?.redeem ?? [];
   const customer = base.customer?.code;
   if (redeem.length && !customer) throw Errors.validation('Đổi điểm phải chọn khách thành viên', { field: 'loyalty' });
