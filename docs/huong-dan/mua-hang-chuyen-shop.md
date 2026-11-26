@@ -29,11 +29,22 @@ Ngưỡng "nửa thùng" đổi được ở **Công thức đặt hàng (MH18)*
 
 Đề nghị đã chốt mà kho chưa làm thì tính như hàng sắp đi. Lần đề xuất sau không đề xuất lại các dòng đó.
 
+## Xem theo nhà cung cấp
+<!-- [2026-11-26 kiennt] NT-MH-023 — mỗi NCC một tab (đóng góp) -->
+
+Dưới các ô chọn có dải tab: **Tất cả NCC** · từng nhà cung cấp · **Chưa rõ NCC**. Mỗi tab ghi số dòng của nó, giống các sheet trong file Excel công thức đặt hàng.
+
+- NCC của một mã lấy giống **Phân tích đặt hàng (MH02)**: NCC của lần nhập gần nhất. Mã chưa nhập lần nào thì lấy NCC có bảng giá mua đang hiệu lực. Mã con chưa có NCC thì theo mã cha.
+- *Chưa rõ NCC* là mã chưa nhập lần nào và chưa khai giá mua ở NCC nào. Khai ở **Bảng giá mua NCC** để mã sang đúng tab.
+- Ô tích **Thiếu do kho hết**, nút **Chốt đề nghị** và **Excel** chỉ tính các dòng của tab đang mở.
+- Chốt ở một tab NCC thì màn vẫn ở lại để làm tiếp NCC khác; dòng vừa chốt tự ẩn đi.
+
 ## Chọn shop, làm tròn, khi kho không đủ
 <!-- [2026-11-13 10:00 AM kiennt] NT-MH-004 — tuỳ chọn khi phân tích -->
 
 Mở được từ **Mua hàng → Chuyển hàng xuống shop** hoặc **Kho → Chuyển hàng xuống shop**.
 
+- **Làm tròn** và **Khi kho không đủ** nằm trong nút **Cách chia** ở góc phải. Nhãn nút ghi lựa chọn đang dùng; bấm vào để đổi.
 - **Shop phân tích**: bấm các shop theo thứ tự ưu tiên (số thứ tự hiện trên nút). Không chọn = mọi shop của chi nhánh, theo mã shop.
 - **Làm tròn**: *Theo cài từng mã* (cài ở Tồn max — Tự động / Nguyên thùng / Chuyển lẻ) · *Nguyên thùng* (mọi mã làm tròn theo đơn vị mua,
   thiếu chưa đủ ngưỡng thùng thì chờ lần sau) · *Không làm tròn* (đúng số thiếu). Mã không có thùng thì như không làm tròn.

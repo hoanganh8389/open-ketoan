@@ -77,6 +77,7 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-MH-021](mua-hang/NT-MH-021-mh19-bo-cuc-gon.md) | MH19: bố cục gọn, bỏ dải ô đếm (lọc nhanh thành ô "Hiện", số lên nút Chốt) | Đã chốt |
 | [NT-MH-019](mua-hang/NT-MH-019-lap-phieu-chuyen-kho-tu-de-nghi.md) | MH19: nút "Lập phiếu chuyển kho" từ đề nghị (KHO01 điền sẵn; duyệt xuất → Đã lên phiếu) | Đã chốt |
 | [NT-MH-022](mua-hang/NT-MH-022-mh17-thanh-loc-chuan.md) | MH17, MH16, MH02, MH19: thanh lọc chuẩn như MH11, một chi nhánh một lúc | Chờ nghiệm thu |
+| [NT-MH-023](mua-hang/NT-MH-023-mh19-tab-theo-ncc.md) | MH19: mỗi nhà cung cấp một tab (như file Excel công thức đặt hàng), NCC theo quy tắc MH02 | Chờ nghiệm thu |
 | [NT-HT-001](he-thong/NT-HT-001-so-do-to-chuc.md) | Sơ đồ tổ chức làm gốc: cây 3 cấp, gắn chi nhánh, mua hàng theo cây, bộ lọc cây chi nhánh / kho | Chờ nghiệm thu |
 | [NT-KHO-001](kho/NT-KHO-001-ton-o-chon-hang-theo-kho-xuat.md) | Ô chọn mặt hàng ở phiếu chuyển kho hiện tồn theo kho xuất, ngày phiếu | Đã chốt |
 | [NT-KHO-002](kho/NT-KHO-002-kiem-ke-kho.md) | Kiểm kê kho theo lô / HSD: biên bản kiểm kê → xác minh → quyết định xử lý; chênh lệch vào 1381 / 3381, hàng kém phẩm chất sang kho cách ly, tất toán theo quyết định | Đã chốt |
