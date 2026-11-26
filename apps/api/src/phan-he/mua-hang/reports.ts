@@ -266,6 +266,14 @@ export async function rebatePreview(trx: Db, tenantId: string, ctx: Ctx, p: Poli
     return { ...x, onHand: held, amount, stock, sold: amount - stock };
   });
   const existing = ctx.docs.find((d) => d.kind === 'rebate' && d.status !== 'cancelled' && d.rebate?.policyCode === p.code && d.rebate?.period === period);
+  // [2026-11-26 08:00 PM Nguyễn Văn Thủy] MH06 — phiếu ĐANG ĐIỀU CHỈNH (bản đã duyệt còn trên sổ, bản sửa chưa duyệt) thuộc kỳ / phạm vi này: chưa
+  // tính vào doanh số (số chưa chốt) nhưng BÁO RA để người dùng duyệt / huỷ điều chỉnh trước khi lập phiếu thưởng — trước đây im lặng, tưởng mất thưởng (đóng góp)
+  const dangDieuChinh = ctx.docs.filter((d) => d.adjust).flatMap((d) => {
+    const goc = (d.adjust?.snapshot as { doc?: StoredDoc } | undefined)?.doc;
+    if (!goc || !match({ ...goc, status: 'approved' })) return [];
+    const v = (goc.kind === 'return' ? -1 : 1) * computeDoc(goc, []).lines.filter((l) => inBrand(l, goc)).reduce((t, l) => t + l.beforeTax, 0);
+    return [{ id: d.id, docNo: d.docNo, kind: d.kind, docDate: goc.docDate, value: Math.round(v), reason: d.adjust!.reason, by: d.adjust!.by }];
+  });
   const top = (m: Map<string, number>) => [...m].sort((a, b) => b[1] - a[1]).map(([code, value]) => ({ code, value }));
   const branches = top(byBranch);
   const parties = {
@@ -273,7 +281,7 @@ export async function rebatePreview(trx: Db, tenantId: string, ctx: Ctx, p: Poli
     payer: String(p.rule.payer ?? '') || p.scope.partnerCode || null,
     receiver: String(p.rule.receiver ?? '') || scopeBranches(p.scope)[0] || branches[0]?.code || null,
   };
-  return { policy: p.code, kind: p.kind, period, from, to, docsTotal, base: r.base, rate: r.rate, amount: r.amount, detail: r.detail, byDay, allocation, byPartner: top(byPartner), byBranch: branches, parties, existing: existing ? { id: existing.id, docNo: existing.docNo } : null };
+  return { dangDieuChinh, policy: p.code, kind: p.kind, period, from, to, docsTotal, base: r.base, rate: r.rate, amount: r.amount, detail: r.detail, byDay, allocation, byPartner: top(byPartner), byBranch: branches, parties, existing: existing ? { id: existing.id, docNo: existing.docNo } : null };
 }
 
 export function costAllocation(ctx: Ctx, costId: string, basis?: 'value' | 'qty') {
@@ -442,6 +450,7 @@ export async function rebateOverview(trx: Db, tenantId: string, ctx: Ctx, month:
       // Cắt (không làm tròn lên) 2 số lẻ — 549.999.999 / 500 triệu hiện 109,99%, khớp với mức thưởng thực tính.
       completion: target ? Math.floor((r.base / target) * 10000) / 100 : null, rate: r.rate, amount: r.amount,
       doc: doc ? { id: doc.id, docNo: doc.docNo, status: doc.status, amount: doc.amount ?? 0, diff: r.amount - (doc.amount ?? 0) } : null,
+      dangDieuChinh: r.dangDieuChinh,
     });
   }
   return out;
@@ -684,13 +693,15 @@ export async function policyExecution(trx: Db, tenantId: string, ctx: Ctx, f: Ky
         // Kỳ đã có phiếu thưởng: số NCC chốt trên phiếu là số được hưởng; chưa có thì tạm tính từ phiếu nhập đã duyệt.
         const phieu = ctx.docs.filter((x) => x.kind === 'rebate' && x.status !== 'cancelled' && x.rebate?.policyCode === p.code && x.rebate.period === per);
         if (phieu.length) { base += phieu.reduce((t, d) => t + (d.rebate?.base ?? 0), 0); const c = phieu.reduce((t, d) => t + (d.amount ?? 0), 0); entitled += c; confirmed += c; }
-        const pv = phieu.length ? { base: 0, amount: 0 } : await rebatePreview(trx, tenantId, ctx, p, per);
+        const pv: { base: number; amount: number; dangDieuChinh?: { id: string; docNo: string; kind: string; docDate: string; value: number }[] } = phieu.length ? { base: 0, amount: 0 } : await rebatePreview(trx, tenantId, ctx, p, per);
         base += pv.base; entitled += pv.amount; expected += pv.amount;
         for (const d of phieu) {
           if (d.status === 'approved') received += d.amount ?? 0;
           docs.push({ docNo: d.docNo || '(nháp)', docId: d.id, docDate: d.docDate, branchCode: d.branchCode, kind: d.kind, base: d.rebate?.base ?? 0, amount: d.amount ?? 0, note: `kỳ ${per} · ${d.status === 'approved' ? 'đã hạch toán' : 'chưa duyệt'}` });
         }
         if (pv.amount > 0 && !docs.some((x) => x.note.startsWith(`kỳ ${per}`))) docs.push({ docNo: '', docId: '', docDate: '', branchCode: '', kind: 'rebate', base: pv.base, amount: pv.amount, note: `kỳ ${per} · chưa lập phiếu thưởng` });
+        // Phiếu đang điều chỉnh thuộc kỳ: chưa tính (số chưa chốt) — hiện ra để biết vì sao doanh số thấp (đóng góp)
+        for (const x of pv.dangDieuChinh ?? []) docs.push({ docNo: x.docNo, docId: x.id, docDate: x.docDate, branchCode: '', kind: x.kind, base: x.value, amount: 0, note: `kỳ ${per} · đang điều chỉnh — chưa tính vào doanh số (duyệt / huỷ điều chỉnh để tính)` });
       }
       // Còn phải nhận = phần đã xác nhận (phiếu thưởng) chưa hạch toán; phần dự kiến (chưa lập phiếu) để riêng.
       const remaining = Math.max(0, Math.round(confirmed - received));

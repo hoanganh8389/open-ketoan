@@ -7,6 +7,7 @@
  */
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { POLICY_LABEL, brandShare } from '@bizcity/mua-hang-domain';
 import { api, errorText } from '@/lib/api';
 import { PageHeader } from '@/components/PageHeader';
@@ -15,9 +16,11 @@ import { P, purchaseApi, today, useMuaHang, useNames, vnd } from '../du-lieu';
 import { ruleText } from '../chinh-sach/quyTac';
 import '../mua-hang.css';
 
-interface Overview { policy: string; name: string; kind: string; brandCode?: string; partnerCode?: string; period: string; base: number; target: number | null; completion: number | null; rate: number; amount: number; doc: { id: string; docNo: string; status: string; amount: number; diff: number } | null }
+interface Overview { policy: string; name: string; kind: string; brandCode?: string; partnerCode?: string; period: string; base: number; target: number | null; completion: number | null; rate: number; amount: number; doc: { id: string; docNo: string; status: string; amount: number; diff: number } | null; dangDieuChinh?: DangDC[] }
+/** Phiếu đang điều chỉnh thuộc kỳ / phạm vi: bản đã duyệt còn trên sổ, bản sửa chưa duyệt — chưa tính vào doanh số thưởng. */
+interface DangDC { id: string; docNo: string; kind: string; docDate: string; value: number; reason: string; by: string }
 interface Parties { signedWith: string | null; family: boolean; members: string[]; payer: string | null; receiver: string | null }
-interface Preview { policy: string; period: string; from: string; to: string; docsTotal: number; base: number; rate: number; amount: number; detail: string[]; parties?: Parties; byPartner?: { code: string; value: number }[]; byBranch?: { code: string; value: number }[]; allocation: { sku: string; name: string; purchased: number; qty: number; onHand: number; amount: number; stock: number; sold: number }[]; existing: { id: string; docNo: string } | null }
+interface Preview { dangDieuChinh?: DangDC[]; policy: string; period: string; from: string; to: string; docsTotal: number; base: number; rate: number; amount: number; detail: string[]; parties?: Parties; byPartner?: { code: string; value: number }[]; byBranch?: { code: string; value: number }[]; allocation: { sku: string; name: string; purchased: number; qty: number; onHand: number; amount: number; stock: number; sold: number }[]; existing: { id: string; docNo: string } | null }
 const periodOf = (kind: string, d = today()) => (kind === 'year' ? d.slice(0, 4) : kind === 'quarter' ? `${d.slice(0, 4)}-Q${Math.floor((Number(d.slice(5, 7)) - 1) / 3) + 1}` : d.slice(0, 7));
 
 export function ThuongPage() {
@@ -48,6 +51,11 @@ export function ThuongPage() {
   const cnMacDinh = cnNhan || [...(r?.byBranch ?? [])].sort((a, b) => b.value - a.value)[0]?.code || data?.docs.find((d) => d.partnerCode === partnerCode)?.branchCode || '';
   const create = async () => {
     if (!p || !r || !partnerCode) return;
+    // [2026-11-26 08:05 PM Nguyễn Văn Thủy] MH06 — còn phiếu đang điều chỉnh trong kỳ: hỏi trước khi lập phiếu thưởng (doanh số có thể còn đổi) (đóng góp)
+    const ddc = r.dangDieuChinh ?? [];
+    if (ddc.length && !window.confirm(`Kỳ này còn ${ddc.length} phiếu đang điều chỉnh CHƯA tính vào doanh số (${ddc.map((x) => `${x.docNo}: ${vnd(x.value)}`).join('; ')}).
+
+Nên duyệt hoặc huỷ điều chỉnh trước rồi mới lập phiếu thưởng. Vẫn lập phiếu thưởng theo doanh số hiện tại?`)) return;
     setMsg(null);
     try {
       const doc = await purchaseApi.save({
@@ -73,7 +81,7 @@ export function ThuongPage() {
           <div className="table-wrap" style={{ maxHeight: 260 }}><table className="grid"><thead><tr><th>Chính sách</th><th title="Hợp đồng chứa chính sách thưởng (MH29) — trống = ngoài hợp đồng">Hợp đồng</th><th>Kỳ</th><th className="num">Doanh số mua thuần</th><th className="num">Chỉ tiêu</th><th className="num">Hoàn thành</th><th className="num">Mức</th><th className="num">Được hưởng</th><th>Phiếu thưởng</th></tr></thead><tbody>
             {(ov.data ?? []).map((o) => (
               <tr key={o.policy + o.period} style={{ cursor: 'pointer' }} className={o.policy === p?.code ? 'selected' : ''} onClick={() => { setCode(o.policy); setPeriod(o.period); setManual(undefined); setMsg(null); }}>
-                <td>{o.policy} <span className="muted">{o.name}</span></td><td>{hdCua(o.policy) ? <span className="mono">{hdCua(o.policy)}</span> : <span className="muted">ngoài HĐ</span>}</td><td className="mono">{o.period}</td><td className="num">{vnd(o.base)}</td><td className="num">{o.target ? vnd(o.target) : ''}</td>
+                <td>{o.policy} <span className="muted">{o.name}</span>{o.dangDieuChinh?.length ? <span className="mh-warn" title={`Phiếu đang điều chỉnh, chưa tính vào doanh số: ${o.dangDieuChinh.map((x) => x.docNo).join(', ')}`}> · ⚠ {o.dangDieuChinh.length} phiếu đang điều chỉnh chưa tính</span> : null}</td><td>{hdCua(o.policy) ? <span className="mono">{hdCua(o.policy)}</span> : <span className="muted">ngoài HĐ</span>}</td><td className="mono">{o.period}</td><td className="num">{vnd(o.base)}</td><td className="num">{o.target ? vnd(o.target) : ''}</td>
                 <td className="num">{o.completion !== null ? `${Number(o.completion).toLocaleString('vi-VN')}%` : ''}</td><td className="num">{o.kind === 'stage_rebate' ? 'giai đoạn' : `${Number(o.rate).toLocaleString('vi-VN')}%`}</td><td className="num"><b>{vnd(o.amount)}</b></td>
                 <td>{o.doc ? <span>{o.doc.docNo} · {o.doc.status === 'approved' ? <span className="mh-ok">đã hạch toán</span> : <span className="mh-warn">chưa duyệt</span>}{o.doc.diff ? <span className="mh-bad"> · chênh {vnd(o.doc.diff)}</span> : null}</span> : o.amount ? <span className="mh-warn">chưa lập</span> : <span className="muted">chưa đạt</span>}</td>
               </tr>
@@ -100,6 +108,12 @@ export function ThuongPage() {
           <div>
             {q.error && <ErrorBox error={errorText(q.error)} />}
             {q.isLoading || !r ? <Loading /> : <>
+              {(r.dangDieuChinh ?? []).length > 0 && (
+                <div className="alert alert-warn" style={{ marginBottom: 10 }}>
+                  <b>⚠ Có {r.dangDieuChinh!.length} phiếu đang điều chỉnh chưa tính vào doanh số ({vnd(r.dangDieuChinh!.reduce((t, x) => t + x.value, 0))})</b> — bản đã duyệt vẫn còn trên sổ, bản sửa chưa duyệt nên số chưa chốt. Duyệt hoặc huỷ điều chỉnh để tính:{' '}
+                  {r.dangDieuChinh!.map((x, i) => <span key={x.id}>{i ? ', ' : ''}<Link to={`/mua-hang/tong-hop?mo=${x.id}`} title={`Lý do điều chỉnh: ${x.reason} — ${x.by}`}>{x.docNo}</Link> ({vnd(x.value)})</span>)}
+                </div>
+              )}
               <div className="kpis">
                 <div className="card kpi"><div className="label">Doanh số mua thuần {manual !== undefined ? '(NCC chốt)' : '(từ phiếu)'}</div><div className="value">{vnd(r.base)}</div><div className="hint">{r.from.split('-').reverse().join('/')} – {r.to.split('-').reverse().join('/')} · từ phiếu: {vnd(r.docsTotal)}</div></div>
                 <div className="card kpi"><div className="label">Mức thưởng</div><div className="value">{p.kind === 'stage_rebate' ? 'theo giai đoạn' : `${Number(r.rate).toLocaleString('vi-VN')}%`}</div></div>
