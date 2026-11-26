@@ -12,7 +12,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { HelpDrawer } from '@/components/HelpDrawer';
 import { SoDoNhom } from './SoDoNhom';
 import { SO_DO, SO_DO_V2 } from '../../layout/so-do-nhom';
-import { AN_DANG_PHAT_TRIEN, DANG_PHAT_TRIEN } from '../../layout/menu-gon';
+import { AN_DANG_PHAT_TRIEN, DANG_PHAT_TRIEN, moDuocNgoaiMenu } from '../../layout/menu-gon';
 import { MODULES, isSection, moduleMenu } from '../../layout/menu';
 import { useAppMenu } from '../../layout/useAppMenu';
 import { ModuleIcon } from '../../phan-he/icons';
@@ -85,7 +85,7 @@ export function GroupHomePage() {
   const groups = useGonGroups(menu);
   const g = groups.find((x) => x.key === key);
   if (!g) return <div className="card card-body">Không có nhóm "{key}" hoặc bạn chưa được cấp chức năng nào trong nhóm này. <Link to="/">Về trang Tổng quan</Link></div>;
-  const seen = new Set(groups.flatMap((x) => [...x.sections, ...x.reports].flatMap((s) => s.items.map((i) => i.path!.split('?')[0]))));
+  const seen = new Set([...groups.flatMap((x) => [...x.sections, ...x.reports].flatMap((s) => s.items.map((i) => i.path!.split('?')[0]))), ...moDuocNgoaiMenu(menu)]);
   // [2026-11-13 02:55 PM Võ Hoàng] UX-14 — luồng chi tiết khoá theo nhóm menu (chữ chốt cap-nhat-ux/14) (đóng góp)
   const Flow = GROUP_FLOWS[g.key];
   // [2026-11-15 Nguyễn Văn Thủy] Mua hàng / Bán hàng: vào là mở Luồng chi tiết; sơ đồ rút gọn là nút phụ (?xem=rut-gon) (đóng góp)
