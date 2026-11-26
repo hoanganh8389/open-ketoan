@@ -37,7 +37,7 @@ function docGiu(): GiuHopThoai[] {
 }
 function ghiGiu(list: GiuHopThoai[]) {
   giuCache = list;
-  try { localStorage.setItem(GIU_KEY, JSON.stringify(list)); } catch { /* đầy bộ nhớ / chế độ riêng tư: vẫn chạy, chỉ không giữ được */ }
+  try { localStorage.setItem(GIU_KEY, JSON.stringify(list)); } catch { /* nuot-loi: đầy bộ nhớ / chế độ riêng tư: vẫn chạy, chỉ không giữ được */ }
   giuSubs.forEach((f) => f());
 }
 function datGiu(r: GiuHopThoai) { ghiGiu([...docGiu().filter((x) => x.key !== r.key), r]); }
@@ -128,7 +128,7 @@ function useDockInner(onClose: () => void, dirty: boolean, top: boolean, key?: s
     const ghi = () => {
       choGhi.delete(id);
       const w = wins.find((x) => x.id === id);
-      try { datGiu({ key, kind: giu.kind, tab, label: w?.label || 'Hộp thoại', dirty, minimized, draft: giu.draft(), at: docGiu().find((x) => x.key === key)?.at ?? Date.now() }); } catch { /* bản nháp không ghi được: bỏ qua */ }
+      try { datGiu({ key, kind: giu.kind, tab, label: w?.label || 'Hộp thoại', dirty, minimized, draft: giu.draft(), at: docGiu().find((x) => x.key === key)?.at ?? Date.now() }); } catch { /* nuot-loi: bản nháp không ghi được (dữ liệu vòng) — hộp thoại vẫn chạy */ }
     };
     choGhi.set(id, ghi);
     const t = setTimeout(ghi, 400);

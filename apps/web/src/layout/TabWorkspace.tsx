@@ -107,7 +107,7 @@ export function TabWorkspace({ menu, strip }: { menu: MenuItem[]; strip?: ReactN
 
   useEffect(() => {
     if (inFrame) return;
-    try { const j = JSON.stringify(tabs.map(({ pathname, search }) => ({ pathname, search }))); sessionStorage.setItem(STORE_KEY, j); localStorage.setItem(STORE_KEY, j); } catch { /* chế độ riêng tư */ }
+    try { const j = JSON.stringify(tabs.map(({ pathname, search }) => ({ pathname, search }))); sessionStorage.setItem(STORE_KEY, j); localStorage.setItem(STORE_KEY, j); } catch { /* nuot-loi: chế độ riêng tư chặn bộ nhớ — thẻ vẫn chạy, chỉ không nhớ */ }
   }, [tabs]);
 
   // Cuộn thẻ đang xem vào tầm nhìn.
