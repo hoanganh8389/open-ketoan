@@ -124,7 +124,8 @@ export function TonMaxPage() {
       <div className="card">
         <ChuaPhanCap branches={h.data?.branches} />
         <div className="tm-bar">
-          <ChonChiNhanhCha value={parent} onChange={(v) => { setParent(v); setTarget(''); setWh(''); setDrafts({}); setExtra([]); }} />
+          {/* [2026-11-26 kiennt] NT-MH-017 — chọn lại đúng chi nhánh đang xem: giữ shop / kho / số đang sửa chưa lưu (đóng góp) */}
+          <ChonChiNhanhCha value={parent} onChange={(v) => { if (v === parent) return; setParent(v); setTarget(''); setWh(''); setDrafts({}); setExtra([]); }} />
           <div className="tm-sign" title="Xem theo chi nhánh / shop hoặc theo một mã hàng">
             <button className={mode === 'branch' ? 'on' : ''} onClick={() => setMode('branch')}>Theo chi nhánh / shop</button>
             <button className={mode === 'sku' ? 'on' : ''} onClick={() => setMode('sku')}>Theo mã hàng</button>
@@ -203,6 +204,19 @@ export function TonMaxPage() {
           return { value: { branch, wh: String(r.wh ?? '').trim(), sku: s, max, min } };
         },
         head: ['Chi nhánh', 'Kho', 'Mã hàng', 'Max', 'Min'], cells: (x) => [x.branch, x.wh || '(mặc định)', x.sku, qtyFmt(x.max), qtyFmt(x.min)],
+        // [2026-11-26 kiennt] NT-MH-018 — kiểm trước khi ghi: mã có trong danh mục, mã kho thuộc chi nhánh; dòng sai đỏ, không đưa vào
+        // (trước đây xem trước báo ✓, lúc ghi máy chủ từ chối cả tệp vì một dòng) (đóng góp)
+        check: async (list) => {
+          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'all', pageSize: 1_000_000 });
+          const co = new Set(ds.map((p) => p.sku));
+          return list.map((x) => {
+            if (!co.has(x.sku)) return `Mã ${x.sku} chưa có trong danh mục mặt hàng`;
+            const node = (h.data?.branches ?? []).find((b) => b.code === x.branch);
+            if (x.wh && node && !node.warehouses.some((w) => w.code === x.wh)) return `Kho ${x.wh} không thuộc ${x.branch} (kho của ${x.branch}: ${node.warehouses.map((w) => w.code).join(', ') || 'chưa có'})`;
+            if (!x.wh && node && !node.warehouses.length) return `${x.branch} chưa có kho — khai ở Danh mục kho`;
+            return undefined;
+          });
+        },
         note: 'Tải file mẫu: có sẵn mặt hàng chưa có max ở kho / shop đang xem — chỉ điền cột Tồn max (dòng để trống được bỏ qua). Ghi ngay khi bấm "Đưa vào": dòng đã có thì cập nhật. Mã chưa có trong danh mục bị báo lỗi.',
       }} />}
     </>

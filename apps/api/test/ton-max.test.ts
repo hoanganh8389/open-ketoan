@@ -295,6 +295,8 @@ describe('Phân cấp, tồn max, đề xuất chuyển, công thức đặt hà
   it('phiếu đăng ký max của shop: gợi ý sẵn; duyệt thì ghi max; lệch nhỏ thì duyệt tự động', async () => {
     const sug = await ok('GET', '/api/v1/stock/max-requests/suggest?branchCode=08001');
     expect(sug.find((x: { sku: string }) => x.sku === 'SUA1')).toMatchObject({ currentMax: 20 });
+    // [2026-11-26 kiennt] NT-MH-016 — max đề nghị mặc định = max hiện tại (không điền sẵn gợi ý), gợi ý trả riêng ở suggestedMax (đóng góp)
+    for (const x of sug as { currentMax: number; proposedMax: number }[]) expect(x.proposedMax).toBe(x.currentMax);
     const r = await ok('POST', '/api/v1/stock/max-requests', { branchCode: '08001', submit: true, items: [{ key: 'SUA1', sku: 'SUA1', name: 'Sữa SUA1', proposedMax: 14 }] });
     expect(r).toMatchObject({ status: 'submitted', parentCode: '08000', items: [{ currentMax: 20, proposedMax: 14 }] });
     const ap = await ok('POST', `/api/v1/stock/max-requests/${r.id}/approve`);

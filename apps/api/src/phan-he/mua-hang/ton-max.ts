@@ -813,5 +813,6 @@ export async function maxRequestSuggest(trx: Db, tenantId: string, branchCode: s
   const parent = b.level === 'shop' ? b.parentCode : b.level === 'branch' ? b.code : null;
   if (!parent) throw Errors.validation(`${branchCode} chưa xếp vào chi nhánh cha (MH15)`);
   const board = await maxBoard(trx, tenantId, parent, { branchCode });
-  return board.rows.map((r) => ({ key: r.sku, sku: r.sku, name: r.name, unit: r.baseUnit, pack: r.pack, currentMax: r.max, suggestedMax: r.suggested, avgPerDay: r.avgPerDay, windowDays: r.windowDays, proposedMax: r.suggested || r.max, ton: r.ton, shopMaxSum: r.shopMaxSum }));
+  // [2026-11-26 kiennt] NT-MH-016 — max đề nghị mặc định = max hiện tại (không điền sẵn gợi ý): phiếu chỉ đổi mã người lập sửa / bấm gợi ý (đóng góp)
+  return board.rows.map((r) => ({ key: r.sku, sku: r.sku, name: r.name, unit: r.baseUnit, pack: r.pack, currentMax: r.max, suggestedMax: r.suggested, avgPerDay: r.avgPerDay, windowDays: r.windowDays, proposedMax: r.max, ton: r.ton, shopMaxSum: r.shopMaxSum }));
 }

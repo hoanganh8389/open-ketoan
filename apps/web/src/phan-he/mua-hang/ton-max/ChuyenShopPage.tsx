@@ -94,10 +94,11 @@ function DeXuat({ parent, onDone }: { parent: string; onDone: () => void }) {
     { key: 'ton', header: 'Tồn shop', type: 'qty', width: 74, className: 'tm-stock', showZero: true },
     { key: 'diDuong', header: 'Đi đường + đã đề nghị', type: 'qty', width: 92, render: (l) => <span title={`Đang đi đường ${qtyFmt(l.diDuong - l.reserved)} · đề nghị đã chốt chưa làm ${qtyFmt(l.reserved)}`}>{qtyFmt(l.diDuong) || ''}</span> },
     { key: 'gap', header: 'Thiếu', type: 'qty', width: 70, className: 'tm-need' },
+    // [2026-11-26 kiennt] NT-MH-014 — cột tồn kho xuất lên cạnh Thiếu / Chuyển (trước nằm cuối bảng, phải cuộn mới thấy) (đóng góp)
+    { key: 'khoTon', header: 'Tồn kho xuất', type: 'qty', width: 90, className: 'tm-ref', showZero: true, title: 'Tồn ở kho đang chọn "Xuất từ kho" (đã trừ đề nghị đã chốt chưa lên phiếu), trước khi chia cho các shop — tổng cột Chuyển của một mã không vượt số này' },
     { key: 'mode', header: 'Làm tròn', width: 100, value: (l) => TRANSFER_MODES.find((m) => m.key === l.mode)?.label ?? l.mode, render: (l) => <span title={TRANSFER_MODES.find((m) => m.key === l.mode)?.hint}>{TRANSFER_MODES.find((m) => m.key === l.mode)?.label}{l.pack ? ` · ${l.pack}/${l.packUnit}` : ''}</span> },
     { key: 'qty', header: 'Chuyển', type: 'qty', width: 160, value: (l) => qty(l), sum: true, render: (l) => <span><input className={`tm-input${edit[lk(l)] !== undefined ? ' dirty' : ''}`} value={qty(l) || ''} onChange={(e) => setEdit({ ...edit, [lk(l)]: num(e.target.value) })} />{l.pack && qty(l) >= l.pack ? <span className="muted" style={{ fontSize: 10.5, marginLeft: 4 }}>{Math.floor(qty(l) / l.pack)} {l.packUnit}{qty(l) % l.pack ? ` + ${qty(l) % l.pack} ${l.baseUnit}` : ''}</span> : null}</span> },
     { key: 'short', header: 'Thiếu do kho hết', type: 'qty', width: 90, render: (l) => (l.short ? <span className="tm-low" title={`Muốn chuyển ${qtyFmt(l.want)}, kho chỉ còn đủ ${qtyFmt(l.qty)}`}>{qtyFmt(l.short)}</span> : '') },
-    { key: 'khoTon', header: 'Tồn kho (trước chia)', type: 'qty', width: 90, className: 'tm-ref' },
   ];
   const commit = async () => {
     setBusy(true); setMsg(null);
@@ -191,7 +192,7 @@ function DaChot({ parent }: { parent: string }) {
         <label className="tm-parent"><span>Từ</span><input type="date" className="input" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
         <label className="tm-parent"><span>Đến</span><input type="date" className="input" value={to} onChange={(e) => setTo(e.target.value)} /></label>
         <select className="select input" value={status} onChange={(e) => setStatus(e.target.value)}><option value="open">Chờ lên phiếu</option><option value="done">Đã lên phiếu</option><option value="cancelled">Đã huỷ</option><option value="">Tất cả</option></select>
-        <span className="muted" style={{ fontSize: 12 }}>Kho / POS đọc danh sách này qua API <code>GET /api/v1/stock/transfer-requests?status=open</code>.</span>
+        {/* [2026-11-26 kiennt] NT-MH-014 — bỏ dòng chú thích API (Kho / POS đọc danh sách…) trên thẻ Đề nghị đã chốt (đóng góp) */}
       </div>
       {err && <div className="alert alert-bad" style={{ margin: '0 12px 8px' }}>{err}</div>}
       {q.isLoading ? <Loading /> : <DataGrid rows={q.data ?? []} columns={cols} rowKey={(r) => r.id} storageKey="chuyen-shop-da-chot" onRowClick={setOpen} exportName={`de-nghi-chuyen-${parent}`} emptyText="Chưa có đề nghị nào trong khoảng ngày này." />}
