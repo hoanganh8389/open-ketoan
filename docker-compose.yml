@@ -123,6 +123,8 @@ services:
       SITE_TEMPLATE_DB: ${SITE_TEMPLATE_DB:-}
       SITE_SECRET_KEY: ${SITE_SECRET_KEY:-}
       SITE_APP_PARENT_ROLE: ${SITE_APP_PARENT_ROLE:-}
+      # [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: khoá gốc mã hoá bí mật của module (BIZCITY-SECRETS-v1; openssl rand -base64 32, giữ bản sao ngoài máy). Trống = chưa bật bí mật, phần còn lại chạy bình thường. Đổi khoá: node scripts/doi-khoa-bi-mat.mjs (đóng góp)
+      BIZCITY_SECRETS_KEY: ${BIZCITY_SECRETS_KEY:-}
       # api chạy bằng ketoan_app: tạo site / nâng / sao lưu qua Provisioning API cần kết nối quản trị (vd postgres://ketoan:<DB_PASSWORD>@db:5432/postgres)
       PROVISION_DATABASE_URL: ${PROVISION_DATABASE_URL:-}
       SITE_ADMIN_HOST: ${SITE_ADMIN_HOST:-}

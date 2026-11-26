@@ -1,4 +1,8 @@
 // [2026-11-12 05:10 PM Võ Hoàng] POS-W3 — hàm thuần số liệu ca / tổng quan (phiếu NT-BH-007) (đóng góp)
+// [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-042 ca 7: module không còn số tài khoản (kể cả BH17) (đóng góp)
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { cashDiffJournal, dashboard, orderPayments, shiftNumbers, vnHour, type OrderSnap } from '../api/domain/shifts.js';
 
@@ -65,5 +69,22 @@ describe('cashDiffJournal (NT-BH-014)', () => {
     const d = cashDiffJournal({ ...base, openedAt: new Date('2026-11-12T14:00:00Z'), closedAt: new Date('2026-11-12T18:00:00Z'), countedCash: 1_320_000 })!;
     expect(d.docDate).toBe('2026-11-13');
     expect(d.description).toContain('ca 21:00 2026-11-12–01:00');
+  });
+});
+
+// NT-BH-042 ca 7: tài khoản chênh lệch két khai ở Quy tắc hạch toán (ACC41) — module (máy chủ, giao diện BH17, cài đặt, manifest) không có số tài khoản.
+describe('không số tài khoản trong module (NT-BH-042)', () => {
+  const ROOT = fileURLToPath(new URL('..', import.meta.url));
+  const files = (dir: string): string[] => readdirSync(dir).flatMap((n) => {
+    const p = path.join(dir, n);
+    return statSync(p).isDirectory() ? files(p) : /\.(ts|tsx|json)$/.test(n) ? [p] : [];
+  });
+  it("grep \"'1xxx' | '3xxx'\" trên api/, web/, settings.registry.json, bizcity.module.json không ra; BH17 không gọi ghi lý do của Core", () => {
+    const list = [...files(path.join(ROOT, 'api')), ...files(path.join(ROOT, 'web')), path.join(ROOT, 'settings.registry.json'), path.join(ROOT, 'bizcity.module.json')];
+    const hits = list.flatMap((f) => (readFileSync(f, 'utf8').match(/'1[0-9]{3}'|'3[0-9]{3}'|\b(?:1381|1111|3381)\b/g) ?? []).map((m) => `${path.relative(ROOT, f)}: ${m}`));
+    expect(hits).toEqual([]);
+    const bh17 = readFileSync(path.join(ROOT, 'web/screens/CaiDatPage.tsx'), 'utf8');
+    expect(bh17).not.toContain('/api/v1/posting/reasons');
+    expect(bh17).toContain('/cau-hinh/quy-tac-hach-toan?nghiep-vu=pos_cash_diff');
   });
 });

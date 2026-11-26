@@ -6,7 +6,7 @@
 | Phân hệ | Bán hàng — module `phieu-ban` (đơn đặt hàng BH20); gọi phiếu chuyển kho KHO01 của phân hệ Kho |
 | Màn hình | BH20 Đơn đặt hàng (`/app/phieu-ban/don-dat-hang`) — khung "Giữ hàng" của form đơn (`OrderEditor`) thêm nút **Lập chuyển kho** và nút **Giữ lại hàng** |
 | Ngày tạo | 25/11/2026 |
-| Trạng thái | **Đã chốt 25/11/2026** (Võ Hoàng) — mọi câu §6 theo phương án đề xuất |
+| Trạng thái | **Đã chốt 25/11/2026** (Võ Hoàng) — mọi câu §6 theo phương án đề xuất · **Code + test xong 25/11** (§7) |
 | Căn cứ | NT-BH-023 §8, Q8, Q12 ("nút chuyển kho để sau — chờ yêu cầu điều chuyển của kiennt"); NT-BH-032 (chuyển kho KCB ⇄ KHG); quyết định của anh Hoàng 25/11: **không chờ "yêu cầu điều chuyển có ghi sổ" của kiennt, Hoàng làm bằng phiếu chuyển kho KHO01 có sẵn** |
 
 ## 1. Hiện trạng (đọc trên `origin/main` 25/11)
@@ -122,3 +122,23 @@ Bút toán: phiếu KHO01 theo luật chuyển kho hiện có (khác chi nhánh:
 | Q6 | Nối phiếu với đơn bằng gì? | **Đợt này: ghi chú phiếu + lịch sử đơn + `body.transfers[]`** (không đổi Kho). Đợt sau: `kho.transfer.create` nhận thêm `sourceDocRef`, tự ghi liên kết `kho.transfer:<id>` —source→ `phieu-ban.order:<id>` (sửa `apps/api/src/phan-he/kho/phieu-chuyen-kho.ts` — tệp do Thủy lập, phải báo Thủy) | (b) module ghi `phieu-ban.order` —uses→ `kho.transfer` (sai nghĩa vai); (c) thêm cột nguồn vào `stock_transfer_docs` |
 | Q7 | Người không có quyền KHO01 thì sao? | **Nút mờ + câu nói quyền thiếu** | Ẩn nút |
 | Q8 | Số phiếu | NT-BH-041 | — |
+
+## 7. Kết quả làm (25/11/2026) <!-- [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: code xong, ghi kết quả (đóng góp) -->
+
+| Ca | Kết quả | Test |
+|---|---|---|
+| 1, 12 | Đạt — giữ 4 (`-G1`), `holdShort` = SUA01 cần 6; dòng phí ship (dịch vụ) không vào danh sách thiếu | `apps/api/test/nt-bh-041-chuyen-kho-don-dat-hang.test.ts` |
+| 2 | Đạt — CH02-K2 (2) → CN01-KT (50) → CH03-K1 (8); không có kho bán, KCB, KHG | như trên |
+| 3 | Đạt — KHO01 `CK26xxxxx` Đã xuất, tồn CN01-KT 44, ghi chú + lịch sử "Lập chuyển kho CK…: CN01-KT → CH02-K1 SUA01 × 6", đơn hiện phiếu (link mở màn KHO01) | như trên |
+| 4 | Đạt — không phiếu giữ mới, `meta.holdNothing` "Kho bán CH02-K1 chưa có thêm hàng (phiếu CK… chưa nhận)" | như trên |
+| 5 | Đạt — nhận ở KHO01 → Giữ lại hàng → `-G2` 6, đang giữ 10, hết thiếu | như trên |
+| 6 | Đạt — CH02-K2 cùng chi nhánh nhận luôn; Giữ lại hàng giữ thêm 2 | như trên |
+| 7 | Đạt — `VALIDATION_ERROR`, `error.fields` `lines[0].qty` "CH03-K1 chỉ còn 8"; màn báo tại ô trước khi gửi | như trên + `modules/phieu-ban/test/order.test.ts` |
+| 8 | Đạt — `canCreate` false, nút mờ "Cần quyền Lập phiếu chuyển kho (KHO01)"; module và KHO01 đều 403 | như trên |
+| 9 | Đạt một phần — nút khoá khi gửi; người khác lập cùng lúc → `CONFLICT` `PHIEU_BAN_ORDER_STATE` (`cause: transfer_busy`); gửi lại bước nối không nối hai lần. Khoá ý muốn `Idempotency-Key` = id đơn + số lần lập cho lệnh KHO01 **chưa làm được**: `useApi()` của `@bizcity/ui-kit` không nhận khoá do màn truyền (mỗi lời gọi một khoá mới) | như trên |
+| 10 | Đạt — Nháp / Đã đóng: không nút; API `CONFLICT` `PHIEU_BAN_ORDER_STATE` | như trên |
+| 11 | Đạt — KHO01 từ chối → khung Giữ hàng hiện "Từ chối", vẫn thiếu 6, lập lại được | như trên |
+
+**Lệch so với §3 dòng 3 (báo người chốt):** `ctx.actions.call` của Platform chỉ gọi action **đọc** (`callAction` từ chối action ghi) nên module không gọi được `kho.transfer.create`. Làm theo cách không đổi Kernel / Platform / phân hệ Kho: action `phieu-ban.order.transfer-create` có ba bước — `prepare` (khoá đơn, kiểm quyền `kho:chuyen-kho-lap`, kho ứng viên, SL ≤ tồn; giữ chỗ "đang lập"; trả khuôn phiếu KHO01), màn gọi `POST /api/v1/kho/transfers` bằng phiên người bấm, rồi `record` (nối phiếu vào đơn) hoặc `abort` (KHO01 từ chối). Trạng thái hiện tại của phiếu màn đọc ở `GET /api/v1/kho/transfers/:id` (không có action `kho.transfer.get`).
+
+**Ghi nhận khác:** KHO01 ghi sổ với `force` nên kỳ khoá **không** chặn phiếu chuyển (Q-CHUNG-04 dự kiến `PERIOD_LOCKED`) — hành vi sẵn có của phân hệ Kho, không sửa trong phiếu này. KHO01 chưa mở thẳng được một phiếu theo số (link chỉ mở màn danh sách).

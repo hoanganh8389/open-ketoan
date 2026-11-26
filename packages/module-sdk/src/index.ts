@@ -15,7 +15,8 @@ import { DOC_REF_RE } from '@ketoan/contracts';
 import type { AnyActionDef } from '@bizcity/platform/core/actions';
 import type { SubscriberDef } from '@bizcity/platform/core/events';
 import type { ModuleManifestLike } from './manifest.js';
-import { screenErrors } from './manifest.js';
+import { moduleSecrets, screenErrors, secretsErrors } from './manifest.js';
+import { defineSecretsReadAction, registerModuleSecrets } from '@bizcity/platform/core/secrets';
 
 // ── Khai báo ────────────────────────────────────────────────────────────────────────────────────────────────────────────
 export { defineAction } from '@bizcity/platform/core/actions';
@@ -35,6 +36,8 @@ export { Errors, AppError } from '@bizcity/platform/core/errors';
 export { loadWorkflow, parseWorkflow, Workflow, STATUS_GROUPS } from '@bizcity/platform/core/workflow';
 export type { WorkflowDoc, WorkflowActor, WorkflowStep, StatusGroup } from '@bizcity/platform/core/workflow';
 export type { ErrorCode } from '@ketoan/contracts';
+// [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets: kiểu ctx.secrets + khai secrets[] trong manifest (BIZCITY-SECRETS-v1 §3) — module không nhận hàm mã hoá / khoá (đóng góp)
+export type { SecretsApi, SecretScope, SecretScopeType, SecretDecl, SecretInfo } from '@bizcity/platform/core/secrets';
 
 // ── Tiện ích thuần ────────────────────────────────────────────────────────────────────────────────────────────────────────
 export { z } from 'zod';
@@ -58,6 +61,8 @@ export function docRef(type: string, id: string | number): string {
 export type { ModuleManifestLike, ModuleScreen, ModuleScreenOperation, ModuleScreenKind } from './manifest.js';
 // [2026-11-17 05:30 PM khanhtd] NT-HT-003 — GĐ4: kiểm khai màn × thao tác (dùng ở defineModule và bộ kiểm module)
 export { moduleScreens, screenErrors } from './manifest.js';
+// [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets: đọc / kiểm khai secrets[] của manifest (đóng góp)
+export { moduleSecrets, secretsErrors } from './manifest.js';
 
 export interface ModuleDef {
   manifest: ModuleManifestLike;
@@ -92,6 +97,15 @@ export function defineModule(def: { manifest: ModuleManifestLike; actions?: AnyA
   for (const h of def.hooks ?? []) if (h.module !== m.key) bad.push(`hook ${h.id}: module "${h.module}" ≠ "${m.key}"`);
   // [2026-11-17 05:30 PM khanhtd] NT-HT-003 — GĐ4: màn khai sai (quyền chưa khai, sai tiền tố, thiếu xem) → không nạp module
   bad.push(...screenErrors(m));
+  // [2026-11-25 08:55 PM Võ Hoàng] FLOW — platform.secrets: bí mật khai sai (tên ngoài tiền tố module, phạm vi lạ, thiếu nhãn) → không nạp module (đóng góp)
+  bad.push(...secretsErrors(m));
   if (bad.length) throw new Error(`Module ${m.id ?? m.key}: ${bad.join('; ')}`);
-  return Object.freeze({ manifest: m, actions: def.actions ?? [], subscribers: def.subscribers ?? [], hooks: def.hooks ?? [] });
+  // [2026-11-25 11:32 PM Võ Hoàng] FLOW — platform.secrets: khai secrets[] → ctx.secrets nhận tên đã khai; tự thêm action đọc cho khoá app <key>.secrets.read (GET /api/v1/m/<key>/secrets/read, quyền secrets:read:<key>) (đóng góp)
+  const secrets = moduleSecrets(m);
+  const actions = [...(def.actions ?? [])];
+  if (secrets.length) {
+    registerModuleSecrets(m.key, secrets);
+    if (!actions.some((a) => a.id === `${m.key}.secrets.read`)) actions.push(defineSecretsReadAction(m.key));
+  }
+  return Object.freeze({ manifest: m, actions, subscribers: def.subscribers ?? [], hooks: def.hooks ?? [] });
 }

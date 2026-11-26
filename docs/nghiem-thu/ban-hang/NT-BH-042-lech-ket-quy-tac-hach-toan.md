@@ -113,3 +113,15 @@ Màn ghi ở phiếu này: ACC41 (sửa tài khoản lý do — Core); BH17 ch�
 | Q5 | Phạm vi đầu số C4 | Thiếu Nợ `138, 334, 632, 811`; thừa Có `338, 711`; bên tiền `111` | Không giới hạn (mọi TK chi tiết) |
 | Q6 | Thứ tự PR | **Core C1–C4 (Thủy) vào trước**, rồi PR module bỏ ô ở BH17 (tránh khoảng trống không có nơi sửa) | Làm song song, BH17 tạm giữ ô tới khi ACC41 xong |
 | Q7 | Số phiếu | NT-BH-042 | — |
+
+## 7. Kết quả làm (25/11/2026, nhánh `feat/nt-bh-042-lech-ket`)
+<!-- [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — ghi kết quả làm NT-BH-042 (đóng góp) -->
+
+| Việc | Làm | Ghi chú |
+|---|---|---|
+| C2 | `db/migrations/0185_ly_do_chenh_lech_ket.sql` | Chỉ thêm khi chưa có mã (`ON CONFLICT DO NOTHING`), chỉ khi cả hai TK là TK chi tiết đang dùng |
+| C3 / C4 | `scheme.ts` (nguồn `reason`, `REASON_KEYS`, nghiệp vụ `pos_cash_diff`), `scheme.routes.ts` (`GET /posting/scheme` trả `reasons`; action mới `PUT /api/v1/posting/scheme/reasons/:code`, quyền `settings:write`, kiểm phạm vi trước rồi TK chi tiết, trả mọi lỗi một lần qua `error.fields`, `expected` → `CONFLICT` khi người khác vừa đổi), ACC41 (khối "Lý do phiếu kế toán", hộp thoại Đổi, `?nghiep-vu=`) | Dùng action mới thay `PUT /posting/reasons/:code` vì action cũ không kiểm phạm vi đầu số và nằm ngoài dòng giữ chỗ |
+| C1 | Gói nền `db/packs/vn-tt99-nen.posting-pack.json` 1.1.0 thêm hai lý do (đơn vị tạo mới có sẵn); `db/seeds/ly-do.jsonl` thêm hai dòng + cột `debit_account` / `credit_account`; bộ khôi phục lý do (`default-data.service.ts`) đọc cặp Nợ / Có của lý do journal, giữ cặp đơn vị đã khai, không xoá mã gói nền có | Chốt bổ sung 26/11 (anh Hoàng): Hoàng làm, Nguyễn Văn Thủy rà. Gói nền không nhận cờ `module` (khuôn gói đóng) — lý do từ gói chỉ có `flags.default`; migration / ACC41 / tệp gốc ghi thêm `module: "pos"`. Bản chép `libraries/core.ly-do-dinh-khoan/sources/ly-do.jsonl` chưa đổi (thư viện chưa nhận loại `journal`) |
+| Module 1–4 | BH17 chỉ đọc + nút sang ACC41; chú thích `shifts.ts`; `settings.registry.json`; manifest `reasonCodes`, 0.4.2; README | Máy chủ module không đổi |
+
+Ca §4: 1, 2, 3, 4 (trước / sau nâng cấp như nhau), 5, 6, 8, 9 qua `apps/api/test/nt-bh-042-lech-ket-quy-tac.test.ts` (dựng đơn vị "trước nâng cấp" bằng cách xoá hai lý do gói nền vừa cài); đơn vị mới có sẵn hai lý do + khôi phục giữ cặp đã đổi qua `apps/api/test/default-data-ly-do-journal.test.ts`; ca 7 qua `modules/pos/test/shifts.test.ts`. Hệ thống tài khoản mẫu có 1388 là TK tổng hợp → test dùng TK chi tiết 13881 thay 1388; 6421 cũng là TK tổng hợp → test ngoài phạm vi thêm 64111. Ca 9: không quyền thì nút Đổi / Khai **ẩn** (Q-CHUNG-01 chốt chung 25/11), máy chủ trả 403.

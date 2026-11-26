@@ -1989,11 +1989,12 @@ Rà soát: ${v.outsideOrder.reviewedBy}${v.outsideOrder.reviewNote ? ` — ${v.o
                     <td style={{ fontSize: 11 }}>{g.remaining > 0 ? <span className="mh-warn">thiếu quà {g.remaining}</span> : g.received > g.ordered ? <span className="mh-bad">thừa {Math.round((g.received - g.ordered) * 100) / 100}</span> : 'đủ'}</td></tr>)}</Fragment>)}
                 </tbody></table>
                 {prog.receipts.length > 0 && <div className="muted" style={{ fontSize: 11 }}>Phiếu nhập: {prog.receipts.join(', ')} · <Link to={`/mua-hang/doi-chieu?ncc=${encodeURIComponent(v.partnerCode)}`} onClick={onClose}>đối chiếu chi tiết (MH21)</Link></div>}
+                {/* [2026-11-26 kiennt] NT-MH-015 — nút lập phiếu nhập từ đơn bấm được khi đơn đã duyệt đang ở chế độ xem (data-view-ok) (đóng góp) */}
                 {!prog.done && v.status !== 'draft' && v.status !== 'cancelled' && onOpen && (deliveryBranches(v).length > 1
                   // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — đơn giao nhiều chi nhánh: mỗi chi nhánh nhận lập phiếu nhập phần của mình (đóng góp)
                   ? <div className="row" style={{ gap: 4, flexWrap: 'wrap', marginTop: 6 }}><span className="muted" style={{ width: '100%', fontSize: 12 }}>Đơn giao {deliveryBranches(v).length} chi nhánh — lập phiếu nhập cho từng nơi nhận:</span>
-                    {deliveryBranches(v).map((b) => <button key={b} className="btn btn-sm btn-primary" onClick={() => onOpen(receiptFromOrder(v, data.docs, today(), { ...data.units, ...(a?.units ?? {}) }, b))} title={`Phiếu nhập của chi nhánh ${b} ${names.branchName(b)} — chỉ gồm dòng giao cho chi nhánh này`}>Phiếu nhập {b}</button>)}</div>
-                  : <button className="btn btn-sm btn-primary" style={{ marginTop: 6 }} onClick={() => onOpen(receiptFromOrder(v, data.docs, today(), { ...data.units, ...(a?.units ?? {}) }))}>Lập phiếu nhập kho từ đơn (chép phần còn lại)</button>)}
+                    {deliveryBranches(v).map((b) => <button key={b} className="btn btn-sm btn-primary" data-view-ok onClick={() => onOpen(receiptFromOrder(v, data.docs, today(), { ...data.units, ...(a?.units ?? {}) }, b))} title={`Phiếu nhập của chi nhánh ${b} ${names.branchName(b)} — chỉ gồm dòng giao cho chi nhánh này`}>Phiếu nhập {b}</button>)}</div>
+                  : <button className="btn btn-sm btn-primary" data-view-ok style={{ marginTop: 6 }} onClick={() => onOpen(receiptFromOrder(v, data.docs, today(), { ...data.units, ...(a?.units ?? {}) }))}>Lập phiếu nhập kho từ đơn (chép phần còn lại)</button>)}
                 {!prog.done && v.status === 'draft' && <div className="muted" style={{ fontSize: 11 }}>Duyệt đơn rồi mới lập phiếu nhập từ đơn.</div>}
               </div>
             )}

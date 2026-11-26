@@ -2,18 +2,16 @@
  * TỒN MAX (MH16) — khai max (và min nếu cần) theo chi nhánh – kho – mã, một nơi duy nhất.
  *   Theo chi nhánh / shop: chọn kho của chi nhánh hoặc một shop → mỗi mã một dòng: tồn, bán / ngày (đo trong N ngày),
  *     gợi ý max (shop = bán / ngày × số ngày đủ hàng; kho = tổng max shop + % dự phòng), max / min sửa ngay trên ô.
- *   Theo mã hàng: một mã ở kho + mọi shop của chi nhánh.
  * Áp gợi ý hàng loạt cho các dòng đang lọc, nhập / xuất Excel, cài riêng từng mã (số ngày đo bán, số ngày đủ hàng, cách chuyển).
  */
 import { useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileUp, Plus, Settings2, Sparkles } from 'lucide-react';
 import { TRANSFER_MODES, type TransferMode } from '@bizcity/mua-hang-domain';
 import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Field, Loading, Modal } from '@/components/ui';
-import { ItemPicker } from '@/components/pickers';
 import { api, errorText } from '@/lib/api';
 import { NhapExcelChung } from '../thanh-phan/NhapExcelChung';
 import { ChonMatHang, type CatalogItem } from '../thanh-phan/ChonMatHang';
@@ -30,11 +28,9 @@ export function TonMaxPage() {
   const tt = useThaoTac('mua-hang.ton-max'); // [2026-11-13 08:00 PM kiennt] NT-HT-003 — nút ghi tồn max theo thao tác "sua" của màn MH16 (đóng góp)
   const h = useHierarchy();
   const [parent, setParent] = useState('');
-  const [params] = useSearchParams();
-  const [mode, setMode] = useState<'branch' | 'sku'>(params.get('sku') ? 'sku' : 'branch');
+  // [2026-11-26 kiennt] NT-MH-020 — bỏ chế độ "Theo mã hàng": màn luôn xem theo chi nhánh / shop (đóng góp)
   const [target, setTarget] = useState(''); // '' = kho chi nhánh
   const [wh, setWh] = useState('');
-  const [sku, setSku] = useState(params.get('sku') ?? '');
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [extra, setExtra] = useState<MaxBoardRow[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -48,10 +44,10 @@ export function TonMaxPage() {
   // Chi nhánh / shop đang xem: kho của nó luôn hiện để chọn (shop thường một kho cố định, kho chi nhánh có nhiều kho).
   const targetNode = target ? shops.find((s) => s.code === target) : parentNode;
   const q = useQuery({
-    queryKey: ['ton-max', 'board', parent, mode, target, wh, sku], enabled: Boolean(parent) && (mode === 'branch' || Boolean(sku)),
-    queryFn: () => stockApi.board({ parentCode: parent, ...(mode === 'sku' ? { sku } : { branchCode: target || parent, warehouseCode: wh || undefined }) }),
+    queryKey: ['ton-max', 'board', parent, 'branch', target, wh, ''], enabled: Boolean(parent),
+    queryFn: () => stockApi.board({ parentCode: parent, branchCode: target || parent, warehouseCode: wh || undefined }),
   });
-  const isKho = mode === 'branch' && !target;
+  const isKho = !target;
   // [2026-11-03 04:30 PM Nguyễn Văn Thủy] NHOM — lọc theo nhóm hàng
   const [nhom, setNhom] = useState('');
   const ln = useLocNhomHang(nhom);
@@ -90,13 +86,8 @@ export function TonMaxPage() {
   const cols: Column<MaxBoardRow>[] = [
     // Mã kho đứng đầu bảng (như báo cáo tồn kho quen dùng).
     { key: 'warehouseCode', header: 'Mã kho', type: 'code' as const, width: 80 },
-    ...(mode === 'sku' ? [
-      { key: 'branchCode', header: 'Chi nhánh', type: 'code' as const, width: 90 },
-      { key: 'branchName', header: 'Tên', width: 160 },
-    ] : [
-      { key: 'sku', header: 'Mã hàng', type: 'code' as const, width: 110 },
-      { key: 'name', header: 'Tên hàng', width: 220 },
-    ]),
+    { key: 'sku', header: 'Mã hàng', type: 'code' as const, width: 110 },
+    { key: 'name', header: 'Tên hàng', width: 220 },
     { key: 'baseUnit', header: 'ĐVT', width: 60 },
     { key: 'pack', header: 'Quy cách', type: 'qty', width: 70, render: (r) => (r.pack ? <span title={`1 ${r.packUnit} = ${r.pack} ${r.baseUnit}`}>{r.pack} / {r.packUnit}</span> : '') },
     { key: 'ton', header: 'Tồn', type: 'qty', width: 80, className: 'tm-stock', showZero: true, sum: true },
@@ -105,7 +96,7 @@ export function TonMaxPage() {
       { key: 'avgPerDay', header: 'Bán / ngày', type: 'qty' as const, width: 80, title: 'Bán trung bình mỗi ngày trong số ngày đo', render: (r: MaxBoardRow) => <span title={`Đo trong ${r.windowDays} ngày gần nhất`}>{qtyFmt(r.avgPerDay)}</span> },
     ]),
     { key: 'suggested', header: 'Gợi ý max', type: 'qty', width: 90, title: 'Gợi ý max', render: (r) => (r.suggested ? <button className="tm-opt" title={isKho || r.shopMaxSum !== undefined ? `Tổng max shop ${qtyFmt(r.shopMaxSum)} + ${q.data?.formula.warehouseBufferPct ?? 10}% dự phòng — bấm để dùng` : `${qtyFmt(r.avgPerDay)} / ngày × ${r.coverDays} ngày — bấm để dùng`} onClick={() => setD(r, { max: r.suggested })}><span className="tm-sug">{qtyFmt(r.suggested)}</span></button> : '') },
-    { key: 'max', header: isKho ? 'Max của kho' : mode === 'sku' ? 'Max' : 'Max của shop', title: isKho ? 'Max của chính kho đang xem (khai ở đây) — dùng cho phân tích đặt hàng' : 'Max của shop — dùng cho chuyển hàng xuống shop', type: 'qty', width: 110, value: (r) => val(r, 'max'), sum: true, className: 'tm-max',
+    { key: 'max', header: isKho ? 'Max của kho' : 'Max của shop', title: isKho ? 'Max của chính kho đang xem (khai ở đây) — dùng cho phân tích đặt hàng' : 'Max của shop — dùng cho chuyển hàng xuống shop', type: 'qty', width: 110, value: (r) => val(r, 'max'), sum: true, className: 'tm-max',
       render: (r) => <OSo className={`tm-input${drafts[k(r)]?.max !== undefined ? ' dirty' : ''}`} value={val(r, 'max') || undefined} placeholder="0" onChange={(v) => setD(r, { max: v })} /> },
     { key: 'min', header: 'Min của kho', type: 'qty', width: 100, value: (r) => val(r, 'min'), hidden: !isKho,
       render: (r) => <OSo className={`tm-input${drafts[k(r)]?.min !== undefined ? ' dirty' : ''}`} value={val(r, 'min') || undefined} placeholder="0" onChange={(v) => setD(r, { min: v })} /> },
@@ -116,7 +107,7 @@ export function TonMaxPage() {
   ];
 
   const curWh = q.data?.warehouseCode || wh;
-  const targetName = mode === 'sku' ? `mã ${sku}` : `kho ${curWh} của ${target ? targetNode?.name ?? target : parentNode?.name ?? parent}${targetNode && isOff(targetNode) ? ' (ngừng)' : ''}`;
+  const targetName = `kho ${curWh} của ${target ? targetNode?.name ?? target : parentNode?.name ?? parent}${targetNode && isOff(targetNode) ? ' (ngừng)' : ''}`;
 
   return (
     <>
@@ -124,12 +115,8 @@ export function TonMaxPage() {
       <div className="card">
         <ChuaPhanCap branches={h.data?.branches} />
         <div className="tm-bar">
-          <ChonChiNhanhCha value={parent} onChange={(v) => { setParent(v); setTarget(''); setWh(''); setDrafts({}); setExtra([]); }} />
-          <div className="tm-sign" title="Xem theo chi nhánh / shop hoặc theo một mã hàng">
-            <button className={mode === 'branch' ? 'on' : ''} onClick={() => setMode('branch')}>Theo chi nhánh / shop</button>
-            <button className={mode === 'sku' ? 'on' : ''} onClick={() => setMode('sku')}>Theo mã hàng</button>
-          </div>
-          {mode === 'branch' ? <>
+          {/* [2026-11-26 kiennt] NT-MH-017 — chọn lại đúng chi nhánh đang xem: giữ shop / kho / số đang sửa chưa lưu (đóng góp) */}
+          <ChonChiNhanhCha value={parent} onChange={(v) => { if (v === parent) return; setParent(v); setTarget(''); setWh(''); setDrafts({}); setExtra([]); }} />
             <ChonShop parent={parent} value={target} onChange={(v) => { setTarget(v); setWh(''); setDrafts({}); setExtra([]); }} />
             <label className="tm-parent" title="Phân kho đang xem — max khai theo từng kho">
               <span>Phân kho</span>
@@ -138,9 +125,8 @@ export function TonMaxPage() {
               </select> : <span className="mh-bad" style={{ fontSize: 13 }}>chưa có kho — khai ở <Link to="/danh-muc/kho">Danh mục kho</Link></span>}
             </label>
             <ChonNhomHang value={nhom} onChange={setNhom} />
-          </> : <div style={{ width: 300 }}><ItemPicker value={sku} onChange={setSku} placeholder="Gõ mã / tên hàng" /></div>}
           <span className="grow" />
-          {mode === 'branch' && tt.sua && <button className="btn btn-sm" onClick={() => setAdd(true)}><Plus size={14} /> Thêm mã</button>}
+          {tt.sua && <button className="btn btn-sm" onClick={() => setAdd(true)}><Plus size={14} /> Thêm mã</button>}
           <button className="btn btn-sm" onClick={() => applySuggest(true)} title="Điền gợi ý cho các dòng đang lọc mà chưa có max"><Sparkles size={14} /> Gợi ý cho mã chưa có max</button>
           <button className="btn btn-sm" onClick={() => applySuggest(false)} title="Điền gợi ý cho MỌI dòng đang lọc (ghi đè max đang có)">Áp gợi ý cho dòng đang lọc</button>
           {tt.sua && <button className="btn btn-sm" onClick={() => setImp(true)}><FileUp size={14} /> Nhập Excel</button>}
@@ -149,13 +135,13 @@ export function TonMaxPage() {
         </div>
         {/* [2026-11-25 kiennt] NT-MH-007 — bỏ dải ô đếm Số mã / Đã có max / Đang dưới max / Có bán, chưa có max / Max lệch gợi ý; lọc ở các cột của lưới (đóng góp) */}
         {/* [2026-11-25 kiennt] NT-MH-008 — bỏ dòng chú thích "Đang xem … · bán / ngày đo trong … max kho gợi ý …" (cách tính gợi ý xem ở MH18; rê chuột cột Gợi ý max) (đóng góp) */}
-        {q.data && mode === 'branch' && !q.data.mainWarehouse && <div className="alert alert-info" style={{ margin: '0 12px 8px', fontSize: 13 }}>
+        {q.data && !q.data.mainWarehouse && <div className="alert alert-info" style={{ margin: '0 12px 8px', fontSize: 13 }}>
           Kho <b>{curWh}</b> là kho phụ: <b>không gợi ý max</b> (gợi ý chỉ ở kho chính để tồn max không bị tính trùng ở nhiều kho) — khai tay, Thêm mã hoặc Nhập Excel.
         </div>}
         {msg && <div className={`alert ${msg.ok ? 'alert-ok' : 'alert-bad'}`} style={{ margin: '0 12px 8px' }}>{msg.text}</div>}
         <ErrorBox error={q.error ? errorText(q.error) : null} />
-        {mode === 'sku' && !sku ? <div className="empty">Chọn một mã hàng để xem max ở kho và mọi shop.</div> : q.isLoading ? <Loading /> : (
-          <div className="tm-grid"><DataGrid rows={rows} columns={cols} rowKey={(r) => k(r)} storageKey={`ton-max-v2-${mode}-${isKho ? 'kho' : 'shop'}`} viewRef={view} exportName={`ton-max-${parent}-${target || 'kho'}`}
+        {q.isLoading ? <Loading /> : (
+          <div className="tm-grid"><DataGrid rows={rows} columns={cols} rowKey={(r) => k(r)} storageKey={`ton-max-v2-branch-${isKho ? 'kho' : 'shop'}`} viewRef={view} exportName={`ton-max-${parent}-${target || 'kho'}`}
             exportTitle={`Tồn max — ${targetName}`} emptyText="Chưa có mã nào (chưa có tồn, bán hay max). Bấm Thêm mã hoặc Nhập Excel." /></div>
         )}
       </div>
@@ -180,8 +166,8 @@ export function TonMaxPage() {
           { name: 'Tồn min', aliases: 'Min', example: 0, note: 'Tuỳ chọn (thường chỉ khai cho kho). Trống = 0' },
         ],
         // [2026-11-25 kiennt] NT-MH-008 — tệp mẫu có sẵn mặt hàng đang dùng CHƯA CÓ MAX ở kho / shop đang xem (mã chi nhánh, mã kho điền sẵn;
-        // kèm tồn, gợi ý nếu có) — chỉ nhập số Tồn max. Xem theo mã hàng: tệp mẫu một dòng ví dụ như cũ (đóng góp)
-        mau: mode === 'branch' ? async () => {
+        // kèm tồn, gợi ý nếu có) — chỉ nhập số Tồn max (đóng góp)
+        mau: async () => {
           const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 });
           const br = target || parent, whc = q.data?.warehouseCode || wh;
           const by = new Map((q.data?.rows ?? []).map((r) => [r.sku, r]));
@@ -189,7 +175,7 @@ export function TonMaxPage() {
           if (!list.length) throw new Error(`Mọi mặt hàng đang dùng đã có max ở ${br} kho ${whc} — sửa ngay trên lưới`);
           const pBy = new Map(ds.map((p) => [p.sku, p]));
           return list.map((x) => { const r = by.get(x), p = pBy.get(x); return [br, whc, x, r?.name ?? p?.name ?? '', r?.baseUnit ?? p?.unit ?? '', r ? r.ton : '', r?.suggested || '', '', '']; });
-        } : undefined,
+        },
         spec: [['branch', ['ma chi nhanh', 'ma shop', 'chi nhanh']], ['wh', ['ma kho', 'kho']], ['sku', ['ma hang', 'ma sp', 'sku']], ['max', ['ton max', 'max']], ['min', ['ton min', 'min']]],
         map: (r) => {
           const branch = String(r.branch).trim(), s = String(r.sku).trim();
@@ -203,6 +189,19 @@ export function TonMaxPage() {
           return { value: { branch, wh: String(r.wh ?? '').trim(), sku: s, max, min } };
         },
         head: ['Chi nhánh', 'Kho', 'Mã hàng', 'Max', 'Min'], cells: (x) => [x.branch, x.wh || '(mặc định)', x.sku, qtyFmt(x.max), qtyFmt(x.min)],
+        // [2026-11-26 kiennt] NT-MH-018 — kiểm trước khi ghi: mã có trong danh mục, mã kho thuộc chi nhánh; dòng sai đỏ, không đưa vào
+        // (trước đây xem trước báo ✓, lúc ghi máy chủ từ chối cả tệp vì một dòng) (đóng góp)
+        check: async (list) => {
+          const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'all', pageSize: 1_000_000 });
+          const co = new Set(ds.map((p) => p.sku));
+          return list.map((x) => {
+            if (!co.has(x.sku)) return `Mã ${x.sku} chưa có trong danh mục mặt hàng`;
+            const node = (h.data?.branches ?? []).find((b) => b.code === x.branch);
+            if (x.wh && node && !node.warehouses.some((w) => w.code === x.wh)) return `Kho ${x.wh} không thuộc ${x.branch} (kho của ${x.branch}: ${node.warehouses.map((w) => w.code).join(', ') || 'chưa có'})`;
+            if (!x.wh && node && !node.warehouses.length) return `${x.branch} chưa có kho — khai ở Danh mục kho`;
+            return undefined;
+          });
+        },
         note: 'Tải file mẫu: có sẵn mặt hàng chưa có max ở kho / shop đang xem — chỉ điền cột Tồn max (dòng để trống được bỏ qua). Ghi ngay khi bấm "Đưa vào": dòng đã có thì cập nhật. Mã chưa có trong danh mục bị báo lỗi.',
       }} />}
     </>

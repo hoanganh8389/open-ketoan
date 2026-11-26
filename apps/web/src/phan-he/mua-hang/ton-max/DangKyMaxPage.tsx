@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileDown, FileUp, Plus } from 'lucide-react';
+import { FileDown, FileUp, Plus, Sparkles } from 'lucide-react';
 import { MAX_REQUEST_STATUS, type MaxRequestItem, type MaxRequestKind, type MaxRequestStatus } from '@bizcity/mua-hang-domain';
 import { PageHeader } from '@/components/PageHeader';
 import { DataGrid, type Column } from '@/components/DataGrid';
@@ -170,6 +170,8 @@ function PhieuDangKy({ parent, init, branches, onClose }: { parent: string; init
           <input className="input" type="search" placeholder="Tìm mã / tên…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 220 }} />
           {kind === 'existing' && <label className="checkbox"><input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} /> Chỉ mã đổi max</label>}
           <span className="grow" style={{ flex: 1 }} />
+          {/* [2026-11-26 kiennt] NT-MH-016 — max đề nghị không còn điền sẵn gợi ý; muốn lấy gợi ý cho nhiều mã thì bấm nút này (các dòng đang hiện) (đóng góp) */}
+          {!locked && kind === 'existing' && br && <button className="btn btn-sm" title="Điền max gợi ý (theo tốc độ bán) vào Max đề nghị cho các dòng đang hiện có gợi ý — sửa lại được trước khi lưu" onClick={() => { const on = new Set(shown.filter((r) => r.suggestedMax).map((r) => r.key)); setItems(rows.map((r) => (on.has(r.key) ? { ...r, proposedMax: r.suggestedMax } : r))); }}><Sparkles size={13} /> Điền max gợi ý</button>}
           {!locked && kind === 'existing' && br && <button className="btn btn-sm" onClick={() => setAdd(true)}><Plus size={13} /> Thêm mã</button>}
           {!locked && kind === 'new_item' && <button className="btn btn-sm" onClick={() => setItems([...rows, { key: `n${Date.now().toString(36)}`, sku: '', name: '', maxByShop: {} }])}><Plus size={13} /> Thêm dòng</button>}
           {!locked && (kind === 'new_item' || br) && <button className="btn btn-sm" onClick={() => (kind === 'new_item' ? setImp(true) : setImpShop(true))}><FileUp size={13} /> Nhập Excel</button>}

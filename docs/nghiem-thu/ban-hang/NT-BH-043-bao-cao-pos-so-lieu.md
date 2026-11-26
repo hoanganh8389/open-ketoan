@@ -187,3 +187,26 @@ Báo cáo **chỉ đọc**: không có form ghi nên không cần bản đồ l�
 | Q7 | Kích thước trang | **500 dòng / trang**, Xuất Excel lấy theo lô tới 20.000 dòng | 200 như hiện nay; xuất Excel ở máy chủ (tệp) |
 | Q8 | Thứ tự PR | **Core khung nhìn → module `pos` → open-pos**; open-pos giữ đường cũ tới khi module lên bản cài | Làm module trước, khung nhìn sau (cột lô / giá vốn / cây để trống tạm) |
 | Q9 | Số phiếu | NT-BH-043 | — |
+| Q10 | "Chi nhánh của máy" khi người xem chỉ có `pos:sell` | **Anh Hoàng chốt 26/11:** (1) phạm vi chi nhánh được gán (NT-HT-003); (2) không giới hạn phạm vi → chi nhánh của ca gần nhất người đó mở; (3) chưa mở ca nào → chỉ khi đơn vị có đúng một chi nhánh. Chi nhánh khác → 403; xem chi nhánh khác cần `pos:report` | — |
+
+## 7. Kết quả phần open-ketoan (khung nhìn 0186 + module `pos`)
+<!-- [2026-11-25 11:55 PM Võ Hoàng] NGHIEM-THU — NT-BH-043: kết quả phần máy chủ (đóng góp) -->
+<!-- [2026-11-26 12:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-043 Q10: anh Hoàng chốt 26/11 cách xác định chi nhánh của máy (đóng góp) -->
+
+Test: `apps/api/test/nt-bh-043-bao-cao-pos.test.ts` (11 ca), `modules/pos/test/sales-report.test.ts` (13 ca hàm thuần).
+
+| Ca | Kết quả |
+|---|---|
+| 1 | Đạt — dòng SB01: SL 2, 660.000, lô L2511 HSD 2027-06-30, Mã NV = `created_by`, Giá vốn 500.000 |
+| 2 | Đạt — `costStatus = not_run`, ghi chú "Chưa tính giá vốn tháng mm/yyyy"; `meta.sums.cost` chỉ cộng tháng đã tính |
+| 3 | Đạt — NTH1, SL / thành tiền dương, Doanh thu âm (thử với phiếu trả hôm nay; trả đơn tháng trước cần duyệt quá hạn — NT-BH-030) |
+| 4 | Đạt theo cách khác — thử chia trang nhỏ (`pageSize=2`): `meta.sums` của cả khoảng, bằng tổng đơn − trả; không dựng 6.200 đơn trong test |
+| 5 | Đạt — chọn SUA lấy cả SB01, SN01; nhóm "Sữa / Sữa bột"; `meta.groups` là cây cho bộ chọn |
+| 6 | Đạt — mỗi ngày 1..hôm nay một dòng, tỉ trọng cộng 100 % |
+| 7 | Đạt một phần — hai dòng TBHTM / TTBHK, Người thu = thu ngân. Số phiếu thu = số đơn vì máy bán **chưa gửi mã tham chiếu** (khuôn thanh toán không có `reference`; sổ cũng ghi số đơn) — có `reference` thì dùng (đã có test hàm thuần). Ngân hàng = `bank_account_code` của hình thức (chưa có khung nhìn tài khoản ngân hàng để ra tên "Vietcombank") |
+| 8 | Đạt — Ghi chú phiếu, Thêm quà thủ công = Có. Máy chủ hiện chặn dòng quà không có chương trình (`POS_GIFT_WITHOUT_POLICY`) nên cột này chỉ "Có" khi có luồng quà thủ công |
+| 9 | Đạt — chỉ `pos:sell`: không có trường giá vốn, chi nhánh khác → 403; chi nhánh của máy theo Q10 (anh Hoàng chốt 26/11): phạm vi chi nhánh được gán → không giới hạn thì chi nhánh ca gần nhất người đó mở → chưa mở ca thì chỉ khi đơn vị có đúng một chi nhánh |
+| 10 | Đạt — `pos:report` xem CN02, có trường giá vốn |
+| 11 | Đạt — Nhân viên trống, Mã NV vẫn có |
+| 12 | Đạt — `VALIDATION_ERROR` "Khoảng ngày tối đa 92 ngày", `details.field = 'to'` |
+| 13 | Đạt — đơn đổi hàng toàn đối trừ không có dòng thu; tổng thu trong ngày = Nợ 111 + 112 của sổ (kiểm trong test; số máy local 25/11 CN02: 7.550.000 + 250.000 = tổng đơn 8.125.000 − đối trừ 325.000) |

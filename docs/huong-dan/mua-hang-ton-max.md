@@ -48,17 +48,15 @@ Sửa xong bấm **Lưu**. Muốn huỷ phần đang sửa thì bấm **Bỏ**.
   Dòng nào đã có thì được cập nhật.
 - **Xuất Excel** (nút trên bảng): xuất đúng những dòng đang thấy.
 
-## Ô màu trên cùng (bấm để lọc)
+<!-- [2026-11-26 kiennt] NT-MH-020 — bỏ mục "Xem theo mã hàng" (màn chỉ còn xem theo chi nhánh / shop); dải ô màu đã bỏ ở NT-MH-007 → lọc trên lưới (đóng góp) -->
+## Lọc trên lưới
 
-- **Đang dưới max**: những mã sẽ được chia thêm hoặc đặt thêm.
-- **Có bán, chưa có max**: nên khai max cho các mã này.
-- **Max lệch gợi ý > 30%**: nên xem lại.
+Gõ vào ô lọc dưới tiêu đề cột: **Mã hàng**, **Tên hàng**; cột số lọc được kiểu `>0`, `<10`, `=0`.
 
-## Xem theo mã hàng
+- Mã đang dưới max: cột **Thiếu so max** `>0` — những mã sẽ được chia thêm hoặc đặt thêm.
+- Mã có bán mà chưa có max: cột **Bán / ngày** `>0` và cột **Max của shop** `=0` — nên khai max (nút **Gợi ý cho mã chưa có max**).
 
-Chọn **Theo mã hàng** rồi gõ mã: một mã hiện ở kho chi nhánh cha và ở mọi shop (tồn, bán / ngày, gợi ý, max), sửa ngay trên bảng.
-
-Từ form mặt hàng → thẻ *Mua hàng* → **Xem mọi shop (MH16)** cũng mở đúng màn này.
+Muốn xem một mã ở mọi shop: chọn lần lượt từng shop ở ô shop, lọc cột Mã hàng.
 
 ## Shop tự đăng ký max
 

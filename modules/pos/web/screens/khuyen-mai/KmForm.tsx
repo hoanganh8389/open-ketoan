@@ -9,11 +9,45 @@
 // [2026-11-14 01:10 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: form khuyến mại 6 loại (đóng góp)
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: lưu nháp + gửi duyệt, hạn mức lượt, cảnh báo trùng (đóng góp)
 // [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: form khuyến mại dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
+// [2026-11-25 10:50 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: ba loại @2 — bảng nhiều mã (K1), mã mua + quà lựa chọn (K2), nhân bội số (K4), chọn nhóm / nhãn (K3); hỏi trước khi bỏ thay đổi (đóng góp)
 import { useState, type ReactNode } from 'react';
 import { BranchCheckList, DocSheet, DocSheetPanel, ErrorBox, Field, Loading, Modal, errorText, useApi, useMutation, useQuery } from '@bizcity/ui-kit';
 import { M } from '../../lib';
 import { OverlapList, type Overlap } from './Drafts';
-import { KIND_INFO, toParams, toQuota, type Form, type TierMode } from './model';
+import { KIND_INFO, V2_KINDS, emptyPriceLine, toParams, toQuota, type Form, type PriceLineForm, type TierMode } from './model';
+
+type ItemClass = { code: string; name: string; isActive: boolean };
+/**
+ * Chọn nhiều nhóm hàng / nhãn hàng (K3): chỉ mã phân loại đang dùng (Q-CHUNG-08, không thêm tại chỗ — khai ở Danh mục).
+ * Mã đã chọn mà nay ngừng dùng vẫn hiện (gạch) để người khai bỏ đi.
+ */
+function ClassPicker({ kind, value, onChange, label }: { kind: 'group' | 'brand'; value: string[]; onChange: (v: string[]) => void; label: string }) {
+  const api = useApi();
+  const [q, setQ] = useState('');
+  const all = useQuery({ queryKey: ['km', 'item-classes', kind], queryFn: () => api.get<ItemClass[]>(`/api/v1/item-classes/${kind}`), staleTime: 60_000 });
+  const rows = all.data ?? [];
+  const name = (c: string) => rows.find((r) => r.code === c);
+  const t = q.trim().toLowerCase();
+  const hits = rows.filter((r) => r.isActive && !value.includes(r.code) && (!t || r.code.toLowerCase().includes(t) || r.name.toLowerCase().includes(t))).slice(0, 30);
+  return (
+    <div style={{ display: 'grid', gap: 4 }}>
+      <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
+        {value.length ? value.map((c) => {
+          const r = name(c);
+          return <span key={c} className={`badge ${r && !r.isActive ? 'badge-warn' : 'badge-info'}`} title={r && !r.isActive ? 'Mã này đã ngừng dùng ở danh mục — nên bỏ' : ''}>
+            {c}{r ? ` · ${r.name}` : ''}{r && !r.isActive ? ' (ngừng)' : ''} <button type="button" className="btn btn-xs" aria-label={`Bỏ ${c}`} onClick={() => onChange(value.filter((x) => x !== c))}>×</button></span>;
+        }) : <span className="muted">Chưa chọn {label}</span>}
+      </div>
+      <input className="input" style={{ width: 260 }} value={q} placeholder={`Tìm ${label} theo mã / tên`} onChange={(e) => setQ(e.target.value)} />
+      {all.isLoading ? <Loading /> : all.error ? <ErrorBox error={errorText(all.error)} /> : t && (
+        <div style={{ maxHeight: 160, overflow: 'auto', border: '1px solid var(--line, #ddd)', borderRadius: 4, padding: 4 }}>
+          {hits.length ? hits.map((r) => <div key={r.code}><button type="button" className="btn btn-xs" onClick={() => { onChange([...value, r.code]); setQ(''); }}>+ {r.code} · {r.name}</button></div>)
+            : <span className="muted">Không có {label} đang dùng khớp "{q.trim()}"</span>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const THU = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const Row = ({ children }: { children: ReactNode }) => <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>{children}</div>;
@@ -30,6 +64,9 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
   const { params } = tp;
   const q = toQuota(f);
   const problems = [...tp.problems, ...q.problems];
+  // Q-CHUNG-07: rời form khi còn thay đổi chưa lưu thì hỏi trước.
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+  const close = () => { if (!dirty || window.confirm('Còn thay đổi chưa lưu — bỏ thay đổi và đóng? (Bấm Huỷ để quay lại, rồi Lưu nháp)')) onClose(); };
   // Bản nháp đã lưu: đọc cảnh báo trùng đang có (cùng API hộp Duyệt); bản mới thì máy chủ báo khi Lưu.
   const ov = useQuery({ queryKey: ['km', 'overlaps', draftId], enabled: Boolean(draftId), queryFn: () => api.get<Overlap[]>(`${M}/promo/drafts/${draftId}/overlaps`) });
   const publish = useMutation({
@@ -66,6 +103,14 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
 
   const branchText = f.branchCodes.length ? f.branchCodes.join(', ') : 'Mọi cửa hàng';
   const skuCount = (s: string) => s.split(/[\s,;]+/).filter(Boolean).length;
+  const scopeText = [f.groupCodes.length && `nhóm ${f.groupCodes.join(', ')}`, f.brandCodes.length && `nhãn ${f.brandCodes.join(', ')}`].filter(Boolean).map((x) => ` · ${x}`).join('');
+  const isV2 = V2_KINDS.includes(f.kind);
+  const setLine = (i: number, p: Partial<PriceLineForm>) => set({ priceLines: f.priceLines.map((x, j) => (j === i ? { ...x, ...p } : x)) });
+  const modeSel = (v: TierMode, on: (m: TierMode) => void) => (
+    <select className="input" value={v} onChange={(e) => on(e.target.value as TierMode)}>
+      <option value="pct">giảm %</option><option value="unitPrice">giá chương trình / cái</option><option value="amountPerUnit">giảm tiền / cái</option>
+    </select>
+  );
   const reward = (() => {
     switch (f.kind) {
       case 'tiered': return `${f.tiers.length} bậc theo ${f.basis === 'qty' ? 'số lượng' : 'tiền hàng của nhóm'} · nhóm ${skuCount(f.skus)} mã`;
@@ -74,6 +119,13 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
       case 'combo': return `Bộ ${f.items.filter((x) => x.sku.trim()).length} món · ${f.comboMode === 'comboPrice' ? 'giá cả bộ' : f.comboMode === 'discountPct' ? 'giảm % cả bộ' : 'giảm tiền / bộ'} ${f.comboValue || '…'}`;
       case 'cheapest_free': return `Mua ${f.buyQty || '…'} tặng ${f.freeQty || '…'} món rẻ nhất · nhóm ${skuCount(f.skus)} mã${f.repeat ? ' · lặp lại' : ''}`;
       case 'buy_x_get_y': return `Mua ${f.buy.sku || '…'} × ${f.buy.qty || '…'} tặng ${f.get.sku || '…'} × ${f.get.qty || '…'}${f.repeat ? ' · lặp lại' : ''}`;
+      case 'price_lines': return `${f.priceLines.filter((x) => x.sku.trim()).length} mã, mỗi mã một mức riêng${scopeText}`;
+      case 'buy_x_get_y2': {
+        const items = f.buyItems.filter((x) => x.sku.trim()).map((x) => x.sku.trim());
+        const buy = f.buyMode === 'all' ? `mua đủ ${items.join(' và ') || '…'}` : `mua ${f.buyTotal || '…'} trong ${items.join(', ') || 'phạm vi'}`;
+        return `${buy} · chọn ${f.choose || '…'} trong ${f.giftOptions.filter((x) => x.sku.trim()).length} quà${f.repeat ? ' · lặp lại' : ''}${scopeText}`;
+      }
+      case 'order_gift2': return `${f.giftTiers.length} bậc quà theo tổng đơn${f.multiply ? ` · nhân bội số${f.maxTimes.trim() ? `, tối đa ${f.maxTimes.trim()} lần` : ''}` : ''}${scopeText}`;
       default: return '';
     }
   })();
@@ -85,14 +137,14 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
     <DocSheet
       title={`${editing ? 'Sửa' : 'Thêm'} khuyến mại${f.key.trim() ? ` ${f.key.trim()}` : ''}`}
       badges={<span className="badge badge-info">{KIND_INFO[f.kind].label}</span>}
-      onClose={onClose}
+      onClose={close}
       sideTitle="Trợ lý khuyến mại"
       keys="Ctrl + S - Lưu và gửi duyệt · Esc - Thoát"
       footNote={publish.error ? <span className="mh-bad">{errorText(publish.error)}</span> : problems.length > 0 ? <span className="muted">Chưa lưu được: {problems.join(' · ')}</span> : null}
       footer={<>
         <button type="button" className="btn" disabled={problems.length > 0 || publish.isPending} title={problems.join('; ')} onClick={() => publish.mutate(false)}>Lưu nháp</button>
         <button type="button" className="btn btn-primary" disabled={problems.length > 0 || publish.isPending} title={problems.join('; ')} onClick={() => publish.mutate(true)}>Lưu và gửi duyệt</button>
-        <button type="button" className="btn" onClick={onClose}>Đóng</button>
+        <button type="button" className="btn" onClick={close}>Đóng</button>
       </>}
       side={<>
         <DocSheetPanel title="Kiểm tra" badge={problems.length ? <span className="badge badge-warn">{problems.length}</span> : <span className="badge badge-ok">ổn</span>}>
@@ -176,6 +228,61 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
           <Box title="Mua X tặng Y">
             <Row>Mua mã {inp(f.buy.sku, (v) => set({ buy: { ...f.buy, sku: v } }), 160)} SL {inp(f.buy.qty, (v) => set({ buy: { ...f.buy, qty: v } }), 70)} tặng mã {inp(f.get.sku, (v) => set({ get: { ...f.get, sku: v } }), 160)} SL {inp(f.get.qty, (v) => set({ get: { ...f.get, qty: v } }), 70)}</Row>
             <Row><label><input type="checkbox" checked={f.repeat} onChange={(e) => set({ repeat: e.target.checked })} /> lặp lại (mua 4 tặng 2…)</label> Trần quà / phiếu {inp(f.maxGiftQty, (v) => set({ maxGiftQty: v }), 80, 'không trần')}</Row>
+          </Box>
+        )}
+        {f.kind === 'price_lines' && (
+          <Box title="Các mã và mức giảm riêng">
+            <Row>Xét bậc theo <select className="input" value={f.basis} onChange={(e) => set({ basis: e.target.value as Form['basis'] })}><option value="qty">số lượng của mã</option><option value="amount">tiền hàng của mã</option></select>
+              <span className="muted">(mỗi mã một dòng: một mức giảm, hoặc bảng bậc riêng của mã đó)</span></Row>
+            {f.priceLines.map((x, i) => (
+              <div key={i} style={{ display: 'grid', gap: 4, borderBottom: '1px dashed var(--line, #ddd)', paddingBottom: 6 }}>
+                <Row>
+                  <b>{i + 1}.</b> Mã {inp(x.sku, (v) => setLine(i, { sku: v }), 150)}
+                  <label><input type="checkbox" checked={x.useTiers} onChange={(e) => setLine(i, { useTiers: e.target.checked })} /> theo bậc</label>
+                  {!x.useTiers && <>{modeSel(x.mode, (m) => setLine(i, { mode: m }))}{inp(x.value, (v) => setLine(i, { value: v }))}</>}
+                  Tối đa {inp(x.maxQty, (v) => setLine(i, { maxQty: v }), 80, 'không giới hạn')} cái / phiếu
+                  {f.priceLines.length > 1 && <button type="button" className="btn btn-xs" title="Bỏ mã" onClick={() => set({ priceLines: f.priceLines.filter((_, j) => j !== i) })}>×</button>}
+                </Row>
+                {x.useTiers && rows(x.tiers, (t, k) => <>Từ {inp(t.min, (v) => setLine(i, { tiers: x.tiers.map((y, j) => (j === k ? { ...y, min: v } : y)) }), 110, f.basis === 'qty' ? 'số cái' : 'số tiền')}
+                  {modeSel(t.mode, (m) => setLine(i, { tiers: x.tiers.map((y, j) => (j === k ? { ...y, mode: m } : y)) }))}
+                  {inp(t.value, (v) => setLine(i, { tiers: x.tiers.map((y, j) => (j === k ? { ...y, value: v } : y)) }))}</>,
+                () => setLine(i, { tiers: [...x.tiers, { min: '', mode: 'pct', value: '' }] }), (k) => setLine(i, { tiers: x.tiers.filter((_, j) => j !== k) }))}
+              </div>
+            ))}
+            <div><button type="button" className="btn btn-xs" onClick={() => set({ priceLines: [...f.priceLines, emptyPriceLine()] })}>+ Thêm mã</button></div>
+          </Box>
+        )}
+        {f.kind === 'buy_x_get_y2' && (
+          <Box title="Phần mua và quà lựa chọn">
+            <Row>Cách tính <select className="input" value={f.buyMode} onChange={(e) => set({ buyMode: e.target.value as Form['buyMode'] })}>
+              <option value="any">mua bất kỳ trong các mã (gộp số lượng)</option><option value="all">mua đủ từng mã</option></select>
+              {f.buyMode === 'any' && <>tổng số lượng {inp(f.buyTotal, (v) => set({ buyTotal: v }), 70)}</>}</Row>
+            {rows(f.buyItems, (t, i) => <>Mã mua {inp(t.sku, (v) => set({ buyItems: f.buyItems.map((x, j) => (j === i ? { ...x, sku: v } : x)) }), 160)}
+              {f.buyMode === 'all' && <>SL {inp(t.qty, (v) => set({ buyItems: f.buyItems.map((x, j) => (j === i ? { ...x, qty: v } : x)) }), 70)}</>}</>,
+            () => set({ buyItems: [...f.buyItems, { sku: '', qty: '' }] }), (i) => set({ buyItems: f.buyItems.filter((_, j) => j !== i) }))}
+            <span className="muted">Để trống mã mua = mua bất kỳ hàng trong phạm vi nhóm / nhãn bên dưới.</span>
+            {rows(f.giftOptions, (t, i) => <>Quà {inp(t.sku, (v) => set({ giftOptions: f.giftOptions.map((x, j) => (j === i ? { ...x, sku: v } : x)) }), 160)}
+              SL {inp(t.qty, (v) => set({ giftOptions: f.giftOptions.map((x, j) => (j === i ? { ...x, qty: v } : x)) }), 70)}</>,
+            () => set({ giftOptions: [...f.giftOptions, { sku: '', qty: '1' }] }), (i) => set({ giftOptions: f.giftOptions.filter((_, j) => j !== i) }))}
+            <Row>Khách chọn {inp(f.choose, (v) => set({ choose: v }), 50)} món trong {f.giftOptions.filter((x) => x.sku.trim()).length} quà
+              <span className="muted">(bằng số quà = tặng hết, không cần chọn; ít hơn = máy bán hiện hộp "Chọn quà tặng")</span></Row>
+            <Row><label><input type="checkbox" checked={f.repeat} onChange={(e) => set({ repeat: e.target.checked })} /> lặp lại (đủ mấy lần tặng mấy lần)</label> Trần quà / phiếu {inp(f.maxGiftQty, (v) => set({ maxGiftQty: v }), 80, 'không trần')}</Row>
+          </Box>
+        )}
+        {f.kind === 'order_gift2' && (
+          <Box title="Quà theo tổng đơn">
+            {rows(f.giftTiers, (t, i) => <>Đơn từ {inp(t.minOrder, (v) => set({ giftTiers: f.giftTiers.map((x, j) => (j === i ? { ...x, minOrder: v } : x)) }), 130)} tặng {inp(t.gifts, (v) => set({ giftTiers: f.giftTiers.map((x, j) => (j === i ? { ...x, gifts: v } : x)) }), 280, 'QUA01:1, QUA02:2')}</>,
+            () => set({ giftTiers: [...f.giftTiers, { minOrder: '', gifts: '' }] }), (i) => set({ giftTiers: f.giftTiers.filter((_, j) => j !== i) }))}
+            <Row><label><input type="checkbox" checked={f.multiply} onChange={(e) => set({ multiply: e.target.checked })} /> nhân bội số (đủ 2 lần ngưỡng tặng 2 lần quà)</label>
+              {f.multiply && <>tối đa {inp(f.maxTimes, (v) => set({ maxTimes: v }), 70, 'không giới hạn')} lần / phiếu</>}</Row>
+          </Box>
+        )}
+        {isV2 && (
+          <Box title="Phạm vi (không bắt buộc)">
+            {f.kind !== 'price_lines' && <Field label="Mã hàng lẻ" hint="Cách nhau dấu phẩy"><textarea className="input" rows={2} value={f.skus} onChange={(e) => set({ skus: e.target.value })} /></Field>}
+            <Field label="Nhóm hàng" hint="Gồm cả nhóm con"><ClassPicker kind="group" label="nhóm hàng" value={f.groupCodes} onChange={(v) => set({ groupCodes: v })} /></Field>
+            <Field label="Nhãn hàng"><ClassPicker kind="brand" label="nhãn hàng" value={f.brandCodes} onChange={(v) => set({ brandCodes: v })} /></Field>
+            <span className="muted">Dòng thuộc phạm vi khi mã nằm trong mã lẻ, hoặc khớp cả nhóm và nhãn đã chọn. Máy chủ tự tra nhóm / nhãn của mặt hàng ở danh mục. Không chọn gì = mọi mặt hàng.</span>
           </Box>
         )}
 
