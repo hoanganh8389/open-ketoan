@@ -3,7 +3,7 @@
 
 | | |
 |---|---|
-| Phân hệ | Thuế — module **mới** `modules/hoa-don-dien-tu/` (khung như `modules/xuat-dieu-chinh`, ADR-0024); bí mật qua `ctx.secrets` (`platform.secrets`, BIZCITY-SECRETS-v1 1.0.0) |
+| Phân hệ | Thuế — module **mới** `modules/hoa-don-dien-tu/` (sẽ tạo; khung như `modules/xuat-dieu-chinh`, ADR-0024); bí mật qua `ctx.secrets` (`platform.secrets`, BIZCITY-SECRETS-v1 1.0.0) |
 | Màn hình | THUE03 Hoá đơn điện tử — màn mới ở module (`/app/hoa-don-dien-tu`): thông tin người bán + tài khoản Viettel theo sổ, bảng mẫu số / ký hiệu / portal theo chi nhánh, nhật ký, nút **Thử kết nối Viettel** |
 | Bộ phận yêu cầu | Bộ phận Bán hàng (hoá đơn điện tử cho máy bán) |
 | Ngày tạo | 26/11/2026 |
@@ -35,7 +35,7 @@ Khai **một chỗ** (open-ketoan) thông tin xuất hoá đơn điện tử Vie
 | 6 | Action `hoa-don-dien-tu.ket-noi.thu`: máy chủ gọi `GET <API base URL>` (Basic / Bearer theo cài đặt, chờ tối đa 15 giây), trả mã HTTP + thời gian; **không** gọi lệnh phát hành nào | Như nút cũ ở website; ghi nhật ký |
 | 7 | Action đọc cho cầu nối `hoa-don-dien-tu.cai-dat.export`: cài đặt hiệu lực theo chi nhánh (chi nhánh trống ô thì lấy mặc định của sổ), kèm `configVersion`; **không** có bí mật — bí mật đọc riêng qua action tự sinh `hoa-don-dien-tu.secrets.read` (khoá app có `secrets:read:hoa-don-dien-tu`) | S-HD-4 dùng |
 | 8 | Nhật ký (`hoa-don-dien-tu.nhat-ky.list`): ai, lúc nào, sửa gì (tên ô), thử kết nối (mã HTTP); bí mật chỉ ghi "đã đổi mật khẩu …" | R-LOG-4 |
-| 9 | Hướng dẫn `docs/huong-dan/hoa-don-dien-tu.md` | |
+| 9 | Hướng dẫn `docs/huong-dan/hoa-don-dien-tu.md` (sẽ tạo) | |
 
 Ngoài phạm vi:
 - cầu nối + plugin Viettel kéo cài đặt về, màn cụm website chuyển chỉ xem (**S-HD-4**, PR open-ketoan-bridge / tgs-viettel-invoice riêng);
