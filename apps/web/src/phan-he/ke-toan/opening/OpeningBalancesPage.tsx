@@ -192,7 +192,10 @@ export function OpeningBalancesPage() {
           {ngayChung
             ? <span title="Sổ, báo cáo xem từ ngày này trở đi hiện số dư ở dòng Số dư đầu kỳ">Ngày chốt <b>{date(ngayChung)}</b> → dùng phần mềm từ <b>{date(ngaySau(ngayChung))}</b>{!laCuoiThang(ngayChung) && <span className="so-du-canh-bao"> · ngày chốt thường là cuối tháng</span>}</span>
             : <span className="so-du-canh-bao"><AlertTriangle size={14} /> Các phiếu khác ngày chốt: {ngayChot.map((d) => date(d)).join(', ')} — nên cùng một ngày</span>}
-          {canDoi.map(([tk, v]) => <span key={tk} className="so-du-canh-bao" title="Nhập đủ mọi chi nhánh thì TK cân đối tự về 0; còn số dư là còn thiếu"><AlertTriangle size={14} /> TK cân đối {tk} còn {v > 0 ? 'Dư Nợ' : 'Dư Có'} {money(Math.abs(v))} — còn thiếu số dư</span>)}
+          {/* TK trung gian (9xx, vd 999): nhập đủ mọi chi nhánh thì tự về 0 — còn số là còn thiếu. TK thật (vd 4211) dùng làm cân đối: chỉ báo số đã dồn vào. */}
+          {canDoi.map(([tk, v]) => (tk.startsWith('9')
+            ? <span key={tk} className="so-du-canh-bao" title="Nhập đủ mọi chi nhánh thì TK cân đối trung gian tự về 0; còn số dư là còn thiếu"><AlertTriangle size={14} /> TK cân đối {tk} còn {v > 0 ? 'Dư Nợ' : 'Dư Có'} {money(Math.abs(v))} — còn thiếu số dư</span>
+            : <span key={tk} title="Phần lệch Nợ – Có của các phiếu được ghi vào tài khoản cân đối này">Phần lệch ghi vào {tk}: {v > 0 ? 'Dư Nợ' : 'Dư Có'} <b>{money(Math.abs(v))}</b> — kiểm tra đúng ý chưa</span>))}
         </div>
       )}
 
