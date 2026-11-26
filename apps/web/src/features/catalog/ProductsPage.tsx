@@ -147,7 +147,7 @@ export function ProductsPage() {
     { key: 'barcode', header: 'Barcode', type: 'code', width: 140, hidden: true, value: (p) => p.barcode ?? '' },
     // [2026-11-12 Nguyễn Văn Thủy] một cột Thuế GTGT (%) thay Mã VAT ra / vào, TTĐB (đóng góp)
     { key: 'taxOutCode', header: 'Thuế GTGT (%)', width: 100, title: 'Loại thuế GTGT (dùng chung bán và mua — NT-DM-012)', value: (p) => ({ KCT: 'KCT', '0': '0%', '5': '5%', '8': '8%', '10': '10%', KKKN: 'KKKN', R00K: 'KCT', R00: '0%', R05: '5%', R08: '8%', R10: '10%' } as Record<string, string>)[p.taxOutCode ?? ''] ?? (p.taxOutCode ?? '') },
-    { key: 'postingGroupCode', header: 'Nhóm hạch toán (cũ)', type: 'code', width: 120, hidden: true, value: (p) => p.postingGroupCode ?? '(mặc định)' },
+    // [2026-11-26 07:20 PM Nguyễn Văn Thủy] DM10 — bỏ hẳn cột 'Nhóm hạch toán (cũ)' khỏi danh sách và nút Cột (tài khoản theo Nhóm hàng / Quy tắc hạch toán ACC41), tránh bật nhầm gây khó hiểu (đóng góp)
     // [2026-11-12 Nguyễn Văn Thủy] Trạng thái sản phẩm thay ô Theo dõi: Đang hoạt động / Chờ duyệt / Ngừng hoạt động (đóng góp)
     // [2026-11-12 Nguyễn Văn Thủy] truy vết: người tạo, lúc tạo (0114) (đóng góp)
     { key: 'isActive', header: 'Trạng thái', width: 130, title: 'Đang hoạt động · Chờ duyệt (mặt hàng nháp, chưa dùng được trên chứng từ) · Ngừng hoạt động', value: (p) => trangThai(p), render: (p) => <span className={`badge ${!p.isActive ? 'badge-gray' : p.isDraft ? 'badge-warn' : 'badge-ok'}`}>{trangThai(p)}</span> },
