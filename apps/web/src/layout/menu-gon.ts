@@ -192,7 +192,9 @@ export const GON_DEFS: GonDef[] = [
   },
   {
     key: 'so-du', label: 'Số dư ban đầu', icon: 'ListEnd', description: 'Số dư tài khoản, công nợ, tồn kho, tài sản đầu kỳ', color: '#6d4c41',
-    sections: [{ paths: ['/nghiep-vu/so-du-tai-khoan'], soon: ['Tồn kho vật tư, hàng hóa'] }],
+    // [2026-11-26 08:40 PM Nguyễn Văn Thủy] SO-DU — chỉ ACC15 (tiền, ngân hàng, công nợ là thẻ trong màn); TSCĐ / CCDC / tồn kho đầu kỳ mở bằng liên kết
+    // trong hướng dẫn của ACC15, không xếp màn của nhóm khác vào đây; bỏ "Tồn kho vật tư" khỏi đang phát triển (nhập được ở Nhập Excel) (đóng góp)
+    sections: [{ paths: ['/nghiep-vu/so-du-tai-khoan'] }],
   },
   {
     key: 'phan-rieng', label: 'Phần riêng', icon: 'Puzzle', rieng: true, color: '#455a64',
@@ -229,7 +231,7 @@ export const GON_DEFS: GonDef[] = [
 const KHONG_LIET_KE = ['/nghiep-vu/phieu-thu', '/nghiep-vu/phieu-chi', '/nghiep-vu/phieu-bao-co', '/nghiep-vu/phieu-bao-no'];
 
 // [2026-11-26 07:55 PM Nguyễn Văn Thủy] HT — sơ đồ Tiền mặt / Tiền gửi mất nút Thu / Chi: màn lập phiếu không liệt kê ở menu vẫn mở được nếu có quyền (đóng góp)
-/** Màn lập phiếu không liệt kê ở menu nhưng người dùng có quyền mở — sơ đồ quy trình (Thu tiền, Chi tiền, Thu / Chi tiền gửi) vẫn hiện nút. */
+/** Màn lập phiếu không liệt kê ở menu nhưng người dùng có quyền mở — sơ đồ quy trình (Thu tiền, Chi tiền, Giấy báo có / nợ) vẫn hiện nút. */
 export const moDuocNgoaiMenu = (menu: MenuItem[]): string[] => { const flat = flatten(menu); return KHONG_LIET_KE.filter((p) => flat.has(p)); };
 
 /** Mọi màn người dùng được thấy, theo đường dẫn (một màn khai ở nhiều phân hệ thì lấy lần đầu). */

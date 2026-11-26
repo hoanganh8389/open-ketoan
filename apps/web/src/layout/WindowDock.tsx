@@ -22,6 +22,52 @@ const subscribe = (f: () => void) => { subs.add(f); return () => subs.delete(f);
 const snapshot = () => wins;
 const here = () => `${window.location.pathname}`;
 
+// [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — GIỮ HỘP THOẠI QUA TẢI LẠI TRANG / MẤT ĐIỆN: hộp thoại có khai "giu" ghi bản nháp vào
+// bộ nhớ máy (localStorage), mở lại trang thì màn chủ tự mở lại đúng phiếu, đúng nội dung đang nhập dở. Chỉ mất khi người dùng
+// đóng hẳn (✕ / Thoát / Đóng tất cả) hoặc ghi xong đóng. Đóng THẺ chứa hộp thoại không mất: ô ở thanh dưới vẫn còn (mờ),
+// bấm vào thì mở lại thẻ và phiếu (đóng góp)
+export interface GiuHopThoai { key: string; kind: string; tab: string; label: string; dirty: boolean; minimized: boolean; draft: unknown; at: number }
+const GIU_KEY = 'ketoan.hop-thoai.v1';
+const giuSubs = new Set<() => void>();
+let giuCache: GiuHopThoai[] | null = null;
+function docGiu(): GiuHopThoai[] {
+  if (giuCache) return giuCache;
+  try { const v = JSON.parse(localStorage.getItem(GIU_KEY) ?? '[]') as GiuHopThoai[]; giuCache = Array.isArray(v) ? v.filter((x) => x && typeof x.key === 'string') : []; } catch { giuCache = []; }
+  return giuCache;
+}
+function ghiGiu(list: GiuHopThoai[]) {
+  giuCache = list;
+  try { localStorage.setItem(GIU_KEY, JSON.stringify(list)); } catch { /* nuot-loi: đầy bộ nhớ / chế độ riêng tư: vẫn chạy, chỉ không giữ được */ }
+  giuSubs.forEach((f) => f());
+}
+function datGiu(r: GiuHopThoai) { ghiGiu([...docGiu().filter((x) => x.key !== r.key), r]); }
+/** Bỏ bản giữ (đóng hẳn hộp thoại). */
+export function boGiu(key: string) { if (docGiu().some((x) => x.key === key)) ghiGiu(docGiu().filter((x) => x.key !== key)); }
+/** Các hộp thoại đã giữ của một loại, thuộc một màn (đường dẫn) — màn chủ gọi lúc dựng để mở lại. */
+export function layGiu(kind: string, pathname: string): GiuHopThoai[] { return docGiu().filter((x) => x.kind === kind && x.tab.split('?')[0] === pathname); }
+/** Thẻ đang đóng (TabWorkspace báo trước khi gỡ): hộp thoại trong thẻ đó gỡ ra nhưng KHÔNG mất bản giữ. */
+const dongThe = new Set<string>();
+export function baoDongThe(pathnames: string[]) { pathnames.forEach((p) => dongThe.add(p)); setTimeout(() => pathnames.forEach((p) => dongThe.delete(p)), 1500); }
+let dangRoiTrang = false;
+/** Bản giữ đang chờ ghi (gõ chưa đủ 400ms): rời trang / ẩn trang thì ghi ngay, không mất chữ vừa gõ. */
+const choGhi = new Map<string, () => void>();
+const ghiNgay = () => { [...choGhi.values()].forEach((f) => f()); choGhi.clear(); };
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => { ghiNgay(); dangRoiTrang = true; });
+  window.addEventListener('pagehide', () => { ghiNgay(); dangRoiTrang = true; });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') ghiNgay(); });
+}
+/** Màn chủ mở lại các hộp thoại đã giữ đúng một lần khi dựng. */
+export function useMoLaiHopThoai(kind: string, pathname: string, mo: (list: GiuHopThoai[]) => void, san = true) {
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current || !san) return;
+    done.current = true;
+    const list = layGiu(kind, pathname).sort((a, b) => a.at - b.at);
+    if (list.length) mo(list);
+  }, [san]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
 /** Đặt bởi hộp thoại cha: hộp thoại con biết mình đang lồng nên không tạo ô riêng. */
 const InWindow = createContext(false);
 export function DockScope({ children }: { children: ReactNode }) { return <InWindow.Provider value>{children}</InWindow.Provider>; }
@@ -30,10 +76,10 @@ export function DockScope({ children }: { children: ReactNode }) { return <InWin
  * Gắn vào một hộp thoại. headRef = phần tiêu đề (lấy chữ làm tên ô). Trả về minimized (ẩn hộp thoại bằng CSS, KHÔNG gỡ),
  * minimize (cho nút "—"), top (hộp thoại cấp ngoài cùng — chỉ nó có nút thu nhỏ).
  */
-export function useDockWindow(onClose: () => void, dirty = false, key?: string) {
+export function useDockWindow(onClose: () => void, dirty = false, key?: string, giu?: { kind: string; draft: () => unknown }) {
   const nested = useContext(InWindow);
   const routed = useInRouterContext();
-  return useDockInner(onClose, dirty, !nested && routed, key);
+  return useDockInner(onClose, dirty, !nested && routed, key, giu);
 }
 
 /** Mở lại hộp thoại theo khoá (vd `mh:<id phiếu>`) — bấm mở một phiếu đang mở (đã thu nhỏ) thì đưa nó lên, không mở trùng. */
@@ -46,9 +92,11 @@ function textOf(el: Node): string {
   return [...el.childNodes].map(textOf).join(' ');
 }
 
-function useDockInner(onClose: () => void, dirty: boolean, top: boolean, key?: string) {
+function useDockInner(onClose: () => void, dirty: boolean, top: boolean, key?: string, giu?: { kind: string; draft: () => unknown }) {
   const id = useId();
-  const [minimized, setMin] = useState(false);
+  const [minimized, setMin] = useState(() => Boolean(key && giu && docGiu().find((x) => x.key === key)?.minimized));
+  const giuRef = useRef(giu);
+  giuRef.current = giu;
   const headRef = useRef<HTMLElement | null>(null);
   const loc = useLocationSafe(top);
   const nav = useNavigateSafe(top);
@@ -68,8 +116,24 @@ function useDockInner(onClose: () => void, dirty: boolean, top: boolean, key?: s
     for (const w of wins) if (!w.minimized && w.tab.split('?')[0] === tab.split('?')[0]) w.minimize();
     wins.push({ id, key, label: '', tab, minimized: false, dirty, order: ++order, minimize: () => setMin(true), restore, close: () => closeRef.current() });
     emit();
-    return () => { wins = wins.filter((w) => w.id !== id); emit(); };
+    return () => {
+      wins = wins.filter((w) => w.id !== id); emit();
+      // Gỡ vì đóng hẳn → bỏ bản giữ; gỡ vì đóng thẻ / rời trang → giữ lại để mở lại sau.
+      if (key && giuRef.current && !dangRoiTrang && !dongThe.has(tab.split('?')[0]!)) boGiu(key);
+    };
   }, [top, id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Ghi bản giữ (gom 400ms một lần cho đỡ nặng khi gõ).
+  useEffect(() => {
+    if (!top || !key || !giu) return;
+    const ghi = () => {
+      choGhi.delete(id);
+      const w = wins.find((x) => x.id === id);
+      try { datGiu({ key, kind: giu.kind, tab, label: w?.label || 'Hộp thoại', dirty, minimized, draft: giu.draft(), at: docGiu().find((x) => x.key === key)?.at ?? Date.now() }); } catch { /* nuot-loi: bản nháp không ghi được (dữ liệu vòng) — hộp thoại vẫn chạy */ }
+    };
+    choGhi.set(id, ghi);
+    const t = setTimeout(ghi, 400);
+    return () => { clearTimeout(t); choGhi.delete(id); };
+  });
   // Cập nhật tên, trạng thái mỗi lần vẽ (chỉ báo khi có đổi).
   useEffect(() => {
     if (!top) return;
@@ -92,8 +156,13 @@ export function MinimizeButton({ onClick }: { onClick: () => void }) {
 }
 
 /** Thanh dưới đáy — đặt một lần ở khung trang. */
+const subGiu = (f: () => void) => { giuSubs.add(f); return () => giuSubs.delete(f); };
 export function WindowDock() {
   const list = useSyncExternalStore(subscribe, snapshot);
+  const giu = useSyncExternalStore(subGiu, docGiu);
+  const nav = useNavigateSafe(true);
+  // Hộp thoại đã giữ mà chưa dựng (thẻ chứa nó đã đóng / màn chưa mở lại): ô mờ — bấm để mở lại thẻ, màn tự mở lại phiếu.
+  const ghosts = giu.filter((r) => !list.some((w) => w.key === r.key));
   const [, force] = useState(0);
   const [menu, setMenu] = useState<{ x: number; y: number; id?: string } | null>(null);
   useEffect(() => {
@@ -105,16 +174,18 @@ export function WindowDock() {
   }, [menu]);
   // Đổi thẻ (đường dẫn) → vẽ lại để tô đúng ô thuộc thẻ đang xem.
   useEffect(() => { const f = () => force((n) => n + 1); window.addEventListener('popstate', f); const t = setInterval(f, 800); return () => { window.removeEventListener('popstate', f); clearInterval(t); }; }, []);
-  useEffect(() => { document.body.classList.toggle('has-dock', list.length > 0); return () => document.body.classList.remove('has-dock'); }, [list.length]);
-  if (!list.length) return null;
+  useEffect(() => { document.body.classList.toggle('has-dock', list.length + ghosts.length > 0); return () => document.body.classList.remove('has-dock'); }, [list.length, ghosts.length]);
+  if (!list.length && !ghosts.length) return null;
   const cur = here();
   /** Đóng nhiều hộp thoại một lượt; có phiếu chưa lưu thì hỏi lại một lần. */
-  const closeMany = (ws: Win[]) => {
-    const dirty = ws.filter((w) => w.dirty);
-    if (dirty.length && !window.confirm(`${dirty.length} hộp thoại có thay đổi CHƯA LƯU:\n${dirty.map((w) => `• ${w.label}`).join('\n')}\n\nĐóng sẽ mất các thay đổi đó. Vẫn đóng ${ws.length} hộp thoại?`)) return;
+  const closeMany = (ws: Win[], gs: GiuHopThoai[] = []) => {
+    const dirty = [...ws.filter((w) => w.dirty), ...gs.filter((g) => g.dirty)];
+    if (dirty.length && !window.confirm(`${dirty.length} hộp thoại có thay đổi CHƯA LƯU:\n${dirty.map((w) => `• ${w.label}`).join('\n')}\n\nĐóng sẽ mất các thay đổi đó. Vẫn đóng ${ws.length + gs.length} hộp thoại?`)) return;
     ws.forEach((w) => w.close());
+    gs.forEach((g) => boGiu(g.key));
     setMenu(null);
   };
+  const moGhost = (g: GiuHopThoai) => nav?.(g.tab, { state: { tab: true } });
   const ctx = (e: React.MouseEvent, id?: string) => { e.preventDefault(); setMenu({ x: Math.min(e.clientX, window.innerWidth - 230), y: e.clientY, id }); };
   const target = menu?.id ? list.find((w) => w.id === menu.id) : undefined;
   return (
@@ -130,7 +201,17 @@ export function WindowDock() {
           </span>
         );
       })}
-      <button type="button" className="win-chip win-closeall" title="Đóng tất cả hộp thoại (có phiếu chưa lưu thì hỏi lại). Chuột phải vào ô để có thêm lựa chọn" onClick={() => closeMany(list)}>
+      {ghosts.map((g) => (
+        <span key={`g-${g.key}`} className="win-chip min win-ghost" role="button" tabIndex={0}
+          title={`${g.label}${g.dirty ? ' — chưa lưu' : ''}
+Đã giữ lại (thẻ chứa phiếu đã đóng / vừa tải lại trang) — bấm để mở lại`}
+          onClick={() => moGhost(g)} onKeyDown={(e) => { if (e.key === 'Enter') moGhost(g); }}>
+          {g.dirty && <i className="win-dirty" aria-label="chưa lưu" />}
+          <span className="win-label">{g.label}</span>
+          <button type="button" className="win-close" title="Bỏ hẳn hộp thoại này" onClick={(e) => { e.stopPropagation(); closeMany([], [g]); }}><X size={12} /></button>
+        </span>
+      ))}
+      <button type="button" className="win-chip win-closeall" title="Đóng tất cả hộp thoại (có phiếu chưa lưu thì hỏi lại). Chuột phải vào ô để có thêm lựa chọn" onClick={() => closeMany(list, ghosts)}>
         <XCircle size={14} /> Đóng tất cả
       </button>
       {menu && (
@@ -143,7 +224,7 @@ export function WindowDock() {
             <hr />
           </>}
           <button type="button" onClick={() => { list.forEach((w) => !w.minimized && w.minimize()); setMenu(null); }}>Thu nhỏ tất cả</button>
-          <button type="button" className="danger" onClick={() => closeMany(list)}>Đóng tất cả ({list.length})</button>
+          <button type="button" className="danger" onClick={() => closeMany(list, ghosts)}>Đóng tất cả ({list.length})</button>
         </div>
       )}
     </nav>

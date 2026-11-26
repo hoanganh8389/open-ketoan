@@ -37,7 +37,9 @@ export function readOnlyReason(existing: SavedVoucher | undefined, opts: { exter
 
 export interface ToolButton { key: string; label: ReactNode; icon?: ReactNode; onClick: () => void; disabled?: boolean; title?: string; /** Menu con (nút ▾): các lựa chọn của nút. */ menu?: { key: string; label: string; onClick: () => void }[] }
 
-export function VoucherModal({ title, titleExtra, existing, readOnly, saving, onSave, onSaveNew, onPrint, printSlot, onExport, onDelete, onClose, extraButtons, error, readOnlyText, advisories, total, children }: {
+export function VoucherModal({ title, titleExtra, existing, readOnly, saving, onSave, onSaveNew, onPrint, printSlot, onExport, onDelete, onClose, extraButtons, error, readOnlyText, advisories, total, children, giu }: {
+  /** Giữ phiếu đang mở qua tải lại trang / mất điện (bản nháp ở máy — xem WindowDock). */
+  giu?: { key: string; kind: string; dirty?: boolean; draft: () => unknown };
   title: string;
   /** Ô đứng ngay sau tiêu đề (vd ô Loại phiếu của phiếu thu / chi). */
   titleExtra?: ReactNode;
@@ -63,7 +65,7 @@ export function VoucherModal({ title, titleExtra, existing, readOnly, saving, on
   children: ReactNode;
 }) {
   const cancelled = existing?.status === 'cancelled';
-  const dock = useDockWindow(onClose);
+  const dock = useDockWindow(onClose, giu?.dirty ?? false, giu?.key, giu && { kind: giu.kind, draft: giu.draft });
   // Ctrl + S = Ghi (chỉ hộp thoại trên cùng).
   const mask = useRef<HTMLDivElement>(null);
   // [2026-11-11 Nguyễn Văn Thủy] báo lỗi tại ô: Ghi / Ctrl + S mà ô bắt buộc (nhãn đỏ) còn trống → tô đỏ, chặn (đóng góp)

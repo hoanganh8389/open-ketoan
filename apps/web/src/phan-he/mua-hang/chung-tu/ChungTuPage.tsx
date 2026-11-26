@@ -7,8 +7,9 @@
  * Nút In (mẫu theo loại phiếu, mauIn.tsx): bảng chưa chọn được nhiều dòng nên in phiếu đang chọn.
  */
 import { dongChungTu } from '@/lib/trangThai';
+import { RefreshCw } from 'lucide-react';
 import { workBranch } from '@/lib/workBranch';
-import { restoreDock } from '@/layout/WindowDock';
+import { restoreDock, useMoLaiHopThoai } from '@/layout/WindowDock';
 import { cloneElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { COST_TYPES, ORDER_INVOICE_LABEL, invoiceDueDate, invoiceKey, invoiceLabel, invoicesOf, invoicePlanText, orderInvoice, orderProgress, receiptFromOrder, type InvoicePlan, type OrderInvoice, type PDoc } from '@bizcity/mua-hang-domain';
@@ -21,7 +22,7 @@ import { errorText } from '@/lib/api';
 import { GOODS_KINDS, KIND_LABEL, STATUS_LABEL, lastUsed, nhapNgoaiDon, purchaseApi, today, useMuaHang, useNames, type StoredDoc } from '../du-lieu';
 import { dmy } from '../chung';
 import { NhapLoi } from './NhapLoi';
-import { PhieuMuaForm } from './PhieuMuaForm';
+import { PhieuMuaForm, type GiuPhieuMua } from './PhieuMuaForm';
 import { NhapExcel } from './NhapExcel';
 import { receiptPartsFromInvoice } from '../hoa-don/api';
 import { XemTheoMaHang } from './XemTheoMaHang';
@@ -186,6 +187,13 @@ export function ChungTuPage({ embedPartner, embedGroup, command, report, formsOn
     if (forms.some((f) => f.id === d.id)) { restoreDock(`mh:${d.id}`); return; }
     setForms((fs) => [...fs, d]);
   };
+  // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — tải lại trang / mất điện: mở lại mọi phiếu đang dở của màn này, đúng nội dung đã nhập (đóng góp)
+  const khoiPhuc = useRef(new Map<string, { dirty: boolean; viewing: boolean }>());
+  useMoLaiHopThoai('mh', location.pathname, (list) => {
+    const ds = list.map((r) => r.draft as GiuPhieuMua | null).filter((g): g is GiuPhieuMua => Boolean(g?.v?.id));
+    ds.forEach((g) => khoiPhuc.current.set(g.v.id, { dirty: g.dirty, viewing: g.viewing }));
+    setForms((fs) => [...fs, ...ds.map((g) => g.v).filter((d) => !fs.some((f) => f.id === d.id))]);
+  }, Boolean(data));
 
   /** Tình trạng hoá đơn của từng đơn đặt (gom phiếu nhập của đơn). */
   const invOf = useMemo(() => new Map<string, OrderInvoice>((data?.docs ?? []).filter((d) => d.kind === 'order').map((o) => [o.id, orderInvoice(o, data!.docs)!])), [data]);
@@ -398,7 +406,7 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
             getDocs={async () => (sel ? [await layPhieuIn(sel.id, { names, docs: data?.docs ?? [] })] : [])} />
           {report !== 'bao-cao' && tt.them && <button className="btn btn-sm" onClick={() => setExcel(true)}>Nhập từ Excel</button>}
           {report === 'bao-cao' && <Link className="btn btn-sm" to="/mua-hang/tong-hop" title="Lập / sửa / duyệt phiếu ở Chứng từ mua hàng (MH11)">Lập phiếu ở MH11 →</Link>}
-          <button className="btn btn-sm" onClick={() => void refresh()}>Nạp</button>
+          <button className="btn btn-sm btn-nap" onClick={() => void refresh()} title="Nạp lại dữ liệu mới nhất từ máy chủ"><RefreshCw size={14} /> Nạp</button>
           <span className="row" style={{ gap: 0, marginLeft: 8 }} title="Xem cùng các phiếu đang lọc theo phiếu, theo từng dòng hàng (như BH01 Báo cáo bán hàng) hoặc cộng dồn theo mã hàng (như BH02 Tổng hợp bán hàng)">
             {VIEWS[report ?? ''].map(([k, l]) => <button key={k} type="button" className={`btn btn-sm ${view === k ? 'btn-primary' : ''}`} onClick={() => setView(k)}>{l}</button>)}
           </span>
@@ -451,7 +459,7 @@ Rà soát: ${r.outsideOrder.reviewedBy}` : ''}` : 'Chưa ghi lý do nhập ngoà
         );
       })()}
       </>}
-      {data && forms.map((f) => <PhieuMuaForm key={f.id} value={f} data={data} onClose={() => closeForm(f.id)} onSaved={() => void refresh()} onOpen={(d) => setEditing(d)} />)}
+      {data && forms.map((f) => <PhieuMuaForm key={f.id} value={f} khoiPhuc={khoiPhuc.current.get(f.id)} data={data} onClose={() => closeForm(f.id)} onSaved={() => void refresh()} onOpen={(d) => setEditing(d)} />)}
       {excel && data && <NhapExcel data={data} partnerCode={partner} onClose={() => setExcel(false)} onDone={(n) => { setExcel(false); if (formsOnly) { navigate(`/mua-hang/tong-hop?ncc=${encodeURIComponent(partner)}&trang-thai=draft`); return; } setStatus('draft'); setNotice(`Đã tạo ${n} phiếu nháp từ Excel — kiểm lại từng phiếu rồi gửi duyệt / duyệt.`); void refresh(); }} />}
     </>
   );

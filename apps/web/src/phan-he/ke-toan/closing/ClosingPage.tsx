@@ -180,7 +180,7 @@ function ClosingList() {
             {can('periods:lock') && tt.chay && <button className="btn btn-sm" onClick={() => setAdding({})}><Plus size={14} /> Thêm</button>}
             <button className="btn btn-sm" onClick={view} title="Xem phiếu đang chọn (hoặc bấm đúp dòng)"><Eye size={14} /> Xem</button>
             {can('periods:lock') && tt.huy && <button className="btn btn-sm" onClick={remove} disabled={cancel.isPending} title="Huỷ (đảo) các phiếu kết chuyển đã tích ở cột Chọn"><Undo2 size={14} /> Huỷ kết chuyển{checked.size ? ` (${checked.size})` : ''}</button>}
-            <button className="btn btn-sm" onClick={() => void runs.refetch()} disabled={runs.isFetching}><RefreshCw size={14} className={runs.isFetching ? 'spin' : undefined} /> Nạp</button>
+            <button className="btn btn-sm btn-nap" onClick={() => void runs.refetch()} disabled={runs.isFetching}><RefreshCw size={14} className={runs.isFetching ? 'spin' : undefined} /> Nạp</button>
             <button className="btn btn-sm" onClick={() => setCatalogue(true)}><BookOpen size={14} /> Bút toán kết chuyển mẫu</button>
             <button className="btn btn-sm" onClick={() => exportRef.current?.()} disabled={!rows.length}><FileSpreadsheet size={14} /> Xuất</button>
             <span className="spacer" />

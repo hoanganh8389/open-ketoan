@@ -112,7 +112,7 @@ function uncData(s: PrintSheet, ctx: PrintCtx): UncData {
     no: s.docNo, date: v.docDate, amount: totalOf(v), description: v.description,
     payer: { name: payer?.holder || ctx.org.name, accountNo: payer?.accountNo, bankName: payer?.bankName, bankBranch: payer?.bankBranch },
     payee: { name: v.partnerName || v.counterparty, address: v.address ?? '' },
-    note: `Hạch toán: Nợ ${uniq(v.lines.map((l) => l.debitAccount)).join(', ')} / Có ${payAcc} · Chi tiền gửi ${s.docNo}`,
+    note: `Hạch toán: Nợ ${uniq(v.lines.map((l) => l.debitAccount)).join(', ')} / Có ${payAcc} · Giấy báo nợ ${s.docNo}`,
   };
 }
 
