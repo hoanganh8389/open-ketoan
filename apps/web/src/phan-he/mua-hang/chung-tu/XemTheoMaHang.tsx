@@ -46,7 +46,7 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
     if (!units) return [];
     const out: Row[] = [];
     for (const d of docs) {
-      // [2026-11-25 Nguyễn Văn Thủy] #53 tab Test: phiếu đã huỷ không cộng vào báo cáo (đóng góp)
+      // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — #53 tab Test: phiếu đã huỷ không cộng vào báo cáo (đóng góp)
       if (!d.lines.length || d.status === 'cancelled') continue;
       // Phiếu đã duyệt: dòng đã chốt chiết khấu lúc duyệt; phiếu chưa duyệt: tính theo chính sách hiện hành (như mở phiếu).
       const c = computeDoc(d, d.status === 'approved' ? [] : data.policies, { units });
@@ -97,6 +97,9 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
       { key: 'grossEx', header: 'Tiền hàng trước CK (chưa thuế)', type: 'money', width: 150, sum: true, value: (r) => sign(r) * r.grossEx, title: 'SL × đơn giá, chưa trừ chiết khấu, chưa thuế' },
       { key: 'disc', header: 'Chiết khấu (chưa thuế)', type: 'money', width: 120, sum: true, value: (r) => sign(r) * r.disc, title: 'CK dòng + phần CK trên đơn chia vào dòng' },
       { key: 'beforeTax', header: 'Tiền hàng sau CK (chưa thuế)', type: 'money', width: 150, sum: true, value: (r) => sign(r) * r.l.beforeTax, title: '= Tiền hàng trước CK − chiết khấu. Đây là tiền hàng ghi sổ (giá trị hàng nhập)' },
+      // [2026-11-26 12:15 AM Nguyễn Văn Thủy] MH-KM — mã CTKM đang áp vào dòng (máy chủ ghi lúc lưu; nhiều chương trình chồng nhau đủ mã) (đóng góp)
+      { key: 'ctkm', header: 'Mã CTKM', type: 'code', width: 150, value: (r) => (r.l.ctkm?.length ? r.l.ctkm : r.l.lineType !== 'buy' && r.l.program ? [r.l.program] : []).join(', '),
+        title: 'Các chương trình khuyến mại / chiết khấu áp vào dòng (CK theo mã, bậc SL, CK trên đơn, CK thanh toán, quà mua X tặng Y) — ghi lúc lưu phiếu; phiếu lưu trước 26/11/2026 chỉ có mã ở dòng quà' },
       { key: 'taxCode', header: 'Thuế suất', width: 80, value: (r) => TAX_LABEL[r.l.taxCode] ?? r.l.taxCode },
       { key: 'tax', header: 'Tiền thuế GTGT', type: 'money', width: 110, sum: true, value: (r) => sign(r) * r.l.tax },
       { key: 'total', header: 'Tổng thanh toán (sau CK, gồm thuế)', type: 'money', width: 160, sum: true, value: (r) => sign(r) * r.total, title: '= Tiền hàng sau CK + tiền thuế — số phải trả NCC của dòng' },
@@ -118,7 +121,7 @@ export function XemTheoMaHang({ docs, data, mode, partnerName, khoText, onOpen, 
     if (r.dir === 'in') { x.inQty += r.base; x.inGross += r.grossEx; x.inDisc += r.disc; x.inValue += r.l.beforeTax; x.tax += r.l.tax; if (r.l.lineType !== 'buy') x.giftQty += r.base; }
     else { x.outQty += r.base; x.outValue += r.l.beforeTax; x.tax -= r.l.tax; }
   }
-  // [2026-11-25 Nguyễn Văn Thủy] #53 tab Test: mã chỉ có trên đơn đặt (chưa nhập / trả) không hiện dòng trống ở Tổng hợp mua hàng (đóng góp)
+  // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — #53 tab Test: mã chỉ có trên đơn đặt (chưa nhập / trả) không hiện dòng trống ở Tổng hợp mua hàng (đóng góp)
   const sums = [...by.values()].filter((r) => r.inQty || r.outQty || r.inValue || r.outValue).sort((a, b) => a.sku.localeCompare(b.sku));
   const q = (n: number) => Math.round(n * 10000) / 10000;
   // Cột chuẩn của Tổng hợp mua hàng theo mặt hàng đứng trước; cột thêm (nhóm hàng, SL đặt, hàng tặng, thuế…) ẩn sẵn, bật ở nút Cột.

@@ -159,9 +159,10 @@ function selfcheckJson(cwd, outDir) {
   run(process.execPath, ['tests/conformance/selfcheck.mjs', '--out', outDir], { cwd, timeout: 300_000 });
   try { return JSON.parse(readFileSync(path.join(outDir, 'latest', 'selfcheck.json'), 'utf8')); } catch { return null; }
 }
-function mainSelfcheck() {
-  run('git', ['fetch', '-q', 'origin', 'main'], { timeout: 60_000 });
-  const sha = run('git', ['rev-parse', 'origin/main']).out;
+// [2026-11-25 10:12 PM Nguyễn Văn Thủy] FLOW — DAY-DEV: so đỏ mới với nhánh gốc của lần đẩy (main, hoặc dev khi chỉ đẩy vào dev) (đóng góp)
+function mainSelfcheck(base = 'main') {
+  run('git', ['fetch', '-q', 'origin', base], { timeout: 60_000 });
+  const sha = run('git', ['rev-parse', `origin/${base}`]).out;
   const cacheDir = path.join(run('git', ['rev-parse', '--git-common-dir']).out || '.git', 'bizcity');
   const cache = path.resolve(ROOT, cacheDir, `selfcheck-main-${sha.slice(0, 12)}.json`);
   if (existsSync(cache)) return { sha, sc: JSON.parse(readFileSync(cache, 'utf8')) };
@@ -173,12 +174,22 @@ function mainSelfcheck() {
     return { sha, sc };
   } finally { run('git', ['worktree', 'remove', '--force', wt]); }
 }
-function compareWithMain() {
-  const { sha, sc: mainSc } = mainSelfcheck();
+function compareWithMain(base = 'main') {
+  const { sha, sc: mainSc } = mainSelfcheck(base);
   const headSc = selfcheckJson(ROOT, path.join(tmpdir(), `bizcity-head-${process.pid}`));
   if (!mainSc || !headSc) return { ok: false, sha, error: 'không chạy được selfcheck (xem node tests/conformance/selfcheck.mjs)' };
   const fresh = newReds(mainSc, headSc);
   return { ok: fresh.length === 0, sha, fresh, headRed: redPrints(headSc).size, mainRed: redPrints(mainSc).size };
+}
+
+/** Hook pre-push: git đưa các dòng "<ref máy> <sha máy> <ref xa> <sha xa>" vào stdin. Chỉ đẩy vào refs/heads/dev (không xoá nhánh) → true.
+ *  Chạy tay (không có stdin) → false: kiểm đủ như đẩy main. [2026-11-25 10:12 PM Nguyễn Văn Thủy] FLOW — DAY-DEV (đóng góp) */
+function dayChiVaoDev() {
+  if (process.stdin.isTTY) return false;
+  let raw = '';
+  try { raw = readFileSync(0, 'utf8'); } catch { return false; } // nuot-loi: không đọc được stdin → coi như chạy tay, kiểm đủ
+  const refs = raw.split('\n').map((l) => l.trim().split(/\s+/)).filter((x) => x.length === 4);
+  return refs.length > 0 && refs.every(([lr, ls, rr]) => rr === 'refs/heads/dev' && lr !== '(delete)' && !/^0+$/.test(ls));
 }
 
 function printChecks(list) {
@@ -189,12 +200,20 @@ function main() {
   const args = process.argv.slice(2);
   if (args.includes('--truoc-khi-day')) {
     console.log('== trước khi đẩy (STD-12) ==');
+    // [2026-11-25 10:12 PM Nguyễn Văn Thủy] FLOW — DAY-DEV: chỉ đẩy vào `dev` (máy thử, lịch tự sửa lỗi — docs/ops/TU-DONG-SUA-LOI.md) → miễn kiểm giữ chỗ
+    // (R-FLOW-1 / 3) và "đứng sau main" (R-FLOW-5); selfcheck so đỏ mới với origin/dev. Có ref nào khác `dev` (main, test, nhánh tính năng) → kiểm đủ như cũ (đóng góp)
+    const choDev = dayChiVaoDev();
+    if (choDev) console.log('   chỉ đẩy vào dev (máy thử): miễn giữ chỗ R-FLOW-1 / 3 và R-FLOW-5 "đứng sau main"; selfcheck so với origin/dev');
     const k = run(process.execPath, ['scripts/nhan-viec.mjs', 'kiem'], { timeout: 120_000 });
-    console.log(k.out.split('\n').filter((l) => /✔|✘|▲/.test(l)).map((l) => (l.length > 160 ? `${l.slice(0, 159)}…` : l)).join('\n'));
-    const cmp = compareWithMain();
+    const kLines = k.out.split('\n').filter((l) => /✔|✘|▲/.test(l));
+    // dòng tổng kết "✘ N chỗ chưa đạt" của nhan-viec đếm cả mục đã miễn → khi đẩy dev chỉ xét từng mục
+    const mien = (l) => choDev && /✘\s+R-FLOW-(1|3)\b|✘\s+R-FLOW-5\s+nhánh đứng sau|✘\s+\d+\s+chỗ chưa đạt/.test(l);
+    console.log(kLines.map((l) => (mien(l) ? `${l.replace('✘', '·')} (miễn khi đẩy dev)` : l)).map((l) => (l.length > 160 ? `${l.slice(0, 159)}…` : l)).join('\n'));
+    if (choDev) k.ok = !kLines.some((l) => /✘/.test(l) && !mien(l));
+    const cmp = compareWithMain(choDev ? 'dev' : 'main');
     if (cmp.error) console.log(`✘ ${cmp.error}`);
     else {
-      console.log(`selfcheck: nhánh ${cmp.headRed} kiểm đỏ · origin/main (${cmp.sha.slice(0, 8)}) ${cmp.mainRed} kiểm đỏ · ĐỎ MỚI do nhánh này: ${cmp.fresh.length}`);
+      console.log(`selfcheck: nhánh ${cmp.headRed} kiểm đỏ · origin/${choDev ? 'dev' : 'main'} (${cmp.sha.slice(0, 8)}) ${cmp.mainRed} kiểm đỏ · ĐỎ MỚI do nhánh này: ${cmp.fresh.length}`);
       for (const f of cmp.fresh) {
         console.log(`  ✘ ${f.id} ${f.title}`);
         for (const x of f.findings.slice(0, 5)) console.log(`      ${x.file ? `${x.file}${x.line ? `:${x.line}` : ''}  ` : ''}${x.message ?? ''}`);

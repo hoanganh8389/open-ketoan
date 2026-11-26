@@ -66,11 +66,11 @@
 | Q5 | Giao nhiều lần | Có; phần còn lại vẫn mở tới khi giao nốt / đóng đơn |
 | Q6 | Phiếu bán | Tự sinh phiếu bán BH10 nháp mỗi lần giao; kế toán duyệt |
 | Q7 | Livestream | Nhập tay + Excel; trùng = SĐT + mã trong 24 giờ |
-| Q8 | Chuyển kho khi thiếu | Chờ "yêu cầu điều chuyển" của kiennt — đợt này chưa làm |
+| Q8 | Chuyển kho khi thiếu | Chờ "yêu cầu điều chuyển" của kiennt — đợt này chưa làm. **25/11: làm bằng phiếu KHO01 — xem [NT-BH-041](NT-BH-041-nut-chuyen-kho-bh20.md)** <!-- [2026-11-25 Võ Hoàng] NGHIEM-THU — Q8/Q12 → NT-BH-041 (đóng góp) --> |
 | Q9 | Ở máy bán? | Chưa — chỉ ở phần mềm kế toán |
 | Q10 | Giữ hàng ở đâu? | **Chuyển sang kho loại KCB** "Kho hàng chờ bán" (DM18) bằng phiếu chuyển kho nội bộ; giao xuất từ KCB |
 | Q11 | Máy bán kiểm tồn kho nào? | **Chỉ kho mặc định** của cửa hàng (kho bán) — sửa Q5 của NT-BH-021 (trước: cả chi nhánh) |
-| Q12 | Nút "Lập chuyển kho" | **Để sau**; tạm lập tay ở KHO01 |
+| Q12 | Nút "Lập chuyển kho" | **Để sau**; tạm lập tay ở KHO01. **25/11: đã có — xem [NT-BH-041](NT-BH-041-nut-chuyen-kho-bh20.md)** |
 
 ## 6. Kết quả chạy
 | | |

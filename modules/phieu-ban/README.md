@@ -68,6 +68,19 @@ Nháp (báo giá, hạn hiệu lực) ──Gửi──► hạn mức / nợ qu
 - Quyền `phieu-ban:giao-hang-lap` (lập chuyến), `phieu-ban:giao-hang-sua` (đổi trạng thái chuyến); copy dùng `phieu-ban:write`.
 - API: `POST /orders/:id/shipments`, `POST /orders/:id/shipments/:shipmentId/status`, `POST /orders/copy`; `GET /order-settings` kèm `ship`.
 
+## Chuyển kho cho đơn thiếu hàng (NT-BH-041) <!-- [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: Lập chuyển kho + Giữ lại hàng (đóng góp) -->
+
+```text
+Đã gửi, thiếu (holdShort) ──Lập chuyển kho──► prepare (module: kiểm, giữ chỗ "đang lập", khuôn phiếu)
+                                             → POST /api/v1/kho/transfers (KHO01, phiên người bấm, về kho bán, mode ship)
+                                             → record (body.transfers + lịch sử) | abort (KHO01 từ chối)
+   hàng về kho bán ──Giữ lại hàng──► cân giữ hàng lại: transfer kho bán → KCB (DH…-G<n>); không thêm được → meta.holdNothing
+```
+
+- Kho ứng viên: kho đang dùng cùng cửa hàng (trừ kho bán, KCB, KHG theo cài đặt) → chi nhánh cha (`bizcity_read.branches.parent_code`) → cửa hàng cùng cha; có tồn > 0 ít nhất một mã thiếu (`bizcity_read.stock_on_hand`).
+- Module không tự lập phiếu KHO01: `ctx.actions.call` chỉ gọi action đọc. Màn gọi action Kho trực tiếp; module kiểm trước (quyền `kho:chuyen-kho-lap`, SL ≤ tồn → findings `PHIEU_BAN_TRANSFER_OVER_STOCK` tại `lines[i].qty`, kho lạ → `PHIEU_BAN_TRANSFER_SOURCE`, người khác đang lập → `PHIEU_BAN_ORDER_STATE` `cause: transfer_busy`).
+- API: `GET /orders/:id/transfer-sources`, `POST /orders/:id/transfers` (`step` = `prepare` / `record` / `abort`), `POST /orders/:id/hold`. `GET /orders/:id` kèm `holdShort` (mã còn thiếu, bỏ dịch vụ).
+
 ## Chưa làm (đợt sau)
 
 - Khuyến mại / chương trình bán (`core.policy.evaluate`) trên màn nhập. (Giá theo cửa hàng + cảnh báo tồn: đã có từ 14/11 — `GET /api/v1/m/phieu-ban/quote`.)

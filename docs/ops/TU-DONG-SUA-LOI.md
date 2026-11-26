@@ -3,6 +3,9 @@
 > Viết 25/11/2026. Mục tiêu: lỗi xảy ra trên **con dev** (tester đang test, hoặc lúc demo) được **phát hiện ngay**, **gom theo phân hệ**,
 > **sửa tự động hoặc bấm sửa**, đẩy code lên nhánh **`dev`**, rồi **dựng lại** con dev — không phải ai ngồi canh.
 > Nhánh `test` / `main` **không** tự động: người phụ trách kéo `dev` sang khi thấy ổn.
+>
+> **Đọc kèm:** [TRUY-LOI-BAN-DEV](TRUY-LOI-BAN-DEV.md) — đường **người** (kế toán chép mã tra cứu → dev DEV02 → AI) và `kiem-giam-sat.sh`;
+> [AGENTS.md](../../AGENTS.md) — luật sửa lỗi bắt buộc (test tái hiện, bản đồ lỗi, không nới luật). Tài liệu này là đường **máy**: cùng luật đó.
 
 ## 1. Bức tranh chung
 
@@ -92,7 +95,6 @@ KET_NOI_URL=https://ketoan-dev.quantri.thegioisua.com
 KET_NOI_KEY=<khoá>
 node scripts/loi/keo-loi.mjs danh-sach --phan-he mua-hang          # lỗi mới của Mua hàng
 node scripts/loi/keo-loi.mjs danh-dau <mã-mục> da_sua --commit <sha> # sau khi đẩy dev
-node scripts/loi/keo-loi.mjs tra-ma <mã-tra-cứu> [mốc-giờ]          # log + chỗ lỗi trong mã (stack)
 node scripts/loi/keo-loi.mjs nhat-ky "Sửa …" --commit <sha> --muc <mã-mục>   # ghi Nhật ký sửa ở HT20
 node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầu dựng lại con dev
 ```
@@ -107,19 +109,57 @@ node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầ
 - **Đẩy code**: luôn `git fetch origin && git rebase origin/dev` ngay trước `git push origin HEAD:dev`. Rebase xung đột → `git rebase --abort`,
   trả mục về `moi` kèm ghi chú, **không** ép đẩy (`--force` cấm).
 
-## 5. Quy trình sửa một lỗi (người hoặc AI đều theo)
-1. Kéo danh sách: `keo-loi.mjs danh-sach` (hoặc xem HT20). Chọn mục **Lỗi phần mềm** / **Được yêu cầu sửa** của phân hệ mình.
-2. `danh-dau <mã> dang_sua` — người khác thấy đang có người sửa.
-3. Mở **Tra mã** với mã tra cứu của mục: câu báo, chức năng, chỗ lỗi trong mã (stack), vết xử lý.
-4. Sửa code trên nhánh làm việc, chạy `bash scripts/kiem-chuan.sh` + test của phân hệ. **Không đạt thì không đẩy.**
-5. Commit (tiêu đề nêu mã mục lỗi, vd `fix(mua-hang): … [loi a1b2c3d4e5f6]`), đẩy **`git push origin HEAD:dev`**.
-6. `danh-dau <mã> da_sua --commit <sha>`, `nhat-ky "<sửa gì>" --commit <sha> --muc <mã>` (hiện ở HT20 → **Nhật ký sửa** cho cả nhóm biết),
-   rồi `dung-lai`. Lần dựng lại xong, mục lỗi nào tái phát sẽ hiện lại.
+### 4.4 Máy chủ chạy nhiều site (dev / test / main trên cùng một máy)
+- Mỗi site đặt **`COMPOSE_PROJECT_NAME` riêng** trong `.env` (vd `ketoan-develop`). Chỉ **một** site bật bộ giám sát (cổng 3000 / 9090).
+- Promtail gom log theo đúng tên đó (`LOKI_PROJECT = ${COMPOSE_PROJECT_NAME}`); `scripts/kiem-giam-sat.sh` cũng soi theo tên đó.
+  Dòng đầu kết quả kiểm phải ghi `dự án docker: <tên site dev>` — ghi `ketoan` là đang soi nhầm site khác.
+- Đổi cấu hình giám sát xong: `docker compose up -d --no-deps promtail` (cron Dựng lại cũng tự làm), rồi
+  `docker compose exec -T promtail sh -c 'echo $LOKI_PROJECT'` phải in tên site dev.
 
-## 6. Lịch tự sửa (tuỳ chọn)
-- Chỉ chạy khi công tắc **Tự sửa** ở HT20 đang bật (`GET /api/v1/ket-noi/loi` trả `tuSua: true`).
-- Mỗi lượt: tối đa 3 mục, chỉ loại **Lỗi phần mềm** hoặc **Được yêu cầu sửa**, theo đúng quy trình mục 5; đẩy **dev**, không đụng test / main.
-- Chạy ở: máy local (Windows Task Scheduler gọi Claude Code mỗi ~10 phút — máy phải bật) hoặc lịch đám mây (routine, tối thiểu 1 giờ / lượt).
+### 4.5 Thử cả vòng (sau khi cài, hoặc khi nghi máy quét không bắt lỗi)
+1. Mở `<site dev>/dev/tra-ma?ma=req-thu-may-quet` — máy chủ từ chối `NOT_FOUND` (lỗi do **máy chủ** trả, có log).
+   Form chặn ngay trên trình duyệt (nút Ghi mờ, ô viền đỏ) **không** gửi lên máy chủ → không có log → HT20 không thấy (chỉ HT19 ghi).
+2. 1–2 phút sau: HT20 → ô **kiểu từ chối hôm nay** có mục `NOT_FOUND GET /api/v1/system/devtools/requests/:requestId`.
+3. Bấm **Tra mã** ở mục đó → DEV02 hiện câu báo, mã lỗi, vết xử lý (Tempo ✓ · Loki ✓). Xong bấm **Bỏ qua**.
+4. Không thấy mục → chạy `bash scripts/kiem-giam-sat.sh` trên máy chủ, sửa tới khi ĐẠT.
+
+## 5. Quy trình sửa một lỗi (người hoặc AI đều theo — luật ở [AGENTS.md](../../AGENTS.md))
+1. Đầu phiên: `node scripts/moi-truong-dev.mjs --sua`.
+2. Kéo danh sách: `keo-loi.mjs danh-sach --co-the-nhan` (hoặc xem HT20). Chọn mục **Lỗi phần mềm** / **Được yêu cầu sửa** của phân hệ mình.
+   Mỗi mục có: mã lỗi, câu báo, chức năng (route), `errFp`, **commit của bản đang chạy** lúc lỗi, mã tra cứu.
+3. `danh-dau <mã> dang_sua` — giữ chỗ 30 phút, máy khác né (§4.3).
+4. Tìm nguyên nhân: đọc mã **đúng commit** của lần lỗi; tra nghĩa mã lỗi `npx bizcity explain <mã>`; cách đọc log ở
+   [DOC-LOG-SUA-LOI](DOC-LOG-SUA-LOI.md). Cần log / trace chi tiết → **người** mở Tra mã (DEV02) bằng mã tra cứu rồi *Chép cho AI*
+   (AI **không** tự gọi API devtools — D019-3; khoá kết nối cũng không đọc log).
+5. Sửa theo AGENTS.md:
+   - **viết test tái hiện đỏ đúng mã lỗi trước**, dữ liệu trong test là dữ liệu giả;
+   - sửa **nguyên nhân**, không nới luật, không vá Kernel, không catch rỗng / hạ mức log;
+   - bị từ chối **đúng luật** (loại *Từ chối*) → sửa chỗ gửi: màn báo trước, đúng ô, sửa tại chỗ; thêm tình huống vào bản đồ lỗi
+     của màn `<Tên form>.failure-map.json` kèm lời nhắc + test.
+6. `bash scripts/kiem-chuan.sh` + test của phân hệ + hook pre-push phải **ĐẠT**. Không đạt thì không đẩy.
+7. Làm trên nhánh `loi/<mã-mục>` tách từ `origin/dev`. Commit `fix(<phân hệ>): … [loi <mã-mục>] errFp <errFp>`; `git fetch origin && git rebase origin/dev`; `git push origin HEAD:dev`.
+   Hook pre-push: **chỉ đẩy vào `dev`** thì miễn giữ chỗ (R-FLOW-1 / 3) và "đứng sau main" (R-FLOW-5), **vẫn** chạy selfcheck và chặn
+   đỏ mới so với `origin/dev`. Đẩy `test` / `main` kiểm đủ như cũ, đi PR. Hook chặn thì sửa cho đạt — **không** `--no-verify`, **không** `--force`.
+8. `danh-dau <mã> da_sua --commit <sha>`; `nhat-ky "<sửa gì>" --commit <sha> --muc <mã> --chi-tiet "<nguyên nhân + test>"`; `dung-lai`.
+   Lần dựng lại xong, mục nào tái phát sẽ hiện lại.
+
+Không chắc nguyên nhân / cần trace mà chưa có → **không đoán sửa**: `danh-dau <mã> moi --ghi-chu "cần trace DEV02 …"` để người xử lý
+theo đường TRUY-LOI-BAN-DEV.
+
+## 6. Lịch tự sửa — tự động hết cho `dev` (mặc định TẮT)
+Bật tự động: lỗi trên con dev tự sửa → tự đẩy `dev` → tự dựng lại, không ai phải động tay. `test` / `main` **không** tự động — đi PR, người duyệt.
+
+| Muốn | Làm |
+|---|---|
+| **Bật** | (1) Nhờ Claude Code ở máy local "bật lịch tự sửa" (đặt lịch ~10 phút / lượt); (2) HT20 → tick **Tự sửa**; (3) cron aaPanel `dung-lai-theo-yeu-cau.sh` đang chạy (§4.1) |
+| **Tạm dừng** (vd trước buổi demo muốn đóng băng) | HT20 → bỏ tick **Tự sửa** — lịch vẫn chạy nhưng mỗi lượt chỉ báo "đang tắt", không đụng code |
+| **Tắt hẳn** | Nhờ Claude Code "tắt lịch tự sửa" |
+
+- Mỗi lượt: tối đa 3 mục, chỉ **Lỗi phần mềm** hoặc **Được yêu cầu sửa**, đúng từng bước mục 5 (test tái hiện, kiểm chuẩn, hook ĐẠT); không chắc
+  nguyên nhân thì không sửa, trả mục về **Mới** kèm ghi chú.
+- Theo dõi: HT20 → **Kết nối** (máy nào đang chạy) và **Nhật ký sửa** (sửa gì, lỗi nào, commit nào); lịch sử nhánh `dev` trên GitHub
+  (commit có `[loi <mã>]`).
+- Lịch chạy trong phiên Claude Code ở máy local: tắt máy / đóng phiên là dừng; lịch tự hết hạn sau 7 ngày — nhờ bật lại.
 
 ## 7. Giao kèo API (khoá kết nối — header `x-ket-noi-key`)
 | Lệnh | Việc |
@@ -127,7 +167,6 @@ node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầ
 | `GET  /api/v1/ket-noi/loi?phanHe=&status=&loai=` | danh sách mục lỗi + `tuSua` + tình trạng dựng lại |
 | `POST /api/v1/ket-noi/loi/trang-thai` `{fp, status, note?, commit?}` | đổi trạng thái một mục |
 | `POST /api/v1/ket-noi/dung-lai/yeu-cau` `{note?}` | yêu cầu dựng lại con dev |
-| `GET  /api/v1/ket-noi/tra-ma?ma=&at=` | log của một mã tra cứu (gồm stack) |
 | `POST /api/v1/ket-noi/nhat-ky` `{tomTat, commit?, fps[], chiTiet?}` | ghi Nhật ký sửa |
 | header `x-ket-noi-may` | tên máy gọi (nhận diện + giữ chỗ); không gửi = cron máy chủ |
 | `GET  /api/v1/ket-noi/dung-lai` | (cron máy chủ) lấy yêu cầu dựng lại đang chờ — trả `{id}` hoặc `{id: null}` |
@@ -136,6 +175,6 @@ node scripts/loi/keo-loi.mjs dung-lai                                # yêu cầ
 Màn HT20 dùng các lệnh tương ứng dưới `/api/v1/system/loi…` (đăng nhập bình thường).
 
 ## 8. Lưu ý an toàn
-- Khoá kết nối chỉ đọc danh sách lỗi + log lỗi, đổi trạng thái, ghi nhật ký sửa, yêu cầu dựng lại — **không** đọc / ghi chứng từ, không chạy lệnh tuỳ ý.
+- Khoá kết nối chỉ đọc danh sách lỗi (không đọc log / trace — D019-3), đổi trạng thái, ghi nhật ký sửa, yêu cầu dựng lại — **không** đọc / ghi chứng từ, không chạy lệnh tuỳ ý.
 - Dựng lại luôn qua `cap-nhat.sh` (có sao lưu CSDL + kiểm bản sao lưu trước khi đổi code).
 - Tắt công tắc **Tự sửa** khi không muốn máy tự đẩy code (vd trước buổi demo quan trọng muốn "đóng băng").

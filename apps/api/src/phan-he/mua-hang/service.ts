@@ -6,7 +6,7 @@
  * (documents.workflow, PHASES 3.5) — runtime core/workflow.ts.
  */
 import { sql } from 'kysely';
-import { computeDoc, invoiceKey, invoicesOf, type PDoc, type PLine } from '@bizcity/mua-hang-domain';
+import { computeDoc, ganCtkm, invoiceKey, invoicesOf, promoBoard, type PDoc, type PLine } from '@bizcity/mua-hang-domain';
 import { db, type Db } from '../../db/client.js';
 import type { AuthContext } from '../../core/auth.js';
 import { Errors } from '../../core/errors.js';
@@ -23,7 +23,7 @@ import { resolveWarehouse } from '../../modules/warehouses/default-warehouse.js'
 import { sameTx, type ActionTx } from '@bizcity/platform/core/actions';
 import { currentRequest } from '@bizcity/platform/core/request-context';
 
-// [2026-11-25 Nguyễn Văn Thủy] đơn đặt: kho giao / kho dòng được là kho của chính chi nhánh nhận HOẶC của mọi chi nhánh con cháu bên trong (đệ quy theo cây chi nhánh) (đóng góp)
+// [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — đơn đặt: kho giao / kho dòng được là kho của chính chi nhánh nhận HOẶC của mọi chi nhánh con cháu bên trong (đệ quy theo cây chi nhánh) (đóng góp)
 /** Kho của đơn đặt: phải đang dùng và thuộc một trong các chi nhánh `goc` hoặc chi nhánh con cháu của chúng. */
 async function khoTrongNhanh(trx: Db, tenantId: string, goc: string[], whCode: string): Promise<string> {
   const w = await trx.selectFrom('warehouses as w').innerJoin('branches as b', 'b.id', 'w.branch_id').select(['w.code', 'w.is_active', 'b.id as bid', 'b.code as bcode'])
@@ -125,7 +125,7 @@ export const purchaseService = {
       if (cur && LOCKED.has(cur.status)) throw Errors.conflict(cur.status === 'approved' ? 'Phiếu đã duyệt: bỏ duyệt rồi mới sửa được' : 'Phiếu đã huỷ');
       if (cur && cur.kind !== input.kind) throw Errors.validation('Không đổi được loại chứng từ');
       const doc = toPDoc(input, id ?? 'new');
-      // [2026-11-21 Nguyễn Văn Thủy] PHIẾU NHẬP NHIỀU HOÁ ĐƠN: danh sách invoices là chuẩn (gửi lên kể cả rỗng), invoice = hoá đơn đầu;
+      // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — PHIẾU NHẬP NHIỀU HOÁ ĐƠN: danh sách invoices là chuẩn (gửi lên kể cả rỗng), invoice = hoá đơn đầu;
       // hoá đơn mới đóng dấu người thêm / lúc thêm, ghi nhật ký thêm / bỏ. Phiếu khác loại không mang danh sách (đóng góp)
       if (doc.kind === 'receipt' && Array.isArray(input.invoices)) {
         const truoc = new Map(invoicesOf(cur ?? {}).map((i) => [invoiceKey(i), i]));
@@ -158,25 +158,25 @@ export const purchaseService = {
         }
         doc.deliveryWarehouses = ds.length ? ds : undefined;
         if (!doc.deliveryWarehouse && ds[0]) doc.deliveryWarehouse = ds[0];
-        // [2026-11-25 Nguyễn Văn Thủy] chi nhánh nhận đầu đơn (chọn nhiều): luôn gồm chi nhánh nhận của mọi dòng — không để dòng nhận ở chi nhánh ngoài danh sách (đóng góp)
+        // [2026-11-25 12:00 AM Nguyễn Văn Thủy] MH — chi nhánh nhận đầu đơn (chọn nhiều): luôn gồm chi nhánh nhận của mọi dòng — không để dòng nhận ở chi nhánh ngoài danh sách (đóng góp)
         if (doc.receiveBranches?.length) {
           const rb = [...new Set([...doc.receiveBranches, ...doc.lines.filter((l) => l.sku).map((l) => l.branchCode || doc.deliveryBranch || doc.branchCode)])];
           doc.receiveBranches = rb;
         }
       } else { delete doc.deliveryWarehouses; delete doc.receiveBranches; }
-      // [2026-11-18 Nguyễn Văn Thủy] hợp đồng: trống mà phiếu gắn phiếu thuộc hợp đồng (nhập từ đơn, trả / chi phí / trả tiền theo phiếu nhập) thì kế thừa; có thì kiểm (đóng góp)
-      // [2026-11-19 Nguyễn Văn Thủy] mọi phiếu thuộc hợp đồng đều mang số hợp đồng: phiếu gắn chứng từ của NHIỀU hợp đồng thì tách phiếu
+      // [2026-11-18 12:00 AM Nguyễn Văn Thủy] MH — hợp đồng: trống mà phiếu gắn phiếu thuộc hợp đồng (nhập từ đơn, trả / chi phí / trả tiền theo phiếu nhập) thì kế thừa; có thì kiểm (đóng góp)
+      // [2026-11-19 12:00 AM Nguyễn Văn Thủy] MH — mọi phiếu thuộc hợp đồng đều mang số hợp đồng: phiếu gắn chứng từ của NHIỀU hợp đồng thì tách phiếu
       // (công nợ theo hợp đồng không chia được một khoản cho hai hợp đồng); phiếu thưởng lấy hợp đồng của chính sách (đóng góp)
       if (doc.refIds?.length) {
         const refs = docs.filter((d) => doc.refIds!.includes(d.id));
-        // [2026-11-21 Nguyễn Văn Thủy] hợp đồng chỉ kế thừa / so với chứng từ gắn kèm CÙNG NCC: chi phí vận chuyển của NCC vận tải gắn phiếu nhập
+        // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — hợp đồng chỉ kế thừa / so với chứng từ gắn kèm CÙNG NCC: chi phí vận chuyển của NCC vận tải gắn phiếu nhập
         // của NCC hàng là hai hợp đồng của hai bên — không bắt trùng (đóng góp)
         const codes = [...new Set(refs.filter((d) => d.partnerCode === doc.partnerCode).map((d) => d.contractCode ?? ''))];
         if (codes.length > 1) throw Errors.validation(`Phiếu gắn chứng từ của nhiều hợp đồng khác nhau (${codes.map((c) => c || 'không theo hợp đồng').join(', ')}) — lập mỗi hợp đồng một phiếu để công nợ theo hợp đồng đúng`);
         const ref = codes[0] ?? '';
         if (!doc.contractCode && ref) doc.contractCode = ref;
         else if (ref && doc.contractCode && doc.contractCode !== ref) throw Errors.validation(`Chứng từ gắn kèm thuộc hợp đồng ${ref}, phiếu đang chọn hợp đồng ${doc.contractCode} — chọn lại cho khớp`);
-        // [2026-11-20 Nguyễn Văn Thủy] phiếu nhập theo đơn kế thừa kế hoạch hoá đơn của đơn khi chưa khai (đóng góp)
+        // [2026-11-20 12:00 AM Nguyễn Văn Thủy] MH — phiếu nhập theo đơn kế thừa kế hoạch hoá đơn của đơn khi chưa khai (đóng góp)
         const don = refs.find((d) => d.kind === 'order' && d.invoicePlan);
         if (doc.kind === 'receipt' && !doc.invoicePlan && don) doc.invoicePlan = don.invoicePlan;
       }
@@ -189,7 +189,7 @@ export const purchaseService = {
       // Phiếu hàng (trừ đơn đặt): mọi dòng thuộc một phân kho của chi nhánh — trống thì kho mặc định, sai chi nhánh thì báo lỗi.
       if (STOCK_KINDS.includes(doc.kind)) doc.warehouseCode = (await resolveWarehouse(trx, auth.tenantId, doc.branchCode, doc.warehouseCode)) || undefined;
       else delete doc.warehouseCode;
-      // [2026-11-21 Nguyễn Văn Thủy] chi nhánh đang làm việc ghi một lần lúc lập; phân kho từng dòng phải thuộc chi nhánh nhận của dòng (đóng góp)
+      // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — chi nhánh đang làm việc ghi một lần lúc lập; phân kho từng dòng phải thuộc chi nhánh nhận của dòng (đóng góp)
       doc.workBranchCode = cur?.workBranchCode ?? doc.workBranchCode ?? currentRequest()?.workBranch ?? doc.branchCode;
       const isOrder = doc.kind === 'order';
       // Đơn đặt: "Giao tại kho" có thể là kho của chi nhánh con → deliveryBranch = chi nhánh đó (phiếu nhập lập ở chi nhánh con).
@@ -208,6 +208,12 @@ export const purchaseService = {
       doc.docNo = input.docNo || cur?.docNo || (await nextDocNo(trx, auth.tenantId, input.kind, input.docDate));
       const ctx = await loadCtx(trx, auth.tenantId, docs);
       const a = await analyze(trx, auth.tenantId, doc, ctx);
+      // [2026-11-26 12:10 AM Nguyễn Văn Thủy] MH-KM — ghi mã CTKM đang áp vào từng dòng (nhiều chương trình chồng nhau → đủ mã), cùng bộ chính sách đã tính
+      // phiếu (bỏ chính sách chưa qua điều kiện kích hoạt): mở lại phiếu, báo cáo đọc thẳng dòng (đóng góp)
+      if (doc.kind === 'order' || doc.kind === 'receipt') {
+        const chan = new Set((a.blockedPolicies ?? []).map((b) => b.code));
+        doc.lines = ganCtkm(doc, promoBoard(doc, ctx.policies.filter((x) => !chan.has(x.code)), a.calc));
+      }
       const extra: Record<string, unknown> = { checks: checksOf(a), policyTrace: a.calc.trace };
       if (doc.kind === 'cost' || (doc.kind === 'rebate' && !doc.rebate && doc.refIds?.length)) {
         const receipts = refReceipts(doc, docs);
@@ -279,7 +285,7 @@ export const purchaseService = {
       // Nhập ngoài đơn: đóng dấu người duyệt + thời điểm cùng lý do (giữ mãi trên phiếu, lọc / rà soát riêng).
       const outside = isOutsideOrder(d, a.refOrder) ? { reason: d.outsideOrder!.reason.trim(), by: auth.actorName, at: new Date().toISOString() } : undefined;
       const links = await postPurchase(trx, auth, d, a.calc, a.accounts, docs);
-      // [2026-11-15 Nguyễn Văn Thủy] duyệt bản điều chỉnh: cùng mã chứng từ, phiên bản mới → cổng chờ tự đảo bút toán bản cũ rồi ghi bản mới;
+      // [2026-11-15 12:00 AM Nguyễn Văn Thủy] MH — duyệt bản điều chỉnh: cùng mã chứng từ, phiên bản mới → cổng chờ tự đảo bút toán bản cũ rồi ghi bản mới;
       // chứng từ kế toán bản cũ có mà bản mới không còn (vd bỏ hết dòng hàng nhận về) thì huỷ (đảo) (đóng góp)
       if (d.adjust) {
         const keep = new Set(links.map((l) => l.docKey));
@@ -324,7 +330,7 @@ export const purchaseService = {
     return getDoc(trx, auth.tenantId, id);
   },
 
-  // [2026-11-15 Nguyễn Văn Thủy] SỬA PHIẾU ĐÃ GHI SỔ = BẢN ĐIỀU CHỈNH (đóng góp)
+  // [2026-11-15 12:00 AM Nguyễn Văn Thủy] MH — SỬA PHIẾU ĐÃ GHI SỔ = BẢN ĐIỀU CHỈNH (đóng góp)
   //   Lập điều chỉnh: phiếu về nháp để sửa, bắt buộc lý do; chứng từ kế toán / bút toán bản cũ GIỮ NGUYÊN trong sổ.
   //   Duyệt bản điều chỉnh: approveIn gửi phiên bản mới cùng mã chứng từ → đảo bản cũ + ghi bản mới; lưu lịch sử thay đổi.
   //   Huỷ điều chỉnh: trả phiếu về đúng bản đã duyệt (bản chụp), sổ không đổi.
@@ -346,7 +352,7 @@ export const purchaseService = {
     return getDoc(trx, auth.tenantId, id);
   },
 
-  // [2026-11-21 Nguyễn Văn Thủy] ĐỐI CHIẾU HOÁ ĐƠN: gắn hoá đơn NCC (MH22) nhận sau vào phiếu nhập (đóng góp)
+  // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — ĐỐI CHIẾU HOÁ ĐƠN: gắn hoá đơn NCC (MH22) nhận sau vào phiếu nhập (đóng góp)
   /**
    * Gắn (thêm) hoá đơn NCC vào phiếu nhập: phiếu chưa duyệt thì thêm vào danh sách hoá đơn; phiếu đã ghi sổ thì lập điều chỉnh, ghi hoá
    * đơn rồi duyệt lại ngay (đảo bút toán cũ, ghi bút toán mới có hoá đơn — thuế đầu vào vào đúng kỳ hoá đơn). Còn cảnh báo chặn thì
@@ -406,7 +412,7 @@ export const purchaseService = {
         .where('status', 'in', ['draft', 'pending_approval']).where(sql<boolean>`${id}::bigint = ANY(ref_ids)`).execute();
       for (const r of nhap) if (!dependents.some((x) => x.id === String(r.id))) dependents.push({ id: String(r.id), docNo: r.doc_no ?? '', kind: 'receipt' } as StoredDoc);
     }
-    // [2026-11-21 Nguyễn Văn Thủy] đơn đặt có phiếu nhập: báo rõ "không mở lại đơn được" thay câu bỏ duyệt chung (đóng góp)
+    // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — đơn đặt có phiếu nhập: báo rõ "không mở lại đơn được" thay câu bỏ duyệt chung (đóng góp)
     if (dependents.length) throw Errors.conflict(d.kind === 'order'
       ? `Đơn ${d.docNo} đã có phiếu nhập theo đơn (${dependents.map((x) => x.docNo || '(nháp)').join(', ')}) — không mở lại đơn để sửa được. Huỷ các phiếu nhập đó trước; NCC giao thiếu thì đóng phần còn lại của đơn`
       : `Phiếu ${dependents.map((x) => x.docNo).join(', ')} đang dựa trên phiếu này — bỏ duyệt các phiếu đó trước`);

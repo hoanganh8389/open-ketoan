@@ -164,3 +164,28 @@ describe('chuyến giao (NT-BH-032)', () => {
     expect(d.toHoldDoc({ orderId: 'o', orderNo: 'DH1', seq: 4, branchCode: 'CN01', docDate: '2026-11-18', from: 'KHG', to: 'KCB', moves: mv, release: true, kind: 'back' }).docNo).toBe('DH1-H4');
   });
 });
+
+// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: mã thiếu, xếp kho ứng viên, kiểm SL chuyển (đóng góp)
+describe('NT-BH-041 — chuyển kho cho đơn thiếu hàng', () => {
+  it('mã thiếu = còn phải giao − đang giữ theo mã, bỏ dịch vụ; kho xếp cùng cửa hàng → cha → anh em, trong nhóm theo số mã đủ', async () => {
+    const d = await import('../api/domain/order.js');
+    const lines = [line({ held: 4 }), line({ lineKey: 'S1', sku: 'PHISHIP', name: 'Phí ship', unit: 'Lần', qty: 1 })];
+    const short = d.shortSkus(lines, new Set(['PHISHIP']));
+    expect(short).toEqual([{ sku: 'SUA330', name: 'Sữa 330', unit: 'Hộp', need: 6 }]);
+    const c = (group: 'same' | 'parent' | 'sibling', code: string, q: number) => ({ group, branchCode: 'B', warehouseCode: code, name: code, stock: { SUA330: q } });
+    const r = d.rankSources([c('sibling', 'S1', 8), c('parent', 'P1', 50), c('same', 'K2', 2), c('same', 'K9', 0), c('sibling', 'S0', 3)], short);
+    expect(r.map((x) => x.warehouseCode)).toEqual(['K2', 'P1', 'S1', 'S0']);
+    expect(r[2]!.full).toBe(1);
+  });
+
+  it('SL > tồn kho xuất → lỗi tại lines[i].qty "<kho> chỉ còn N"; mã không thiếu → lines[i].sku; không dòng nào > 0 → lines', async () => {
+    const d = await import('../api/domain/order.js');
+    const short = [{ sku: 'SUA330', name: 'Sữa', unit: 'Hộp', need: 6 }];
+    expect(d.checkTransferLines(short, { SUA330: 8 }, 'CH03-K1', [{ sku: 'SUA330', qty: 9 }]).findings)
+      .toEqual([{ field: 'lines[0].qty', code: 'PHIEU_BAN_TRANSFER_OVER_STOCK', title: 'CH03-K1 chỉ còn 8', level: 'block' }]);
+    expect(d.checkTransferLines(short, {}, 'K', [{ sku: 'X', qty: 1 }]).findings[0]!.field).toBe('lines[0].sku');
+    expect(d.checkTransferLines(short, { SUA330: 8 }, 'K', [{ sku: 'SUA330', qty: 0 }]).findings[0]!.field).toBe('lines');
+    expect(d.checkTransferLines(short, { SUA330: 8 }, 'K', [{ sku: 'SUA330', qty: 6 }]).lines).toEqual([{ ...short[0], qty: 6 }]);
+    expect(d.transferText('CK2600001', 'CN01-KT', 'CH02-K1', [{ sku: 'SUA01', qty: 6 }])).toBe('CK2600001: CN01-KT → CH02-K1 SUA01 × 6');
+  });
+});
