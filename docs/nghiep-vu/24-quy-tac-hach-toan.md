@@ -31,6 +31,7 @@ Mỗi chân bút toán lấy tài khoản từ **đúng một** nguồn. Mỗi n
 | **Loại kho** (qua phân kho trên dòng) | Tài khoản kho; loại không sở hữu (giữ hộ) không tính giá vốn | Loại kho (DM18) |
 | **Loại thuế** (qua dòng hàng, thuế suất theo mã hàng có ngày hiệu lực) | Tài khoản thuế | Loại thuế (ACC43) |
 | **Mục đích xuất** | Tài khoản đối ứng của phiếu xuất kho không bán / nhập kho khác | Quy tắc hạch toán (ACC41), mục Mục đích xuất |
+| **Lý do phiếu kế toán** (lý do loại `journal` trên dòng `manual_journal` phân hệ lập) | Cặp Nợ / Có của dòng phiếu — đợt này: chênh lệch két máy bán (`POS-THIEU-KET`, `POS-THUA-KET`) | Quy tắc hạch toán (ACC41), nghiệp vụ Chênh lệch két máy bán <!-- [2026-11-26 01:00 AM Võ Hoàng] NT-BH-042 — nguồn thứ sáu: lý do phiếu kế toán (đóng góp) --> |
 
 Thứ tự khi trùng: mục đích xuất → hình thức thanh toán / loại kho / loại thuế → tài khoản của quy tắc. Trên phiếu nghiệp vụ (mua, bán, kho, chuyển kho) không có ô chọn tài khoản: tài khoản chỉ quyết định ở màn Quy tắc hạch toán. Chỉ chứng từ kế toán tự lập (phiếu thu, phiếu chi, phiếu kế toán, đề nghị chi) mới chọn tài khoản trên phiếu.
 
@@ -96,6 +97,16 @@ Phạm vi đầu số của từng khoá:
 Quà NCC tặng không hoá đơn ghi theo mục đích **NQUA** (mặc định 711…), xuất quà tặng khách theo **XQUA**: sửa tài khoản ở bảng mục đích xuất; phân hệ Mua hàng chỉ tạo hai mục đích này lần đầu, không ghi đè.
 
 Mục đích xuất chọn trong: 138, 15, 211, 241, 242, 334, 338, 353, 632, 641, 642, 711, 811.
+
+<!-- [2026-11-26 01:00 AM Võ Hoàng] NT-BH-042 — lý do phiếu kế toán chênh lệch két đổi ở ACC41 (đóng góp) -->
+**Chênh lệch két máy bán** (`pos_cash_diff`, `manual_journal`): chốt ca lệch két, phân hệ bán lẻ gửi một dòng mang mã lý do, không gửi tài khoản. Cặp Nợ / Có nằm trên lý do, đổi ngay trên ACC41 (`PUT /api/v1/posting/scheme/reasons/:code`, quyền `settings:write`; lỗi trả về đúng ô; người khác vừa đổi thì báo tải lại):
+
+| Lý do | Gợi ý | Nợ chọn trong | Có chọn trong |
+|---|---|---|---|
+| `POS-THIEU-KET` thiếu tiền két | Nợ 1381 / Có 1111 | 138, 334, 632, 811 | 111 |
+| `POS-THUA-KET` thừa tiền két | Nợ 1111 / Có 3381 | 111 | 338, 711 |
+
+Đơn vị mới có sẵn hai lý do (gói nền); đơn vị cũ được thêm khi chưa có (migration 0185, không đè). Chưa khai thì ca vẫn chốt, biên bản "chưa lập" — khai rồi *Lập lại phiếu* ở Sổ ca.
 
 ## 5. Đổi tài khoản thì sao
 

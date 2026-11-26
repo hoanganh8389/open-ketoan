@@ -1,10 +1,12 @@
 // @bizcity-layer K kernel/config
 // [2026-11-23 09:01 AM Johnny Chu - Chu Hoàng Anh] PHASE-040 — B10f (R-SIG-1, R-SIG-7): chữ ký kiến trúc — chủ dự án duyệt tệp framework do người đóng góp tạo
 // [2026-11-15 Nguyễn Văn Thủy] API Quy tắc hạch toán: đọc khung + tài khoản, đổi tài khoản trong phạm vi, mục đích xuất, xem thử bút toán (đóng góp)
+// [2026-11-25 11:30 PM Võ Hoàng] NT-BH-042 — C3/C4: đọc + đổi cặp Nợ / Có của lý do journal ở ACC41 (Chênh lệch két máy bán), kiểm TK chi tiết + phạm vi đầu số (đóng góp)
 /**
  * QUY TẮC HẠCH TOÁN (màn ACC41, docs/nghiep-vu/24-quy-tac-hach-toan.md, docs/api/17-quy-tac-hach-toan.md)
  *   GET  /api/v1/posting/scheme                 khung Nợ / Có từng nghiệp vụ + tài khoản đang dùng của mọi nguồn
  *   PUT  /api/v1/posting/scheme/accounts/:key   đổi tài khoản của quy tắc (chỉ tài khoản chi tiết, trong phạm vi)
+ *   PUT  /api/v1/posting/scheme/reasons/:code   đổi cặp Nợ / Có của lý do journal có trên màn (REASON_KEYS; chưa có lý do → tạo)
  *   GET  /api/v1/posting/purposes               mục đích xuất
  *   PUT  /api/v1/posting/purposes/:code         thêm / sửa mục đích xuất (ngừng dùng bằng isActive=false, không xoá)
  *   POST /api/v1/posting/scheme/preview         xem thử bút toán của một chứng từ (không lưu gì)
@@ -18,7 +20,7 @@ import { authOf, requirePermission } from '@bizcity/platform/core/auth';
 import { ok } from '@bizcity/platform/core/http';
 import { Errors } from '@bizcity/platform/core/errors';
 import { defineAction, mountActions, type AnyActionDef } from '@bizcity/platform/core/actions';
-import { PURPOSE_RANGE, RULE_KEYS, SCHEME, inRange } from './scheme.js';
+import { PURPOSE_RANGE, REASON_KEYS, RULE_KEYS, SCHEME, inRange } from './scheme.js';
 import { documentService } from '../documents/document.service.js';
 
 const tags = ['Quy tắc hạch toán'];
@@ -60,6 +62,25 @@ async function assertAccount(trx: Db, tenantId: string, code: string, range: str
   if (!inRange(code, range)) throw Errors.validation(`${label}: ${code} ngoài phạm vi được chọn (${range.join(', ')})`);
 }
 
+/**
+ * Cặp tài khoản của lý do journal: mỗi ô kiểm phạm vi đầu số trước (câu "ngoài phạm vi" chỉ đúng ô), rồi có / đang dùng / chi tiết;
+ * Nợ khác Có. Trả mọi lỗi một lần (details.findings có field → error.fields, màn tô đỏ đúng ô).
+ */
+async function assertReasonPair(trx: Db, tenantId: string, code: string, debit: string, credit: string): Promise<void> {
+  const spec = REASON_KEYS[code]!;
+  const accs = await trx.selectFrom('accounts').select(['code', 'is_active', 'is_posting']).where('tenant_id', '=', tenantId).where('code', 'in', [debit, credit]).execute();
+  const findings: { code: string; field: string; title: string }[] = [];
+  for (const [field, acc, range, side] of [['debitAccount', debit, spec.debitRange, 'Nợ'], ['creditAccount', credit, spec.creditRange, 'Có']] as const) {
+    const a = accs.find((x) => x.code === acc);
+    const title = !inRange(acc, range) ? `TK ${side} ${acc} ngoài phạm vi (${range.join(', ')})`
+      : !a || !a.is_active ? `TK ${side} ${acc} không có hoặc đã ngừng dùng`
+        : !a.is_posting ? `TK ${side} ${acc} là tài khoản tổng hợp — chọn tài khoản chi tiết` : null;
+    if (title) findings.push({ code: 'VALIDATION_ERROR', field, title });
+  }
+  if (!findings.length && debit === credit) findings.push({ code: 'VALIDATION_ERROR', field: 'creditAccount', title: 'TK Nợ và TK Có phải khác nhau' });
+  if (findings.length) throw Errors.validation(`${spec.label} (${code}): ${findings.map((f) => f.title).join('; ')}`, { findings });
+}
+
 const purposeBody = z.object({
   name: z.string().trim().min(1).max(200),
   direction: z.enum(['increase', 'decrease', 'both']).default('decrease'),
@@ -85,6 +106,41 @@ export const schemeActions: AnyActionDef[] = [
       await trx.insertInto('posting_defaults').values({ tenant_id: ctx.tenant.id, key: b.key, account_code: b.accountCode })
         .onConflict((oc) => oc.columns(['tenant_id', 'key']).doUpdateSet({ account_code: b.accountCode })).execute();
       return { key: b.key, accountCode: b.accountCode, before: before?.account_code ?? null };
+    },
+  }),
+  defineAction({
+    id: 'core.posting-scheme.set-reason-accounts', title: 'Đổi cặp Nợ / Có của lý do phiếu kế toán (Quy tắc hạch toán)', tags,
+    permission: 'settings:write', effect: 'write', sideEffects: ['settings'], idempotency: 'natural',
+    input: z.object({
+      code: z.string().trim().toUpperCase(),
+      debitAccount: z.string().trim().regex(/^[0-9]{3,20}$/),
+      creditAccount: z.string().trim().regex(/^[0-9]{3,20}$/),
+      /** Cặp đang thấy trên màn lúc mở hộp thoại — người khác đã đổi trước thì chặn (CONFLICT), không ghi đè. */
+      expected: z.object({ debitAccount: z.string().nullable(), creditAccount: z.string().nullable() }).optional(),
+    }),
+    output: z.object({ code: z.string(), debitAccount: z.string(), creditAccount: z.string(), created: z.boolean(),
+      before: z.object({ debitAccount: z.string().nullable(), creditAccount: z.string().nullable() }).nullable() }),
+    expose: { http: { method: 'PUT', path: '/api/v1/posting/scheme/reasons/:code' }, mcp: false, ai: 'deny' },
+    evidence: { objectType: 'posting_reason', objectId: (i) => i.code },
+    handler: async (ctx, b) => {
+      const spec = REASON_KEYS[b.code];
+      if (!spec) throw Errors.validation(`Lý do ${b.code} không có trên màn Quy tắc hạch toán — lý do khác sửa qua API lý do`);
+      const trx = ctx.data.tx;
+      const cur = await trx.selectFrom('posting_reasons').select(['kind', 'debit_account', 'credit_account']).where('tenant_id', '=', ctx.tenant.id).where('code', '=', b.code).forUpdate().executeTakeFirst();
+      if (cur && cur.kind !== 'journal') throw Errors.validation(`Lý do ${b.code} đang là loại "${cur.kind}", không phải lý do phiếu kế toán (journal) — đổi mã lý do ở cài đặt bán hàng`);
+      const before = cur ? { debitAccount: cur.debit_account, creditAccount: cur.credit_account } : null;
+      if (b.expected && (b.expected.debitAccount !== (before?.debitAccount ?? null) || b.expected.creditAccount !== (before?.creditAccount ?? null))) {
+        throw Errors.conflict(`Lý do ${b.code} vừa được người khác đổi thành Nợ ${before?.debitAccount ?? '—'} / Có ${before?.creditAccount ?? '—'} — tải lại rồi sửa`);
+      }
+      await assertReasonPair(trx, ctx.tenant.id, b.code, b.debitAccount, b.creditAccount);
+      if (cur) {
+        await trx.updateTable('posting_reasons').set({ debit_account: b.debitAccount, credit_account: b.creditAccount, is_active: true })
+          .where('tenant_id', '=', ctx.tenant.id).where('code', '=', b.code).execute();
+      } else {
+        await trx.insertInto('posting_reasons').values({ tenant_id: ctx.tenant.id, code: b.code, name: spec.name, kind: 'journal', debit_account: b.debitAccount, credit_account: b.creditAccount,
+          flags: JSON.stringify(spec.flags), is_active: true }).execute();
+      }
+      return { code: b.code, debitAccount: b.debitAccount, creditAccount: b.creditAccount, created: !cur, before };
     },
   }),
   defineAction({
@@ -116,13 +172,14 @@ export async function schemeRoutes(app: FastifyInstance): Promise<void> {
     handler: async (req) => {
       const tenantId = authOf(req).tenantId;
       await db.transaction().execute((trx) => ensurePurposes(trx, tenantId));
-      const [defaults, accounts, methods, whTypes, taxes, purposes] = await Promise.all([
+      const [defaults, accounts, methods, whTypes, taxes, purposes, reasons] = await Promise.all([
         db.selectFrom('posting_defaults').select(['key', 'account_code']).where('tenant_id', '=', tenantId).execute(),
         db.selectFrom('accounts').select(['code', 'name', 'is_posting', 'is_active']).where('tenant_id', '=', tenantId).execute(),
         db.selectFrom('payment_methods').select(['code', 'name', 'account_code', 'bank_account_code', 'is_receivable', 'partner_code']).where('tenant_id', '=', tenantId).where('is_active', '=', true).orderBy('sort_order').orderBy('code').execute(),
         db.selectFrom('warehouse_types').select(['code', 'name', 'account_prefix', 'owned', 'can_sell']).where('tenant_id', '=', tenantId).where('deleted_at', 'is', null).where('is_active', '=', true).orderBy('sort_order').execute(),
         db.selectFrom('tax_codes').select(['code', 'name', 'rate', 'direction', 'account_code']).where('tenant_id', '=', tenantId).where('is_active', '=', true).orderBy('code').execute(),
         db.selectFrom('stock_purposes').selectAll().where('tenant_id', '=', tenantId).orderBy('sort_order').orderBy('code').execute(),
+        db.selectFrom('posting_reasons').select(['code', 'name', 'kind', 'debit_account', 'credit_account', 'is_active']).where('tenant_id', '=', tenantId).where('code', 'in', Object.keys(REASON_KEYS)).execute(),
       ]);
       const acc = new Map(accounts.map((a) => [a.code, a]));
       const name = (c: string | null | undefined) => (c ? acc.get(c)?.name ?? null : null);
@@ -138,6 +195,15 @@ export async function schemeRoutes(app: FastifyInstance): Promise<void> {
           purposes: purposes.map((p) => ({ code: p.code, name: p.name, direction: p.direction, accountCode: p.account_code, accountName: name(p.account_code), isActive: p.is_active, sortOrder: p.sort_order, status: status(p.account_code) })),
         },
         purposeRange: PURPOSE_RANGE,
+        // Lý do journal có trên màn: chưa có mã / không phải journal → 'missing' ("Chưa khai tài khoản"); TK ngoài phạm vi → 'range'.
+        reasons: Object.entries(REASON_KEYS).map(([code, k]) => {
+          const r = reasons.find((x) => x.code === code);
+          const j = r && r.kind === 'journal' ? r : null;
+          const st = (c: string | null | undefined, range: string[]) => (!j ? 'missing' : status(c) !== 'ok' ? status(c) : !inRange(c!, range) ? 'range' : 'ok');
+          return { code, label: k.label, help: k.help, name: r?.name ?? k.name, exists: Boolean(j), isActive: j?.is_active ?? false, debitRange: k.debitRange, creditRange: k.creditRange,
+            debitAccount: j?.debit_account ?? null, debitName: name(j?.debit_account), debitStatus: st(j?.debit_account, k.debitRange),
+            creditAccount: j?.credit_account ?? null, creditName: name(j?.credit_account), creditStatus: st(j?.credit_account, k.creditRange) };
+        }),
       });
     },
   });

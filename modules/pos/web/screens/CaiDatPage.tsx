@@ -3,8 +3,8 @@
  *   ① Máy bán tại quầy: hạn trả, bắt buộc mở ca, ca theo chi nhánh / máy, ngưỡng chênh lệch két (khoá bizcity.pos.*).
  *   ② Ghi sổ chứng từ bán: sale / sale_return ghi ngay hay chờ duyệt — GET / PUT /api/v1/settings/posting-modes của Core
  *      (PUT thay cả bảng → gộp với chế độ hiện có của loại chứng từ khác rồi mới gửi).
- *   ③ Chênh lệch két: bật lập phiếu kế toán khi chốt ca lệch; hai lý do loại journal (Nợ / Có) — tạo / sửa qua
- *      PUT /api/v1/posting/reasons/:code của Core; module chỉ giữ mã lý do.
+ *   ③ Chênh lệch két: bật lập phiếu kế toán khi chốt ca lệch; hai lý do loại journal CHỈ XEM (đọc GET /api/v1/posting/scheme) —
+ *      cặp Nợ / Có khai ở Quy tắc hạch toán ACC41 (NT-BH-042). Module không ghi lý do, không giữ số tài khoản nào.
  *   ④ Tài khoản hạch toán bán hàng: loại nhóm "Bán hàng" của ACC41 (chỉ đọc), nút Sửa ở ACC41.
  *   ⑤ Giao hàng đơn đặt hàng (NT-BH-032): kho KHG, mã phí ship, COD theo hãng — khoá của module phieu-ban (GiaoHangCaiDat).
  * Khoá của module ghi qua đường chung PUT /api/v1/settings/values/:key (quyền settings:write; có phiên bản, ai đổi, lúc nào).
@@ -14,6 +14,7 @@
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-027 số bill dạng shop (số kế thừa), NT-BH-028 kho quà KKM của từng cửa hàng (đóng góp)
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-030 Q3: hạn trả riêng từng cửa hàng; quá hạn → yêu cầu trả quá hạn duyệt ở BH14 (đóng góp)
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-027 (18/11 anh chốt): bỏ mục "Số bill theo dạng shop" — dạng shop mặc định, website tự báo số cuối (đóng góp)
+// [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-042: khối ③ bỏ ô Nợ / Có + gọi ghi lý do; dòng chỉ đọc + nút "Khai ở Quy tắc hạch toán" (đóng góp)
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ErrorBox, Field, Loading, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient } from '@bizcity/ui-kit';
 import { M } from '../lib';
@@ -37,18 +38,22 @@ const toMap = (list: readonly string[]) => Object.fromEntries(list.map((x) => [x
 const fromMap = (m: Record<string, string>) => Object.entries(m).filter(([, w]) => w).sort(([a], [b]) => a.localeCompare(b)).map(([b, w]) => `${b}=${w}`);
 type Resp = { values: Values; keys: Record<keyof Values, string> };
 type Mode = 'auto' | 'approve';
-type Reason = { code: string; name: string; kind: string; debitAccount: string | null; creditAccount: string | null; isActive: boolean };
 // [2026-11-15 Nguyễn Văn Thủy] tài khoản bán hàng đọc từ Quy tắc hạch toán (ACC41) — bỏ Tài khoản ngầm định theo loại (đóng góp)
 type SchemeLine = { side: 'debit' | 'credit'; role: string; source: string; key?: string; when?: string };
-type Scheme = { businesses: { code: string; name: string; groups: { name: string; lines: SchemeLine[] }[] }[]; keys: { key: string; accountCode: string | null; accountName: string | null }[] };
+/** Lý do phiếu kế toán trên ACC41 (NT-BH-042): cặp Nợ / Có đang lưu, trạng thái từng bên. */
+type SchemeReason = { code: string; name: string; exists: boolean; isActive: boolean; debitAccount: string | null; debitStatus: string; creditAccount: string | null; creditStatus: string };
+type Scheme = {
+  businesses: { code: string; name: string; groups: { name: string; lines: SchemeLine[] }[] }[];
+  keys: { key: string; accountCode: string | null; accountName: string | null }[];
+  reasons?: SchemeReason[];
+};
 const SOURCE_LABEL: Record<string, string> = { payment: 'theo hình thức thanh toán', warehouse: 'theo loại kho', tax: 'theo loại thuế', purpose: 'theo mục đích xuất' };
-type Pair = { debit: string; credit: string };
+/** Màn ACC41 mở thẳng nghiệp vụ Chênh lệch két máy bán. */
+const ACC41_CASH_DIFF = '/cau-hinh/quy-tac-hach-toan?nghiep-vu=pos_cash_diff';
 
 const SALE_TYPES: [string, string][] = [['sale', 'Phiếu bán hàng (đơn máy POS, BH10)'], ['sale_return', 'Phiếu trả hàng (BH11, BH14)']];
 // [2026-11-16 06:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-021: công tắc chặn bán quá tồn của phiếu bán nhập tay (khoá của module phieu-ban, Q6) (đóng góp)
 const PB_BLOCK = 'bizcity.phieu_ban.block_negative_stock';
-const DEF_PAIR = { short: { debit: '1381', credit: '1111' }, over: { debit: '1111', credit: '3381' } };
-const REASON_NAME = { short: 'Thiếu tiền két chờ xử lý (máy bán POS)', over: 'Thừa tiền két chờ xử lý (máy bán POS)' };
 
 function Block({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
   return (
@@ -65,7 +70,6 @@ export function CaiDatPage() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['pos-admin', 'settings'], queryFn: () => api.get<Resp>(`${M}/admin/settings`) });
   const modesQ = useQuery({ queryKey: ['posting-modes'], queryFn: () => api.get<Record<string, Mode>>('/api/v1/settings/posting-modes') });
-  const reasonsQ = useQuery({ queryKey: ['reasons'], queryFn: () => api.get<Reason[]>('/api/v1/posting/reasons') });
   const typesQ = useQuery({ queryKey: ['posting-scheme'], queryFn: () => api.get<Scheme>('/api/v1/posting/scheme') });
   const pbQ = useQuery({ queryKey: ['setting', PB_BLOCK], queryFn: () => api.get<{ value: unknown }>(`/api/v1/settings/values/${PB_BLOCK}`) });
   const whsQ = useQuery({ queryKey: ['warehouses'], queryFn: () => api.get<Wh[]>('/api/v1/warehouses') });
@@ -78,39 +82,15 @@ export function CaiDatPage() {
   useEffect(() => { if (pbQ.data) setPbBlock(pbQ.data.value === true); }, [pbQ.data]);
   const [v, setV] = useState<Values | null>(null);
   const [modes, setModes] = useState<Record<string, Mode>>({});
-  const [pairs, setPairs] = useState<{ short: Pair; over: Pair }>(DEF_PAIR);
   const [err, setErr] = useState<Partial<Record<keyof Values, string>>>({});
   useEffect(() => { if (q.data) setV(q.data.values); }, [q.data]);
   useEffect(() => { if (modesQ.data) setModes(modesQ.data); }, [modesQ.data]);
-  const reasonOf = (code: string | undefined) => reasonsQ.data?.find((r) => r.code === code);
-  /** Cặp tài khoản đang lưu ở lý do; chưa có lý do → đề xuất mặc định (1381 / 1111, 1111 / 3381). */
-  const savedPairs = (x: Values) => {
-    const pick = (code: string, d: Pair): Pair => { const r = reasonOf(code); return r?.kind === 'journal' ? { debit: r.debitAccount ?? '', credit: r.creditAccount ?? '' } : d; };
-    return { short: pick(x.cashShortReason, DEF_PAIR.short), over: pick(x.cashOverReason, DEF_PAIR.over) };
-  };
-  useEffect(() => {
-    if (v && reasonsQ.data) setPairs(savedPairs(v));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reasonsQ.data, v?.cashShortReason, v?.cashOverReason]);
 
   const writable = can('settings:write');
-  const pairChanged = (side: 'short' | 'over') => {
-    const r = reasonOf(side === 'short' ? v?.cashShortReason : v?.cashOverReason);
-    return !r || r.kind !== 'journal' || (r.debitAccount ?? '') !== pairs[side].debit || (r.creditAccount ?? '') !== pairs[side].credit;
-  };
   const save = useMutation({
     mutationFn: async () => {
       if (!q.data || !v) return;
-      // Lý do trước (tài khoản sai thì Core báo, chưa đổi gì của module).
-      if (v.cashDiffJournal) {
-        for (const side of ['short', 'over'] as const) {
-          if (!pairChanged(side)) continue;
-          const code = side === 'short' ? v.cashShortReason : v.cashOverReason;
-          await api.put(`/api/v1/posting/reasons/${encodeURIComponent(code)}`, {
-            name: reasonOf(code)?.name ?? REASON_NAME[side], kind: 'journal', debitAccount: pairs[side].debit.trim(), creditAccount: pairs[side].credit.trim(), isActive: true,
-          });
-        }
-      }
+      // Mã lý do (cash_short_reason / cash_over_reason) không sửa ở màn này (NT-BH-042 Q4) — giữ nguyên giá trị đang lưu.
       for (const k of Object.keys(v) as (keyof Values)[]) {
         if (!same(v[k], q.data.values[k])) await api.put(`/api/v1/settings/values/${encodeURIComponent(q.data.keys[k])}`, { key: q.data.keys[k], value: v[k] });
       }
@@ -118,7 +98,7 @@ export function CaiDatPage() {
       if (pbQ.data && pbBlock !== (pbQ.data.value === true)) await api.put(`/api/v1/settings/values/${PB_BLOCK}`, { key: PB_BLOCK, value: pbBlock });
     },
     onSuccess: () => Promise.all([
-      qc.invalidateQueries({ queryKey: ['pos-admin', 'settings'] }), qc.invalidateQueries({ queryKey: ['posting-modes'] }), qc.invalidateQueries({ queryKey: ['reasons'] }),
+      qc.invalidateQueries({ queryKey: ['pos-admin', 'settings'] }), qc.invalidateQueries({ queryKey: ['posting-modes'] }),
       qc.invalidateQueries({ queryKey: ['setting', PB_BLOCK] }),
     ]),
   });
@@ -131,21 +111,27 @@ export function CaiDatPage() {
   };
   const changed = (q.data && (Object.keys(v) as (keyof Values)[]).some((k) => !same(v[k], q.data!.values[k])))
     || (modesQ.data && SALE_TYPES.some(([t]) => modes[t] !== modesQ.data![t]))
-    || (v.cashDiffJournal && reasonsQ.data && (pairChanged('short') || pairChanged('over')))
     || (pbQ.data && pbBlock !== (pbQ.data.value === true));
-  const reset = () => { setV(q.data!.values); if (modesQ.data) setModes(modesQ.data); if (pbQ.data) setPbBlock(pbQ.data.value === true); setErr({}); setPairs(savedPairs(q.data!.values)); };
-  const ready = (code: string) => { const r = reasonOf(code); return r?.kind === 'journal' && r.isActive && r.debitAccount && r.creditAccount; };
+  const reset = () => { setV(q.data!.values); if (modesQ.data) setModes(modesQ.data); if (pbQ.data) setPbBlock(pbQ.data.value === true); setErr({}); };
   const saleBiz = (typesQ.data?.businesses ?? []).filter((b) => b.code === 'sale' || b.code === 'sale_return');
   const keyAcc = (k?: string) => typesQ.data?.keys.find((x) => x.key === k);
   const accText = (l: SchemeLine) => (l.source === 'rule' ? `${keyAcc(l.key)?.accountCode ?? '—'} ${keyAcc(l.key)?.accountName ?? ''}` : SOURCE_LABEL[l.source] ?? l.source);
-  const pairRow = (side: 'short' | 'over', label: string, code: string) => (
-    <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-      <span style={{ minWidth: 150 }}>{label} <span className="muted">({code})</span></span>
-      <label className="row" style={{ gap: 4 }}>Nợ <input className="input" style={{ width: 90 }} value={pairs[side].debit} disabled={!writable || !v.cashDiffJournal} onChange={(e) => setPairs({ ...pairs, [side]: { ...pairs[side], debit: e.target.value } })} /></label>
-      <label className="row" style={{ gap: 4 }}>Có <input className="input" style={{ width: 90 }} value={pairs[side].credit} disabled={!writable || !v.cashDiffJournal} onChange={(e) => setPairs({ ...pairs, [side]: { ...pairs[side], credit: e.target.value } })} /></label>
-      {reasonsQ.data && (ready(code) ? <span className="badge badge-ok">Đã có lý do</span> : <span className="badge badge-warn">Chưa có lý do — bấm Ghi để tạo</span>)}
-    </div>
-  );
+  /** Dòng chỉ đọc của một hướng: mã lý do, "Nợ … / Có …" đang lưu trên lý do (ACC41), Đã khai / Chưa khai tài khoản. */
+  const reasonRow = (label: string, code: string) => {
+    const r = typesQ.data?.reasons?.find((x) => x.code === code);
+    const ok = r?.exists && r.isActive && r.debitStatus === 'ok' && r.creditStatus === 'ok';
+    return (
+      <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ minWidth: 150 }}>{label} <span className="muted mono">({code})</span></span>
+        {!typesQ.data ? <Loading /> : !r ? <span className="muted">Lý do {code} không có trên Quy tắc hạch toán — tài khoản xem ở API lý do</span> : (
+          <>
+            <span className="mono">{r.exists ? `Nợ ${r.debitAccount ?? '—'} / Có ${r.creditAccount ?? '—'}` : '—'}</span>
+            {ok ? <span className="badge badge-ok">Đã khai</span> : <span className="badge badge-warn">Chưa khai tài khoản</span>}
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
@@ -243,16 +229,17 @@ export function CaiDatPage() {
         ))}
       </Block>
 
-      <Block title="③ Chênh lệch két khi chốt ca" hint="Ca chốt có tiền thiếu / thừa thì lập một phiếu kế toán (tài sản thiếu / thừa chờ xử lý), đối tượng là chi nhánh. Tài khoản lấy theo lý do, đổi được ở đây.">
-        <Field label="Lập phiếu kế toán khi chốt ca lệch két" hint="Tắt: chỉ lưu biên bản ca, kế toán xử lý tay. Lý do chưa có lúc chốt: ca vẫn chốt, phiếu nằm ở ACC14 thẻ Lỗi.">
+      <Block title="③ Chênh lệch két khi chốt ca" hint="Ca chốt có tiền thiếu / thừa thì lập một phiếu kế toán (tài sản thiếu / thừa chờ xử lý), đối tượng là chi nhánh. Tài khoản nằm trên lý do, khai ở Quy tắc hạch toán (ACC41).">
+        <Field label="Lập phiếu kế toán khi chốt ca lệch két" hint={'Tắt: chỉ lưu biên bản ca, kế toán xử lý tay. Lý do chưa khai tài khoản lúc chốt: ca vẫn chốt, biên bản ghi "chưa lập" — khai ở ACC41 rồi "Lập lại phiếu" ở Sổ ca.'}>
           <input type="checkbox" checked={v.cashDiffJournal} disabled={!writable} onChange={(e) => setV({ ...v, cashDiffJournal: e.target.checked })} />
         </Field>
-        {reasonsQ.error ? <ErrorBox error={errorText(reasonsQ.error)} /> : (
+        {typesQ.error ? <ErrorBox error={errorText(typesQ.error)} /> : (
           <>
-            {pairRow('short', 'Thiếu tiền', v.cashShortReason)}
-            {pairRow('over', 'Thừa tiền', v.cashOverReason)}
+            {reasonRow('Thiếu tiền', v.cashShortReason)}
+            {reasonRow('Thừa tiền', v.cashOverReason)}
           </>
         )}
+        <div><a className="btn" href={ACC41_CASH_DIFF}>Khai ở Quy tắc hạch toán</a></div>
         {modesQ.data && (
           <p className="muted" style={{ margin: 0 }}>
             Phiếu lập xong: {modesQ.data.manual_journal === 'auto' ? 'ghi sổ ngay' : 'chờ kế toán duyệt ở Trạm chứng từ ACC14'} — theo chế độ của loại "phiếu kế toán" (dùng chung cho mọi phiếu kế toán phân hệ lập, vd kiểm kê kho), đổi ở ACC14.

@@ -1,0 +1,26 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": {
+    "code": "ACC41",
+    "label": "ACC41 — Quy tắc hạch toán: Đổi cặp Nợ / Có lý do phiếu kế toán (Chênh lệch két máy bán, NT-BH-042)",
+    "file": "apps/web/src/features/posting/QuyTacHachToanPage.tsx",
+    "route": "/cau-hinh/quy-tac-hach-toan?nghiep-vu=pos_cash_diff",
+    "entities": ["posting_reasons"]
+  },
+  "actions": ["sua"],
+  "questions": [
+    { "id": "Q-CHUNG-01", "ask": "Ai được sửa cặp tài khoản? Không đủ quyền thì màn ẩn nút hay báo gì?", "answer": "settings:write (kế toán trưởng / chủ đơn vị). Không quyền: nút Đổi / Khai ẨN, vẫn xem được cặp tài khoản; máy chủ chặn 403 FORBIDDEN (chốt 25/11 Võ Hoàng, NT-BH-042 §5)." },
+    { "id": "Q-CHUNG-02", "ask": "Đổi tài khoản khi đã có phiếu chênh lệch?", "answer": "Chỉ áp phiếu lập sau; phiếu đã ghi giữ nguyên (sổ chỉ thêm). Muốn sửa phiếu cũ: đảo rồi lập lại ở Sổ ca (NT-BH-042 §5)." },
+    { "id": "Q-CHUNG-03", "ask": "Hai người cùng sửa một lý do thì người lưu sau thấy gì?", "answer": "Hộp thoại gửi kèm cặp đang thấy (expected); cặp đã đổi → chặn CONFLICT \"Lý do … vừa được người khác đổi thành Nợ … / Có … — tải lại rồi sửa\", không ghi đè (chốt 25/11)." },
+    { "id": "Q-CHUNG-04", "ask": "Kỳ đã khoá?", "answer": "Không áp dụng cho màn này (cấu hình, không ghi sổ). Chốt ca rơi vào kỳ khoá: Core trả PERIOD_LOCKED, ca vẫn chốt, Lập lại phiếu sau khi mở kỳ (NT-BH-042 §5 Q-CUOI-KY)." },
+    { "id": "Q-CHUNG-05", "ask": "Bấm Ghi hai lần?", "answer": "Một kết quả: lệnh ghi có Idempotency-Key, nút Ghi khoá khi đang gửi; ghi lại cùng cặp không đổi gì (chốt 25/11)." },
+    { "id": "Q-CHUNG-06", "ask": "Ô bắt buộc? Sai thì báo ở đâu?", "answer": "TK Nợ và TK Có, khác nhau, TK chi tiết đang dùng, trong phạm vi (thiếu: Nợ 138/334/632/811 – Có 111; thừa: Nợ 111 – Có 338/711). Máy chủ trả mọi lỗi một lần (details.findings → error.fields), màn tô đỏ đúng ô (chốt 25/11)." },
+    { "id": "Q-CHUNG-07", "ask": "Thoát giữa chừng?", "answer": "Hộp thoại hai ô, không có nháp: Đóng là bỏ sửa; bị từ chối thì giữ nguyên giá trị đã chọn để sửa gửi lại." },
+    { "id": "Q-CHUNG-08", "ask": "Danh sách tài khoản chọn được?", "answer": "Chỉ TK chi tiết đang dùng trong phạm vi đầu số; không thêm tài khoản tại chỗ (khai ở Hệ thống tài khoản) (NT-BH-042 §5)." }
+  ],
+  "rows": [
+    { "id": "ACC41-01", "action": "sua", "code": "VALIDATION_ERROR", "level": "block", "when": "TK là tài khoản tổng hợp (vd 138) hoặc ngoài phạm vi đầu số (vd 6421, 64111; Có 3381 cho lý do thiếu)", "target": { "kind": "field", "path": "debitAccount" }, "catchAt": ["ui", "kernel"], "hint": "Chọn tài khoản chi tiết trong phạm vi ghi dưới ô", "test": "apps/api/test/nt-bh-042-lech-ket-quy-tac.test.ts#VALIDATION_ERROR", "basis": "NT-BH-042 ca 6, C4" },
+    { "id": "ACC41-02", "action": "sua", "code": "CONFLICT", "level": "block", "when": "Người khác vừa đổi cặp tài khoản của lý do sau khi mở hộp thoại", "target": { "kind": "state" }, "catchAt": ["kernel"], "hint": "Tải lại màn rồi sửa trên cặp mới", "test": "apps/api/test/nt-bh-042-lech-ket-quy-tac.test.ts#CONFLICT", "basis": "Q-CHUNG-03 chốt 25/11" },
+    { "id": "ACC41-03", "action": "sua", "code": "FORBIDDEN", "level": "block", "when": "Người không có settings:write gọi thẳng API", "target": { "kind": "state" }, "catchAt": ["ui", "kernel"], "hint": "Nhờ kế toán trưởng đổi; nút đã ẩn với người không quyền", "test": "apps/api/test/nt-bh-042-lech-ket-quy-tac.test.ts#FORBIDDEN", "basis": "Q-CHUNG-01 chốt 25/11" }
+  ]
+}

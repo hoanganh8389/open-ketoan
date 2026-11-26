@@ -108,3 +108,13 @@ Khoá cấu hình mới (`modules/pos/settings.registry.json`, lớp B, `affects
 | 5 | Phiếu kế toán theo chế độ ghi sổ | Mặc định **chờ duyệt** (chế độ của loại `manual_journal`, dùng chung cho mọi phiếu kế toán phân hệ lập); BH17 chỉ hiện chế độ, đổi ở ACC14 | Đổi ở BH17 sẽ đổi luôn phiếu kiểm kê kho của phân hệ Kho |
 
 Phần B (ACC41 5212 / 5213) chuyển cho Thủy — xem ghi chú ở §2.
+
+## 7. Tài khoản chênh lệch két chuyển sang Quy tắc hạch toán (NT-BH-042, 25/11)
+<!-- [2026-11-26 01:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-042: cặp tài khoản chênh lệch két khai ở ACC41, BH17 chỉ xem; Core cài sẵn hai lý do (đóng góp) -->
+
+Thay §2 A (lý do tạo / sửa từ BH17) và §2 C khối 3 (ô Nợ / Có, nút Tạo lý do mặc định):
+
+- Hai lý do `POS-THIEU-KET` / `POS-THUA-KET` (loại `journal`, cặp như bảng §2) **Core cài sẵn**: đơn vị tạo mới có từ gói nền `db/packs/vn-tt99-nen` (1.1.0); đơn vị đang có thêm bằng migration 0185 — chỉ khi chưa có mã và hai tài khoản là TK chi tiết đang dùng, **không đè** cặp đơn vị đã khai. "Quay về dữ liệu gốc" bộ Lý do (`db/seeds/ly-do.jsonl`) cũng giữ cặp đơn vị đã khai.
+- Kế toán đổi cặp tài khoản ở **Quy tắc hạch toán ACC41**, nghiệp vụ *Chênh lệch két máy bán* (`/cau-hinh/quy-tac-hach-toan?nghiep-vu=pos_cash_diff`), quyền `settings:write`. Phạm vi: thiếu Nợ 138 / 334 / 632 / 811 – Có 111; thừa Nợ 111 – Có 338 / 711; chỉ TK chi tiết. Xem [24 — Quy tắc hạch toán](24-quy-tac-hach-toan.md).
+- BH17 khối ③ chỉ còn bật / tắt, dòng chỉ đọc "Nợ … / Có …" (Đã khai / Chưa khai tài khoản) và nút sang ACC41. Module `pos` không còn số tài khoản nào; hai khoá mã lý do giữ nguyên nhưng không hiện ở BH17.
+- Bút toán của đơn vị đang chạy không đổi (vẫn lý do cũ, cặp tài khoản như đang lưu).
