@@ -101,7 +101,8 @@ export function CodePicker({ value, onChange, options, nameOf, onSearch, loading
   useEffect(() => { const tuNgoai = value !== committed.current; committed.current = value; if (!focused.current || tuNgoai) setText(value); }, [value]);
 
   // Chữ dùng để lọc: cả ô, hoặc phần sau dấu phẩy cuối khi chọn nhiều.
-  const query = multiple ? (text.split(',').pop() ?? '').trim() : text.trim();
+  // [2026-11-26 11:55 AM Nguyễn Văn Thủy] HT — #61 tab Test: chọn nhiều nhận cả dấu chấm phẩy / dấu cách (gõ '1561;111' trước đây thành một mã) (đóng góp)
+  const query = multiple ? (text.split(/[,;]/).pop() ?? '').trim() : text.trim();
   useEffect(() => { onSearch?.(query); }, [query, onSearch]);
   const shown = options.slice(0, MAX_SHOWN);
   useEffect(() => { setActive(0); }, [query]);
@@ -125,14 +126,14 @@ export function CodePicker({ value, onChange, options, nameOf, onSearch, loading
   useEffect(() => { list.current?.querySelector<HTMLElement>(`[data-i="${active}"]`)?.scrollIntoView({ block: 'nearest' }); }, [active]);
 
   const commit = (v: string) => {
-    const clean = multiple ? v.split(',').map((s) => s.trim()).filter(Boolean).join(',') : v.trim();
+    const clean = multiple ? [...new Set(v.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean))].join(',') : v.trim();
     if (strict && !multiple && clean && nameOf(clean) === undefined) { setText(committed.current); return; }
     setText(clean);
     if (clean !== committed.current) { committed.current = clean; onChange(clean); }
   };
   const pick = (o: PickOption) => {
     if (multiple) {
-      const parts = textRef.current.split(',').map((s) => s.trim());
+      const parts = textRef.current.split(/[,;]/).map((s) => s.trim());
       parts[parts.length - 1] = o.code;
       const next = [...new Set(parts.filter(Boolean))].join(',');
       setText(next + ',');

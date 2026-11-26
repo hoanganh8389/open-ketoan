@@ -17,7 +17,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
 import { BranchSelect, DateRange, useBranches } from '@/components/filters';
 import { Empty, ErrorBox, Loading } from '@/components/ui';
-import { AccountPicker } from '@/components/pickers';
+import { AccountPicker, useAccountList } from '@/components/pickers';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { BOOK_SIGNS, LedgerForm, mb, screenTemplate, PrintButton, type PrintTemplate } from '@/components/print';
 import { EntryOpen } from '../../../features/ledger/EntriesPage';
@@ -38,6 +38,8 @@ function buildRows(list: Data[], soCai = false): Row[] {
   let td = 0; let tc = 0;
   for (const d of list) {
     const a = d.account.code;
+    // Xem nhiều tài khoản (vd Tất cả TK): bỏ tài khoản không số dư, không phát sinh trong kỳ.
+    if (list.length > 1 && !d.rows.length && !d.opening.debit && !d.opening.credit && !d.closing.debit && !d.closing.credit) continue;
     out.push({ key: `g${a}`, acc: a, kind: 'group', label: `Tài khoản: ${a} - ${d.account.name}`, debit: 0, credit: 0, dn: 0, dc: 0 });
     if (soCai) {
       out.push({ key: `o${a}`, acc: a, kind: 'open', description: 'Số dư đầu kỳ', debit: d.opening.debit, credit: d.opening.credit, dn: 0, dc: 0 });
@@ -117,7 +119,10 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
   const [f, setF] = useState({ from: params.get('from') ?? periodFrom(), to: params.get('to') ?? defaultTo(), accounts: params.get('account') ?? '111', branchCodes: '', gop: gopMacDinh(soCai ? 'ACC88' : 'ACC12', soCai) });
   const [entryId, setEntryId] = useState<string | null>(null);
   const set = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
-  const accounts = [...new Set(f.accounts.split(',').map((s) => s.trim()).filter(Boolean))];
+  // [2026-11-26 12:00 PM Nguyễn Văn Thủy] HT — #61 tab Test: nhiều tài khoản cách nhau phẩy / chấm phẩy / dấu cách; nút Tất cả TK = mọi tài khoản cấp 1 (đóng góp)
+  const accounts = [...new Set(f.accounts.split(/[,;s]+/).map((s) => s.trim()).filter(Boolean))];
+  const dsTk = useAccountList().data ?? [];
+  const tkCap1 = dsTk.filter((a) => a.level === 1 && a.isActive !== false).map((a) => a.code);
   const qs = useQueries({ queries: accounts.map((account) => ({
     queryKey: ['account-ledger', soCai ? 'so-cai' : 'sctk', account, f.from, f.to, f.branchCodes, f.gop],
     queryFn: () => api.get<Data>('/api/v1/reports/account-ledger', { account, from: f.from, to: f.to, branchCodes: f.branchCodes, kind: soCai ? 'ledger' : 'detail', groupMode: f.gop ? '2' : '1' }),
@@ -162,7 +167,12 @@ export function SoChiTietTaiKhoanPage({ soCai = false }: { soCai?: boolean } = {
         filters={
           <>
             <DateRange from={f.from} to={f.to} onChange={(from, to) => set({ from, to })} />
-            <div className="field"><label>Tài khoản (chọn nhiều)</label><AccountPicker multiple className="input w-lg mono" value={f.accounts} onChange={(accounts) => set({ accounts })} /></div>
+            <div className="field"><label title="Chọn nhiều tài khoản: chọn lần lượt trong danh sách, hoặc gõ cách nhau dấu phẩy / chấm phẩy, vd 1561;111">Tài khoản (chọn nhiều)</label><AccountPicker multiple className="input w-lg mono" value={f.accounts} onChange={(accounts) => set({ accounts })} />
+              <div className="row" style={{ gap: 6, marginTop: 4 }}>
+                <button type="button" className="btn btn-xs" disabled={!tkCap1.length} title={tkCap1.length ? `Xem toàn bộ ${tkCap1.length} tài khoản cấp 1 (gồm cả tài khoản chi tiết bên dưới)` : 'Đang tải danh mục tài khoản'} onClick={() => set({ accounts: tkCap1.join(',') })}>Tất cả TK</button>
+                {accounts.length > 1 && <button type="button" className="btn btn-xs" title="Bỏ chọn, chỉ giữ tài khoản đầu tiên" onClick={() => set({ accounts: accounts[0] ?? '' })}>Bỏ bớt</button>}
+              </div>
+            </div>
             <label className="checkbox"><input type="checkbox" checked={f.gop} onChange={(e) => { nhoGop(soCai ? 'ACC88' : 'ACC12', e.target.checked); set({ gop: e.target.checked }); }} /> Cộng gộp các bút toán giống nhau</label>
             {multi && <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} />}
           </>
