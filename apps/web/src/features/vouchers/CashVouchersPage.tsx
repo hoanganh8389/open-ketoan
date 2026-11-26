@@ -23,7 +23,9 @@ import { VoucherListPage, dateTimeShort, useListFilter } from '@/components/vouc
 import type { ToolButton } from '@/components/voucher/VoucherModal';
 import { useBankAccounts } from '../catalog/BankAccountsPage';
 import { VOUCHER_META, type ExistingVoucher } from './VoucherForm';
-import { CashVoucherForm } from './CashVoucherForm';
+import { CashVoucherForm, type GiuPhieuTien } from './CashVoucherForm';
+import { useMoLaiHopThoai } from '@/layout/WindowDock';
+import { useLocation } from 'react-router-dom';
 import { ManualVoucherForm } from './ManualVoucherForm';
 import { useTemplates } from './TemplatesPage';
 import { VOUCHER_SCREEN, VOUCHER_TEMPLATES, signRolesOf, type PrintSheet, type SignatureInfo } from './VoucherPrint';
@@ -70,7 +72,15 @@ export function CashVouchersPage({ type, pair }: { type: CashType; pair?: CashTy
   // Danh sách mở ở tháng hiện tại để thấy ngay phiếu vừa lập.
   const filter = useListFilter();
   const { f } = filter;
-  const [form, setForm] = useState<{ existing?: ExistingVoucher; initial?: VoucherTemplateInput; seq: number; type?: CashType; theoHoaDon?: boolean } | null>(null);
+  type FormMo = { existing?: ExistingVoucher; initial?: VoucherTemplateInput; seq: number; type?: CashType; theoHoaDon?: boolean };
+  const [form, setForm] = useState<(FormMo & { khoiPhuc?: GiuPhieuTien }) | null>(null);
+  // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — tải lại trang / mất điện: mở lại phiếu thu chi đang dở đúng nội dung (đóng góp)
+  const loc = useLocation();
+  useMoLaiHopThoai('phieu-tien', loc.pathname, (list) => {
+    const g = list[list.length - 1]?.draft as GiuPhieuTien | null;
+    const m = g?.meta as FormMo | undefined;
+    if (g && m && typeof m.seq === 'number') setForm({ ...m, khoiPhuc: g });
+  });
   const [notice, setNotice] = useState<string | null>(null);
   const [signRole, setSignRole] = useState<SignatureInfo['role'] | ''>('');
   const templates = useTemplates(type).data ?? [];
@@ -224,7 +234,8 @@ export function CashVouchersPage({ type, pair }: { type: CashType; pair?: CashTy
         const key = form.existing?.id ?? `new-${form.seq}`;
         return type === 'manual'
           ? <ManualVoucherForm key={key} existing={form.existing} initial={form.initial} onClose={() => setForm(null)} onSaved={onSaved} />
-          : <CashVoucherForm key={key} type={(form.type ?? type) as Exclude<CashType, 'manual'>} theoHoaDon={form.theoHoaDon} existing={form.existing} initial={form.initial} onClose={() => setForm(null)} onSaved={onSaved} />;
+          : <CashVoucherForm key={key} type={(form.type ?? type) as Exclude<CashType, 'manual'>} theoHoaDon={form.theoHoaDon} existing={form.existing} initial={form.initial} onClose={() => setForm(null)} onSaved={onSaved}
+            khoiPhuc={form.khoiPhuc} giuKey={`tien:${key}`} giuMeta={{ existing: form.existing, initial: form.initial, seq: form.seq, type: form.type, theoHoaDon: form.theoHoaDon } satisfies FormMo} />;
       })()}
     </VoucherListPage>
   );

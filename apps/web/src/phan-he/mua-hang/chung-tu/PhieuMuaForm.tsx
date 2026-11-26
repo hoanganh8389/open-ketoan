@@ -123,7 +123,9 @@ let seq = 0;
 const newKey = () => `L${Date.now().toString(36)}${(seq++).toString(36)}`;
 interface CatalogProduct { sku: string; name: string; unit: string; taxInCode: string | null; brandCode?: string | null; variantCode?: string; typeCode?: string | null; sendToTax?: boolean; parentSku?: string | null }
 
-export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value: PDoc; data: MhData; onClose: () => void; onSaved: () => void; onOpen?: (d: PDoc) => void }) {
+/** Trạng thái phiếu đang mở để giữ qua tải lại trang (bản nháp ở bộ nhớ máy, xem WindowDock). */
+export interface GiuPhieuMua { v: PDoc; dirty: boolean; viewing: boolean }
+export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen, khoiPhuc }: { value: PDoc; data: MhData; onClose: () => void; onSaved: () => void; onOpen?: (d: PDoc) => void; khoiPhuc?: Omit<GiuPhieuMua, 'v'> }) {
   // [2026-11-21 12:00 AM Nguyễn Văn Thủy] MH — phiếu mới mang chi nhánh đang làm việc của người lập (nơi lập) — có thể khác chi nhánh của phiếu (đóng góp)
   const [v, setV] = useState<PDoc>(() => (value.id.startsWith('new-') && !value.workBranchCode && workBranch.get() ? { ...value, workBranchCode: workBranch.get() } : value));
   const [stored, setStored] = useState<StoredDoc | undefined>(data.docs.find((d) => d.id === value.id));
@@ -195,9 +197,11 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   const [err, setErr] = useState('');
   // [2026-11-11 12:00 AM Nguyễn Văn Thủy] MH — dán từ Excel (Ctrl + V) vào bảng hàng: báo số dòng đưa vào / bỏ qua (đóng góp)
   const [danBao, setDanBao] = useState<{ ok: boolean; text: string } | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const [dirty, setDirty] = useState(Boolean(khoiPhuc?.dirty));
+  const giuRef = useRef<GiuPhieuMua | null>(null);
   // Thu nhỏ xuống thanh dưới (giữ nguyên phiếu đang nhập); chấm cam ở ô = phiếu có thay đổi chưa lưu.
-  const dock = useDockWindow(() => thoatRef.current(), dirty, `mh:${value.id}`);
+  // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — phiếu đang mở giữ qua tải lại trang / mất điện: ghi bản nháp ở máy, mở lại đúng nội dung (đóng góp)
+  const dock = useDockWindow(() => thoatRef.current(), dirty, `mh:${value.id}`, { kind: 'mh', draft: () => giuRef.current });
   const thoatRef = useRef<() => void>(onClose);
   const names = useNames();
   const brands = useBrands(data.policies);
@@ -214,7 +218,8 @@ export function PhieuMuaForm({ value, data, onClose, onSaved, onOpen }: { value:
   // Phiếu đã duyệt / huỷ: chỉ xem. Phiếu đã ghi (nháp, chờ duyệt): mở ở chế độ xem, bấm "Sửa" mới sửa; Gửi duyệt / Duyệt
   // vẫn bấm được khi đang xem (không đổi nội dung phiếu).
   const frozen = v.status === 'approved' || v.status === 'cancelled';
-  const [viewing, setViewing] = useState(!value.id.startsWith('new-') && !frozen);
+  const [viewing, setViewing] = useState(khoiPhuc ? khoiPhuc.viewing && !frozen : !value.id.startsWith('new-') && !frozen);
+  giuRef.current = { v, dirty, viewing };
   const readOnly = frozen || viewing;
   useEffect(() => {
     if (!viewing || frozen) return;
