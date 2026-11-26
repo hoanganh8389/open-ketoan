@@ -25,7 +25,7 @@ export const banHangMenu: MenuItem[] = [
       { key: 'thu-tien', label: 'Thu tiền theo hình thức thanh toán', path: '/ban-hang/thu-tien', code: 'BH03' },
       { key: 'thu-tien-ban-hang', label: 'Báo cáo thu tiền bán hàng', path: '/ban-hang/thu-tien-ban-hang', code: 'BH05' },
       { key: 'lai-gop', label: 'Lãi gộp', path: '/ban-hang/lai-gop', code: 'BH04' },
-      { key: 'bh-xuat-dieu-chinh', label: 'Phiếu xuất điều chỉnh', path: '/ban-hang/xuat-dieu-chinh', code: 'BH06' },
+      // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: bỏ mục BH06 cũ — màn mới của module xuat-dieu-chinh tự lên menu qua manifest (đóng góp)
       { key: 'bh-nk-ban-hang', label: 'Sổ nhật ký bán hàng', path: '/cong-no/nhat-ky-ban-hang', code: 'ACC84' },
       { key: 'bh-thue-ra', label: 'Báo cáo thuế ra', path: '/thue/bang-ke-ban-ra', code: 'ACC65' },
     ],

@@ -1,0 +1,475 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": {
+    "code": "BH06",
+    "label": "BH06 — Phiếu xuất điều chỉnh (lập, lưu nháp, ghi sổ, huỷ)",
+    "file": "modules/xuat-dieu-chinh/web/screens/PhieuXuatForm.tsx",
+    "route": "/app/xuat-dieu-chinh",
+    "entities": [
+      "xuat-dieu-chinh/phieu"
+    ]
+  },
+  "actions": [
+    "luu-nhap",
+    "ghi-so",
+    "sua",
+    "xoa",
+    "huy"
+  ],
+  "questions": [
+    {
+      "id": "Q-CHUNG-01",
+      "ask": "Ai được thêm / sửa / xoá / duyệt ở màn này? Không đủ quyền thì màn ẩn nút hay báo gì?",
+      "answer": "Ba quyền tách xem / lập / huỷ (xuat-dieu-chinh:phieu-xem, phieu-lap, phieu-huy). Mặc định: kế toán, kế toán trưởng, chủ đơn vị đủ ba; staff (thu ngân, quản lý cửa hàng — theo chi nhánh được gán) xem + lập (C1). Không quyền → ẩn nút (useCan), máy chủ vẫn 403 FORBIDDEN (chung 25/11). Không có duyệt."
+    },
+    {
+      "id": "Q-CHUNG-02",
+      "ask": "Chứng từ đã ghi sổ / đã duyệt thì sửa, xoá ra sao: chặn, bỏ duyệt, hay lập chứng từ đảo?",
+      "answer": "Phiếu đã ghi sổ không sửa: chỉ Huỷ (bút toán đảo, quyền riêng phieu-huy, bắt buộc lý do huỷ) và Chép thành phiếu mới (nháp mới cùng nội dung). Nháp: người lập hoặc kế toán sửa / xoá (C5)."
+    },
+    {
+      "id": "Q-CHUNG-03",
+      "ask": "Hai người cùng mở và cùng sửa một chứng từ thì người lưu sau thấy gì?",
+      "answer": "Phiếu đã ghi sổ không sửa. Hai người sửa một nháp: người lưu sau gửi phiên bản cũ → CONFLICT 'Phiếu đã được người khác sửa lúc … — tải lại' (kiểm phiên bản, C6); nháp của người lưu trước giữ nguyên."
+    },
+    {
+      "id": "Q-CHUNG-04",
+      "ask": "Ngày chứng từ thuộc kỳ đã khoá, hoặc ngoài năm tài chính, thì màn báo trước hay chỉ báo khi ghi sổ?",
+      "answer": "Ngày mặc định hôm nay; kế toán (documents:write) chọn được ngày lùi, thu ngân chỉ hôm nay (C4, máy chủ chặn VALIDATION_ERROR tại docDate). Ngày thuộc kỳ khoá: Kernel trả PERIOD_LOCKED, module gắn ô docDate (phiếu có giá). Huỷ trong kỳ khoá: chặn PERIOD_LOCKED. Phiếu 0 đ: Kernel chưa kiểm kỳ khoá khi không có bút toán — đề xuất mức 4 P7."
+    },
+    {
+      "id": "Q-CHUNG-05",
+      "ask": "Mạng chập chờn hoặc bấm Lưu hai lần thì có sinh hai chứng từ không?",
+      "answer": "Một chứng từ: Idempotency-Key do useApi gắn, gửi lại cùng khoá trả đúng kết quả lần một (chung 25/11, ca 8); nút Lưu khoá khi đang gửi."
+    },
+    {
+      "id": "Q-CHUNG-06",
+      "ask": "Ô nào bắt buộc? Bỏ trống hoặc sai kiểu thì báo ở ô nào, trước hay sau khi bấm?",
+      "answer": "Chi nhánh, kho, lý do, ngày, ít nhất một dòng có mã + SL > 0 (số nguyên); phiếu có giá: người nhận (C9); huỷ: lý do huỷ. Phiếu 0 đ: người nhận / nhân viên không bắt buộc. Báo tại ô trước khi gửi; máy chủ trả hết lỗi một lần (details.findings → error.fields), form tô đỏ và cuộn tới ô đầu."
+    },
+    {
+      "id": "Q-CHUNG-07",
+      "ask": "Thoát form giữa chừng hoặc bị từ chối thì dữ liệu đã nhập còn không? Có lưu nháp không?",
+      "answer": "Có Lưu nháp (§5 mục 3). Đóng form còn thay đổi chưa lưu → hỏi 'Bỏ thay đổi chưa lưu?'. Bị từ chối thì form giữ nguyên dữ liệu, tô ô theo error.fields."
+    },
+    {
+      "id": "Q-CHUNG-08",
+      "ask": "Mỗi danh sách chọn chỉ nhận giá trị nào (đang dùng, cùng chi nhánh, đã duyệt)? Chưa có thì thêm tại chỗ được không, ai được thêm?",
+      "answer": "Kho: kho đang dùng của chi nhánh phiếu (mặc định kho bán, có kho quà KKM). Lý do: kind out đang dùng, trừ XBA, XBB, XCKho, XKK, XCN, XCN3, XNB*; phiếu 0 đ chỉ lý do đã có mục đích xuất (C3 / C13). Mặt hàng: đang dùng (ItemPicker). Thêm tại chỗ: người có quyền danh mục (catalog:write) thấy lối 'Thêm mặt hàng', người có settings:write thấy 'Thêm lý do' — qua màn của chủ danh mục; người khác chỉ chọn (C7)."
+    },
+    {
+      "id": "Q-BAN-01",
+      "ask": "Giá bán lấy từ bảng giá nào? Bán dưới giá tối thiểu / dưới giá vốn thì chặn hay cảnh báo, ai duyệt?",
+      "answer": "Đơn giá gợi ý từ bảng giá của chi nhánh (DM14), sửa được; thuế GTGT theo danh mục hàng; dưới giá vốn bình quân → cảnh báo 'Dưới giá vốn', không chặn, ghi vào phiếu (belowCost) và bằng chứng của lần lưu (C8)."
+    },
+    {
+      "id": "Q-BAN-02",
+      "ask": "Khách có hạn mức công nợ / hạn thanh toán không? Vượt thì chặn hay cảnh báo, mở được công nợ hiện tại không?",
+      "answer": "Phiếu có giá bắt buộc người nhận (mã khách trong danh mục), ghi công nợ 131 cho người đó (payments rỗng) (C9). Không áp hạn mức công nợ ở BH06."
+    },
+    {
+      "id": "Q-BAN-03",
+      "ask": "Xuất quá tồn, bán hàng chưa nhập kho thì sao? Đơn vị có cho âm kho không, cấu hình ở đâu?",
+      "answer": "Chặn xuất quá tồn của kho phiếu (§5 mục 6), SL quy về ĐVT nhỏ nhất, báo tại dòng lines[i].qty; không theo công tắc âm kho."
+    },
+    {
+      "id": "Q-BAN-04",
+      "ask": "Thông tin hoá đơn điện tử (mã số thuế khách, tên, địa chỉ, thuế suất) thiếu hoặc sai thì báo trước khi phát hành chưa?",
+      "answer": "Không áp: phiếu có giá là bán nội bộ (internalOnly), không hoá đơn điện tử (§5 mục 2)."
+    },
+    {
+      "id": "Q-BAN-05",
+      "ask": "Trả hàng, giảm giá sau bán đi chứng từ nào, có trỏ về hoá đơn gốc không? Trả vượt số đã bán thì sao?",
+      "answer": "Không có trả hàng cho phiếu này; sai thì huỷ (bút toán đảo) và lập lại."
+    },
+    {
+      "id": "Q-KHO-01",
+      "ask": "Kho trên chứng từ có thuộc chi nhánh / bộ phận của chứng từ không? Kho ngừng dùng thì sao?",
+      "answer": "Chỉ kho đang dùng của chi nhánh phiếu, mặc định K1, chọn được KKM (§5 mục 6); máy chủ kiểm lại → VALIDATION_ERROR tại warehouseCode."
+    },
+    {
+      "id": "Q-KHO-02",
+      "ask": "Xuất trước ngày nhập, xuất quá tồn theo lô / hạn dùng thì chặn hay cảnh báo, chỉ vào dòng nào?",
+      "answer": "Chặn quá tồn của kho tại lines[i].qty (máy chủ). Lô để trống: Kernel tự lấy lô hạn sớm nhất như bán hàng; chọn được lô cụ thể từ danh sách lô còn tồn (C10). Quá tồn theo từng lô: màn hiện tồn từng lô theo gợi ý lô của Core; máy chủ module chưa đọc được tồn theo lô — đề xuất mức 4 P3."
+    },
+    {
+      "id": "Q-KHO-03",
+      "ask": "Chuyển kho: đã xuất ở kho đi mà chưa nhận ở kho đến thì hàng đang ở đâu, quá bao lâu thì nhắc, ai nhận?",
+      "answer": "Không áp (phiếu xuất một đầu, không chuyển kho)."
+    },
+    {
+      "id": "Q-KHO-04",
+      "ask": "Quy đổi đơn vị tính (thùng / lon) lệch, số lẻ không hợp lệ với đơn vị thì báo ở ô nào?",
+      "answer": "Chọn ĐVT quy đổi của mặt hàng; SL quy về đơn vị gốc để kiểm tồn (ca 5, câu báo quy ra hộp). Số lẻ chỉ khi ĐVT cho phép theo danh mục — danh mục chưa có cờ này nên mọi ĐVT chỉ nhận số nguyên (C11; đề xuất mức 4 P5)."
+    },
+    {
+      "id": "Q-KHO-05",
+      "ask": "Tồn tối thiểu / tối đa, định mức kho đặt ở đâu? Vượt thì cảnh báo ở màn nào, có mở được nguồn không?",
+      "answer": "Không cảnh báo min / max ở BH06; chỉ chặn quá tồn (C12)."
+    },
+    {
+      "id": "Q-KHO-06",
+      "ask": "Kiểm kê lệch: điều chỉnh cần lý do gì, ai duyệt? Có chặn kiểu 'điều chỉnh cho khớp' không?",
+      "answer": "Lý do bắt buộc (mặc định XSD1), không có bước duyệt (Lưu = ghi sổ). Không chọn được lý do đã có màn riêng (XKK kiểm kê, XCKho chuyển kho, XBA / XBB bán, XCN, XCN3, XNB*) (C13)."
+    }
+  ],
+  "rows": [
+    {
+      "id": "BH06-01",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Số lượng (đã quy về ĐVT nhỏ nhất) lớn hơn tồn của kho phiếu (XDC_OVER_STOCK)",
+      "target": {
+        "kind": "field",
+        "path": "lines.*.qty"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Kho không đủ hàng — giảm số lượng (≤ tồn) hoặc chọn kho khác",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#lines[0].qty",
+      "basis": "Q-BAN-03 / Q-KHO-02 (ca 4, 5)"
+    },
+    {
+      "id": "BH06-02",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "SL ≤ 0 hoặc số lẻ với ĐVT không cho số lẻ (XDC_LINE_QTY / XDC_LINE_FRACTION)",
+      "target": {
+        "kind": "field",
+        "path": "lines.*.qty"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Nhập số lượng lớn hơn 0, số nguyên với ĐVT này",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#lines[0].qty",
+      "basis": "Q-KHO-04 (ca 22, 26)"
+    },
+    {
+      "id": "BH06-03",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Dòng chưa chọn mặt hàng, hoặc mặt hàng không có / đã ngừng dùng (XDC_LINE_SKU)",
+      "target": {
+        "kind": "selector",
+        "path": "lines.*.sku",
+        "catalog": "item",
+        "allow": "active"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Chọn mặt hàng đang dùng trong danh mục",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#lines[0].sku",
+      "basis": "Q-CHUNG-08 (ca 20, 22)"
+    },
+    {
+      "id": "BH06-04",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Phiếu không có dòng hàng nào (XDC_LINES_EMPTY)",
+      "target": {
+        "kind": "field",
+        "path": "lines"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Thêm ít nhất một dòng hàng có mã và số lượng",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#lines",
+      "basis": "Q-CHUNG-06 (ca 22)"
+    },
+    {
+      "id": "BH06-05",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Chưa chọn kho, hoặc kho không phải kho đang dùng của chi nhánh phiếu (XDC_WAREHOUSE)",
+      "target": {
+        "kind": "selector",
+        "path": "warehouseCode",
+        "catalog": "warehouse",
+        "allow": "active"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Chọn kho đang dùng của chi nhánh (kho bán hoặc kho quà)",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#warehouseCode",
+      "basis": "Q-KHO-01 (ca 20, 22)"
+    },
+    {
+      "id": "BH06-06",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Lý do đã có màn riêng (XBA, XBB, XCKho, XKK, XCN, XCN3, XNB*) hoặc lý do chưa có mục đích xuất cho phiếu 0 đ (XDC_REASON_EXCLUDED / XDC_REASON_NOT_READY)",
+      "target": {
+        "kind": "selector",
+        "path": "reasonCode",
+        "catalog": "reason",
+        "allow": "active"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Chọn lý do khác trong danh sách; lý do chưa khai thì nhờ kế toán khai ở Quy tắc hạch toán",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#reasonCode",
+      "basis": "Q-KHO-06 / C13 (ca 19)"
+    },
+    {
+      "id": "BH06-07",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Phiếu có giá bỏ trống người nhận, hoặc mã người nhận không có trong danh mục (XDC_PARTNER)",
+      "target": {
+        "kind": "field",
+        "path": "partnerCode"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Phiếu có giá phải chọn người nhận (công nợ 131) — nhập mã khách hàng có trong danh mục",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#partnerCode",
+      "basis": "Q-BAN-02 / C9 (ca 23)"
+    },
+    {
+      "id": "BH06-08",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Thu ngân (không có quyền ghi chứng từ của kế toán) gửi ngày khác hôm nay (XDC_DATE_TODAY)",
+      "target": {
+        "kind": "field",
+        "path": "docDate"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Thu ngân chỉ lập phiếu ngày hôm nay — phiếu ngày lùi nhờ kế toán lập",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#docDate",
+      "basis": "Q-CHUNG-04 / C4 (ca 31)"
+    },
+    {
+      "id": "BH06-09",
+      "action": "ghi-so",
+      "code": "PERIOD_LOCKED",
+      "level": "block",
+      "when": "Ngày phiếu thuộc kỳ kế toán đã khoá",
+      "target": {
+        "kind": "field",
+        "path": "docDate"
+      },
+      "catchAt": [
+        "kernel",
+        "module"
+      ],
+      "hint": "Kỳ kế toán đã khoá — chọn ngày thuộc kỳ còn mở hoặc nhờ kế toán trưởng mở khoá kỳ",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#PERIOD_LOCKED",
+      "basis": "Q-CHUNG-04 (ca 11)"
+    },
+    {
+      "id": "BH06-10",
+      "action": "ghi-so",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Người không có quyền lập phiếu (xuat-dieu-chinh:phieu-lap) gọi thẳng Lưu",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Bạn không có quyền lập phiếu xuất điều chỉnh — nhờ quản trị gán quyền ở màn phân quyền (HT12)",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#FORBIDDEN",
+      "basis": "Q-CHUNG-01 (ca 12)"
+    },
+    {
+      "id": "BH06-11",
+      "action": "ghi-so",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Người bị giới hạn chi nhánh lập phiếu cho chi nhánh ngoài phạm vi (BRANCH_OUT_OF_SCOPE)",
+      "target": {
+        "kind": "selector",
+        "path": "branchCode",
+        "catalog": "branch",
+        "allow": "scope"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Bạn chỉ lập phiếu ở chi nhánh được gán — chọn đúng chi nhánh",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#BRANCH_OUT_OF_SCOPE",
+      "basis": "Q-CHUNG-01 / C1 (ca 13)"
+    },
+    {
+      "id": "BH06-12",
+      "action": "sua",
+      "code": "CONFLICT",
+      "level": "block",
+      "when": "Lưu nháp với phiên bản cũ — người khác đã lưu trước (XDC_DRAFT_CHANGED)",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Phiếu đã được người khác sửa — tải lại phiếu rồi sửa tiếp",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#CONFLICT",
+      "basis": "Q-CHUNG-03 / C6 (ca 29)"
+    },
+    {
+      "id": "BH06-13",
+      "action": "sua",
+      "code": "CONFLICT",
+      "level": "block",
+      "when": "Sửa phiếu đã ghi sổ (XDC_NOT_DRAFT)",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Phiếu đã ghi sổ không sửa — huỷ phiếu hoặc bấm Chép thành phiếu mới",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#CONFLICT",
+      "basis": "Q-CHUNG-02 / C5 (ca 28)"
+    },
+    {
+      "id": "BH06-14",
+      "action": "sua",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Thu ngân sửa nháp do người khác lập (không phải người lập, không phải kế toán)",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Chỉ người lập hoặc kế toán sửa được nháp này",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#FORBIDDEN",
+      "basis": "C5 (ca 30)"
+    },
+    {
+      "id": "BH06-15",
+      "action": "xoa",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Thu ngân xoá nháp do người khác lập",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Chỉ người lập hoặc kế toán xoá được nháp này",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#FORBIDDEN",
+      "basis": "C5 (ca 30)"
+    },
+    {
+      "id": "BH06-16",
+      "action": "huy",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Huỷ phiếu mà bỏ trống lý do huỷ (XDC_CANCEL_REASON)",
+      "target": {
+        "kind": "field",
+        "path": "cancelReason"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Nhập lý do huỷ rồi bấm Xác nhận huỷ",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#cancelReason",
+      "basis": "§5 mục 4 (ca 10)"
+    },
+    {
+      "id": "BH06-17",
+      "action": "huy",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Người không có quyền huỷ (xuat-dieu-chinh:phieu-huy — thu ngân, quản lý cửa hàng) gọi thẳng Huỷ",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Chỉ kế toán, kế toán trưởng, chủ đơn vị được huỷ phiếu — nhờ kế toán huỷ",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#FORBIDDEN",
+      "basis": "Q-CHUNG-01 (ca 13, 14)"
+    },
+    {
+      "id": "BH06-18",
+      "action": "huy",
+      "code": "PERIOD_LOCKED",
+      "level": "block",
+      "when": "Huỷ phiếu (có bút toán) có ngày thuộc kỳ đã khoá",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "kernel",
+        "module"
+      ],
+      "hint": "Kỳ của phiếu đã khoá — nhờ kế toán trưởng mở khoá kỳ rồi huỷ, hoặc lập phiếu điều chỉnh ở kỳ mở",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#PERIOD_LOCKED",
+      "basis": "§5 mục 4 (ca 11)"
+    },
+    {
+      "id": "BH06-19",
+      "action": "luu-nhap",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Lưu nháp thiếu kho / lý do / dòng hoặc dòng sai (kiểm như Lưu, trừ kiểm tồn)",
+      "target": {
+        "kind": "field",
+        "path": "warehouseCode"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Sửa các ô tô đỏ rồi lưu nháp lại",
+      "test": "apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts#warehouseCode",
+      "basis": "Q-CHUNG-06 (ca 22)"
+    },
+    {
+      "id": "BH06-20",
+      "action": "ghi-so",
+      "code": "VALIDATION_ERROR",
+      "level": "warn",
+      "when": "Đơn giá dưới giá vốn bình quân (cảnh báo, vẫn lưu, ghi nhật ký)",
+      "target": {
+        "kind": "field",
+        "path": "lines.*.unitPrice"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Dưới giá vốn — kiểm lại đơn giá; vẫn lưu được, lần lưu có ghi nhật ký",
+      "basis": "Q-BAN-01 / C8 (ca 24)"
+    }
+  ]
+}

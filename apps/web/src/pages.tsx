@@ -2,7 +2,6 @@
  * Danh sách màn hình sau khi đăng nhập (đường dẫn → màn). Mỗi thẻ làm việc dựng các route này
  * với đường dẫn riêng của thẻ (xem layout/TabWorkspace.tsx), nên nhiều màn mở cùng lúc được.
  */
-import { ExportAdjustPage } from './features/documents/ExportAdjustPage';
 import { ChiNhanhLamViecPage } from './features/system/ChiNhanhLamViecPage';
 // [2026-11-02 03:10 PM Johnny Chu - Chu Hoàng Anh] PHASE-020 — S020-20: màn Kiểm chuẩn (HT06) và Hồ sơ kế toán (HT07)
 import { ConformancePage } from './features/system/ConformancePage';
@@ -131,7 +130,8 @@ export const pageRoutes = (
     <Route path="nghiep-vu/but-toan-mau" element={<VoucherTemplatesPage />} />
     <Route path="nghiep-vu/but-toan-lap" element={<VoucherRecurrencesPage />} />
     <Route path="nghiep-vu/can-tru-cong-no" element={<OffsetPage />} />
-    <Route path="ban-hang/xuat-dieu-chinh" element={<ExportAdjustPage />} />
+    {/* [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: BH06 chuyển sang màn của module xuat-dieu-chinh — đường cũ chuyển hướng (đóng góp) */}
+    <Route path="ban-hang/xuat-dieu-chinh" element={<Navigate to="/app/xuat-dieu-chinh" replace />} />
     <Route path="tien-ich/du-lieu-goc" element={<DefaultDataPage />} />
     <Route path="tien-ich/nhap-excel" element={<NhapExcelPage />} />
     <Route path="cau-hinh/don-vi" element={<TenantPage />} />

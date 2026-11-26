@@ -1,13 +1,14 @@
 # NT-BH-044 · BH06 Phiếu xuất điều chỉnh — lập phiếu ở kế toán (module mới `xuat-dieu-chinh`)
 <!-- [2026-11-26 10:15 AM Võ Hoàng] NGHIEM-THU — lập phiếu NT-BH-044, ghi chốt của anh Hoàng 26/11 (9 mục + bổ sung quyền thu ngân) (đóng góp) -->
 <!-- [2026-11-26 10:25 AM Võ Hoàng] NGHIEM-THU — ghi chốt 15 câu C1–C15 (anh Hoàng chốt 26/11); cập nhật phạm vi, ca nghiệm thu, câu hỏi ngược (đóng góp) -->
+<!-- [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — đã code (nhánh feat/nt-bh-044-xuat-dieu-chinh): kết quả chạy §7, đề xuất mức 4 P3–P7 ở §6, trạng thái Chờ nghiệm thu (đóng góp) -->
 
 | | |
 |---|---|
 | Phân hệ | Bán hàng — module **mới** `modules/xuat-dieu-chinh/` (sẽ tạo bằng `npx bizcity module new xuat-dieu-chinh --label "Phiếu xuất điều chỉnh"`, ADR-0024); ghi sổ qua Core (`ctx.ledger.submit` / `ctx.ledger.cancel`) |
 | Màn hình | BH06 Phiếu xuất điều chỉnh — màn mới ở module (đường dẫn `/app/xuat-dieu-chinh`, sẽ tạo): danh sách + form lập + in 02-VT. Màn cũ `/ban-hang/xuat-dieu-chinh` (`apps/web/src/features/documents/ExportAdjustPage.tsx`) bỏ khỏi menu, đường dẫn chuyển hướng sang màn mới |
 | Ngày tạo | 26/11/2026 |
-| Trạng thái | **Đã chốt 26/11/2026** (anh Hoàng chốt 26/11 — 9 mục §5, bổ sung quyền thu ngân, 15 câu C1–C15 ở §8 "Đã chốt 26/11") · **chưa code** |
+| Trạng thái | **Chờ nghiệm thu** (code xong 26/11 ở nhánh `feat/nt-bh-044-xuat-dieu-chinh` — kết quả chạy ở §7.1; còn chờ Core: P3, P4, P5, P6, P7 ở §6). Chốt 26/11/2026 (9 mục §5, bổ sung quyền thu ngân, 15 câu C1–C15 ở §8) |
 | Căn cứ | Quyết định của anh Hoàng 26/11 (§5); câu trả lời chung đã chốt 25/11 (Q-CHUNG: tách quyền, ẩn nút + máy chủ 403, bấm hai lần một kết quả bằng `Idempotency-Key`, báo tại ô và báo hết một lần, rời form khi chưa lưu thì hỏi, danh sách chọn chỉ mục đang dùng); AGENTS.md (ADR-0024, R-FLOW, R-REV-17, đăng ký quyền); `docs/standard/DANG-KY-QUYEN.md`; hướng dẫn màn cũ `docs/huong-dan/export-adjust.md` |
 
 ## 1. Hiện trạng (đọc trên `origin/main` 26/11)
@@ -107,7 +108,11 @@ Luật 4 của `docs/standard/DANG-KY-QUYEN.md` buộc tên `<module>:<chức-n�
 |---|---|---|---|
 | P1 | Phiếu 0 đ cần `purposeCode` để TK đối ứng đúng lý do (XSD1 → 64128…) | Core **không** suy mục đích từ lý do; ánh xạ chỉ có trong cầu nối PHP (`PURPOSE_OF_REASON`). Không gửi `purposeCode` → bút toán rơi vào TK thiếu chờ xử lý (1381) | **Đề xuất mức 4** (VERSIONING §5): Core tra mục đích xuất theo lý do (vd cột mục đích ở lý do, hoặc mục đích khai theo mã lý do) khi chứng từ `stock_adjustment` có `reasonCode` mà không có `purposeCode`. **Chốt C2:** trong lúc chờ, module giữ bảng lý do → mã mục đích (chỉ mã) và gửi `purposeCode`; khi Core tự suy được thì bỏ bảng |
 | P2 | Đọc danh sách chứng từ theo `sourceRef.type` gồm hai docType | `ctx.ledger.query` có trong SDK; chưa kiểm lọc được `sourceRef.type` + nhiều docType | Kiểm khi code; không lọc được → đề xuất mức 4, không đọc thẳng bảng sổ |
-| P3 | Tồn theo kho × lô để chặn quá tồn | `bizcity_read.stock_on_hand` (khung nhìn đọc) | Dùng khung nhìn có sẵn |
+| P3 | Tồn theo kho × lô để chặn quá tồn | `bizcity_read.stock_on_hand` (khung nhìn đọc) chỉ có tồn theo kho × mã, **không có lô**; tồn lô chỉ ở route `/api/v1/lots/suggest` (quyền `documents:read`, không phải action — module không gọi được) | Máy chủ module chặn quá tồn theo **kho** (khoá theo kho × mã trong giao dịch). Màn hiện tồn từng lô (gợi ý lô của Core) cho người có quyền xem chứng từ. **Đề xuất mức 4:** khung nhìn `bizcity_read.lot_stock` (chi nhánh × kho × mã × lô × hạn dùng) để module chặn quá tồn theo lô ở máy chủ (ca 4 theo lô) |
+| P4 | Huỷ phiếu cũ do cầu nối gửi (`sourceSystem` btsoft) từ BH06 cùng luật huỷ (C14) | `ctx.ledger.cancel` chỉ huỷ chứng từ của chính module (docKey `xuat-dieu-chinh:`) | Lối tạm: màn BH06 hiện phiếu cũ (danh sách chứng từ Core lọc `sourceType=export_adjust`, `sourceSystem=btsoft` — cần `documents:read`) và huỷ bằng lệnh Core `core.document.cancel` (`POST /api/v1/documents/cancel`, cần `documents:write`; màn chỉ hiện nút khi có cả `xuat-dieu-chinh:phieu-huy`). **Đề xuất mức 4:** module được "nhận quản" chứng từ nguồn khác theo `sourceRef.type` khai ở manifest để `ctx.ledger.cancel` + quyền `phieu-huy` áp đủ |
+| P5 | ĐVT cho phép số lẻ (C11) | Danh mục ĐVT / `product_units` không có cờ "cho phép số lẻ" | Module chặn mọi số lẻ (`allowsFraction` = false). **Đề xuất mức 4:** cờ số lẻ ở ĐVT (danh mục) + cột ở `bizcity_read.branch_prices` |
+| P6 | "Lý do đã khai đủ tài khoản" theo từng lý do (C3) | `accounting.posting.reason-readiness` chỉ trả lý do **mặc định** theo docType; danh sách lý do là route `/api/v1/posting/reasons` (không phải action, module không đọc ở máy chủ) | Lối tạm: phiếu 0 đ chỉ nhận lý do có mục đích trong bảng ánh xạ (XTEST → `VALIDATION_ERROR` `reasonCode`); màn lọc lý do `kind: out` đang dùng từ danh sách lý do Core. **Đề xuất mức 4:** action đọc lý do kèm cờ đủ tài khoản theo docType |
+| P7 | Kỳ khoá với phiếu kho chưa có bút toán | Đã thử 26/11: phiếu 0 đ (`stock_adjustment` amount 0 — chưa có bút toán tới lúc tính giá vốn) ngày trong kỳ đã khoá **vẫn ghi / huỷ được** (Kernel chỉ chặn ở bút toán; thẻ kho đổi trong kỳ khoá) | Module không đọc được kỳ kế toán (không có khung nhìn / action đọc). **Đề xuất mức 4 (chạm Kernel — người rà Nguyễn Văn Thủy):** `postDocumentIn` / `requestCancelIn` kiểm kỳ khoá theo ngày chứng từ cả khi chứng từ kho không sinh bút toán; hoặc khung nhìn `bizcity_read.period_locks` cho module kiểm trước |
 
 ## 7. Ca nghiệm thu
 
@@ -152,6 +157,50 @@ Dữ liệu chung: cửa hàng CH02, kho bán `CH02-K1` (mặc định), kho qu�
 | 35 | Phiếu 0 đ lý do XHH01 | Chứng từ mang `purposeCode` HUY (bảng ánh xạ của module); bút toán Nợ TK của mục đích HUY / Có kho |
 
 Bút toán: do Kernel dựng theo docType + lý do + mục đích; module **không** viết số tài khoản. Phiếu 0 đ có giá trị khi tính giá vốn tháng.
+
+### 7.1 Kết quả chạy (26/11/2026, thử trên máy local)
+
+Test tích hợp `apps/api/test/nt-bh-044-xuat-dieu-chinh.test.ts` (CSDL test): **28 đạt, 1 todo** (ca 11 phần phiếu 0 đ). Test hợp đồng module (`module check`) 5/5. Bản đồ lỗi `modules/xuat-dieu-chinh/web/screens/PhieuXuatForm.failure-map.json`: 20 tình huống, đủ mã + test 20/20, 19/19 câu hỏi ngược đã trả lời.
+
+| Ca | Kết quả | Ghi chú |
+|---|---|---|
+| 1 | Đạt (máy chủ) | `danh-muc.get`: kho mặc định CH02-K1 (+ CH02-KKM), lý do XSD1, hôm nay; `canBackdate` kế toán true / thu ngân false |
+| 2 | Đạt | `stock_adjustment` decrease, XSD1, `purposeCode` DUNG-BH, `sourceRef.type` export_adjust, tổng 0; lô L01 còn 8. Giá trị theo giá vốn: phần tính giá vốn tháng của Kernel, không test lại |
+| 3 | Đạt | Giá gợi ý 330.000 (bảng giá), thuế 8 % theo danh mục; `sale` `internalOnly`, không hoá đơn; 131 KH001 = 330.000; tồn trừ 1 |
+| 4 | Đạt một phần | Chặn quá tồn theo **kho** → `VALIDATION_ERROR` `lines[0].qty`. Quá tồn theo **lô** chỉ báo ở màn (gợi ý lô); máy chủ chờ P3 |
+| 5 | Đạt | Thùng × 1 = 24 hộp > tồn → chặn, câu báo "1 Thùng = 24 Hộp" |
+| 6 | Đạt | CH02-KKM QUA01 × 2 → còn 1 |
+| 7 | Đạt | Nháp không có chứng từ, tồn không đổi; sửa nháp (phiên bản +1) rồi Lưu → ghi sổ |
+| 8 | Đạt | Cùng `Idempotency-Key` → một phiếu, lần hai trả cùng id |
+| 9 | Đạt | Huỷ "Lập nhầm" → chứng từ cancelled, tồn về, ghi người + lý do |
+| 10 | Đạt | Thiếu lý do huỷ → `VALIDATION_ERROR` `cancelReason` |
+| 11 | Đạt một phần | Phiếu có giá: huỷ trong kỳ khoá và lưu ngày kỳ khoá → `PERIOD_LOCKED` (ô `docDate`). Phiếu 0 đ: Kernel không chặn — chờ P7 (`it.todo`) |
+| 12 | Đạt | Vai trò chỉ xem: xem được, Lưu → 403 `FORBIDDEN`; nút ẩn bằng `useCan` |
+| 13 | Đạt | Thu ngân (staff tại CH02) lập được; huỷ 403; lập CH03 → 403 `BRANCH_OUT_OF_SCOPE`; danh sách chỉ CH02 |
+| 14 | Đạt | Quản lý cửa hàng (viewer + vai trò tại CH02) lập được, huỷ 403 |
+| 15 | Đạt một phần | Danh sách module đủ 0 đ + có giá, cột Loại, tổng (không cộng phiếu huỷ). Phiếu cũ cầu nối ghép ở màn từ danh sách chứng từ Core (cần `documents:read`) — chưa test tự động (P4) |
+| 16 | Đạt (mã) | Route cũ → `Navigate` `/app/xuat-dieu-chinh`; mục menu cũ bỏ; lối tắt trỏ đường mới. Chưa thử bằng trình duyệt |
+| 17 | Đạt | Chọn L02 chỉ trừ L02; chứng từ mang `lotNo` + `expDate`; mẫu 02-VT có cột lô / HSD (`In02VT.tsx`) |
+| 18 | Đạt (mã) | In 02-VT trong module (tích nhiều phiếu). Chưa thử bằng trình duyệt |
+| 19 | Đạt | XKK, XNB01, XTEST qua API → `VALIDATION_ERROR` `reasonCode`. Danh sách lý do ở màn: lọc kind out đang dùng, bỏ lý do có màn riêng, phiếu 0 đ chỉ lý do có mục đích (P6) |
+| 20 | Đạt | Kho chi nhánh khác → `warehouseCode`; mặt hàng ngừng dùng → `lines[0].sku` |
+| 21 | Đạt (mã) | Đóng form còn thay đổi → hỏi "Bỏ thay đổi chưa lưu?" |
+| 22 | Đạt | Thiếu kho + không dòng → hai ô một lần; SL 0 + dòng thiếu mã → hai ô một lần |
+| 23 | Đạt | `VALIDATION_ERROR` `partnerCode` |
+| 24 | Đạt | Giá 1.000 < giá vốn 200.000 → lưu được, `belowCost` + `meta.warnings` "Dưới giá vốn", bằng chứng ghi `belowCost` |
+| 25 | Đạt | 12 hộp trống lô → L01 × 10 + L02 × 2 (Kernel tự chọn hạn sớm) |
+| 26 | Đạt một phần | 1,5 hộp → chặn `lines[0].qty`. ĐVT cho số lẻ chưa có cờ ở danh mục (P5) — mọi ĐVT chỉ số nguyên |
+| 27 | Đạt | Không cảnh báo min / max |
+| 28 | Đạt | Sửa phiếu đã ghi sổ → `CONFLICT`; Chép thành phiếu mới → nháp mới, chưa vào sổ, liên kết `source` ở sổ chứng từ chung |
+| 29 | Đạt | B lưu phiên bản cũ → `CONFLICT` "… tải lại"; nháp của A giữ nguyên |
+| 30 | Đạt | Thu ngân sửa / xoá nháp của kế toán → 403; kế toán xoá được; thu ngân sửa nháp của mình được |
+| 31 | Đạt | Thu ngân ngày lùi → `VALIDATION_ERROR` `docDate` |
+| 32 | Đạt (mã) | Lối "Thêm mặt hàng" (catalog:write) / "Thêm lý do" (settings:write) mở màn của chủ danh mục; người khác không thấy |
+| 33 | Chưa đạt ở module | Màn có nút huỷ phiếu cũ qua lệnh Core `core.document.cancel` (quyền `documents:write`); luật quyền `phieu-huy` chỉ ở màn — chờ P4 |
+| 34 | Đạt | Số `XDC-CH02-<yyMM>-0001`, có dòng `business_documents` (`inventory.issue`, done) |
+| 35 | Đạt | XHH01 → `purposeCode` HUY |
+
+Còn mở: `package-lock.json` chưa có mục workspace `modules/xuat-dieu-chinh` (tệp ngoài dòng CLAIMS — cần mở rộng phạm vi hoặc PR riêng; `npm ci` của CI cần lockfile khớp).
 
 ## 8. Câu hỏi ngược R-REV-17
 

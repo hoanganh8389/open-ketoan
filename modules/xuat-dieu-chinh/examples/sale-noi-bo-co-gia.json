@@ -1,0 +1,45 @@
+{
+  "docKey": "xuat-dieu-chinh:00000000-0000-4000-8000-000000000442",
+  "version": 1,
+  "branchCode": "CH02",
+  "docNo": "XDC-CH02-2611-0002",
+  "docDate": "2026-11-26",
+  "reasonCode": "XTA",
+  "description": "Xuất điều chỉnh XDC-CH02-2611-0002 — Xuất dùng quầy",
+  "sourceRef": {
+    "type": "export_adjust",
+    "id": "00000000-0000-4000-8000-000000000442",
+    "label": "Phiếu xuất điều chỉnh"
+  },
+  "extra": {
+    "exportAdjust": true
+  },
+  "docType": "sale",
+  "internalOnly": true,
+  "partner": {
+    "code": "KH001",
+    "name": "Khách 001"
+  },
+  "payments": [],
+  "lines": [
+    {
+      "lineKey": "L1",
+      "sku": "SUA01",
+      "name": "Sữa 01",
+      "unit": "Hộp",
+      "qty": 1,
+      "unitQty": 1,
+      "unitRatio": 1,
+      "unitPrice": 305556,
+      "amountBeforeTax": 305556,
+      "taxCode": "8",
+      "taxAmount": 24444,
+      "warehouseCode": "CH02-K1"
+    }
+  ],
+  "totals": {
+    "beforeTax": 305556,
+    "tax": 24444,
+    "total": 330000
+  }
+}

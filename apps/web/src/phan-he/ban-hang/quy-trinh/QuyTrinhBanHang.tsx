@@ -38,7 +38,8 @@ const STAGES: { node: Node; config: Node[]; side: Node[] }[] = [
     ],
     side: [
       { label: 'Đơn bán máy POS', code: 'BH13', icon: 'Store', color: '#d93025', path: '/app/pos/don-ban', pos: true, todo: ['pos_qr'], hint: 'Đơn tại quầy, đối chiếu với chứng từ' },
-      { label: 'Xuất điều chỉnh', code: 'BH06', icon: 'PackageMinus', color: '#b45309', path: '/ban-hang/xuat-dieu-chinh', hint: 'Dùng nội bộ, tặng, huỷ hỏng' },
+      // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: BH06 nay ở /app/xuat-dieu-chinh (module) (đóng góp)
+      { label: 'Xuất điều chỉnh', code: 'BH06', icon: 'PackageMinus', color: '#b45309', path: '/app/xuat-dieu-chinh', hint: 'Dùng nội bộ, tặng, huỷ hỏng' },
     ],
   },
   {
