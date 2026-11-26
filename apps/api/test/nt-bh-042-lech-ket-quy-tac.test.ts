@@ -5,6 +5,7 @@
  *   (PUT /api/v1/posting/scheme/reasons/:code — TK chi tiết, phạm vi 138 / 334 / 632 / 811 – 111 và 111 – 338 / 711, quyền settings:write).
  *   Module pos không đổi máy chủ: manual_journal theo reasonCode; bút toán của đơn vị cũ trước / sau nâng cấp như nhau.
  * Migration chạy trong test bằng chính tệp SQL, giới hạn vào đơn vị của test (các tệp test khác không bị thêm lý do).
+ * Đơn vị tạo mới đã có hai lý do từ gói nền (test default-data-ly-do-journal) — ở đây xoá hai lý do ngay sau khi tạo để dựng đơn vị "trước nâng cấp".
  * Hệ thống tài khoản mẫu: 1388 là TK tổng hợp → "đơn vị tự đổi" dùng TK chi tiết 13881 thay cho 1388 của phiếu.
  */
 // [2026-11-25 11:30 PM Võ Hoàng] NGHIEM-THU — test tích hợp phiếu NT-BH-042 (đóng góp)
@@ -34,6 +35,8 @@ type Reason = { code: string; exists: boolean; debitAccount: string | null; cred
 async function unit(app: () => FastifyInstance) {
   const ctx = await setupTenant();
   const tenantId = (await db.selectFrom('tenants').select('id').where('code', '=', ctx.tenantCode).executeTakeFirstOrThrow()).id;
+  // Đơn vị trước nâng cấp: chưa có hai lý do chênh lệch két (gói nền mới cài sẵn cho đơn vị tạo sau).
+  await sql`DELETE FROM posting_reasons WHERE tenant_id = ${tenantId} AND code IN ('POS-THIEU-KET', 'POS-THUA-KET')`.execute(db);
   await db.transaction().execute(async (trx) => { await sql`SET LOCAL ROLE NONE`.execute(trx); await syncBundled('test:nt-bh-042', trx as never); });
   const modes = (await call(ctx, 'GET', '/api/v1/settings/posting-modes')).body.data;
   expect((await call(ctx, 'PUT', '/api/v1/settings/posting-modes', { ...modes, manual_journal: 'auto' })).status).toBe(200);
@@ -96,11 +99,11 @@ describe.skipIf(!HAS)('NT-BH-042 — tài khoản chênh lệch két ở Quy t�
     expect(biz).toMatchObject({ docType: 'manual_journal', name: 'Chênh lệch két máy bán' });
     expect(biz.groups.flatMap((g: { lines: { source: string; reason: string }[] }) => g.lines.map((l) => `${l.source}:${l.reason}`)))
       .toEqual(['reason:POS-THIEU-KET', 'reason:POS-THIEU-KET', 'reason:POS-THUA-KET', 'reason:POS-THUA-KET']);
-    // Đơn vị tạo sau migration chưa có lý do → ACC41 / BH17 báo "Chưa khai tài khoản".
+    // Đơn vị chưa có lý do → ACC41 / BH17 báo "Chưa khai tài khoản".
     expect((await A.schemeReasons()).map((r) => [r.code, r.exists, r.debitStatus])).toEqual([['POS-THIEU-KET', false, 'missing'], ['POS-THUA-KET', false, 'missing']]);
   });
 
-  it('ca 1: đơn vị mới sau C2 — phải có 5.020.000, đếm 5.000.000 → Nợ 1381 (CN-CN01) / Có 1111 — 20.000, posted', async () => {
+  it('ca 1: đơn vị sau C2 — phải có 5.020.000, đếm 5.000.000 → Nợ 1381 (CN-CN01) / Có 1111 — 20.000, posted', async () => {
     await A.migrate();
     expect(await A.reasonRow('POS-THIEU-KET')).toMatchObject({ kind: 'journal', debit_account: '1381', credit_account: '1111', flags: { default: 'manual_journal:pos_cash_short', module: 'pos' } });
     expect(await A.reasonRow('POS-THUA-KET')).toMatchObject({ kind: 'journal', debit_account: '1111', credit_account: '3381', flags: { default: 'manual_journal:pos_cash_over', module: 'pos' } });

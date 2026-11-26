@@ -59,6 +59,8 @@ describe.skipIf(!HAS)('NT-BH-014 — phiếu kế toán chênh lệch két khi c
   beforeAll(async () => {
     ctx = await setupTenant();
     tenantId = (await db.selectFrom('tenants').select('id').where('code', '=', ctx.tenantCode).executeTakeFirstOrThrow()).id;
+    // NT-BH-042: gói nền cài sẵn hai lý do cho đơn vị mới — xoá để thử đơn vị chưa khai lý do (§6 dòng 1).
+    await sql`DELETE FROM posting_reasons WHERE tenant_id = ${tenantId} AND code IN ('POS-THIEU-KET', 'POS-THUA-KET')`.execute(db);
     await runModuleMigrations('pos', path.join(DIR, 'migrations'), { reads: READS });
     await db.transaction().execute(async (trx) => { await sql`SET LOCAL ROLE NONE`.execute(trx); await syncBundled('test:nt-bh-014', trx as never); });
     app = await buildApp();

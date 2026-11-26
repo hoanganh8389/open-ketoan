@@ -21,7 +21,7 @@ import { sql } from 'kysely';
 import type { Db } from '@bizcity/platform/db/client';
 import { Errors } from '@bizcity/platform/core/errors';
 import type { DimensionKind } from '@ketoan/contracts';
-import { SEEDS_DIR } from '@bizcity/platform/db/paths';
+import { PACKS_DIR, SEEDS_DIR } from '@bizcity/platform/db/paths';
 
 export { SEEDS_DIR };
 
@@ -153,7 +153,7 @@ export async function usedDimensionCodes(trx: Db, tenantId: string, kind: Dimens
 /* ------------------------------------------------------------------ lý do */
 /** JSON có khoá sắp xếp (so sánh cờ của lý do không phụ thuộc thứ tự khoá). */
 const stableJson = (v: unknown): string => JSON.stringify(v ?? {}, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x));
-interface SeedReason { code: string; name: string; kind: string; counter_account: string | null; revenue_account: string | null; expense_account: string | null; cashflow_code: string | null; is_active: boolean; flags: Record<string, unknown> }
+interface SeedReason { code: string; name: string; kind: string; counter_account: string | null; revenue_account: string | null; expense_account: string | null; cashflow_code: string | null; is_active: boolean; flags: Record<string, unknown>; debit_account?: string | null; credit_account?: string | null }
 
 async function restoreReasons(trx: Db, tenantId: string): Promise<RestoreResult> {
   const res = empty();
@@ -164,12 +164,12 @@ async function restoreReasons(trx: Db, tenantId: string): Promise<RestoreResult>
   for (const r of rows) {
     // Tài khoản chưa có trong hệ thống tài khoản: bỏ trống (báo lại) để không hỏng ràng buộc.
     const ok = (a: string | null) => { if (a && !accounts.has(a)) { missing.add(`${r.code} → ${a}`); return null; } return a; };
-    const values = { name: r.name, kind: r.kind, counter_account: ok(r.counter_account), revenue_account: ok(r.revenue_account), expense_account: ok(r.expense_account), cashflow_code: r.cashflow_code, flags: JSON.stringify(r.flags), is_active: r.is_active };
-    const cur = have.get(r.code);
-    if (cur) {
+    const pair = journalPair(r, have.get(r.code), ok); if (!pair) continue; // lý do journal thiếu tài khoản: bỏ qua (đã báo), không ghi lý do hỏng
+    const values = { name: r.name, kind: r.kind, counter_account: ok(r.counter_account), revenue_account: ok(r.revenue_account), expense_account: ok(r.expense_account), cashflow_code: r.cashflow_code, flags: JSON.stringify(r.flags), is_active: r.is_active, ...pair };
+    const cur = have.get(r.code); if (cur) {
       // Chỉ ghi (và đếm "cập nhật") lý do thật sự khác tệp gốc.
       const same = cur.name === values.name && cur.kind === values.kind && cur.counter_account === values.counter_account && cur.revenue_account === values.revenue_account
-        && cur.expense_account === values.expense_account && cur.cashflow_code === values.cashflow_code && cur.is_active === values.is_active && stableJson(cur.flags) === stableJson(r.flags);
+        && cur.expense_account === values.expense_account && cur.cashflow_code === values.cashflow_code && cur.is_active === values.is_active && stableJson(cur.flags) === stableJson(r.flags) && cur.debit_account === values.debit_account && cur.credit_account === values.credit_account;
       if (same) continue;
       await trx.updateTable('posting_reasons').set(values).where('tenant_id', '=', tenantId).where('code', '=', r.code).execute();
       res.updated++;
@@ -178,7 +178,7 @@ async function restoreReasons(trx: Db, tenantId: string): Promise<RestoreResult>
       res.added++;
     }
   }
-  const keep = new Set(rows.map((r) => r.code));
+  const keep = new Set([...rows.map((r) => r.code), ...basePackReasonCodes()]); // mã của gói nền không xoá (NT-BH-042)
   const extra = [...have.keys()].filter((c) => !keep.has(c));
   if (extra.length) {
     const used = new Set((await trx.selectFrom('ledger_entries').select('reason_code').distinct().where('tenant_id', '=', tenantId).where('reason_code', 'in', extra).execute()).map((r) => r.reason_code));
@@ -619,4 +619,24 @@ export function datasetOf(key: string): Dataset {
 export function seedCount(file: string): number {
   if (file.endsWith('.csv')) return readFileSync(path.join(SEEDS_DIR, file), 'utf8').split(/\r?\n/).filter(Boolean).length - 1;
   return readSeed(file).rows.length;
+}
+
+// [2026-11-26 01:00 AM Võ Hoàng] NT-BH-042 — khôi phục lý do: cặp Nợ / Có của lý do journal (ràng buộc posting_reasons_journal_accounts_check), giữ cặp đơn vị đã khai, không xoá lý do gói nền có (đóng góp)
+/**
+ * Cặp Nợ / Có ghi khi khôi phục một lý do. Loại khác journal: hai cột trống. Lý do journal: đơn vị đã khai cặp (ACC41) thì giữ cặp của đơn vị;
+ * chưa có thì lấy cặp của tệp gốc; tài khoản chưa có trong hệ thống tài khoản → null (bỏ qua lý do, tài khoản đã được báo qua ok()).
+ */
+function journalPair(r: SeedReason, cur: { kind: string; debit_account: string | null; credit_account: string | null } | undefined, ok: (a: string | null) => string | null): { debit_account: string | null; credit_account: string | null } | null {
+  if (r.kind !== 'journal') return { debit_account: null, credit_account: null };
+  if (cur?.kind === 'journal' && cur.debit_account && cur.credit_account) return { debit_account: cur.debit_account, credit_account: cur.credit_account };
+  const d = ok(r.debit_account ?? null); const c = ok(r.credit_account ?? null);
+  return d && c ? { debit_account: d, credit_account: c } : null;
+}
+
+/** Mã lý do của gói nền (db/packs/vn-tt99-nen) — đơn vị mới nào cũng có; khôi phục không xoá các mã này. */
+function basePackReasonCodes(): Set<string> {
+  try {
+    const pack = JSON.parse(readFileSync(path.join(PACKS_DIR, 'vn-tt99-nen.posting-pack.json'), 'utf8')) as { reasons?: { code: string }[] };
+    return new Set((pack.reasons ?? []).map((x) => x.code));
+  } catch { return new Set(); } // không đọc được gói: như cũ, chỉ theo tệp gốc
 }
