@@ -198,3 +198,9 @@ describe('NT-BH-049 — form kiểu plugin cũ', () => {
     expect(parsePaste('Mã SKU\tTừ SL\tCK %\nA\t1\t10\nB\t2\t5')).toEqual([['A', '1', '10'], ['B', '2', '5']]);
   });
 });
+
+describe('NT-BH-049 — nội dung rỗng không đoán loại', () => {
+  it('price_lines không dòng (chương trình đã ngừng, không đọc được nội dung) → null', () => {
+    expect(oldFromParams('sale.promo.price_lines@2', {}, { key: 'K', today: '2026-11-27' })).toBeNull();
+  });
+});

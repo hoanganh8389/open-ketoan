@@ -6,7 +6,7 @@
 // [2026-11-14 01:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: mô hình form khuyến mại 6 loại (đóng góp)
 // [2026-11-25 10:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: thêm ba loại khuôn @2 — giá riêng từng mã (K1), mua nhiều mã / quà lựa chọn (K2), quà nhân bội số (K4), phạm vi nhóm / nhãn (K3) (đóng góp)
 
-export type PromoKind = 'tiered' | 'order_discount' | 'order_gift' | 'combo' | 'cheapest_free' | 'buy_x_get_y' | 'price_lines' | 'buy_x_get_y2' | 'order_gift2';
+export type PromoKind = 'tiered' | 'order_discount' | 'order_gift' | 'combo' | 'cheapest_free' | 'buy_x_get_y' | 'price_lines' | 'buy_x_get_y2' | 'order_gift2' | 'pool_combo';
 /** Ba loại khuôn @2 (NT-BH-040): có phạm vi nhóm / nhãn. */
 export const V2_KINDS: readonly PromoKind[] = ['price_lines', 'buy_x_get_y2', 'order_gift2'];
 
@@ -20,6 +20,8 @@ export const KIND_INFO: Record<PromoKind, { contract: string; label: string; hin
   price_lines: { contract: 'sale.promo.price_lines@2', label: 'Giá riêng từng mã (nhiều mã)', hint: 'Một chương trình nhiều mã, mỗi mã một giá / một mức giảm / một bảng bậc riêng' },
   buy_x_get_y2: { contract: 'sale.promo.buy_x_get_y@2', label: 'Mua nhiều mã tặng quà (quà lựa chọn)', hint: 'Mua A hoặc B (gộp số lượng) / mua đủ A và B; khách chọn 1 (hoặc N) trong nhiều quà' },
   order_gift2: { contract: 'sale.promo.order_gift@2', label: 'Quà theo tổng đơn (nhân bội số)', hint: 'Đơn từ … tặng quà; bật nhân bội số: đủ 2 lần ngưỡng tặng 2 lần quà' },
+  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: combo bộ sản phẩm (pool, loại 13 cũ) — chỉ khai bằng form kiểu cũ; có ở đây để danh sách nhận ra khuôn (đóng góp)
+  pool_combo: { contract: 'sale.promo.pool_combo@2', label: 'Combo bộ sản phẩm', hint: 'Mua đủ N mã khác nhau trong pool giảm % cả pool; chưa đủ thì giảm theo số lượng từng mã' },
 };
 export const KIND_BY_CONTRACT: Record<string, PromoKind> = Object.fromEntries(Object.entries(KIND_INFO).map(([k, v]) => [v.contract, k as PromoKind]));
 

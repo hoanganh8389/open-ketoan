@@ -250,6 +250,7 @@ export function oldFromParams(contract: string, p: Params, meta: { key: string; 
   const ways = lines.flatMap((l) => ((l.tiers as Record<string, unknown>[] | undefined) ?? [l]));
   switch (contract) {
     case 'sale.promo.price_lines@2':
+      if (!lines.length) return null;
       if (ways.every((w) => w.unitPrice != null)) type = 'fixed';
       else if (ways.every((w) => w.unitPrice == null && (w.pct != null || w.amountPerUnit != null))) type = 'ck';
       else return null;
