@@ -7,6 +7,8 @@ Ba loại voucher: **tương đương tiền** và **lần mua sau sản phẩm 
 
 ## Nghiệp vụ
 
+**NT-BH-050** ([phiếu](../../docs/nghiem-thu/ban-hang/NT-BH-050-voucher-du-nhu-cu.md)): giảm **%** có trần (`discount_type`, `discount_percent`, `max_discount` — quote trả `faceValue` = tiền trừ được của đơn nên module bán không đổi luật trừ); **lô mã không gắn SĐT** (`codes.phone` NULL, nguồn `batch`, `POST /campaigns/:id/batch`); **mỗi khách tối đa N mã** của đợt (`per_customer`, đếm `used_phone` / `used_customer` ghi lúc dùng); **cửa hàng áp dụng** (`branch_codes`); **trả một phần** đơn gốc thu hồi mã tự phát khi còn dưới ngưỡng (`basis_qty`, `returned_qty`, nhật ký `return`).
+
 - **Đợt phát** (`mod_voucher.campaigns`): loại, người phát (TGS / hãng – NCC), mệnh giá, hạn (ngày hết hạn và / hoặc số ngày từ ngày phát), đơn tối thiểu, sản phẩm (lưu `item_id`) / nhãn áp dụng, kiểu phát (thủ công / tự động "lần mua sau" kèm điều kiện mua sản phẩm / nhãn ≥ N). Voucher hãng phải chọn **hình thức thanh toán** kế toán khai (tài khoản phải thu hãng ở hình thức — module không viết số tài khoản). Đợt đã phát mã thì không đổi điều kiện tiền (ECP-13).
 - **Mã** (`mod_voucher.codes`): sinh N mã cho danh sách SĐT, nạp danh sách mã có sẵn kèm SĐT, hoặc tự phát theo đơn máy bán. Luôn gắn SĐT khách — chỉ khách đó dùng. **Dùng một lần**: dùng là hết, phần dư mất; vẫn tra cứu được đã dùng ở đơn / phiếu nào, ngày, cửa hàng, số tiền trừ.
 - **Nhật ký** (`mod_voucher.code_log`, chỉ thêm): phát, dùng, trả lại (huỷ đơn chờ thanh toán, bỏ duyệt phiếu), thu hồi, dùng trùng.
@@ -48,5 +50,5 @@ Vé thu ngân (WP SSO) cần thêm quyền `voucher:use` để máy bán dùng v
 ## Chưa làm / giới hạn
 
 - Danh mục đối tượng chỉ đọc theo mã (`bizcity_read.partners` chưa có định danh): hãng phát lưu mã đối tượng. Nhãn hàng lưu mã nhãn (`products.brand_code`) — chưa có định danh nhãn.
-- Trả một phần đơn gốc chưa thu hồi voucher lần mua sau (chỉ trả hết đơn). Trả hàng đơn đã trả bằng voucher hãng: tiền trả khách theo tiền dòng (gồm phần voucher hãng) — kế toán xem khi duyệt trả.
+- Trả hàng đơn đã trả bằng voucher hãng: tiền trả khách theo tiền dòng (gồm phần voucher hãng) — kế toán xem khi duyệt trả.
 - Máy bán mất mạng không dùng voucher (đơn gửi bù có mã sai bị từ chối như đơn thường).
