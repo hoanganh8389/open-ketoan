@@ -49,7 +49,7 @@ máy bán cửa hàng đó không tích / không đổi theo chương trình. **
 8. Người chỉ có quyền **Lập** (không Duyệt): hộp không có nút Duyệt; **Gửi duyệt** → Chờ duyệt; chủ đơn vị **Duyệt chờ (n)** → Đang áp.
 9. Bước 4 → **Điều chỉnh điểm**: người lập **không** tự duyệt được điều chỉnh của mình (giữ hai người).
 
-## 4. Số liệu mong đợi (test `apps/api/test/nt-bh-059-tich-diem-de-dung.test.ts`)
+## 4. Số liệu mong đợi (test `apps/api/test/nt-bh-059-tich-diem-de-dung.test.ts`) (đề xuất — tệp test ở nhánh code)
 
 | Ca | Kết quả |
 |---|---|
