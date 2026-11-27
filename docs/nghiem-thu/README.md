@@ -112,5 +112,6 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-DM-016](danh-muc/NT-DM-016-khach-hang-dien-thoai-nhap-excel.md) | DM12: "Di động" → "Điện thoại"; nhập Excel khách hàng đủ cột của form, cột liên kết tra theo tên | Đã chốt |
 | [NT-DM-017](danh-muc/NT-DM-017-mau-nhap-gia-co-san-hang.md) | DM14: tệp mẫu nhập giá có sẵn mọi mặt hàng / ĐVT của bảng giá (giá đang có điền sẵn) | Đã chốt |
 | [NT-DM-018](danh-muc/NT-DM-018-bien-the-chi-ma-cuoi.md) | DM10: mã biến thể chỉ thêm ở cuối mã cha (bỏ ô chữ đầu; mã mới có chữ đầu bị chặn) | Đã chốt |
+| [NT-DM-019](danh-muc/NT-DM-019-ma-nhom-khi-nhap-excel.md) | Nhập mặt hàng từ Excel: bước kiểm tra hiện mã ngành / nhãn / nhóm như DM11 (không hiện mã nội bộ) | Chờ nghiệm thu |
 
 Bộ 25 tình huống mua hàng cũ: `docs/kiem-thu/ke-hoach-test-mua-hang.xlsx` và test `apps/api/test/mua-hang-25-tinh-huong.test.ts`.
