@@ -9,13 +9,14 @@ import { lockKey } from '../order-service.js';
 import { emitOrderChange, saveOrderChange, type OrderChange } from '../order-update.js';
 import { todayVn } from '../read.js';
 import { findOrder } from '../return-service.js';
+import { qrReceiptDocs } from '../domain/qr-receipt.js';
 
-type Qr = { amount: number; status: string; expiresAt: string; paidAt?: string; paymentRef?: string; source?: string; manual?: Record<string, unknown> };
+type Qr = { amount: number; status: string; expiresAt: string; paidAt?: string; paymentRef?: string; source?: string; manual?: Record<string, unknown>; parts?: { methodCode: string; amount: number }[] };
 
 export default defineAction({
   id: 'pos.order.qr-confirm', title: 'Xác nhận đơn QR đã nhận tiền', tags: ['Máy bán POS'],
-  permission: 'pos:sell', effect: 'write', sideEffects: ['documents'], idempotency: 'required',
-  errors: ['VALIDATION_ERROR', 'CONFLICT', 'NOT_FOUND'],
+  permission: 'pos:sell', effect: 'write', sideEffects: ['documents', 'ledger'], idempotency: 'required',
+  errors: ['VALIDATION_ERROR', 'CONFLICT', 'NOT_FOUND', 'PERIOD_LOCKED'],
   input: z.object({
     id: z.string().trim().min(1).max(64), source: z.enum(['bank', 'manual']), amount: z.number().nonnegative(),
     paymentRef: z.string().trim().max(100).optional(), paidAt: z.string().max(40).optional(), note: z.string().trim().max(500).optional(),
@@ -25,19 +26,37 @@ export default defineAction({
   evidence: { objectType: 'pos.order', objectId: (input) => input.id },
   handler: async (ctx, { id, source, amount, paymentRef, paidAt, note }) => {
     let change: OrderChange | null = null;
+    // [2026-11-28 03:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-057: đơn QR bán ra chỉ ghi doanh thu + công nợ; xác nhận nhận tiền mới gửi
+    // phiếu thu tiền khách (customer_payment, Nợ TK của hình thức QR / Có 131, đối trừ đúng phiếu bán). Gửi TRƯỚC khi chuyển đơn sang
+    // hoàn tất; mã chứng từ cố định theo đơn + hình thức nên gọi lại không ghi hai lần. Đơn cũ (snapshot.qr không có `parts`) đã ghi
+    // thu tiền lúc bán — không gửi thêm (đóng góp)
+    const check = (fresh: Awaited<ReturnType<typeof findOrder>>) => {
+      if (fresh.status === 'cancelled') throw Errors.conflict(`Đơn ${fresh.code} đã huỷ — tiền về thì kế toán hoàn tay`, { reason: 'POS_ORDER_CANCELLED', code: fresh.code });
+      const qr = (fresh.snapshot as { qr?: Qr }).qr;
+      if (!qr || amount !== qr.amount) {
+        throw Errors.validation(`Số tiền ${amount} khác phần QR của đơn (${qr?.amount ?? 0})`, { reason: 'POS_PAYMENT_MISMATCH', expected: qr?.amount ?? 0, amount });
+      }
+      if (source === 'manual' && fresh.business_date !== todayVn()) {
+        throw Errors.conflict(`Đơn ${fresh.code} bán ngày ${fresh.business_date} — không xác nhận tay sau ngày bán`, { reason: 'POS_QR_EXPIRED', businessDate: fresh.business_date });
+      }
+      return qr;
+    };
+    const first = await ctx.data.module(async (tx) => findOrder(tx, id));
+    if (first.status !== 'completed') {
+      const qr = check(first);
+      const docs = qrReceiptDocs({
+        orderId: first.order_id, code: first.code, branchCode: first.branch_code, saleDocKey: first.doc_key,
+        customer: (first.snapshot as { customer?: { id?: string; name?: string; phone?: string } }).customer,
+        parts: qr.parts, paidDate: paidAt ? todayVn(Date.parse(paidAt)) : todayVn(), paymentRef,
+      });
+      for (const doc of docs) await ctx.ledger.submit(doc);
+    }
     const out = await ctx.data.module(async (tx) => {
     const order = await findOrder(tx, id);
     await lockKey(tx, `pos:order:${order.order_id}`);
     const fresh = await findOrder(tx, order.order_id);
     if (fresh.status === 'completed') return fresh.snapshot;
-    if (fresh.status === 'cancelled') throw Errors.conflict(`Đơn ${fresh.code} đã huỷ — tiền về thì kế toán hoàn tay`, { reason: 'POS_ORDER_CANCELLED', code: fresh.code });
-    const qr = (fresh.snapshot as { qr?: Qr }).qr;
-    if (!qr || amount !== qr.amount) {
-      throw Errors.validation(`Số tiền ${amount} khác phần QR của đơn (${qr?.amount ?? 0})`, { reason: 'POS_PAYMENT_MISMATCH', expected: qr?.amount ?? 0, amount });
-    }
-    if (source === 'manual' && fresh.business_date !== todayVn()) {
-      throw Errors.conflict(`Đơn ${fresh.code} bán ngày ${fresh.business_date} — không xác nhận tay sau ngày bán`, { reason: 'POS_QR_EXPIRED', businessDate: fresh.business_date });
-    }
+    const qr = check(fresh);
     const at = new Date().toISOString();
     const snapshot = {
       ...fresh.snapshot, status: 'completed',

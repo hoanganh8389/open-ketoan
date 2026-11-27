@@ -60,7 +60,7 @@ const ID = (n: number) => `0193a1b2-0000-7000-8000-00000000${String(9000 + n).pa
 describe.skipIf(!HAS)('NT-BH-009 — thanh toán QR ở máy bán', () => {
   const { s, get, post, events } = usePos('nt-bh-009');
 
-  it('§5 dòng 1: đơn QR → chờ trả tiền, có phần qr, chứng từ nộp ngay theo hình thức QR, chưa có bản sao', async () => {
+  it('§5 dòng 1: đơn QR → chờ trả tiền, có phần qr, chứng từ bán nộp ngay (chưa có dòng thu tiền — NT-BH-057), chưa có bản sao', async () => {
     const r = await post('/orders', order(ID(1), 2, { mode: 'qr' }));
     expect(r.statusCode, r.body).toBe(201);
     const o = r.json().data.order;
@@ -68,7 +68,8 @@ describe.skipIf(!HAS)('NT-BH-009 — thanh toán QR ở máy bán', () => {
     expect(Date.parse(o.qr.expiresAt)).toBeGreaterThan(Date.now());
     const pay = (await sql<{ p: { payments: { methodCode: string; amount: number }[] } }>`
       SELECT payload AS p FROM accounting_events WHERE tenant_id = ${s.tenantId} AND doc_key = ${`pos:CN01:sale:${ID(1)}`}`.execute(db)).rows[0]?.p;
-    expect(pay?.payments).toEqual([{ methodCode: 'QR', amount: 660_000 }]);
+    // [2026-11-28 03:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-057: phiếu bán đơn QR chưa có dòng thu tiền (công nợ còn mở) — thu tiền ghi khi xác nhận (đóng góp)
+    expect(pay?.payments).toEqual([]);
     expect(await events(`pos.order:${ID(1)}`)).toEqual([]);
   });
 
