@@ -7,7 +7,7 @@
 | Màn hình | Tuỳ chọn kho (công tắc); KHO01 Phiếu chuyển kho; MH11 Trả lại hàng mua |
 | Bộ phận yêu cầu | Phòng kế toán |
 | Ngày tạo | 12/11/2026 |
-| Trạng thái | Đã chốt (12/11/2026, kiennt) |
+| Trạng thái | Chờ nghiệm thu — làm phần KHO01 (27/11/2026); phần MH11 Trả lại hàng mua chưa làm |
 
 ## 1. Mục đích quản trị
 Đơn vị muốn kế toán **không lập được** phiếu làm kho âm (chuyển kho, trả hàng nhà cung cấp quá số đang có).
@@ -64,11 +64,38 @@ Theo R-GATE-9 / ADR-0020: mặc định **cho phép + nhắc** như hôm nay; ch
 | 5 | Ghi lùi một phiếu xuất vào ngày trước một phiếu đã ghi, làm phiếu sau thành âm | Chỉ kiểm phiếu đang ghi tại ngày của nó; phiếu sau không bị huỷ, kiểm chuẩn nhắc như cũ |
 
 ## 7. Kết quả chạy
+<!-- [2026-11-27 kiennt] NGHIEM-THU — làm phần KHO01 (đóng góp) -->
+
+**Đã làm (27/11/2026)** — chỉ màn **KHO01 Phiếu chuyển kho**. Phần **MH11 Trả lại hàng mua** chưa làm.
+
+- Khoá `bizcity.kho.negative_stock`, giá trị `allow_warn` (mặc định, như cũ) · `block`. Lưu ở `setting_values` (có phiên bản, ngày hiệu lực, lý do, nhật ký). Đổi ở **HT13 Cấu hình hệ thống** → *Đổi giá trị*, quyền `settings:write`. Theo R-GATE-9 nên mặc định vẫn là cho phép; đơn vị muốn chặn thì đổi sang `block`. Mục 3 bước 1 vì vậy làm ở HT13, không ở "Kho → Tuỳ chọn".
+- **Máy chủ** kiểm ngay trước khi ghi sổ đầu xuất, nên mọi đường xuất đều bị chặn: *Ghi và duyệt xuất*, *Duyệt xuất* phiếu nháp, *Duyệt điều chỉnh*. Gọi thẳng API cũng bị chặn.
+  - Lỗi trả về: `VALIDATION_ERROR`, `details.reason = KHO_STOCK_SHORT`, `items: [{ sku, need, have }]`, câu báo `HANG01 cần 130, tồn 120 ở KA-1 ngày 10/11/2026`.
+  - Tồn tính tại ngày phiếu, cộng theo mã, ở kho xuất, không tính chính phiếu đang sửa.
+  - **Ghi nháp** không trừ tồn nên không kiểm.
+- **Màn KHO01** khi đang chặn mà vượt tồn: nút *Ghi và duyệt xuất* bị khoá, dòng đỏ báo mã · cần · tồn, *Ghi nháp* vẫn bấm được. Khi `allow_warn`: hỏi "Vượt tồn… vẫn ghi?" như cũ.
+- Chứng từ từ POS / website không qua đường này: vẫn vào sổ, kiểm chuẩn vẫn báo INVENTORY_NEGATIVE.
+
 | | |
 |---|---|
-| Ngày chạy | |
-| Bản code (commit) | |
-| Test tự động | `apps/api/test/chan-xuat-am.test.ts` (đề xuất — tạo khi code) |
+| Ngày chạy | 27/11/2026 (máy dev; test API trên CSDL test mới `ketoan_test_kho003`; giao diện trên DB local `ketoan_otchuong`, giả lập công tắc = block vì API docker chưa có khoá mới) |
+| Bản code (commit) | nhánh `feat/nt-kho-003-chuyen-kho-chan-xuat-am` |
+| Test tự động | `apps/api/test/chan-xuat-am.test.ts` — **7/7 đạt** |
 
 | Mục | Mong đợi | Phần mềm | Chênh | Giải thích |
 |---|---|---|---|---|
+| Mặc định (allow_warn), chuyển 130 > tồn 120 | Ghi được như cũ | Ghi được, `shipped` | 0 | |
+| block, chuyển 130 (tồn KA-1 10/11 = 120) | Chặn, báo `HANG01 cần 130, tồn 120 ở KA-1 ngày 10/11/2026` | 400 `KHO_STOCK_SHORT`, items need 130 / have 120, đúng câu báo | 0 | |
+| block, chuyển 120 | Ghi được | `shipped` | 0 | |
+| §6.2 hai dòng cùng mã 60 + 70 | Chặn | 400, need 130 / have 120 | 0 | |
+| §6.3 ngày 05/11 (tồn 100), chuyển 110 | Chặn | 400, need 110 / have 100 | 0 | |
+| Ghi nháp vượt tồn, rồi Duyệt xuất | Nháp ghi được; duyệt xuất bị chặn | nháp `draft`; `/ship` 400 `KHO_STOCK_SHORT` | 0 | |
+| Đổi lại allow_warn | Vượt tồn ghi được | Ghi được | 0 | |
+| Chặn ở máy chủ (gọi thẳng API) | Bị từ chối | Các bước trên đều gọi thẳng API | 0 | |
+| Màn KHO01 khi block (chuyển 999, tồn 40) | Không duyệt xuất được | Nút khoá; báo "110011003 cần 999, tồn 40"; Ghi nháp bấm được | 0 | |
+| Nhật ký đổi công tắc | Người, giờ, cũ / mới, lý do | Dùng sẵn `core.settings.set` (HT13, lịch sử phiên bản) | — | Chưa chạy riêng |
+| §6.1 sửa phiếu đã ghi 100 → 110 | Không trừ chính phiếu đang sửa | Code dùng `exceptId` của phiếu | — | Chưa có test riêng |
+| Trả hàng mua (MH11) | Chặn | **Chưa làm** | — | Ngoài phạm vi đợt này |
+
+Đã chạy lại các test liên quan, không vỡ: `phieu-chuyen-kho`, `dinh-kem-chung-tu`, `nt-bh-041-chuyen-kho-don-dat-hang`, `phan-quyen-man-hinh`, `phan-quyen-chi-nhanh`, `authz-scope-intake`, 7 test cấu hình (`cau-hinh-*`, `policy-registry`, `site-registry`, `thu-vien-cau-hinh`) — 126 test đạt. Typecheck api / web / contracts sạch. Selfcheck: số mục không đạt bằng main; mục `SC-ERR-2` đã khai `KHO_STOCK_SHORT` ở ERROR_REASONS và BIZCITY-ERRORS §4c.
+

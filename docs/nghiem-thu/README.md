@@ -87,7 +87,7 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-HT-001](he-thong/NT-HT-001-so-do-to-chuc.md) | Sơ đồ tổ chức làm gốc: cây 3 cấp, gắn chi nhánh, mua hàng theo cây, bộ lọc cây chi nhánh / kho | Chờ nghiệm thu |
 | [NT-KHO-001](kho/NT-KHO-001-ton-o-chon-hang-theo-kho-xuat.md) | Ô chọn mặt hàng ở phiếu chuyển kho hiện tồn theo kho xuất, ngày phiếu | Đã chốt |
 | [NT-KHO-002](kho/NT-KHO-002-kiem-ke-kho.md) | Kiểm kê kho theo lô / HSD: biên bản kiểm kê → xác minh → quyết định xử lý; chênh lệch vào 1381 / 3381, hàng kém phẩm chất sang kho cách ly, tất toán theo quyết định | Đã chốt |
-| [NT-KHO-003](kho/NT-KHO-003-chan-xuat-am.md) | Công tắc "Cho phép xuất quá số tồn" — chặn ở màn lập tay trong kế toán | Đã chốt |
+| [NT-KHO-003](kho/NT-KHO-003-chan-xuat-am.md) | Công tắc "Cho phép xuất quá số tồn" — chặn ở màn lập tay trong kế toán (đã làm KHO01; MH11 chưa) | Chờ nghiệm thu |
 | [NT-KHO-004](kho/NT-KHO-004-hang-giu-ho-chi-so-luong.md) | Hàng nhận giữ hộ (KNB) chỉ ghi số lượng: bỏ giá trị dòng kho giữ hộ, chặn chuyển giữ hộ ↔ của mình, giá vốn tính riêng | Đã chốt |
 | [NT-KHO-005](kho/NT-KHO-005-acc83-tach-chuyen-kho.md) | ACC83 Tổng hợp tồn kho: tách chuyển kho khỏi nhập / xuất, tổng cộng bỏ trùng chuyển kho nội bộ | Chờ nghiệm thu |
 | [NT-KHO-006](kho/NT-KHO-006-tong-so-luong-ben-phai.md) | KHO01 Phiếu chuyển kho: ô "Tổng số lượng" ở góc phải như các phiếu khác | Chờ nghiệm thu |
