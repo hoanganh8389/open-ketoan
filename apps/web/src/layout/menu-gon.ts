@@ -87,7 +87,7 @@ export const GON_DEFS: GonDef[] = [
       // [2026-11-25 Nguyễn Văn Thủy] #26 tab Test: khai báo đối tượng / mặt hàng dùng đúng màn của Danh mục tổng (DM13, DM10) — một nơi khai, cùng dữ liệu (đóng góp)
     ],
     reports: [
-      { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/tong-hop-chi-nhanh', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/nhat-ky'] },
+      { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/tong-hop-chi-nhanh', '/mua-hang/tong-hop-nhom-hang', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/nhat-ky'] },
       // [2026-11-21 Nguyễn Văn Thủy] nhóm báo cáo theo hợp đồng / chính sách (đóng góp)
       { label: 'Hợp đồng & chính sách', paths: ['/mua-hang/thuc-hien-chinh-sach', '/mua-hang/thuc-hien-hop-dong', '/mua-hang/chinh-sach-theo-hop-dong', '/mua-hang/chi-tiet-chinh-sach', '/mua-hang/doi-chieu-gia-hop-dong'] },
       { label: 'Công nợ phải trả', paths: ['/bao-cao/cong-no-phai-tra', '/bao-cao/chi-tiet-thanh-toan', '/mua-hang/cong-no-hop-dong', '/cong-no/doi-chieu', '/bao-cao/tuoi-no'] },

@@ -25,6 +25,8 @@ interface OnHandRow { branchCode: string; warehouseCode: string; sku: string; na
 
 const monthStart = () => `${today().slice(0, 7)}-01`;
 const qtyCol = (key: keyof LedgerRow & string, header: string, cls: string, title?: string): Column<LedgerRow> => ({ key, header, type: 'qty', width: 110, sum: true, className: cls, title });
+// [2026-11-27 kiennt] NT-MH-026 — cột SỐ LƯỢNG TỒN (tồn đầu / tồn cuối / tồn) không có thì ghi 0, không để trống (đóng góp)
+const tonCol = (key: keyof LedgerRow & string, header: string, cls: string, title?: string): Column<LedgerRow> => ({ ...qtyCol(key, header, cls, title), showZero: true, value: (r) => Number(r[key] ?? 0) });
 
 export function SoKhoTheoMatHangPage() {
   const [f, setF] = useState({ from: monthStart(), to: today(), branchCodes: '', warehouseCodes: '', search: '' });
@@ -40,7 +42,7 @@ export function SoKhoTheoMatHangPage() {
   const columns: Column<LedgerRow>[] = [
     { key: 'sku', header: 'Mã hàng', type: 'code', width: 110 },
     { key: 'name', header: 'Tên hàng', width: 260 },
-    qtyCol('openQty', 'Σ tồn đầu', 'kb-open', 'Tồn trước ngày đầu kỳ'),
+    tonCol('openQty', 'Σ tồn đầu', 'kb-open', 'Tồn trước ngày đầu kỳ'),
     qtyCol('inQty', 'Σ nhập', 'kb-in', 'Nhập mua'),
     qtyCol('inReturnQty', 'Σ nhập lại', 'kb-inret', 'Khách hoàn trả lại cửa hàng — tồn TĂNG'),
     qtyCol('inTransferQty', 'Σ nhập nội bộ', 'kb-inb', 'Chiều NHẬN của phiếu chuyển kho'),
@@ -50,7 +52,7 @@ export function SoKhoTheoMatHangPage() {
     qtyCol('outAdjustQty', 'Σ xuất điều chỉnh', 'kb-adj', 'Phiếu xuất điều chỉnh của cửa hàng (luôn dương, bản chất là trừ kho)'),
     qtyCol('adjustQty', 'SL điều chỉnh (±)', 'kb-adj', 'Điều chỉnh cân tồn / kiểm kê, giữ dấu: dương là tăng kho, âm là giảm'),
     qtyCol('otherQty', 'Khác', 'kb-other', 'Phát sinh ngoài các luồng trên (vd nhận / xuất quà ở mua hàng) — luôn cộng vào để sổ cân'),
-    qtyCol('closeQty', 'Σ tồn cuối', 'kb-close', '= tồn đầu + nhập + nhập lại + nhập nội bộ − xuất nội bộ − xuất bán − xuất trả − xuất điều chỉnh + SL điều chỉnh + khác'),
+    tonCol('closeQty', 'Σ tồn cuối', 'kb-close', '= tồn đầu + nhập + nhập lại + nhập nội bộ − xuất nội bộ − xuất bán − xuất trả − xuất điều chỉnh + SL điều chỉnh + khác'),
     { key: 'unit', header: 'ĐVT', width: 70, className: 'kb-unit', title: 'ĐVT nhỏ nhất (tỉ lệ 1)' },
   ];
   return (
@@ -93,7 +95,7 @@ export function TonKhoTheoMatHangPage() {
     { key: 'sku', header: 'Mã hàng', type: 'code', width: 110 },
     { key: 'name', header: 'Tên hàng', width: 240 },
     { key: 'alias', header: 'Alias', type: 'code', width: 120, title: 'Mã vạch của mặt hàng' },
-    { key: 'qty', header: 'Số lượng', type: 'qty', width: 100, sum: true, className: 'kb-qty', title: 'Tồn tại ngày "Đến ngày" (ĐVT nhỏ nhất)' },
+    { key: 'qty', header: 'Số lượng', type: 'qty', width: 100, sum: true, className: 'kb-qty', title: 'Tồn tại ngày "Đến ngày" (ĐVT nhỏ nhất)', showZero: true, value: (r) => Number(r.qty ?? 0) }, // NT-MH-026: tồn 0 ghi 0
     { key: 'unitCost', header: 'Đơn giá', type: 'price', width: 100, title: 'Thành tiền ÷ số lượng (giá vốn bình quân / giá trị chứng từ)' },
     { key: 'amount', header: 'Thành tiền', type: 'money', width: 130, sum: true },
     { key: 'inTransit', header: 'SL đi đường', type: 'qty', width: 100, sum: true, title: 'Đã xuất chuyển đến chi nhánh này nhưng chưa nhận — tính vào kho mặc định của chi nhánh nhận' },

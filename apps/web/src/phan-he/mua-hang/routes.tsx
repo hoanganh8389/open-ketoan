@@ -6,7 +6,7 @@ import { Navigate, Route, useLocation } from 'react-router-dom';
 import { HieuNghiepVuPage } from './HieuNghiepVuPage';
 import { TongQuanMuaPage } from './tong-quan/TongQuanMuaPage';
 import { ChungTuPage } from './chung-tu/ChungTuPage';
-import { TongHopTheoChiNhanhPage } from './tong-hop/TongHopMuaPage';
+import { TongHopTheoChiNhanhPage, TongHopTheoHangPage } from './tong-hop/TongHopMuaPage';
 import { SoKhoTheoMatHangPage, TonKhoTheoMatHangPage } from './bao-cao-kho/BaoCaoKhoPages';
 import { ChinhSachPage } from './chinh-sach/ChinhSachPage';
 import { ChiTietChinhSachPage } from './chinh-sach/ChiTietChinhSachPage';
@@ -70,6 +70,7 @@ export const muaHangRoutes = (
     <Route path="mua-hang/tong-hop" element={<ChungTuPage key="tong-hop" report="tong-hop" />} />
     <Route path="mua-hang/bao-cao" element={<ChungTuPage key="bao-cao" report="bao-cao" />} />
     <Route path="mua-hang/tong-hop-chi-nhanh" element={<TongHopTheoChiNhanhPage />} />
+    <Route path="mua-hang/tong-hop-nhom-hang" element={<TongHopTheoHangPage />} />
     <Route path="mua-hang/tong-hop-mat-hang" element={<ChungTuPage key="tong-hop-mat-hang" report="bao-cao" theoMa />} />
     <Route path="mua-hang/so-kho" element={<SoKhoTheoMatHangPage />} />
     <Route path="mua-hang/ton-kho" element={<TonKhoTheoMatHangPage />} />

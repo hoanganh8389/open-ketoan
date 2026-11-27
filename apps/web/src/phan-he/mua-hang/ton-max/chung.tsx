@@ -4,7 +4,6 @@
  */
 import { workBranch } from '@/lib/workBranch';
 import { useCallback, useEffect, useMemo, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { ListPicker } from '@/components/pickers';
 import { docSo, fold, lastParent, useHierarchy, type BranchNode } from './api';
 // [2026-11-03 10:39 AM Nguyễn Văn Thủy] SDTC — ô "Chi nhánh" theo sơ đồ tổ chức (PT · Chi nhánh Phú Thọ); giá trị vẫn là mã chi nhánh kho (08000)
@@ -103,25 +102,11 @@ export function ChonShop({ parent, value, onChange, width = 300 }: { parent: str
     onChange={(v) => { if (v) onChange(v === KHO_CHA ? '' : v); }} />;
 }
 
-// [2026-11-25 kiennt] NT-MH-012 — cây đã có mà còn cửa hàng chưa thuộc kho tổng nào: báo đích danh đơn vị và lý do (đóng góp)
-/** Chưa có sơ đồ tổ chức thì chỉ đường sang DM16; có cây mà còn cửa hàng chưa thuộc kho tổng nào thì nêu tên đơn vị chứa chúng. */
-export function ChuaPhanCap({ branches }: { branches: BranchNode[] | undefined }) {
-  const org = useOrgTree();
-  if (!branches) return null;
-  const coKhoTong = branches.some((b) => b.level === 'branch');
-  const nodes = org.data?.nodes ?? [];
-  const laNut = new Set(nodes.map((n) => n.code));
-  const thieu = new Map<string, number>();
-  for (const b of org.data?.branches ?? []) if (b.isActive && !/_OFF$/i.test(b.code) && !b.level && b.orgCode && !laNut.has(b.code)) thieu.set(b.orgCode, (thieu.get(b.orgCode) ?? 0) + 1);
-  if (coKhoTong && !thieu.size) return null;
-  if (!thieu.size) return <div className="alert alert-warn" style={{ margin: 12 }}>Chưa có sơ đồ tổ chức. Mở <Link to="/danh-muc/so-do-to-chuc">Sơ đồ tổ chức (DM16)</Link> → bấm <b>Quay về dữ liệu gốc</b> hoặc <b>Nhập Excel</b>.</div>;
-  const ten = (code: string) => nodes.find((n) => n.code === code)?.name ?? code;
-  return (
-    <div className="alert alert-warn" style={{ margin: 12 }}>
-      Chưa nhận được kho tổng cho: {[...thieu].map(([code, n], i) => <span key={code}>{i ? ', ' : ''}<b>{ten(code)} ({code})</b> — {n} cửa hàng</span>)}.
-      {' '}Cần một kho tổng nằm trong chi nhánh: khai loại <b>Chi nhánh</b> cho đơn vị chứa cửa hàng (loại <b>Cửa hàng</b>), rồi cho chính chi nhánh có phân kho, hoặc đặt bên dưới một đơn vị có phân kho loại <b>Kho tổng</b> / <b>Kho trung gian</b> (hoặc mã dạng xx000, tên có chữ Kho). Sửa ở <Link to="/danh-muc/so-do-to-chuc">Sơ đồ tổ chức (DM16)</Link>.
-    </div>
-  );
+// [2026-11-27 kiennt] NT-MH-027 — ẩn khung cảnh báo vàng "Chưa nhận được kho tổng…" ở mọi màn mua hàng (MH02, MH16, MH17, MH18, MH19) theo yêu cầu;
+// cây tổ chức thiếu kho tổng thì sửa ở Sơ đồ tổ chức (DM16). Giữ tên component để các màn không phải sửa (đóng góp)
+/** Trước NT-MH-027: báo đơn vị có cửa hàng chưa thuộc kho tổng nào. Nay không hiện gì. */
+export function ChuaPhanCap(_props: { branches: BranchNode[] | undefined }) {
+  return null;
 }
 
 /** Ô số liệu tóm tắt (khối màu) — bấm được để lọc. */
