@@ -47,18 +47,22 @@ export function quoteRedeem(program: LoyaltyProgram, history: readonly LedgerEnt
         : `Phần thưởng ${index} không đổi được (hết hạn, sai hạng hoặc đơn chưa đủ điều kiện)`);
       continue;
     }
-    const n = rewards.filter((x) => x.index === index).length;
     if (r.rewardType === 'voucher' && r.voucher) {
       const days = r.voucher.expiresInDays;
-      rewards.push({
-        index, kind: 'voucher', points: r.points, name: r.productName,
-        voucher: {
-          code: voucherCode(r.voucher.prefix, q.orderId, index, n), name: r.productName,
-          discountType: r.voucher.discountType === 'percent' ? 'percent' : 'fixed', discountValue: r.voucher.discountValue,
-          maxDiscount: r.voucher.maxDiscount, minOrderAmount: r.voucher.minOrderAmount,
-          expiresAt: days > 0 ? new Date(Date.parse(q.now) + days * 86_400_000).toISOString() : null,
-        },
-      });
+      // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: "Số lượng" của voucher đổi điểm = số voucher phát mỗi lần đổi (issue_reward_vouchers
+      // PHP lặp quantity); điểm trừ một lần ở voucher đầu, các voucher sau 0 điểm cùng index (đóng góp)
+      for (let k = 0; k < Math.max(1, r.quantity); k++) {
+        const n = rewards.filter((x) => x.index === index).length;
+        rewards.push({
+          index, kind: 'voucher', points: k === 0 ? r.points : 0, name: r.productName,
+          voucher: {
+            code: voucherCode(r.voucher.prefix, q.orderId, index, n), name: r.productName,
+            discountType: r.voucher.discountType === 'percent' ? 'percent' : 'fixed', discountValue: r.voucher.discountValue,
+            maxDiscount: r.voucher.maxDiscount, minOrderAmount: r.voucher.minOrderAmount,
+            expiresAt: days > 0 ? new Date(Date.parse(q.now) + days * 86_400_000).toISOString() : null,
+          },
+        });
+      }
     } else {
       rewards.push({ index, kind: 'gift', points: r.points, name: r.productName, sku: r.sku, quantity: r.quantity });
     }

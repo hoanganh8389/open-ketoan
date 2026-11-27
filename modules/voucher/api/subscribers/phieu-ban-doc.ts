@@ -1,4 +1,5 @@
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: voucher dùng ở phiếu bán nhập tay BH10 (đóng góp)
+// [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: ghi mã khách của phiếu khi dùng (giới hạn mỗi khách) (đóng góp)
 /**
  * Nghe `phieu-ban.doc.recorded` / `phieu-ban.doc.cancelled`: phiếu BÁN đã duyệt có voucher (doc.vouchers — module phieu-ban đã kiểm qua
  * voucher.order.quote + khoá theo mã lúc duyệt) → đánh dấu đã dùng ở phiếu đó; bỏ duyệt → mã về "còn".
@@ -6,7 +7,7 @@
 import { defineSubscriber } from '@bizcity/module-sdk';
 import { markUsed, releaseUsed, type Tx } from '../store.js';
 
-type Data = { docId: string; kind: string; branchCode: string; doc?: { docNo?: string; docDate?: string; vouchers?: { code: string; amount: number }[] } };
+type Data = { docId: string; kind: string; branchCode: string; doc?: { docNo?: string; docDate?: string; partner?: { code?: string }; vouchers?: { code: string; amount: number }[] } };
 
 export default defineSubscriber({
   id: 'voucher.phieu-ban-doc', module: 'voucher', on: ['phieu-ban.doc.recorded', 'phieu-ban.doc.cancelled'],
@@ -22,6 +23,7 @@ export default defineSubscriber({
       for (const v of d.doc?.vouchers ?? []) {
         await markUsed(tx, ctx.tenantId, {
           code: v.code, source: 'phieu-ban', refId: d.docId, refCode: d.doc?.docNo ?? '', branch: d.branchCode, date: d.doc?.docDate ?? new Date().toISOString().slice(0, 10), amount: Number(v.amount),
+          customer: d.doc?.partner?.code || null,
         });
       }
     });

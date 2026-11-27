@@ -52,7 +52,7 @@ Hình thức thanh toán (DM05) đã gắn tài khoản tiền: tiền mặt →
 - M4: API đọc GET /api/v1/cash-movements (đề xuất, ở nhánh code) — tham số kind = cash | bank, from, to, branchCodes, search; quyền `documents:read`; đọc khung nhìn `bizcity_read.ledger_*`; gắn ở nhóm route báo cáo bán hàng.
 
 ## 7. Kết quả chạy
-- `apps/api/test/nt-bh-052-tien-tu-chung-tu.test.ts`: 4/4 đạt (thử trên máy local).
+- `apps/api/test/nt-bh-052-tien-tu-chung-tu.test.ts` (đề xuất — ở nhánh code): 4/4 đạt (thử trên máy local).
 - Màn thật: xem báo cáo của nhánh.
 
 ## 8. Biên bản

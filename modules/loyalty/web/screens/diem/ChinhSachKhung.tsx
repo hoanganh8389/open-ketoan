@@ -64,28 +64,32 @@ export function ChinhSachKhung({ view }: { view: View }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', margin: '8px 0' }}>
-        <span>Cửa hàng</span><div style={{ width: 220 }}><BranchPicker value={branch} onChange={pickBranch} placeholder="Chọn cửa hàng" /></div>
-        {branch && can(PERM.lap) && !draft && <button type="button" className="btn" disabled={create.isPending} onClick={() => create.mutate()}>Sửa từ bản hiện hành</button>}
-        {canEdit && <button type="button" className="btn" disabled={!dirty || save.isPending} onClick={() => save.mutate(false)}>Lưu nháp</button>}
-        {canEdit && <button type="button" className="btn btn-primary" disabled={save.isPending} onClick={() => save.mutate(true)}>Gửi duyệt</button>}
-        {shown && can(PERM.lap) && <button type="button" className="btn" disabled={dirty} title={dirty ? 'Lưu nháp trước' : ''} onClick={() => setDialog('ap')}>Áp cho nhiều cửa hàng…</button>}
-        {can(PERM.duyet) && <button type="button" className="btn" onClick={() => setDialog('duyet')}>Duyệt / từ chối ({pending.data?.items.length ?? 0})</button>}
-        {draft && <button type="button" className="btn" onClick={() => setDialog('log')}>Nhật ký</button>}
+      {/* [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thanh nút như màn Core (catalog-toolbar trong card), chọn cửa hàng bên trái (đóng góp) */}
+      <section className="card">
+      <div className="catalog-toolbar" style={{ alignItems: 'center' }}>
+        <span className="muted">Cửa hàng</span><div style={{ width: 240 }}><BranchPicker value={branch} onChange={pickBranch} placeholder="Chọn cửa hàng" /></div>
+        {branch && can(PERM.lap) && !draft && <button type="button" className="btn btn-sm btn-primary" title="Lập nháp chép từ bản máy bán đang tính" disabled={create.isPending} onClick={() => create.mutate()}>+ Sửa từ bản hiện hành</button>}
+        {canEdit && <button type="button" className="btn btn-sm" title="Lưu nháp, chưa gửi duyệt" disabled={!dirty || save.isPending} onClick={() => save.mutate(false)}>Lưu nháp</button>}
+        {canEdit && <button type="button" className="btn btn-sm btn-primary" title="Gửi người có quyền duyệt; duyệt xong máy bán mới tính theo bản mới" disabled={save.isPending} onClick={() => save.mutate(true)}>Gửi duyệt</button>}
+        {shown && can(PERM.lap) && <button type="button" className="btn btn-sm" disabled={dirty} title={dirty ? 'Lưu nháp trước' : 'Chép chính sách này sang nhiều cửa hàng (lập nháp từng cửa hàng)'} onClick={() => setDialog('ap')}>Áp cho nhiều cửa hàng…</button>}
+        <span style={{ flex: 1 }} />
+        {can(PERM.duyet) && <button type="button" className="btn btn-sm" title="Nháp đang chờ duyệt của mọi cửa hàng" onClick={() => setDialog('duyet')}>Duyệt / từ chối ({pending.data?.items.length ?? 0})</button>}
+        {draft && <button type="button" className="btn btn-sm" title="Ai lập, sửa, gửi, duyệt nháp này" onClick={() => setDialog('log')}>Nhật ký</button>}
       </div>
       {branch && (
-        <div className="muted" style={{ marginBottom: 6 }}>
+        <div className="card-body muted" style={{ paddingTop: 8, paddingBottom: 8 }}>
           Máy bán đang tính theo: {cur.data ? <b>bản {cur.data.version}</b> : 'chưa có chính sách'}
           {draft && <> · Nháp: <span className="badge badge-warn">{STATUS_LABEL[draft.status]}</span> lập bởi {draft.createdByName || draft.createdBy}{draft.rejectReason && draft.status === 'rejected' ? ` — bị từ chối: ${draft.rejectReason}` : ''}</>}
           {dirty && <> · <b>có thay đổi chưa lưu</b></>}
         </div>
       )}
-      {msg && <div className="badge badge-ok" style={{ marginBottom: 6 }}>{msg}</div>}
+      </section>
+      {msg && <div className="alert alert-ok" role="status" style={{ marginTop: 12 }}>{msg}</div>}
       {err ? <ErrorBox error={errorText(err)} /> : null}
       {changed && <button type="button" className="btn btn-xs" onClick={() => { setDirty(false); save.reset(); refresh(); }}>Tải lại nháp</button>}
-      {!branch ? <span className="muted">Chọn cửa hàng để xem / soạn chính sách tích điểm.</span>
+      {!branch ? <div className="card card-body muted" style={{ marginTop: 12 }}>Chọn cửa hàng để xem / soạn chính sách tích điểm.</div>
         : cur.isLoading || drafts.isLoading ? <Loading />
-          : !shown ? <span className="muted">Cửa hàng chưa có chính sách. {can(PERM.lap) ? 'Bấm "Sửa từ bản hiện hành" để lập nháp mới.' : ''}</span>
+          : !shown ? <div className="card card-body muted" style={{ marginTop: 12 }}>Cửa hàng chưa có chính sách. {can(PERM.lap) ? 'Bấm "+ Sửa từ bản hiện hành" để lập nháp mới.' : ''}</div>
             : view === 'chuong-trinh' ? <ChuongTrinhForm {...formProps} base={base} />
               : view === 'doi-diem' ? <DoiDiemForm {...formProps} base={base} />
                 : <CaiDatHangForm {...formProps} />}

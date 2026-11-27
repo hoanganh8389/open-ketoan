@@ -8,6 +8,8 @@
 import { useState } from 'react';
 import { ChinhSachKhung } from './diem/ChinhSachKhung';
 import { DieuChinhTab } from './diem/DieuChinhTab';
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thẻ Thành viên (tìm, lọc hạng, cộng / trừ, lịch sử trước / sau) như plugin cũ (đóng góp)
+import { ThanhVienTab } from './diem/ThanhVienTab';
 import { DataGrid, ErrorBox, FilterLayout, KpiCards, Loading, PageHeader, PeriodField, errorText, useApi, useQuery, type GridColumn } from '@bizcity/ui-kit';
 
 type Kinds = { earn: number; redeem: number; expire: number; reverse: number; adjust: number };
@@ -46,7 +48,7 @@ const customerCols: GridColumn<Report['customers'][number]>[] = [
   { key: 'expire', header: 'Hết hạn trong kỳ', type: 'number', sum: true, width: 120, value: (c) => c.period.expire },
 ];
 
-const TABS = [['tong-quan', 'Tổng quan'], ['chuong-trinh', 'Chương trình'], ['doi-diem', 'Đổi điểm'], ['cai-dat', 'Cài đặt + hạng'], ['dieu-chinh', 'Điều chỉnh']] as const;
+const TABS = [['tong-quan', 'Tổng quan'], ['thanh-vien', 'Thành viên'], ['chuong-trinh', 'Chương trình'], ['doi-diem', 'Đổi điểm'], ['cai-dat', 'Cài đặt + hạng'], ['dieu-chinh', 'Điều chỉnh']] as const;
 type Tab = (typeof TABS)[number][0];
 
 export function DiemThanhVienPage() {
@@ -54,12 +56,13 @@ export function DiemThanhVienPage() {
   return (
     <div>
       <PageHeader title="Điểm thành viên" code="BH19" subtitle="Sổ điểm thành viên và chính sách tích điểm của từng cửa hàng (khai, duyệt ở kế toán). Điểm chỉ hạch toán lúc đổi (trên chứng từ bán)." />
-      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--line, #ddd)', marginBottom: 8 }}>
+      {/* [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thẻ gạch chân (tabs) và khối card như các màn Core (đóng góp) */}
+      <div className="tabs" role="tablist" style={{ margin: '8px 0' }}>
         {TABS.map(([k, label]) => (
-          <button key={k} type="button" className={`btn btn-xs${tab === k ? ' btn-primary' : ''}`} onClick={() => setTab(k)}>{label}</button>
+          <button key={k} type="button" role="tab" className={`tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{label}</button>
         ))}
       </div>
-      {tab === 'tong-quan' ? <TongQuan /> : tab === 'dieu-chinh' ? <DieuChinhTab /> : <ChinhSachKhung view={tab} />}
+      {tab === 'tong-quan' ? <TongQuan /> : tab === 'thanh-vien' ? <ThanhVienTab /> : tab === 'dieu-chinh' ? <DieuChinhTab /> : <ChinhSachKhung view={tab} />}
     </div>
   );
 }
@@ -85,12 +88,18 @@ function TongQuan() {
               { key: 'r', label: 'Đổi trong kỳ', value: d.total.redeem, tone: 'warn' },
               { key: 'x', label: 'Hết hạn trong kỳ', value: d.total.expire },
             ]} />
-            <h3 style={{ margin: '10px 0 4px' }}>Phát sinh theo cửa hàng</h3>
-            <DataGrid rows={d.byBranch} columns={branchCols} rowKey={(x) => x.branchCode || '-'} storageKey="loyalty.cn" exportName="diem-thanh-vien-cua-hang" emptyText="Không có phát sinh trong kỳ" />
-            <h3 style={{ margin: '10px 0 4px' }}>Số dư theo hạng</h3>
-            <DataGrid rows={d.byTier} columns={tierCols} rowKey={(x) => x.tierKey} storageKey="loyalty.hang" />
-            <h3 style={{ margin: '10px 0 4px' }}>Khách (500 khách điểm còn nhiều nhất)</h3>
-            <DataGrid rows={d.customers} columns={customerCols} rowKey={(x) => x.customerCode} storageKey="loyalty.khach" exportName="diem-thanh-vien-khach" emptyText="Chưa có khách nào có điểm" />
+            <section className="card" style={{ marginTop: 12 }}>
+              <div className="card-body" style={{ paddingBottom: 0 }}><b>Phát sinh theo cửa hàng</b></div>
+              <DataGrid rows={d.byBranch} columns={branchCols} rowKey={(x) => x.branchCode || '-'} storageKey="loyalty.cn" exportName="diem-thanh-vien-cua-hang" emptyText="Không có phát sinh trong kỳ" />
+            </section>
+            <section className="card">
+              <div className="card-body" style={{ paddingBottom: 0 }}><b>Số dư theo hạng</b></div>
+              <DataGrid rows={d.byTier} columns={tierCols} rowKey={(x) => x.tierKey} storageKey="loyalty.hang" />
+            </section>
+            <section className="card">
+              <div className="card-body" style={{ paddingBottom: 0 }}><b>Khách</b> <span className="muted">· 500 khách điểm còn nhiều nhất</span></div>
+              <DataGrid rows={d.customers} columns={customerCols} rowKey={(x) => x.customerCode} storageKey="loyalty.khach" exportName="diem-thanh-vien-khach" emptyText="Chưa có khách nào có điểm" />
+            </section>
           </>
         )}
       </FilterLayout>
