@@ -42,6 +42,8 @@ export const TEN_MAN: Record<string, TenMan> = {
   '/kho/kiem-ke': { label: 'Kiểm kê kho' },
   // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: BH06 nay ở /app/xuat-dieu-chinh (module) (đóng góp)
   '/app/xuat-dieu-chinh': { label: 'Xuất kho điều chỉnh' },
+  // [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-056: KHO04 (đóng góp)
+  '/app/de-nghi-dieu-chuyen': { label: 'Đề nghị điều chuyển' },
   '/nghiep-vu/tinh-gia-von': { label: 'Tính giá vốn' },
   '/bao-cao/nhap-xuat-ton': { label: 'Tổng hợp tồn kho' },
   '/bao-cao/so-chi-tiet-hang-hoa': { label: 'Sổ chi tiết vật tư hàng hóa' },
