@@ -4,7 +4,7 @@
 | | |
 |---|---|
 | Phân hệ | Quỹ / bán hàng |
-| Màn hình | ACC51 Thu, chi tiền (`/quy/thu-chi`, `/nghiep-vu/phieu-thu`…), ACC54 Thu, chi tiền gửi (`/quy/thu-chi-tien-gui`…) |
+| Màn hình | ACC51 Thu, chi tiền (Quỹ → Thu, chi tiền), ACC54 Thu, chi tiền gửi (Quỹ → Thu, chi tiền gửi) |
 | Bộ phận yêu cầu | Bán hàng (Hoàng) |
 | Ngày tạo | 28/11/2026 |
 | Trạng thái | Đã chốt — "chứng từ tiền của bán / trả phải lên ACC51 / ACC54" (Hoàng giao 28/11) |
@@ -46,10 +46,10 @@ Hình thức thanh toán (DM05) đã gắn tài khoản tiền: tiền mặt →
 **Bút toán:** không đổi (tiền đã ghi trong bút toán của đơn bán / phiếu trả: Nợ 111x / 112x — Có 131x, và ngược lại khi hoàn tiền).
 
 ## 6. Lệch chuẩn / mặc định đã áp
-- M1: hiện thành **khung riêng dưới danh sách**, không trộn vào lưới phiếu thu chi (lưới đó có Sửa / Copy / Ký / Ghi sổ cho phiếu tiền; dòng bán hàng không áp được các nút này).
+- M1: hiện thành **khung riêng dưới danh sách** (có khoảng ngày + chi nhánh riêng, mặc định theo kỳ đang nhớ), không trộn vào lưới phiếu thu chi (lưới đó có Sửa / Copy / Ký / Ghi sổ cho phiếu tiền; dòng bán hàng không áp được các nút này). Khung gắn ở route màn Thu, chi tiền / Thu, chi tiền gửi — không sửa màn danh sách phiếu tiền (tệp đang thuộc dòng giữ chỗ NT-HT-003).
 - M2: tài khoản tiền theo đầu số: 111% = tiền mặt, 112% = tiền gửi. Tiền đang chuyển (113) chưa hiện.
 - M3: KPI đầu màn (tổng thu / chi) vẫn chỉ tính phiếu tiền; tổng của khung riêng ghi ở dòng tiêu đề khung.
-- M4: API đọc `GET /api/v1/cash-movements?kind=cash|bank&from&to&branchCodes&search` (quyền `documents:read`), đọc khung nhìn `bizcity_read.ledger_*`.
+- M4: API đọc GET /api/v1/cash-movements (đề xuất, ở nhánh code) — tham số kind = cash | bank, from, to, branchCodes, search; quyền `documents:read`; đọc khung nhìn `bizcity_read.ledger_*`; gắn ở nhóm route báo cáo bán hàng.
 
 ## 7. Kết quả chạy
 - `apps/api/test/nt-bh-052-tien-tu-chung-tu.test.ts`: 4/4 đạt (thử trên máy local).

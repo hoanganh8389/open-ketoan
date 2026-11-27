@@ -1,4 +1,4 @@
-// @bizcity-layer D modules/quy
+// @bizcity-layer D modules/sales
 // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-052: tiền vào / ra quỹ, ngân hàng từ chứng từ không phải phiếu thu chi (bán, trả hàng, thu tiền khách…) — đọc từ sổ cái để hiện ở ACC51 / ACC54 (đóng góp)
 /**
  * TIỀN TỪ CHỨNG TỪ KHÁC (chỉ đọc).
@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { toNumber } from '../../db/client.js';
 import { defineAction, mountActions, type AnyActionDef } from '../../core/actions.js';
 
-const tags = ['Quỹ'];
+const tags = ['Bán hàng'];
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 /** Bốn loại phiếu tiền đã có ở danh sách chính ACC51 / ACC54 — không lấy lại. */
 const CASH_DOC_TYPES = ['receipt', 'payment', 'bank_receipt', 'bank_payment'];
@@ -31,7 +31,7 @@ const rowSchema = z.object({
 
 export const cashMovementActions: AnyActionDef[] = [
   defineAction({
-    id: 'quy.cash-movement.list', title: 'Tiền vào / ra quỹ, ngân hàng từ chứng từ khác (bán, trả hàng, thu tiền khách…)', tags,
+    id: 'ban-hang.cash-movement.list', title: 'Tiền vào / ra quỹ, ngân hàng từ chứng từ khác (bán, trả hàng, thu tiền khách…)', tags,
     permission: 'documents:read', effect: 'read', idempotency: 'none',
     input: z.object({
       kind: z.enum(['cash', 'bank']).describe('cash = tài khoản 111*, bank = tài khoản 112*'),
@@ -78,6 +78,7 @@ export const cashMovementActions: AnyActionDef[] = [
   }),
 ];
 
+/** Gắn từ salesReportRoutes (phân hệ Bán hàng) — không sửa tệp phân hệ Quỹ. */
 export async function cashMovementRoutes(app: FastifyInstance): Promise<void> {
   mountActions(app, cashMovementActions);
 }

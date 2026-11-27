@@ -4,8 +4,6 @@ import type { ApiModule } from '../types.js';
 import { LEDGER } from '../loi.js';
 import { voucherRoutes } from '../../kernel/public.js';
 import { paymentRequestRoutes } from './payment-requests/payment-request.routes.js';
-// [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-052: tiền từ chứng từ bán / trả / thu tiền khách cho ACC51 / ACC54 (đóng góp)
-import { cashMovementRoutes } from './tien-tu-chung-tu.routes.js';
 // [2026-11-09 04:50 PM kiennt] PHASE-028 — giai đoạn 3.2 (80 D-AUTH-19): phân hệ đăng ký quyền lập / sửa cho loại chứng từ của mình ở cửa nạp (khai ở permissions[] của manifest; documents:write kéo theo)
 import { registerDocumentType } from '@bizcity/platform/core/auth';
 // [2026-11-13 07:30 PM kiennt] PHAN-QUYEN — bản thử: màn hình + thao tác phân hệ Quỹ (đóng góp)
@@ -15,4 +13,4 @@ registerDocumentType('cash_transfer', { read: 'quy:chuyen-tien-xem', create: 'qu
 registerDocumentType('customer_payment', { read: 'quy:thu-tien-xem', create: 'quy:thu-tien-lap', cancel: 'quy:thu-tien-huy' });
 registerDocumentType('supplier_payment', { read: 'quy:chi-tien-xem', create: 'quy:chi-tien-lap', cancel: 'quy:chi-tien-huy' });
 
-export const quy: ApiModule = { key: 'quy', label: 'Quỹ', routes: [...LEDGER, voucherRoutes, paymentRequestRoutes, cashMovementRoutes] };
+export const quy: ApiModule = { key: 'quy', label: 'Quỹ', routes: [...LEDGER, voucherRoutes, paymentRequestRoutes] };

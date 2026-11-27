@@ -3,6 +3,8 @@
  * Khung "Tiền từ chứng từ khác" dưới danh sách phiếu thu chi (ACC51) / tiền gửi (ACC54): đơn bán máy POS, phiếu bán BH10, phiếu trả,
  * thu tiền khách, chi trả NCC… ghi tiền ngay trong bút toán của chính chứng từ (không có phiếu thu / báo có riêng) — đọc từ sổ cái
  * qua GET /api/v1/cash-movements (số ròng theo chứng từ: dương = thu, âm = chi). Chỉ xem: bấm đúp mở chứng từ gốc.
+ * Gắn ở pages.tsx dưới màn ACC51 / ACC54 (không sửa CashVouchersPage — tệp thuộc dòng giữ chỗ khác): có khoảng ngày + chi nhánh riêng,
+ * mặc định theo kỳ đang nhớ (cùng kỳ danh sách phiếu mở ra).
  */
 import { useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
@@ -10,6 +12,8 @@ import { api, errorText } from '@/lib/api';
 import { DataGrid, type Column } from '@/components/DataGrid';
 import { ErrorBox, Loading } from '@/components/ui';
 import { DocumentDetail } from '@/features/documents/DocumentDetail';
+import { BranchSelect, DateRange } from '@/components/filters';
+import { defaultFrom, today } from '@/lib/format';
 
 export interface CashMovement {
   id: string; docType: string; docNo: string; docDate: string; branchCode: string; branchName: string; partnerCode: string | null;
@@ -21,9 +25,12 @@ const LOAI: Record<string, string> = {
   purchase_return: 'Trả hàng NCC', cash_transfer: 'Chuyển tiền', manual: 'Phiếu kế toán', stock_adjustment: 'Điều chỉnh kho',
 };
 
-export function TienTuChungTu({ kind, from, to, branchCodes }: { kind: 'cash' | 'bank'; from: string; to: string; branchCodes?: string }) {
+export function TienTuChungTu({ kind }: { kind: 'cash' | 'bank' }) {
+  const [from, setFrom] = useState(defaultFrom());
+  const [to, setTo] = useState(today());
+  const [branchCodes, setBranchCodes] = useState('');
   const q = useQuery({
-    queryKey: ['cash-movements', kind, from, to, branchCodes ?? ''],
+    queryKey: ['cash-movements', kind, from, to, branchCodes],
     queryFn: () => api.get<CashMovement[]>('/api/v1/cash-movements', { kind, from, to, ...(branchCodes ? { branchCodes } : {}) }),
     placeholderData: keepPreviousData,
   });
@@ -47,11 +54,15 @@ export function TienTuChungTu({ kind, from, to, branchCodes }: { kind: 'cash' | 
   ];
   return (
     <section className="card" style={{ marginTop: 12 }}>
-      <div className="card-body" style={{ paddingBottom: 0 }}>
+      <div className="card-body" style={{ paddingBottom: 6 }}>
         <b title={`Chứng từ ghi tiền thẳng vào TK ${tk} trong bút toán của chính nó (không có ${kind === 'cash' ? 'phiếu thu / chi' : 'giấy báo có / nợ'} riêng)`}>
           Tiền {kind === 'cash' ? 'mặt' : 'gửi'} từ chứng từ khác — bán hàng, trả hàng, thu tiền khách…
         </b>
         <span className="muted"> · chỉ xem, đọc từ sổ cái; thu {thu.toLocaleString('vi-VN')} · chi {chi.toLocaleString('vi-VN')}; bấm đúp mở chứng từ</span>
+        <div className="row" style={{ gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <DateRange from={from} to={to} onChange={(a, b) => { setFrom(a); setTo(b); }} />
+          <BranchSelect value={branchCodes} onChange={setBranchCodes} />
+        </div>
       </div>
       <ErrorBox error={q.error ? errorText(q.error) : null} />
       {q.isLoading ? <Loading /> : (
