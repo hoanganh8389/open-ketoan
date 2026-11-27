@@ -23,29 +23,28 @@ Ngưỡng "nửa thùng" đổi được ở **Công thức đặt hàng (MH18)*
 **Không vượt tồn kho.** Kho không đủ hàng cho mọi shop thì shop thiếu nhiều nhất (tính theo tỉ lệ so với max) được chia trước. Cột **Thiếu do kho hết** cho biết còn thiếu bao nhiêu; những mã này nên đặt mua thêm ở **MH02**.
 
 **Thao tác:**
-1. Chọn **Xuất từ kho** (mặc định là kho mặc định của chi nhánh cha).
+1. Chọn **Kho xuất** trong nút **Tuỳ chọn chia ▾** (mặc định là kho mặc định của chi nhánh cha). Ô **Hiện** lọc *Thiếu do kho hết*; ô **Tìm** lọc theo mã / tên hàng (không cần dấu).
 2. Sửa số ở cột **Chuyển** nếu cần; bỏ tích những dòng không chuyển.
 3. Bấm **Chốt đề nghị**: mỗi shop thành một đề nghị (số `DNC…`).
 
 Đề nghị đã chốt mà kho chưa làm thì tính như hàng sắp đi. Lần đề xuất sau không đề xuất lại các dòng đó.
 
-## Xem theo nhà cung cấp
-<!-- [2026-11-26 kiennt] NT-MH-023 — mỗi NCC một tab (đóng góp) -->
+## Xem theo kho nhận
+<!-- [2026-11-26 kiennt] NT-MH-024 — mỗi kho nhận một tab -->
 
-Dưới các ô chọn có dải tab: **Tất cả NCC** · từng nhà cung cấp · **Chưa rõ NCC**. Mỗi tab ghi số dòng của nó, giống các sheet trong file Excel công thức đặt hàng.
+Dưới các ô chọn có dải tab: **Tất cả kho nhận** · mỗi shop một tab (mã kho nhận, tên shop, số dòng).
 
-- NCC của một mã lấy giống **Phân tích đặt hàng (MH02)**: NCC của lần nhập gần nhất. Mã chưa nhập lần nào thì lấy NCC có bảng giá mua đang hiệu lực. Mã con chưa có NCC thì theo mã cha.
-- *Chưa rõ NCC* là mã chưa nhập lần nào và chưa khai giá mua ở NCC nào. Khai ở **Bảng giá mua NCC** để mã sang đúng tab.
-- Ô tích **Thiếu do kho hết**, nút **Chốt đề nghị** và **Excel** chỉ tính các dòng của tab đang mở.
-- Chốt ở một tab NCC thì màn vẫn ở lại để làm tiếp NCC khác; dòng vừa chốt tự ẩn đi.
+- Bấm một tab thì bảng chỉ còn hàng chia cho kho đó.
+- Ô **Hiện**, nút **Chốt đề nghị** và **Xuất Excel** chỉ tính các dòng của tab đang mở.
+- Chốt ở một tab kho thì màn vẫn ở lại để chốt tiếp kho khác. Dòng vừa chốt tự ẩn đi.
 
 ## Chọn shop, làm tròn, khi kho không đủ
 <!-- [2026-11-13 10:00 AM kiennt] NT-MH-004 — tuỳ chọn khi phân tích -->
 
 Mở được từ **Mua hàng → Chuyển hàng xuống shop** hoặc **Kho → Chuyển hàng xuống shop**.
 
-- **Làm tròn** và **Khi kho không đủ** nằm trong nút **Cách chia** ở góc phải. Nhãn nút ghi lựa chọn đang dùng; bấm vào để đổi.
-- **Shop phân tích**: bấm các shop theo thứ tự ưu tiên (số thứ tự hiện trên nút). Không chọn = mọi shop của chi nhánh, theo mã shop.
+- **Kho xuất**, **Shop**, **Làm tròn**, **Khi kho không đủ** nằm chung trong nút **Tuỳ chọn chia ▾** (bố cục như Phân tích đặt hàng MH02). Rê chuột lên nút để xem lựa chọn đang dùng.
+- **Shop phân tích**: trong **Tuỳ chọn chia ▾**, bấm các shop theo thứ tự ưu tiên. Số thứ tự hiện bên trái mỗi shop. Không chọn = mọi shop của chi nhánh, theo mã shop. Nút **Tất cả shop** bỏ chọn hết. <!-- [2026-11-26 kiennt] NT-MH-024 -->
 - **Làm tròn**: *Theo cài từng mã* (cài ở Tồn max — Tự động / Nguyên thùng / Chuyển lẻ) · *Nguyên thùng* (mọi mã làm tròn theo đơn vị mua,
   thiếu chưa đủ ngưỡng thùng thì chờ lần sau) · *Không làm tròn* (đúng số thiếu). Mã không có thùng thì như không làm tròn.
 - **Khi kho không đủ** (kho đủ thì mọi shop nhận đủ):

@@ -336,7 +336,7 @@ async function pendingOrders(trx: Db, tenantId: string, branchCodes: string[]) {
   return { qty: out, detail: byOrder, docs };
 }
 
-// [2026-11-26 kiennt] NT-MH-023 — tách quy tắc chọn NCC của MH02 thành hàm dùng chung (MH19 chia tab theo NCC dùng đúng quy tắc này) (đóng góp)
+// [2026-11-26 kiennt] NT-MH-023 — tách quy tắc chọn NCC của MH02 thành hàm dùng chung (đóng góp)
 /**
  * NCC mặc định của một mã: lần nhập gần nhất (lastBuy) → NCC có bảng giá đang hiệu lực (có giá trước, hiệu lực từ mới nhất)
  * → NCC bất kỳ khai bán mã → '' (chưa rõ). nccCount = số NCC khai bán mã.
@@ -597,38 +597,20 @@ export async function transferSuggest(trx: Db, tenantId: string, parentCode: str
   const skus = new Set<string>();
   for (const k of snap.levels.keys()) { const [bc, , s] = k.split('|'); if (shops.some((x) => x.code === bc)) skus.add(s!); }
   const list = [...skus];
-  const [units, prods] = await Promise.all([unitsOf(trx, tenantId, list), list.length ? trx.selectFrom('products').select(['sku', 'name', 'parent_sku']).where('tenant_id', '=', tenantId).where('sku', 'in', list).execute() : []]);
+  const [units, prods] = await Promise.all([unitsOf(trx, tenantId, list), list.length ? trx.selectFrom('products').select(['sku', 'name']).where('tenant_id', '=', tenantId).where('sku', 'in', list).execute() : []]);
   const nameOf = new Map(prods.map((p) => [p.sku, p.name]));
-  // [2026-11-26 kiennt] NT-MH-023 — NCC của từng mã (để màn MH19 chia tab theo NCC như file Excel công thức đặt hàng): cùng quy tắc MH02 —
-  // lần nhập gần nhất trong cây chi nhánh → bảng giá đang hiệu lực → NCC khai bán mã; mã con (đuôi Z / Q…) chưa có thì lấy theo mã cha (đóng góp)
-  const parentSku = new Map(prods.filter((p) => p.parent_sku).map((p) => [p.sku, p.parent_sku!]));
-  const nccSkus = [...new Set([...list, ...parentSku.values()])];
-  const [pend, sps, partners] = list.length ? await Promise.all([
-    pendingOrders(trx, tenantId, tree.all.map((b) => b.code)),
-    listSupplierProducts(trx, tenantId, { skus: nccSkus }),
-    trx.selectFrom('partners').select(['code', 'name', 'company_name']).where('tenant_id', '=', tenantId).execute(),
-  ]) : [null, [], []];
-  const lastBuy = new Map<string, { partner: string }>();
-  for (const d of (pend?.docs ?? []).filter((x) => x.kind === 'receipt' && x.status !== 'draft').sort((a, b) => a.docDate.localeCompare(b.docDate))) for (const l of d.lines) if (l.sku && d.partnerCode) lastBuy.set(l.sku, { partner: d.partnerCode });
-  const pname = new Map(partners.map((p) => [p.code, p.company_name || p.name]));
-  const nccOf = (sku: string) => {
-    const own = nccMacDinh(sku, lastBuy, sps, snap.asOf);
-    const par = parentSku.get(sku);
-    return own.partnerCode || !par ? own.partnerCode : nccMacDinh(par, lastBuy, sps, snap.asOf).partnerCode;
-  };
-  const lines: (ReturnType<typeof allocateTransfers>[number] & { name: string; baseUnit: string; packUnit?: string; reserved: number; khoTon: number; partnerCode: string; partnerName: string })[] = [];
+  const lines: (ReturnType<typeof allocateTransfers>[number] & { name: string; baseUnit: string; packUnit?: string; reserved: number; khoTon: number })[] = [];
   for (const sku of list) {
     const pk = packOf(units[sku]);
     const mode = modeFor(f.rounding ?? 'sku', snap.settings.get(sku)?.transferMode ?? 'auto');
     const khoTon = (snap.stock.get(`${parentCode}|${fromWh}|${sku}`) ?? 0) - (reservedKho.get(sku) ?? 0);
-    const partnerCode = nccOf(sku);
     const needs = shops.map((s) => {
       const wh = snap.shopWh.get(s.code)!;
       return { shopCode: s.code, sku, max: snap.levels.get(`${s.code}|${wh}|${sku}`)?.max ?? 0, ton: snap.stock.get(`${s.code}|${wh}|${sku}`) ?? 0, diDuong: (snap.transit.get(`${s.code}|${sku}`) ?? 0) + (reserved.get(`${s.code}|${sku}`) ?? 0), pack: pk.pack, mode };
     }).filter((x) => x.max > 0);
     for (const l of allocateTransfers(needs, khoTon, cfg.packThreshold, { allocation: f.allocation, order })) {
       if (l.want <= 0) continue;
-      lines.push({ ...l, name: nameOf.get(sku) ?? sku, baseUnit: pk.baseUnit, packUnit: pk.packUnit, reserved: reserved.get(`${l.shopCode}|${sku}`) ?? 0, khoTon: r3(khoTon), partnerCode, partnerName: pname.get(partnerCode) ?? '' });
+      lines.push({ ...l, name: nameOf.get(sku) ?? sku, baseUnit: pk.baseUnit, packUnit: pk.packUnit, reserved: reserved.get(`${l.shopCode}|${sku}`) ?? 0, khoTon: r3(khoTon)});
     }
   }
   const shopName = new Map(tree.shops.map((s) => [s.code, s.name]));

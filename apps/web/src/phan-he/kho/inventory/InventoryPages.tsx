@@ -438,13 +438,14 @@ const STOCK_VIEWS: [string, string][] = [
 ];
 const figureCols = (stock: boolean, extra: boolean): Column<StockFigures>[] => [
   ...(stock ? ([
-    { key: 'openingQty', header: 'Số lượng', band: 'Đầu kỳ', type: 'qty', sum: true },
+    // [2026-11-27 kiennt] NT-MH-026 — số lượng tồn đầu / cuối kỳ không có thì ghi 0, không để trống (đóng góp)
+    { key: 'openingQty', header: 'Số lượng', band: 'Đầu kỳ', type: 'qty', sum: true, showZero: true, value: (r) => Number(r.openingQty ?? 0) },
     { key: 'openingValue', header: 'Giá trị', band: 'Đầu kỳ', type: 'money', sum: true },
     { key: 'inQty', header: 'Số lượng', band: 'Nhập kho', type: 'qty', sum: true },
     { key: 'inValue', header: 'Giá trị', band: 'Nhập kho', type: 'money', sum: true },
     { key: 'outQty', header: 'Số lượng', band: 'Xuất kho', type: 'qty', sum: true },
     { key: 'outValue', header: 'Giá trị', band: 'Xuất kho', type: 'money', sum: true },
-    { key: 'closingQty', header: 'Số lượng', band: 'Cuối kỳ', type: 'qty', sum: true },
+    { key: 'closingQty', header: 'Số lượng', band: 'Cuối kỳ', type: 'qty', sum: true, showZero: true, value: (r) => Number(r.closingQty ?? 0) },
     { key: 'closingValue', header: 'Giá trị', band: 'Cuối kỳ', type: 'money', sum: true },
   ] satisfies Column<StockFigures>[]) : []),
   { key: 'purchaseQty', header: 'Số lượng', band: 'Mua hàng (trừ trả lại)', type: 'qty', sum: true, hidden: !extra },

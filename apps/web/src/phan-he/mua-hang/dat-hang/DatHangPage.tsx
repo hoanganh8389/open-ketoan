@@ -17,7 +17,7 @@ import { ErrorBox, Loading, Modal } from '@/components/ui';
 import { errorText } from '@/lib/api';
 import { purchaseApi, today, useMuaHang, useNames, type SupplierRow } from '../du-lieu';
 import { PhieuMuaForm, type GiuPhieuMua } from '../chung-tu/PhieuMuaForm';
-import { useMoLaiHopThoai } from '@/layout/WindowDock';
+import { restoreDock, useMoLaiHopThoai } from '@/layout/WindowDock';
 import { useLocation } from 'react-router-dom';
 import { factsText, fold, num, qtyFmt, stockApi, stockSnapshot, useHierarchy, type AnalysisRow } from '../ton-max/api';
 import { ChuaPhanCap, useMotChiNhanh } from '../ton-max/chung';
@@ -41,6 +41,8 @@ export function DatHangPage() {
   const [params] = useSearchParams();
   const [search, setSearch] = useState(params.get('ncc') ?? '');
   const [quick, setQuick] = useState<Quick>('need');
+  // [2026-11-26 kiennt] NT-MH-025 — mỗi NCC một tab (như các sheet Bỉm Dokma / Bỉm Huggies… của file Excel công thức đặt hàng); '' = tất cả, '~' = chưa rõ NCC (đóng góp)
+  const [ncc, setNcc] = useState('');
   // [2026-11-03 04:30 PM Nguyễn Văn Thủy] NHOM — lọc theo nhóm hàng (tích nhóm cha = cả nhánh con)
   const [nhom, setNhom] = useState('');
   const ln = useLocNhomHang(nhom);
@@ -52,15 +54,31 @@ export function DatHangPage() {
   const [msg, setMsg] = useState<{ ok: boolean; text: React.ReactNode } | null>(null);
   // Lập đơn xong mở xem trước ngay tại chỗ (form đơn đặt: sửa, duyệt, xem mẫu gửi NCC) — không phải sang MH11.
   const mh = useMuaHang();
-  const [openDoc, setOpenDoc] = useState<PDoc | null>(null);
+  // [2026-11-27 kiennt] NT-MH-028 — mở được NHIỀU đơn đặt cùng lúc: lập nhiều NCC thì mỗi đơn một hộp thoại, mỗi hộp một ô ở thanh
+  // dưới đáy (WindowDock); đơn đầu hiện ra, các đơn khác thu nhỏ sẵn — bấm ô để chuyển qua lại (đóng góp)
+  type MoDon = { doc: PDoc; khoiPhuc?: { dirty: boolean; viewing: boolean } };
+  const [openDocs, setOpenDocs] = useState<MoDon[]>([]);
+  /** Thêm đơn vào danh sách đang mở; đơn đã mở rồi thì chỉ đưa lên. Hộp thoại dựng SAU cùng hiện ra, các hộp khác tự thu nhỏ. */
+  const moDon = (docs: MoDon[]) => setOpenDocs((cur) => {
+    const moi = docs.filter((d, i) => !cur.some((c) => c.doc.id === d.doc.id) && docs.findIndex((x) => x.doc.id === d.doc.id) === i);
+    docs.filter((d) => cur.some((c) => c.doc.id === d.doc.id)).forEach((d) => restoreDock(`mh:${d.doc.id}`));
+    return [...cur, ...moi];
+  });
   // [2026-11-26 06:10 PM Nguyễn Văn Thủy] DOCK — tải lại trang: mở lại đơn đặt đang dở (đóng góp)
   const loc = useLocation();
-  const [khoiPhuc, setKhoiPhuc] = useState<{ dirty: boolean; viewing: boolean } | undefined>();
   useMoLaiHopThoai('mh', loc.pathname, (list) => {
-    const g = list[list.length - 1]?.draft as GiuPhieuMua | null;
-    if (g?.v?.id) { setKhoiPhuc({ dirty: g.dirty, viewing: g.viewing }); setOpenDoc(g.v); }
+    // Tải lại trang: mở lại MỌI đơn đặt đang dở (mỗi đơn tự nhớ đang thu nhỏ hay không).
+    const ds = list.map((x) => x.draft as GiuPhieuMua | null).filter((g): g is GiuPhieuMua => Boolean(g?.v?.id));
+    if (ds.length) moDon(ds.map((g) => ({ doc: g.v, khoiPhuc: { dirty: g.dirty, viewing: g.viewing } })));
   });
-  const openById = async (id: string) => { const r = await mh.refetch(); const d = r.data?.docs.find((x) => x.id === id); if (d) setOpenDoc(d); };
+  const openById = async (id: string) => { const r = await mh.refetch(); const d = r.data?.docs.find((x) => x.id === id); if (d) moDon([{ doc: d }]); };
+  /** Mở mọi đơn vừa lập: dựng theo thứ tự ngược để đơn ĐẦU TIÊN dựng sau cùng → hiện ra, các đơn khác nằm ở thanh dưới. */
+  const openMany = async (ids: string[]) => {
+    const r = await mh.refetch();
+    const ds: PDoc[] = [];
+    for (const id of ids) { const d = r.data?.docs.find((x) => x.id === id); if (d) ds.push(d); }
+    moDon(ds.reverse().map((doc) => ({ doc })));
+  };
   const [busy, setBusy] = useState(false);
   const exportRef = useRef<(() => void) | null>(null);
   const q = useQuery({ queryKey: ['ton-max', 'analysis', parent], enabled: Boolean(parent), queryFn: () => stockApi.analysis(parent) });
@@ -73,11 +91,23 @@ export function DatHangPage() {
   /** Bán bình quân 1 ngày (mọi shop) và số ngày đủ bán = (tồn kho + tồn shop + đang đi đường xuống shop) ÷ bán / ngày. */
   const perDay = (r: AnalysisRow) => (banDays > 0 ? r.banShop / banDays : 0);
   const coverOf = (r: AnalysisRow) => { const d = perDay(r); return d > 0 ? (r.tonKho + r.tonShop + r.diDuongShop) / d : null; };
-  const rows = useMemo(() => {
+  const nccKey = (r: AnalysisRow) => r.partnerCode || '~';
+  const base = useMemo(() => {
     const f = fold(search.trim());
     const list = ln.loc(data).filter((r) => (!f || fold(`${r.sku} ${r.name} ${r.barcode} ${r.partnerCode} ${r.partnerName} ${r.brandName} ${r.nccSku} ${(r.members ?? []).map((m) => `${m.sku} ${m.name}`).join(' ')}`).includes(f))
       // [2026-11-03 02:10 PM Nguyễn Văn Thủy] SDTC — đang gõ tìm thì tìm trên MỌI mã (kể cả mã đủ hàng, cần nhập = 0), không bị bộ lọc nhanh che
       && (Boolean(f) || quick === '' || (quick === 'need' ? r.need > 0 : quick === 'over' ? r.need < 0 : quick === 'pending' ? r.dangDat > 0 : !r.partnerCode)));
+    return list;
+  }, [data, search, quick, ln]);
+  /** Tab NCC: đếm theo các mã đang hiện (sau ô Hiện / tìm / nhóm hàng); NCC theo tên, Chưa rõ NCC cuối. */
+  const nccTabs = useMemo(() => {
+    const m = new Map<string, { name: string; n: number }>();
+    for (const r of base) { const k = nccKey(r); const x = m.get(k) ?? { name: r.partnerCode ? (r.partnerName || names.partnerName(r.partnerCode) || r.partnerCode) : 'Chưa rõ NCC', n: 0 }; x.n++; m.set(k, x); }
+    return [...m].sort(([a, x], [b, y]) => Number(a === '~') - Number(b === '~') || x.name.localeCompare(y.name, 'vi'));
+  }, [base]); // eslint-disable-line react-hooks/exhaustive-deps
+  const curNcc = nccTabs.some(([k]) => k === ncc) ? ncc : '';
+  const rows = useMemo(() => {
+    const list = curNcc ? base.filter((r) => nccKey(r) === curNcc) : base;
     // Dòng tiêu đề nhóm: nhãn + NCC (giữ thứ tự máy chủ đã sắp).
     const out: Row[] = [];
     let last = '';
@@ -87,11 +117,11 @@ export function DatHangPage() {
       out.push({ ...r, _key: r.sku });
     }
     return out;
-  }, [data, search, quick, ln]);
+  }, [base, curNcc]);
   const qtyOf = (r: AnalysisRow) => buy[r.sku] ?? r.suggest;
   /** Đủ bán bao nhiêu ngày NẾU đặt đúng SL ở cột SL đặt: hàng hiện có + đi đường về kho + đơn chưa về + SL đặt. */
   const afterOf = (r: AnalysisRow) => { const d = perDay(r); return d > 0 ? (r.tonKho + r.tonShop + r.diDuongShop + r.diDuongKho + r.dangDat + Math.max(0, qtyOf(r))) / d : null; };
-  const chosen = data.filter((r) => sel[r.sku] && qtyOf(r) > 0);
+  const chosen = data.filter((r) => sel[r.sku] && qtyOf(r) > 0 && (!curNcc || nccKey(r) === curNcc)); // đang mở tab NCC: chỉ lập đơn cho NCC đó
   const stats = { all: data.length, need: data.filter((r) => r.need > 0).length, over: data.filter((r) => r.need < 0).length, pending: data.filter((r) => r.dangDat > 0).length, nopartner: data.filter((r) => !r.partnerCode).length };
   const money = chosen.reduce((s, r) => s + qtyOf(r) * (r.price ?? 0), 0);
 
@@ -172,7 +202,7 @@ export function DatHangPage() {
       }
       setSel({}); setBuy({});
       setMsg({ ok: true, text: <>Đã lập {made.length} đơn đặt nháp: {made.map((m) => <button key={m.id} type="button" className="btn btn-xs" style={{ marginRight: 6 }} onClick={() => void openById(m.id)}>{m.docNo} ({names.partnerName(m.ncc)}, {m.n} mã)</button>)} — bấm để xem lại đơn, thêm ngân sách, ghi chú, xem mẫu Excel gửi NCC.</> });
-      if (made[0]) await openById(made[0].id);
+      if (made.length) await openMany(made.map((m) => m.id)); // lập nhiều NCC: mở hết, mỗi đơn một ô ở thanh dưới
       await qc.invalidateQueries({ queryKey: ['ton-max'] });
       await qc.invalidateQueries({ queryKey: ['mua-hang'] });
     } catch (e) { setMsg({ ok: false, text: errorText(e) }); } finally { setBusy(false); }
@@ -200,11 +230,16 @@ export function DatHangPage() {
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}><FileSpreadsheet size={14} /> Xuất Excel</button>
           <button className="btn btn-primary" disabled={!chosen.length || busy || parent.includes(',')} title={parent.includes(',') ? 'Đang xem gộp nhiều chi nhánh — chọn một chi nhánh để lập đơn đặt (hàng về kho của chi nhánh đó)' : undefined} onClick={() => void makeOrders()}><ShoppingCart size={15} /> Lập đơn đặt ({chosen.length} mã{money ? ` · ${Math.round(money).toLocaleString('vi-VN')}đ` : ''})</button>
         </div>
+        {/* [2026-11-27 kiennt] NT-MH-028 — tên NCC dài cắt bằng "…" trong tab (không đè tab bên), rê chuột xem đủ tên (đóng góp) */}
+        {nccTabs.length > 0 && <div className="mh02-tabs" role="tablist" title="Mỗi NCC một tab — Lập đơn đặt chỉ lấy các mã đã chọn của tab đang mở">
+          <button type="button" role="tab" className={curNcc ? '' : 'on'} onClick={() => setNcc('')}>Tất cả NCC <span>{base.length.toLocaleString('vi-VN')}</span></button>
+          {nccTabs.map(([k, x]) => <button key={k} type="button" role="tab" className={`${curNcc === k ? 'on' : ''}${k === '~' ? ' none' : ''}`} title={k === '~' ? 'Mã chưa nhập lần nào và chưa NCC nào khai bán' : `${x.name} (${k}) — ${x.n} mã`} onClick={() => setNcc(k)}><b>{x.name}</b><span>{x.n.toLocaleString('vi-VN')}</span></button>)}
+        </div>}
         {/* [2026-11-25 kiennt] NT-MH-010 — bỏ dải ô đếm (Tổng mã / Cần nhập / Đang dư / Đơn chưa về / Chưa rõ NCC); lọc nhanh chuyển thành ô chọn "Hiện" trên hàng công cụ, có số mã từng loại (đóng góp) */}
         {msg && <div className={`alert ${msg.ok ? 'alert-ok' : 'alert-bad'}`} style={{ margin: '0 12px 8px' }}>{msg.text}</div>}
         <ErrorBox error={q.error ? errorText(q.error) : null} />
         {q.isLoading ? <Loading text="Đang tính tồn, bán, đi đường của mọi shop…" /> : (
-          <div className="tm-grid"><DataGrid rows={rows} columns={cols} rowKey={(r) => r._key} storageKey="phan-tich-dat-hang" exportRef={exportRef} exportName={`phan-tich-dat-hang-${parent}-${today()}`}
+          <div className="tm-grid"><DataGrid rows={rows} columns={cols} rowKey={(r) => r._key} storageKey="phan-tich-dat-hang" exportRef={exportRef} exportName={`phan-tich-dat-hang-${parent}${curNcc && curNcc !== '~' ? `-${curNcc}` : ''}-${today()}`}
             exportTitle={`Phân tích đặt hàng ${q.data?.parent.name ?? parent} ngày ${today()}`}
             rowKind={(r) => (r._group ? 'group' : 'data')}
             groupLabel={(r) => <span className="tm-group-label"><span className="brand">{r.brandName || 'Chưa có nhãn'}</span><span className="ncc">{r.partnerCode ? `${r.partnerCode} - ${r.partnerName || names.partnerName(r.partnerCode)}` : 'Chưa rõ nhà cung cấp'}</span>{!r.partnerCode && <span className="muted" style={{ fontSize: 11.5, fontWeight: 400, marginLeft: 10 }}>— mã chưa nhập lần nào và chưa NCC nào khai bán: vào hồ sơ NCC → thẻ Hợp đồng & giá → Mặt hàng & giá → Thêm mã (hoặc Nhập dữ liệu khởi đầu MH20, thẻ giá mua)</span>}{r.partnerCode && <NccNo s={supOf.get(r.partnerCode)} />}</span>}
@@ -223,7 +258,7 @@ export function DatHangPage() {
           <div className="muted" style={{ marginTop: 8, fontSize: 12 }}>{why.shopsWithMax} shop có max, {why.shopsBelowMax} shop đang dưới max. Đổi cách tính ở <Link to="/mua-hang/cong-thuc">Công thức đặt hàng</Link>.</div>
         </div>
       </Modal>}
-      {openDoc && mh.data && <PhieuMuaForm key={openDoc.id} value={openDoc} khoiPhuc={khoiPhuc} data={mh.data} onClose={() => { setOpenDoc(null); setKhoiPhuc(undefined); }} onSaved={() => void mh.refresh()} onOpen={(d) => setOpenDoc(d)} />}
+      {mh.data && openDocs.map((o) => <PhieuMuaForm key={o.doc.id} value={o.doc} khoiPhuc={o.khoiPhuc} data={mh.data!} onClose={() => setOpenDocs((cur) => cur.filter((c) => c.doc.id !== o.doc.id))} onSaved={() => void mh.refresh()} onOpen={(d) => moDon([{ doc: d }])} />)}
     </>
   );
 }
