@@ -72,3 +72,8 @@ Phiếu đã huỷ, phiếu đã có chữ ký vai đó, phiếu mình không đ
 Phiếu in có chữ ký thì ô chữ ký ghi **Đã ký xác nhận**, tên người ký và giờ ký (vẫn chừa chỗ ký tay). Chữ ký gắn với **phiên bản** phiếu: sửa phiếu sau khi ký thì chữ ký cũ hết hiệu lực (hiện "đã ký bản cũ"), cần ký lại. Huỷ chữ ký: người đã ký hoặc chủ đơn vị bấm nút × cạnh chữ ký.
 
 Đây là **xác nhận trong phần mềm** (có nhật ký ai ký, lúc nào), chưa phải chữ ký số dùng chứng thư số (token USB) theo Luật Giao dịch điện tử.
+
+## Tiền từ chứng từ khác (bán hàng, trả hàng, thu tiền khách…)
+<!-- [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-052 (đóng góp) -->
+
+Dưới danh sách phiếu có khung **"Tiền mặt từ chứng từ khác"**: đơn bán ở máy POS, phiếu bán BH10, phiếu trả hàng, thu tiền khách… ghi tiền thẳng trong bút toán của chính chứng từ (không có phiếu thu / chi riêng). Khung chỉ xem, số đọc từ sổ cái, số ròng theo chứng từ (chứng từ đã huỷ không hiện). Bấm đúp một dòng để mở chứng từ gốc. Các phiếu ở danh sách chính không lặp lại ở khung này.

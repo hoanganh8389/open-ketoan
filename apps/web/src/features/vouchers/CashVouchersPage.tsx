@@ -27,6 +27,8 @@ import { CashVoucherForm, type GiuPhieuTien } from './CashVoucherForm';
 import { useMoLaiHopThoai } from '@/layout/WindowDock';
 import { useLocation } from 'react-router-dom';
 import { ManualVoucherForm } from './ManualVoucherForm';
+// [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-052: tiền từ chứng từ bán / trả / thu tiền khách hiện dưới danh sách ACC51 / ACC54 (đóng góp)
+import { TienTuChungTu } from './TienTuChungTu';
 import { useTemplates } from './TemplatesPage';
 import { VOUCHER_SCREEN, VOUCHER_TEMPLATES, signRolesOf, type PrintSheet, type SignatureInfo } from './VoucherPrint';
 import { PrintButton } from '@/components/print';
@@ -225,6 +227,7 @@ export function CashVouchersPage({ type, pair }: { type: CashType; pair?: CashTy
         </>
       )}
     >
+      {type !== 'manual' && <TienTuChungTu kind={isBank ? 'bank' : 'cash'} from={f.from} to={f.to} branchCodes={f.branchCodes || undefined} />}
       {form && (() => {
         const onSaved = (docNo: string, docDate: string, addNew: boolean) => {
           setNotice(`Đã ghi sổ ${VOUCHER_META[form.type ?? type].title.toLowerCase()} ${docNo}.`);

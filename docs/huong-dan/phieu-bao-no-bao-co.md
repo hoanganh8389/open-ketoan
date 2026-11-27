@@ -34,3 +34,8 @@ Giống **Thu, chi tiền** (xem hướng dẫn Phiếu thu, phiếu chi), khác
 | Chuyển tiền giữa hai tài khoản, hai chi nhánh | Chuyển tiền nội bộ | |
 
 Xem số dư từng tài khoản ngân hàng ở **Sổ tiền gửi ngân hàng (ACC56)**.
+
+## Tiền từ chứng từ khác (bán hàng, trả hàng, thu tiền khách…)
+<!-- [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-052 (đóng góp) -->
+
+Dưới danh sách phiếu có khung **"Tiền gửi từ chứng từ khác"**: đơn bán ở máy POS, phiếu bán BH10, phiếu trả hàng, thu tiền khách… ghi tiền thẳng trong bút toán của chính chứng từ (không có giấy báo có / nợ riêng). Khung chỉ xem, số đọc từ sổ cái, số ròng theo chứng từ (chứng từ đã huỷ không hiện). Bấm đúp một dòng để mở chứng từ gốc. Các phiếu ở danh sách chính không lặp lại ở khung này.
