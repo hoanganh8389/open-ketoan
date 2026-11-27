@@ -97,6 +97,8 @@ export type PricedLine = {
   money: LineMoney;
   /** Tiền giảm của voucher đổi điểm (NT-BH-020 bước 2) + voucher TGS (NT-BH-026) chia vào dòng (gồm thuế). */
   voucherDiscount?: number;
+  /** Phần CHƯA THUẾ của voucher đổi điểm trên dòng (NT-BH-060) — phiếu kế toán phân loại lại sang chiết khấu thương mại. */
+  pointVoucherNet?: number;
 };
 
 /** Dòng bill Z (NT-BH-019): mã không gửi thuế, 0đ. Trên chứng từ bán là dòng quà; máy bán in sang bill Z theo sendTax. */
@@ -247,8 +249,11 @@ export function computeOrder(input: ComputeInput): ComputedOrder | { problem: Or
       // Chia tiền giảm theo thành tiền dòng (sau các giảm khác), tổng đúng bằng tiền voucher (allocate — chia không lệch đồng).
       const shares = allocate(v.amount, paid.map((l) => l.money.gross));
       paid.forEach((l, i) => {
+        const before = l.money.net;
         l.voucherDiscount = shares[i]!;
         l.money = lineMoney(l.draft.clientUnitPrice, l.draft.unitQty, l.item.taxRate, l.draft.manualDiscount, (l.draft.promoDiscount ?? 0) + shares[i]!);
+        // [2026-11-28 05:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-060: phần chưa thuế voucher đổi điểm giảm trên dòng (đóng góp)
+        l.pointVoucherNet = Math.max(0, before - l.money.net);
       });
     }
   }
@@ -477,6 +482,7 @@ export function toOrderSnapshot(o: ComputedOrder, meta: { draft: OrderDraft; cod
       // false = không lên hoá đơn thuế (máy bán và hoá đơn điện tử đọc cờ này).
       sendTax: l.item.sendTax,
       ...(l.voucherDiscount ? { voucherDiscount: l.voucherDiscount } : {}),
+      ...(l.pointVoucherNet ? { pointVoucherNet: l.pointVoucherNet } : {}),
       // NT-BH-028: kho của dòng — bản sao đơn về website ghi phân kho theo trường này. Trả hàng nguyên vẹn vẫn về kho bán (luật kho: khách trả nhận KHH / KTL, không nhận KKM).
       // Máy có thể gửi warehouseCode ở dòng (đọc từ bootstrap) — máy chủ quyết theo cài đặt; chưa khai kho quà thì bỏ (undefined).
       warehouseCode: lineWarehouse(l.draft, meta.warehouses),

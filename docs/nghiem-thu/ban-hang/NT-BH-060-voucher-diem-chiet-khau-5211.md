@@ -93,7 +93,7 @@ Khai thêm như NT-BH-020: chương trình điểm có quà đổi voucher (VC50
 |---|---|
 | Ngày chạy | 28/11/2026 — thử trên máy local |
 | Bản code (commit) | nhánh `feat/nt-bh-060-voucher-diem-5211` |
-| Test tự động | `apps/api/test/nt-bh-060-voucher-diem-5211.test.ts`; `modules/pos/test/voucher-diem.test.ts` | (đề xuất — tệp test ở nhánh code)
+| Test tự động | `apps/api/test/nt-bh-060-voucher-diem-5211.test.ts`; `modules/pos/test/voucher-diem.test.ts` |
 | Tiêu chí lên mức | không đổi mức |
 
 | Mục | Mong đợi | Phần mềm | Chênh | Giải thích |

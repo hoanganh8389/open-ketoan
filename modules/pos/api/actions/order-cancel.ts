@@ -7,6 +7,7 @@ import { Errors, defineAction, sql, z } from '@bizcity/module-sdk';
 import { findOrder } from '../return-service.js';
 import { lockKey } from '../order-service.js';
 import { releaseUses } from '../promo.js';
+import { cancelPointVoucherJournal, type PointVoucherJournalState } from '../point-voucher.js';
 
 export default defineAction({
   id: 'pos.order.cancel', title: 'Huỷ đơn máy POS đang chờ thanh toán', tags: ['Máy bán POS'],
@@ -28,6 +29,8 @@ export default defineAction({
     }
     const why = reason?.trim() || 'Huỷ đơn chờ thanh toán từ máy bán';
     await ctx.ledger.cancel(order.doc_key, why);
+    // [2026-11-28 05:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-060: huỷ đơn → huỷ luôn phiếu chiết khấu voucher đổi điểm (đóng góp)
+    await cancelPointVoucherJournal(ctx, (order.snapshot as { pointVoucherJournal?: PointVoucherJournalState }).pointVoucherJournal, why);
     const snapshot = { ...order.snapshot, status: 'cancelled' };
     const version = await ctx.data.module(async (tx) => {
       // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: huỷ đơn chờ thanh toán → trả lượt khuyến mại (đóng góp)

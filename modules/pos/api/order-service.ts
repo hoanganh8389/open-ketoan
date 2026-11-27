@@ -21,6 +21,9 @@ import { checkCustomerQuota, checkQuota, quotaMessage, recordUses } from './prom
 import type { QuotedVoucher } from './domain/voucher.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-031: kênh bán của đơn theo danh mục Kênh bán hàng (đóng góp)
 import { resolveSaleSource } from './channels.js';
+// [2026-11-28 05:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-060: voucher đổi điểm → phiếu kế toán chiết khấu thương mại (đóng góp)
+import { pointVoucherJournal } from './domain/point-voucher.js';
+import { submitPointVoucherJournal } from './point-voucher.js';
 
 export const EINVOICE_NONE = { required: false, lines: [] as unknown[], warnings: [] as string[] };
 
@@ -276,6 +279,10 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
   if (stockShort.length) Object.assign(order, { stockShortOffline: stockShort });
   if (priceOffline.length) Object.assign(order, { priceChangedOffline: priceOffline });
   if (quotaShort.length) Object.assign(order, { promoQuotaOffline: quotaShort });
+  // [2026-11-28 05:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-060: phần chưa thuế của voucher đổi điểm: Nợ chiết khấu thương mại / Có doanh thu (doanh thu ghi đủ giá) (đóng góp)
+  const pvNet = computed.lines.reduce((t, l) => t + (l.pointVoucherNet ?? 0), 0);
+  const pvDoc = loyalty?.input.voucher ? pointVoucherJournal({ branchCode: branch.code, orderId: draft.id, orderCode: code, businessDate: draft.businessDate, voucherCode: loyalty.input.voucher.code, amountNet: pvNet }) : null;
+  if (pvDoc) Object.assign(order, { pointVoucherJournal: await submitPointVoucherJournal(ctx, pvDoc) });
 
   try {
     await ctx.data.module(async (tx) => {
