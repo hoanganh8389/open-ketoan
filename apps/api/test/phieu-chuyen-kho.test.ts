@@ -175,4 +175,17 @@ describe('Phiếu chuyển kho KHO01', () => {
     const pending = (await call<{ data: T[] }>(ctx, 'GET', `/api/v1/kho/transfers?status=pending&search=ck-sua`)).body.data;
     expect(pending).toHaveLength(1);
   });
+
+  // [2026-11-27 10:05 AM Nguyễn Văn Thủy] #68 tab Test: tồn = 0 / vượt tồn → không xuất chuyển kho; nháp duyệt xuất cũng chặn (đóng góp)
+  it('#68: mã tồn 0 hoặc vượt tồn ở kho xuất → không ghi xuất, báo rõ mã / cần / tồn', async () => {
+    const r = await call(ctx, 'POST', '/api/v1/kho/transfers', { docDate: D(6), fromBranchCode: 'KHO', toBranchCode: 'SHOP1', lines: [{ lineKey: 'a', sku: 'CK-KHONG-TON', name: 'Hết hàng', unit: 'Lon', qty: 1 }] });
+    expect(r.status).toBe(400);
+    expect(JSON.stringify(r.body)).toContain('Không đủ tồn');
+    expect(JSON.stringify(r.body)).toContain('CK-KHONG-TON cần 1, tồn 0');
+    const v = await call(ctx, 'POST', '/api/v1/kho/transfers', { docDate: D(6), fromBranchCode: 'KHO', toBranchCode: 'SHOP1', lines: [{ lineKey: 'a', sku: 'CK-SUA', name: 'Sữa', unit: 'Lon', qty: 9999 }] });
+    expect(v.status).toBe(400);
+    const n = await call<{ data: { id: string } }>(ctx, 'POST', '/api/v1/kho/transfers', { docDate: D(6), fromBranchCode: 'KHO', toBranchCode: 'SHOP1', mode: 'draft', lines: [{ lineKey: 'a', sku: 'CK-KHONG-TON', name: 'Hết hàng', unit: 'Lon', qty: 1 }] });
+    expect(n.status).toBeLessThan(300); // nháp chưa trừ tồn: máy chủ cho ghi (màn chặn trước)
+    expect((await call(ctx, 'POST', `/api/v1/kho/transfers/${n.body.data.id}/ship`, {})).status).toBe(400);
+  });
 });

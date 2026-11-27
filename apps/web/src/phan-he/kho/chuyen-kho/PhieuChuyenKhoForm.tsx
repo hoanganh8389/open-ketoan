@@ -142,10 +142,11 @@ export function PhieuChuyenKhoForm({ value, saving, error, onSave, onClose, onRe
     sameBranch && fromWh === toWh && 'Cùng chi nhánh thì kho xuất và kho nhập phải khác nhau',
     !v.lines.length && 'Chưa có dòng hàng',
     v.lines.some((l) => !l.sku || !(l.qty > 0)) && 'Có dòng thiếu mã hàng hoặc số lượng',
+    // [2026-11-27 10:00 AM Nguyễn Văn Thủy] #68 tab Test: vượt tồn ở kho xuất (kể cả tồn = 0) không ghi được — trước chỉ hỏi rồi vẫn cho ghi (đóng góp)
+    over.length > 0 && `Không đủ tồn ở kho xuất: ${over.map((s) => `${s} cần ${qtyText(usedBySku.get(s))}, tồn ${qtyText(stock[s])}`).join('; ')}`,
   ].filter(Boolean) as string[];
 
   const save = (close: boolean, mode?: 'draft' | 'ship') => {
-    if (over.length && !window.confirm(`Vượt tồn ở kho xuất: ${over.map((s) => `${s} (cần ${qtyText(usedBySku.get(s))}, tồn ${qtyText(stock[s])})`).join(', ')}.\nVẫn ghi phiếu?`)) return;
     onSave({
       docNo: v.docNo, docDate: v.docDate, fromBranchCode: v.fromBranchCode, fromWarehouse: v.fromWarehouse, toBranchCode: v.toBranchCode, toWarehouse: v.toWarehouse,
       reasonCode: v.reasonCode, note: v.note, lines: v.lines, receiveNow: draftLike ? receiving : undefined, mode: draftLike ? mode ?? 'ship' : undefined,

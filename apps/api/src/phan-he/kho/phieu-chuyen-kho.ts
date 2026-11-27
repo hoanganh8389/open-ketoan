@@ -231,7 +231,21 @@ async function ingest(trx: Db, auth: AuthContext, raw: Record<string, unknown>) 
 const head = (r: Row) => ({ docNo: r.doc_no, docDate: r.doc_date, reasonCode: r.reason_code ?? undefined, sourceSystem: 'erp', sourceRef: { type: 'stock_transfer', id: r.id, label: r.doc_no }, extra: { transferGroup: `erp:ck:${r.id}` } });
 
 /** Đầu XUẤT: chi nhánh + phân kho xuất, đúng số xuất; lô theo dòng (trống = lõi tự chọn hạn sớm trước). */
+// [2026-11-27 10:00 AM Nguyễn Văn Thủy] #68 tab Test: KHÔNG xuất chuyển kho vượt tồn (kể cả tồn = 0) — trước chỉ hỏi "vẫn ghi?" rồi cho âm kho.
+// Kiểm ở mọi lần ghi đầu xuất (lập, duyệt xuất nháp, duyệt điều chỉnh); không tính chính phiếu này (điều chỉnh) (đóng góp)
+async function chanVuotTon(trx: Db, tenantId: string, r: Row) {
+  const can = new Map<string, number>();
+  for (const l of r.lines) can.set(l.sku, (can.get(l.sku) ?? 0) + l.qty);
+  if (!can.size) return;
+  const res = await stockAt(trx, tenantId, { branchCode: r.from_branch_code, warehouse: r.from_warehouse || undefined, date: r.doc_date, skus: [...can.keys()], exceptId: r.id });
+  const ton: Record<string, number> = ('stock' in res && res.stock) || {};
+  const thieu = [...can].filter(([sku, q]) => q > (ton[sku] ?? 0) + 1e-9);
+  if (thieu.length) {
+    throw Errors.validation(`Không đủ tồn ở kho xuất ${r.from_branch_code}${r.from_warehouse ? ` · ${r.from_warehouse}` : ''} ngày ${r.doc_date}: ${thieu.map(([sku, q]) => `${sku} cần ${q}, tồn ${ton[sku] ?? 0}`).join('; ')} — giảm số lượng, chọn kho khác hoặc nhập hàng trước`);
+  }
+}
 async function postOut(trx: Db, auth: AuthContext, r: Row) {
+  await chanVuotTon(trx, auth.tenantId, r);
   await ingest(trx, auth, {
     ...head(r), docType: 'transfer', leg: 'out', docKey: r.out_doc_key, version: await nextVersion(trx, auth.tenantId, r.out_doc_key),
     branchCode: r.from_branch_code, toBranchCode: r.to_branch_code,
