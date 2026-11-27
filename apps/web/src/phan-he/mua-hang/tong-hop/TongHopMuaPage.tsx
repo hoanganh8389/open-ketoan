@@ -25,7 +25,7 @@ export type GroupBy = 'partner' | 'brand' | 'industry' | 'group' | 'sku' | 'bran
 interface Row { key: string; label: string; name: string; baseUnit: string; invoiceUnit: string; invoiceQty: number | null; invoiceQtyText: string; buyQty: number; giftQty: number; returnQty: number; gross: number; discount: number; net: number; tax: number; returns: number; cost: number; rebate: number; value: number; unitCost: number | null; openDebt: number; documents: number; docList: { id: string; docNo: string; kind: string; docDate: string }[] }
 const GROUPS: [GroupBy, string][] = [['sku', 'Mã hàng'], ['group', 'Nhóm hàng'], ['industry', 'Ngành hàng'], ['brand', 'Nhãn hàng'], ['partner', 'Nhà cung cấp'], ['branch', 'Chi nhánh']];
 
-export function TongHopTheoNhom({ from, to, gomBanDau = 'sku', anThe }: { from: string; to: string; /** Cách gom khi mở. */ gomBanDau?: GroupBy; /** Báo cáo riêng một cách gom (vd theo chi nhánh): ẩn hàng thẻ. */ anThe?: boolean }) {
+export function TongHopTheoNhom({ from, to, gomBanDau = 'sku', anThe, chiThe }: { from: string; to: string; /** Chỉ hiện các thẻ gom này (báo cáo riêng theo ngành / nhãn / nhóm). */ chiThe?: GroupBy[]; /** Cách gom khi mở. */ gomBanDau?: GroupBy; /** Báo cáo riêng một cách gom (vd theo chi nhánh): ẩn hàng thẻ. */ anThe?: boolean }) {
   const names = useNames();
   const [groupBy, setGroupBy] = useState<GroupBy>(gomBanDau);
   const exportRef = useRef<(() => void) | null>(null);
@@ -58,7 +58,7 @@ export function TongHopTheoNhom({ from, to, gomBanDau = 'sku', anThe }: { from: 
   ];
   return (
     <>
-        {!anThe && <div className="tabs" style={{ marginBottom: 0 }}>{GROUPS.map(([k, l]) => <button key={k} className={`tab ${groupBy === k ? 'active' : ''}`} onClick={() => setGroupBy(k)}>Theo {l.toLowerCase()}</button>)}</div>}
+        {!anThe && <div className="tabs" style={{ marginBottom: 0 }}>{GROUPS.filter(([k]) => !chiThe || chiThe.includes(k)).map(([k, l]) => <button key={k} className={`tab ${groupBy === k ? 'active' : ''}`} onClick={() => setGroupBy(k)}>Theo {l.toLowerCase()}</button>)}</div>}
         <div className="filters">
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}>Xuất Excel</button>
           <PrintButton small screen="MH11" templates={buyTemplates(groupBy)} disabled={!q.data}
@@ -93,6 +93,20 @@ export function TongHopTheoChiNhanhPage() {
       <PageHeader title="Tổng hợp mua hàng theo chi nhánh" code="MH23B" helpKey="mua-hang-bao-cao" subtitle="Giá trị mua, chiết khấu, trả lại của từng chi nhánh trong kỳ — theo phiếu đã duyệt" />
       <FilterLayout filters={<DateRange from={ky.from} to={ky.to} onChange={(from, to) => setKy({ from, to })} />}>
         <div className="card"><TongHopTheoNhom from={ky.from} to={ky.to} gomBanDau="branch" anThe /></div>
+      </FilterLayout>
+    </>
+  );
+}
+
+// [2026-11-27 08:40 AM Nguyễn Văn Thủy] #65 tab Test: báo cáo riêng Tổng hợp mua hàng theo ngành / nhãn / nhóm hàng (MH23C) — trước chỉ có trong kiểu Gom của MH11, khó tìm (đóng góp)
+/** MH23C Tổng hợp mua hàng theo ngành hàng, nhãn hàng, nhóm hàng: SL mua, tặng, trả, tiền hàng, chiết khấu, giá trị mua (phiếu đã duyệt). */
+export function TongHopTheoHangPage() {
+  const [ky, setKy] = useState(() => ({ from: `${today().slice(0, 7)}-01`, to: today() }));
+  return (
+    <>
+      <PageHeader title="Tổng hợp mua hàng theo ngành, nhãn, nhóm hàng" code="MH23C" helpKey="mua-hang-bao-cao" subtitle="Giá trị mua, chiết khấu, trả lại theo ngành hàng / nhãn hàng / nhóm hàng trong kỳ — theo phiếu đã duyệt" />
+      <FilterLayout filters={<DateRange from={ky.from} to={ky.to} onChange={(from, to) => setKy({ from, to })} />}>
+        <div className="card"><TongHopTheoNhom from={ky.from} to={ky.to} gomBanDau="brand" chiThe={['industry', 'brand', 'group']} /></div>
       </FilterLayout>
     </>
   );
