@@ -15,8 +15,8 @@ type Qr = { amount: number; status: string; expiresAt: string; paidAt?: string; 
 
 export default defineAction({
   id: 'pos.order.qr-confirm', title: 'Xác nhận đơn QR đã nhận tiền', tags: ['Máy bán POS'],
-  permission: 'pos:sell', effect: 'write', sideEffects: ['documents'], idempotency: 'required',
-  errors: ['VALIDATION_ERROR', 'CONFLICT', 'NOT_FOUND'],
+  permission: 'pos:sell', effect: 'write', sideEffects: ['documents', 'ledger'], idempotency: 'required',
+  errors: ['VALIDATION_ERROR', 'CONFLICT', 'NOT_FOUND', 'PERIOD_LOCKED'],
   input: z.object({
     id: z.string().trim().min(1).max(64), source: z.enum(['bank', 'manual']), amount: z.number().nonnegative(),
     paymentRef: z.string().trim().max(100).optional(), paidAt: z.string().max(40).optional(), note: z.string().trim().max(500).optional(),
