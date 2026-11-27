@@ -4,10 +4,12 @@
  * theo đơn. Tiền trừ thật (chia vào dòng / dòng thanh toán) do module bán (pos, phieu-ban) tính trên đơn của mình.
  */
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: hàm thuần voucher (đóng góp)
+// [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: giảm % có trần, lô mã không SĐT, mỗi khách tối đa N mã, cửa hàng áp dụng, thu hồi khi trả một phần (đóng góp)
 import { createHash, randomBytes } from 'node:crypto';
-import { z } from '@bizcity/module-sdk';
+import { roundMoney, z } from '@bizcity/module-sdk';
 
 export type Kind = 'cash' | 'next_purchase';
+export type DiscountType = 'amount' | 'percent';
 export type Issuer = 'tgs' | 'brand';
 export type CodeStatus = 'active' | 'used' | 'revoked';
 
@@ -23,7 +25,15 @@ export const campaignInput = z.object({
   issuer: z.enum(['tgs', 'brand']),
   issuerPartnerCode: z.string().trim().max(64).nullish(),
   paymentMethodCode: z.string().trim().max(32).nullish(),
-  faceValue: z.number().int('Mệnh giá là số nguyên đồng').positive('Mệnh giá phải lớn hơn 0'),
+  /** NT-BH-050 V1: amount = mệnh giá tiền; percent = giảm % (tối đa `maxDiscount`). */
+  discountType: z.enum(['amount', 'percent']).default('amount'),
+  faceValue: z.number().int('Mệnh giá là số nguyên đồng').positive('Mệnh giá phải lớn hơn 0').nullish(),
+  discountPercent: z.number().positive('Phần trăm giảm phải lớn hơn 0').max(100, 'Phần trăm giảm tối đa 100').nullish(),
+  maxDiscount: z.number().int('Giảm tối đa là số nguyên đồng').positive('Giảm tối đa phải lớn hơn 0').nullish(),
+  /** NT-BH-050 V2: mỗi khách dùng tối đa N mã của đợt (trống = không giới hạn). */
+  perCustomer: z.number().int().positive('Mỗi khách tối đa phải lớn hơn 0').max(1000).nullish(),
+  /** Cửa hàng dùng được (mã chi nhánh); trống = mọi cửa hàng. */
+  branchCodes: codeList,
   minOrder: z.number().int().min(0).default(0),
   validFrom: date,
   validTo: optDate,
@@ -39,6 +49,8 @@ export type CampaignInput = z.infer<typeof campaignInput>;
 /** Lỗi khuôn đợt phát (câu tiếng Việt) — rỗng = được. */
 export function campaignProblems(c: CampaignInput): string[] {
   const p: string[] = [];
+  if (c.discountType === 'amount' && !(c.faceValue && c.faceValue > 0)) p.push('Chưa nhập mệnh giá (đồng)');
+  if (c.discountType === 'percent' && !(c.discountPercent && c.discountPercent > 0)) p.push('Voucher giảm % phải nhập phần trăm giảm (lớn hơn 0, tối đa 100)');
   if (c.issuer === 'brand' && !c.issuerPartnerCode) p.push('Voucher hãng phải chọn hãng / NCC phát');
   if (c.issuer === 'brand' && !c.paymentMethodCode) p.push('Voucher hãng phải chọn hình thức thanh toán (kế toán khai tài khoản phải thu hãng ở hình thức)');
   if (c.kind === 'next_purchase' && !c.skus.length && !c.brandCodes.length) p.push('Voucher lần mua sau phải chọn sản phẩm hoặc nhãn áp dụng');
@@ -79,11 +91,13 @@ export function expiryOf(c: { validTo: string | null; validDays: number | null }
 
 export type Campaign = {
   id: string; code: string; name: string; kind: Kind; issuer: Issuer; issuerPartnerCode: string | null; paymentMethodCode: string | null;
-  faceValue: number; minOrder: number; validFrom: string; validTo: string | null; validDays: number | null; itemIds: string[]; brandCodes: string[];
+  faceValue: number; discountType: DiscountType; discountPercent: number | null; maxDiscount: number | null; perCustomer: number | null; branchCodes: string[];
+  minOrder: number; validFrom: string; validTo: string | null; validDays: number | null; itemIds: string[]; brandCodes: string[];
   issueMode: 'manual' | 'auto'; autoRule: { itemIds: string[]; brandCodes: string[]; minQty: number; branches: string[] } | null; status: 'active' | 'stopped';
 };
 export type CodeRow = {
-  code: string; campaignId: string; phone: string; partnerCode: string | null; status: CodeStatus; expiresOn: string | null;
+  /** phone null = mã lô không gắn khách (NT-BH-050 V2). */
+  code: string; campaignId: string; phone: string | null; partnerCode: string | null; status: CodeStatus; expiresOn: string | null;
   usedSource: string | null; usedRefId: string | null; usedRefCode: string | null; usedBranch: string | null; usedOn: string | null; revokeReason: string | null;
 };
 /** Dòng giỏ đã tra danh mục (item_id, nhãn) — số lượng theo đơn vị nhỏ nhất, tiền gồm thuế sau khuyến mại. */
@@ -103,11 +117,16 @@ export const inScope = (scope: { itemIds: string[]; brandCodes: string[] }, l: C
  */
 export function checkCode(code: string, row: CodeRow | null, c: Campaign | null, o: {
   phones: ReadonlySet<string>; customerCode: string | null; refId: string; date: string; orderTotal: number; cart: readonly CartLine[];
+  /** Cửa hàng của đơn / phiếu (kiểm cửa hàng áp dụng của đợt); không gửi = không kiểm. */
+  branch?: string;
+  /** Số mã khác của đợt khách này đã dùng (đơn / phiếu khác) + đã chọn trước trong chính đơn này — kiểm giới hạn mỗi khách. */
+  customerUsed?: number;
 }): { problem: Problem } | { applicableSkus: string[] | null } {
   const bad = (reason: string, message: string, extra: Partial<Problem> = {}) => ({ problem: { code, reason, message, ...extra } });
   if (!row || !c) return bad('VOUCHER_NOT_FOUND', `Không có voucher ${code}`);
-  const owner = o.phones.has(row.phone) || (row.partnerCode !== null && row.partnerCode === o.customerCode);
-  if (!owner) return bad('VOUCHER_NOT_OWNER', `Voucher ${code} không thuộc khách này (gắn SĐT ${maskPhone(row.phone)}) — chỉ khách được phát mới dùng được`);
+  // Mã lô không gắn khách (phone null): ai cầm mã cũng dùng — vẫn đếm giới hạn mỗi khách bên dưới.
+  const owner = row.phone === null || o.phones.has(row.phone) || (row.partnerCode !== null && row.partnerCode === o.customerCode);
+  if (!owner) return bad('VOUCHER_NOT_OWNER', `Voucher ${code} không thuộc khách này (gắn SĐT ${maskPhone(row.phone ?? '')}) — chỉ khách được phát mới dùng được`);
   if (row.status === 'used' && row.usedRefId !== o.refId) {
     return bad('VOUCHER_USED', `Voucher ${code} đã dùng ở ${row.usedSource === 'phieu-ban' ? 'phiếu' : 'đơn'} ${row.usedRefCode ?? '?'}${row.usedOn ? ` ngày ${row.usedOn}` : ''}${row.usedBranch ? ` (${row.usedBranch})` : ''}`,
       { usedIn: { source: row.usedSource ?? '', refCode: row.usedRefCode ?? '', branch: row.usedBranch, date: row.usedOn } });
@@ -116,6 +135,12 @@ export function checkCode(code: string, row: CodeRow | null, c: Campaign | null,
   if (c.status === 'stopped') return bad('VOUCHER_REVOKED', `Đợt ${c.name} đã ngừng — voucher ${code} không dùng được`);
   if (o.date < c.validFrom) return bad('VOUCHER_EXPIRED', `Voucher ${code} dùng từ ngày ${c.validFrom}`);
   if (row.expiresOn && o.date > row.expiresOn) return bad('VOUCHER_EXPIRED', `Voucher ${code} hết hạn ngày ${row.expiresOn}`);
+  if (c.branchCodes.length && o.branch && !c.branchCodes.includes(o.branch)) {
+    return bad('VOUCHER_NOT_APPLICABLE', `Voucher ${code} (${c.name}) chỉ dùng ở cửa hàng ${c.branchCodes.join(', ')} — không dùng ở ${o.branch}`);
+  }
+  if (c.perCustomer && (o.customerUsed ?? 0) >= c.perCustomer && !(row.status === 'used' && row.usedRefId === o.refId)) {
+    return bad('VOUCHER_USED', `Khách đã dùng ${o.customerUsed} voucher của đợt ${c.name} — mỗi khách tối đa ${c.perCustomer}`);
+  }
   if (c.minOrder > 0 && o.orderTotal < c.minOrder) return bad('VOUCHER_MIN_ORDER', `Voucher ${code} cần đơn tối thiểu ${vnd(c.minOrder)} (đơn ${vnd(o.orderTotal)})`);
   if (c.kind === 'cash') return { applicableSkus: null };
   const skus = [...new Set(o.cart.filter((l) => l.amount > 0 && inScope(c, l)).map((l) => l.sku))];
@@ -142,3 +167,31 @@ export function displayStatus(r: { status: CodeStatus; expiresOn: string | null 
   if (r.status !== 'active') return r.status;
   return r.expiresOn && today > r.expiresOn ? 'expired' : 'active';
 }
+
+/**
+ * NT-BH-050 V1: tiền một voucher trừ được trên đơn — mệnh giá (amount) hoặc phần trăm × tiền áp dụng, làm tròn đồng (roundMoney — nửa xa số 0), tối đa trần (percent).
+ * `base`: tổng đơn sau khuyến mại (tương đương tiền) hoặc tiền các dòng áp dụng (lần mua sau). Bên bán vẫn lấy tối đa phần còn phải trả.
+ */
+export function voucherValue(c: Pick<Campaign, 'discountType' | 'faceValue' | 'discountPercent' | 'maxDiscount'>, base: number): number {
+  if (c.discountType !== 'percent') return c.faceValue;
+  const raw = roundMoney((Math.max(0, base) * (c.discountPercent ?? 0)) / 100);
+  return c.maxDiscount ? Math.min(raw, c.maxDiscount) : raw;
+}
+
+/** Tiền áp dụng của voucher trong giỏ: cả đơn (applicableSkus null) hoặc tổng tiền các dòng mã áp dụng. */
+export const voucherBase = (applicableSkus: readonly string[] | null, orderTotal: number, cart: readonly CartLine[]) =>
+  applicableSkus === null ? orderTotal : cart.filter((l) => l.amount > 0 && applicableSkus.includes(l.sku)).reduce((t, l) => t + l.amount, 0);
+
+/** Nhãn giá trị cho màn / bill: "50.000đ" hoặc "Giảm 10%, tối đa 50.000đ". */
+export function valueLabel(c: Pick<Campaign, 'discountType' | 'faceValue' | 'discountPercent' | 'maxDiscount'>): string {
+  if (c.discountType !== 'percent') return vnd(c.faceValue);
+  return `Giảm ${(c.discountPercent ?? 0).toLocaleString('vi-VN')}%${c.maxDiscount ? `, tối đa ${vnd(c.maxDiscount)}` : ''}`;
+}
+
+/** Số lượng đủ điều kiện tự phát của một giỏ (đơn vị nhỏ nhất) — lưu lúc phát để trả một phần biết còn đủ ngưỡng không (V5). */
+export const qualifyingQty = (rule: { itemIds: string[]; brandCodes: string[] }, cart: readonly CartLine[]) =>
+  cart.filter((l) => inScope(rule, l)).reduce((t, l) => t + l.qty, 0);
+
+/** V5: mã tự phát còn giữ sau khi trả? Không biết số lượng lúc phát (mã cũ) → giữ (chỉ thu hồi khi trả hết đơn như trước). */
+export const keepAfterReturn = (basisQty: number | null, returnedQty: number, minQty: number) =>
+  basisQty === null || basisQty - returnedQty + 1e-9 >= minQty;

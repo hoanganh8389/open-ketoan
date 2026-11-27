@@ -3,10 +3,11 @@
  * Chạy trong ctx.data.module (RLS lọc theo đơn vị, không tự thêm WHERE tenant_id). Mọi truy cập CSDL của module gom ở tệp này.
  */
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: truy cập CSDL module voucher (đóng góp)
+// [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: giảm %, lô mã không SĐT, mỗi khách tối đa N mã, cửa hàng, thu hồi khi trả một phần (đóng góp)
 import { randomUUID } from 'node:crypto';
 import { Errors, sql, type ActionContext } from '@bizcity/module-sdk';
 import {
-  campaignProblems, displayStatus, expiryOf, normalizeCode, normalizePhone, randomCode,
+  campaignProblems, displayStatus, expiryOf, keepAfterReturn, normalizeCode, normalizePhone, randomCode,
   type Campaign, type CampaignInput, type CartLine, type CodeRow, type CodeStatus,
 } from './domain/voucher.js';
 
@@ -17,16 +18,19 @@ export const lockCode = async (tx: Tx, code: string) => { await sql`SELECT pg_ad
 
 type CampaignDb = {
   campaign_id: string; code: string; name: string; kind: Campaign['kind']; issuer: Campaign['issuer']; issuer_partner_code: string | null; payment_method_code: string | null;
-  face_value: string; min_order: string; valid_from: string; valid_to: string | null; valid_days: number | null; item_ids: string[]; brand_codes: string[];
+  face_value: string | null; discount_type: Campaign['discountType']; discount_percent: string | null; max_discount: string | null; per_customer: number | null;
+  branch_codes: string[]; min_order: string; valid_from: string; valid_to: string | null; valid_days: number | null; item_ids: string[]; brand_codes: string[];
   issue_mode: Campaign['issueMode']; auto_rule: { itemIds?: string[]; brandCodes?: string[]; minQty?: number; branches?: string[] } | null; status: Campaign['status'];
   note: string | null; created_by_name: string | null; created_at: Date; updated_at: Date;
 };
-const CAMPAIGN_COLS = sql`campaign_id::text AS campaign_id, code, name, kind, issuer, issuer_partner_code, payment_method_code, face_value, min_order,
+const CAMPAIGN_COLS = sql`campaign_id::text AS campaign_id, code, name, kind, issuer, issuer_partner_code, payment_method_code, face_value, discount_type,
+  discount_percent, max_discount, per_customer, branch_codes, min_order,
   valid_from::text AS valid_from, valid_to::text AS valid_to, valid_days, item_ids, brand_codes, issue_mode, auto_rule, status, note, created_by_name, created_at, updated_at`;
 
 const toCampaign = (r: CampaignDb): Campaign & { note: string | null; createdByName: string | null; createdAt: string; updatedAt: string } => ({
   id: r.campaign_id, code: r.code, name: r.name, kind: r.kind, issuer: r.issuer, issuerPartnerCode: r.issuer_partner_code, paymentMethodCode: r.payment_method_code,
-  faceValue: Number(r.face_value), minOrder: Number(r.min_order), validFrom: r.valid_from, validTo: r.valid_to, validDays: r.valid_days,
+  faceValue: Number(r.face_value ?? 0), discountType: r.discount_type ?? 'amount', discountPercent: r.discount_percent === null ? null : Number(r.discount_percent),
+  maxDiscount: r.max_discount === null ? null : Number(r.max_discount), perCustomer: r.per_customer, branchCodes: r.branch_codes ?? [], minOrder: Number(r.min_order), validFrom: r.valid_from, validTo: r.valid_to, validDays: r.valid_days,
   itemIds: r.item_ids ?? [], brandCodes: r.brand_codes ?? [], issueMode: r.issue_mode,
   autoRule: r.auto_rule ? { itemIds: r.auto_rule.itemIds ?? [], brandCodes: r.auto_rule.brandCodes ?? [], minQty: Number(r.auto_rule.minQty ?? 1), branches: r.auto_rule.branches ?? [] } : null,
   status: r.status, note: r.note, createdByName: r.created_by_name, createdAt: r.created_at.toISOString(), updatedAt: r.updated_at.toISOString(),
@@ -104,30 +108,37 @@ export async function saveCampaign(tx: Tx, ctx: ActionContext, input: CampaignIn
     code: input.code.toUpperCase(), name: input.name, kind: input.kind, issuer: input.issuer,
     partner: input.issuer === 'brand' ? input.issuerPartnerCode ?? null : null, method: input.issuer === 'brand' ? input.paymentMethodCode ?? null : null,
     itemIds: JSON.stringify(items.ids), brands: JSON.stringify(input.brandCodes), auto: autoRule ? JSON.stringify(autoRule) : null,
+    dtype: input.discountType, face: input.discountType === 'amount' ? input.faceValue ?? null : null,
+    pct: input.discountType === 'percent' ? input.discountPercent ?? null : null, max: input.discountType === 'percent' ? input.maxDiscount ?? null : null,
+    per: input.perCustomer ?? null, branches: JSON.stringify([...new Set(input.branchCodes.map((b) => b.toUpperCase()))]),
   };
   if (!id) {
     const dup = (await sql<{ n: number }>`SELECT 1 AS n FROM mod_voucher.campaigns WHERE code = ${v.code}`.execute(tx)).rows.length;
     if (dup) throw Errors.conflict(`Mã đợt ${v.code} đã có`, { reason: 'VOUCHER_CAMPAIGN_STATE', status: 'exists' });
     const newId = randomUUID();
     await sql`INSERT INTO mod_voucher.campaigns (campaign_id, tenant_id, code, name, kind, issuer, issuer_partner_code, payment_method_code, face_value, min_order,
-        valid_from, valid_to, valid_days, item_ids, brand_codes, issue_mode, auto_rule, note, created_by, created_by_name, updated_by)
-      VALUES (${newId}, ${ctx.tenant.id}, ${v.code}, ${v.name}, ${v.kind}, ${v.issuer}, ${v.partner}, ${v.method}, ${input.faceValue}, ${input.minOrder},
+        valid_from, valid_to, valid_days, item_ids, brand_codes, issue_mode, auto_rule, note, created_by, created_by_name, updated_by,
+        discount_type, discount_percent, max_discount, per_customer, branch_codes)
+      VALUES (${newId}, ${ctx.tenant.id}, ${v.code}, ${v.name}, ${v.kind}, ${v.issuer}, ${v.partner}, ${v.method}, ${v.face}, ${input.minOrder},
         ${input.validFrom}, ${input.validTo ?? null}, ${input.validDays ?? null}, ${v.itemIds}::jsonb, ${v.brands}::jsonb, ${input.issueMode}, ${v.auto}::jsonb,
-        ${input.note ?? null}, ${ctx.actor.id}, ${ctx.actor.name || null}, ${ctx.actor.id})`.execute(tx);
+        ${input.note ?? null}, ${ctx.actor.id}, ${ctx.actor.name || null}, ${ctx.actor.id},
+        ${v.dtype}, ${v.pct}, ${v.max}, ${v.per}, ${v.branches}::jsonb)`.execute(tx);
     return getCampaign(tx, newId);
   }
   const cur = await getCampaign(tx, id, true);
   const used = Number((await sql<{ n: string }>`SELECT count(*) AS n FROM mod_voucher.codes WHERE campaign_id = ${id}::uuid`.execute(tx)).rows[0]!.n);
   if (used > 0) {
-    const locked = cur.kind !== v.kind || cur.issuer !== v.issuer || cur.faceValue !== input.faceValue || cur.code !== v.code || cur.issuerPartnerCode !== v.partner
+    const locked = cur.kind !== v.kind || cur.issuer !== v.issuer || cur.discountType !== v.dtype || (v.dtype === 'amount' && cur.faceValue !== v.face)
+      || (v.dtype === 'percent' && (cur.discountPercent !== v.pct || cur.maxDiscount !== v.max)) || cur.code !== v.code || cur.issuerPartnerCode !== v.partner
       || cur.paymentMethodCode !== v.method || cur.minOrder !== input.minOrder || JSON.stringify(cur.itemIds) !== v.itemIds || JSON.stringify(cur.brandCodes) !== v.brands;
     if (locked) {
-      throw Errors.conflict(`Đợt ${cur.code} đã phát ${used} mã — không đổi mã đợt, loại, người phát, mệnh giá, đơn tối thiểu, phạm vi (lập đợt mới); chỉ sửa tên, hạn, ghi chú, điều kiện tự phát, ngừng / mở lại`,
+      throw Errors.conflict(`Đợt ${cur.code} đã phát ${used} mã — không đổi mã đợt, loại, người phát, mệnh giá / % / trần giảm, đơn tối thiểu, phạm vi (lập đợt mới); chỉ sửa tên, hạn, ghi chú, cửa hàng, giới hạn mỗi khách, điều kiện tự phát, ngừng / mở lại`,
         { reason: 'VOUCHER_CAMPAIGN_STATE', status: 'issued' });
     }
   }
   await sql`UPDATE mod_voucher.campaigns SET code = ${v.code}, name = ${v.name}, kind = ${v.kind}, issuer = ${v.issuer}, issuer_partner_code = ${v.partner},
-      payment_method_code = ${v.method}, face_value = ${input.faceValue}, min_order = ${input.minOrder}, valid_from = ${input.validFrom}, valid_to = ${input.validTo ?? null},
+      payment_method_code = ${v.method}, face_value = ${v.face}, discount_type = ${v.dtype}, discount_percent = ${v.pct}, max_discount = ${v.max},
+      per_customer = ${v.per}, branch_codes = ${v.branches}::jsonb, min_order = ${input.minOrder}, valid_from = ${input.validFrom}, valid_to = ${input.validTo ?? null},
       valid_days = ${input.validDays ?? null}, item_ids = ${v.itemIds}::jsonb, brand_codes = ${v.brands}::jsonb, issue_mode = ${input.issueMode}, auto_rule = ${v.auto}::jsonb,
       note = ${input.note ?? null}, status = ${status ?? cur.status}, updated_by = ${ctx.actor.id}, updated_at = now()
     WHERE campaign_id = ${id}::uuid`.execute(tx);
@@ -137,17 +148,20 @@ export async function saveCampaign(tx: Tx, ctx: ActionContext, input: CampaignIn
 // ── Mã ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 type CodeDb = {
-  code: string; campaign_id: string; phone: string; partner_code: string | null; status: CodeStatus; source: string; expires_on: string | null; issued_at: Date;
+  code: string; campaign_id: string; phone: string | null; partner_code: string | null; used_phone: string | null; used_customer: string | null;
+  basis_qty: string | null; returned_qty: string; status: CodeStatus; source: string; expires_on: string | null; issued_at: Date;
   issued_order_id: string | null; issued_order_code: string | null; issued_branch: string | null; used_source: string | null; used_ref_id: string | null;
   used_ref_code: string | null; used_branch: string | null; used_on: string | null; used_amount: string | null; used_at: Date | null; revoked_at: Date | null; revoke_reason: string | null;
 };
-const CODE_COLS = sql`code, campaign_id::text AS campaign_id, phone, partner_code, status, source, expires_on::text AS expires_on, issued_at, issued_order_id, issued_order_code,
+const CODE_COLS = sql`code, campaign_id::text AS campaign_id, phone, partner_code, used_phone, used_customer, basis_qty, returned_qty, status, source, expires_on::text AS expires_on, issued_at, issued_order_id, issued_order_code,
   issued_branch, used_source, used_ref_id, used_ref_code, used_branch, used_on::text AS used_on, used_amount, used_at, revoked_at, revoke_reason`;
-const toCode = (r: CodeDb): CodeRow & { source: string; issuedAt: string; issuedOrderCode: string | null; issuedBranch: string | null; usedAmount: number | null; usedAt: string | null; revokedAt: string | null } => ({
+const toCode = (r: CodeDb): CodeRow & { source: string; issuedAt: string; issuedOrderCode: string | null; issuedBranch: string | null; usedAmount: number | null; usedAt: string | null;
+  revokedAt: string | null; usedPhone: string | null; usedCustomer: string | null; basisQty: number | null; returnedQty: number } => ({
   code: r.code, campaignId: r.campaign_id, phone: r.phone, partnerCode: r.partner_code, status: r.status, expiresOn: r.expires_on, usedSource: r.used_source,
   usedRefId: r.used_ref_id, usedRefCode: r.used_ref_code, usedBranch: r.used_branch, usedOn: r.used_on, revokeReason: r.revoke_reason, source: r.source,
   issuedAt: r.issued_at.toISOString(), issuedOrderCode: r.issued_order_code, issuedBranch: r.issued_branch, usedAmount: r.used_amount === null ? null : Number(r.used_amount),
   usedAt: r.used_at ? r.used_at.toISOString() : null, revokedAt: r.revoked_at ? r.revoked_at.toISOString() : null,
+  usedPhone: r.used_phone, usedCustomer: r.used_customer, basisQty: r.basis_qty === null ? null : Number(r.basis_qty), returnedQty: Number(r.returned_qty ?? 0),
 });
 export type CodeView = ReturnType<typeof toCode>;
 
@@ -160,7 +174,7 @@ export async function codesByCode(tx: Tx, codes: readonly string[]) {
 export async function listCodes(tx: Tx, f: { campaignId?: string; phone?: string; status?: string; q?: string; today: string; limit: number }) {
   const st = f.status;
   const rows = (await sql<CodeDb>`SELECT ${CODE_COLS} FROM mod_voucher.codes
-     WHERE true ${f.campaignId ? sql`AND campaign_id::text = ${f.campaignId}` : sql``} ${f.phone ? sql`AND phone = ${f.phone}` : sql``}
+     WHERE true ${f.campaignId ? sql`AND campaign_id::text = ${f.campaignId}` : sql``} ${f.phone ? sql`AND (phone = ${f.phone} OR used_phone = ${f.phone})` : sql``}
        ${f.q ? sql`AND code ILIKE ${`%${f.q.trim()}%`}` : sql``}
        ${st === 'expired' ? sql`AND status = 'active' AND expires_on < ${f.today}` : st === 'active' ? sql`AND status = 'active' AND (expires_on IS NULL OR expires_on >= ${f.today})` : st ? sql`AND status = ${st}` : sql``}
      ORDER BY issued_at DESC, code LIMIT ${f.limit}`.execute(tx)).rows;
@@ -173,7 +187,7 @@ export async function logOf(tx: Tx, code: string) {
     .map((r) => ({ action: r.action, source: r.ref_source, refId: r.ref_id, refCode: r.ref_code, branchCode: r.branch_code, amount: r.amount === null ? null : Number(r.amount), note: r.note, actor: r.actor, at: r.at.toISOString() }));
 }
 
-export async function addLog(tx: Tx, tenantId: string | number, e: { code: string; action: 'issue' | 'use' | 'release' | 'revoke' | 'conflict'; source?: string; refId?: string; refCode?: string; branch?: string | null; amount?: number | null; note?: string; actor: string }) {
+export async function addLog(tx: Tx, tenantId: string | number, e: { code: string; action: 'issue' | 'use' | 'release' | 'revoke' | 'conflict' | 'return'; source?: string; refId?: string; refCode?: string; branch?: string | null; amount?: number | null; note?: string; actor: string }) {
   await sql`INSERT INTO mod_voucher.code_log (tenant_id, code, action, ref_source, ref_id, ref_code, branch_code, amount, note, actor)
     VALUES (${tenantId}, ${e.code}, ${e.action}, ${e.source ?? null}, ${e.refId ?? null}, ${e.refCode ?? null}, ${e.branch ?? null}, ${e.amount ?? null}, ${e.note ?? null}, ${e.actor})`.execute(tx);
 }
@@ -224,7 +238,8 @@ export async function revokeCode(tx: Tx, tenantId: string | number, code: string
 }
 
 /** Đánh dấu đã dùng (sự kiện đơn / phiếu đã ghi sổ). Mã đã dùng ở nơi khác → ghi nhật ký dùng trùng, giữ lần dùng đầu. */
-export async function markUsed(tx: Tx, tenantId: string | number, u: { code: string; source: 'pos' | 'phieu-ban'; refId: string; refCode: string; branch: string; date: string; amount: number }) {
+export async function markUsed(tx: Tx, tenantId: string | number, u: { code: string; source: 'pos' | 'phieu-ban'; refId: string; refCode: string; branch: string; date: string; amount: number;
+  phone?: string | null; customer?: string | null }) {
   await lockCode(tx, u.code);
   const cur = (await codesByCode(tx, [u.code])).get(u.code);
   if (!cur) return 'missing' as const;
@@ -235,7 +250,8 @@ export async function markUsed(tx: Tx, tenantId: string | number, u: { code: str
     return 'conflict' as const;
   }
   await sql`UPDATE mod_voucher.codes SET status = 'used', used_source = ${u.source}, used_ref_id = ${u.refId}, used_ref_code = ${u.refCode}, used_branch = ${u.branch},
-      used_on = ${u.date}, used_amount = ${u.amount}, used_at = now() WHERE code = ${u.code}`.execute(tx);
+      used_on = ${u.date}, used_amount = ${u.amount}, used_at = now(), used_phone = ${normalizePhone(u.phone) || null}, used_customer = ${u.customer || null}
+    WHERE code = ${u.code}`.execute(tx);
   await addLog(tx, tenantId, { code: u.code, action: 'use', source: u.source, refId: u.refId, refCode: u.refCode, branch: u.branch, amount: u.amount, actor: 'system' });
   return 'used' as const;
 }
@@ -243,7 +259,7 @@ export async function markUsed(tx: Tx, tenantId: string | number, u: { code: str
 /** Trả mã đã dùng của một đơn / phiếu (huỷ đơn chờ thanh toán, bỏ duyệt phiếu bán): mã về "còn". */
 export async function releaseUsed(tx: Tx, tenantId: string | number, source: 'pos' | 'phieu-ban', refId: string, note: string) {
   const r = await sql<{ code: string }>`UPDATE mod_voucher.codes SET status = 'active', used_source = NULL, used_ref_id = NULL,
-      used_ref_code = NULL, used_branch = NULL, used_on = NULL, used_amount = NULL, used_at = NULL
+      used_ref_code = NULL, used_branch = NULL, used_on = NULL, used_amount = NULL, used_at = NULL, used_phone = NULL, used_customer = NULL
     WHERE used_source = ${source} AND used_ref_id = ${refId} AND status = 'used'
     RETURNING code`.execute(tx);
   for (const x of r.rows) await addLog(tx, tenantId, { code: x.code, action: 'release', source, refId, note, actor: 'system' });
@@ -251,9 +267,10 @@ export async function releaseUsed(tx: Tx, tenantId: string | number, source: 'po
 }
 
 /** Phát mã tự động của một đơn máy bán (sự kiện đơn đã ghi sổ). Đã phát (giao lại sự kiện) → bỏ qua. */
-export async function insertAuto(tx: Tx, tenantId: string | number, v: { code: string; campaignId: string; phone: string; partnerCode: string | null; expiresOn: string | null; orderId: string; orderCode: string; branch: string }) {
-  const ins = await sql<{ code: string }>`INSERT INTO mod_voucher.codes (tenant_id, code, campaign_id, phone, partner_code, source, expires_on, issued_by, issued_order_id, issued_order_code, issued_branch)
-    VALUES (${tenantId}, ${v.code}, ${v.campaignId}::uuid, ${v.phone}, ${v.partnerCode}, 'auto', ${v.expiresOn}, 'system', ${v.orderId}, ${v.orderCode}, ${v.branch})
+export async function insertAuto(tx: Tx, tenantId: string | number, v: { code: string; campaignId: string; phone: string; partnerCode: string | null; expiresOn: string | null; orderId: string; orderCode: string; branch: string;
+  basisQty?: number | null }) {
+  const ins = await sql<{ code: string }>`INSERT INTO mod_voucher.codes (tenant_id, code, campaign_id, phone, partner_code, source, expires_on, issued_by, issued_order_id, issued_order_code, issued_branch, basis_qty)
+    VALUES (${tenantId}, ${v.code}, ${v.campaignId}::uuid, ${v.phone}, ${v.partnerCode}, 'auto', ${v.expiresOn}, 'system', ${v.orderId}, ${v.orderCode}, ${v.branch}, ${v.basisQty ?? null})
     ON CONFLICT DO NOTHING RETURNING code`.execute(tx);
   if (ins.rows.length) await addLog(tx, tenantId, { code: v.code, action: 'issue', source: 'pos', refId: v.orderId, refCode: v.orderCode, branch: v.branch, note: `Tự phát cho SĐT ${v.phone}`, actor: 'system' });
   return ins.rows.length > 0;
@@ -295,9 +312,10 @@ export async function report(tx: Tx, f: { from?: string; to?: string; issuer?: s
   const issuedIn = f.from && f.to ? sql`AND k.issued_at::date BETWEEN ${f.from} AND ${f.to}` : sql``;
   const camp = sql`${f.issuer ? sql`AND c.issuer = ${f.issuer}` : sql``} ${f.campaignId ? sql`AND c.campaign_id::text = ${f.campaignId}` : sql``}`;
   const branchIn = f.branches.length ? sql`AND COALESCE(k.used_branch, k.issued_branch) IN (${sql.join(f.branches)})` : sql``;
-  const rows = (await sql<{ campaign_id: string; code: string; name: string; issuer: string; issuer_partner_code: string | null; kind: string; face_value: string;
+  const rows = (await sql<{ campaign_id: string; code: string; name: string; issuer: string; issuer_partner_code: string | null; kind: string; face_value: string | null;
+    discount_type: string; discount_percent: string | null; max_discount: string | null;
     issued: string; active: string; used: string; expired: string; revoked: string; used_amount: string | null }>`
-    SELECT c.campaign_id::text AS campaign_id, c.code, c.name, c.issuer, c.issuer_partner_code, c.kind, c.face_value,
+    SELECT c.campaign_id::text AS campaign_id, c.code, c.name, c.issuer, c.issuer_partner_code, c.kind, c.face_value, c.discount_type, c.discount_percent, c.max_discount,
            count(k.code) AS issued,
            count(k.code) FILTER (WHERE k.status = 'active' AND (k.expires_on IS NULL OR k.expires_on >= ${f.today})) AS active,
            count(k.code) FILTER (WHERE k.status = 'used') AS used,
@@ -316,7 +334,8 @@ export async function report(tx: Tx, f: { from?: string; to?: string; issuer?: s
      GROUP BY 1, 2, 3, 4, 5, 6 ORDER BY c.code, k.used_branch`.execute(tx)).rows;
   return {
     campaigns: rows.map((r) => ({
-      campaignId: r.campaign_id, code: r.code, name: r.name, issuer: r.issuer, issuerPartnerCode: r.issuer_partner_code, kind: r.kind, faceValue: Number(r.face_value),
+      campaignId: r.campaign_id, code: r.code, name: r.name, issuer: r.issuer, issuerPartnerCode: r.issuer_partner_code, kind: r.kind, faceValue: Number(r.face_value ?? 0),
+      discountType: r.discount_type, discountPercent: r.discount_percent === null ? null : Number(r.discount_percent), maxDiscount: r.max_discount === null ? null : Number(r.max_discount),
       issued: Number(r.issued), active: Number(r.active), used: Number(r.used), expired: Number(r.expired), revoked: Number(r.revoked), usedAmount: Number(r.used_amount ?? 0),
     })),
     byBranch: byBranch.map((r) => ({ campaignId: r.campaign_id, code: r.code, name: r.name, issuer: r.issuer, branchCode: r.used_branch, source: r.used_source, used: Number(r.n), usedAmount: Number(r.amount ?? 0) })),
@@ -340,4 +359,82 @@ export async function usedCodes(tx: Tx, f: { from: string; to: string; branches:
       code: r.code, campaignId: r.campaign_id, campaignName: r.campaign_name, issuer: r.issuer, source: r.used_source, refId: r.used_ref_id, refCode: r.used_ref_code ?? '',
       branchCode: r.used_branch ?? '', usedOn: r.used_on, amount: r.used_amount === null ? 0 : Number(r.used_amount), partnerCode: r.partner_code ?? '', phone: r.phone,
     }));
+}
+
+// ── NT-BH-050 ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * V2: sinh lô mã KHÔNG gắn SĐT cho đợt (tiền tố + số lượng) — in / phát tay, ai cầm mã cũng dùng (vẫn đếm "mỗi khách tối đa" lúc dùng).
+ * Mã = tiền tố (chữ hoa không dấu, số) + 8 ký tự ngẫu nhiên; trùng thì sinh lại.
+ */
+export async function issueBatch(tx: Tx, ctx: ActionContext, campaignId: string, prefix: string, qty: number, today: string) {
+  const c = await getCampaign(tx, campaignId, true);
+  if (c.status !== 'active') throw Errors.conflict(`Đợt ${c.code} đã ngừng — mở lại rồi mới phát mã`, { reason: 'VOUCHER_CAMPAIGN_STATE', status: c.status });
+  if (c.validTo && today > c.validTo) throw Errors.conflict(`Đợt ${c.code} đã hết hạn ngày ${c.validTo}`, { reason: 'VOUCHER_CAMPAIGN_STATE', status: 'expired' });
+  const pre = prefix.trim().toUpperCase();
+  if (pre && !/^[A-Z0-9]{1,12}$/.test(pre)) throw Errors.validation('Tiền tố chỉ gồm chữ không dấu và số, tối đa 12 ký tự', { field: 'prefix' });
+  const expires = expiryOf(c, today > c.validFrom ? today : c.validFrom);
+  const created: { code: string; phone: string | null }[] = [];
+  for (let i = 0; i < qty; i += 1) {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const code = `${pre}${randomCode('').slice(0, 8)}`;
+      const ins = await sql<{ code: string }>`INSERT INTO mod_voucher.codes (tenant_id, code, campaign_id, phone, source, expires_on, issued_by)
+        VALUES (${ctx.tenant.id}, ${code}, ${c.id}::uuid, NULL, 'batch', ${expires}, ${ctx.actor.id}) ON CONFLICT (tenant_id, code) DO NOTHING RETURNING code`.execute(tx);
+      if (ins.rows.length) { created.push({ code, phone: null }); break; }
+    }
+  }
+  if (created.length) {
+    await sql`INSERT INTO mod_voucher.code_log (tenant_id, code, action, ref_source, note, actor)
+      SELECT ${ctx.tenant.id}, x, 'issue', 'screen', ${`Sinh lô ${created.length} mã không gắn SĐT${pre ? ` (tiền tố ${pre})` : ''}`}, ${ctx.actor.id}
+        FROM unnest(${created.map((x) => x.code)}::text[]) AS x`.execute(tx);
+  }
+  return { campaignId: c.id, created, skipped: [] as { row: number; reason: string }[] };
+}
+
+/**
+ * V2: số mã của đợt khách này đã dùng ở đơn / phiếu KHÁC (SĐT lúc dùng thuộc khách, hoặc mã khách trùng) — kiểm "mỗi khách tối đa".
+ * Đếm cả mã gắn SĐT khách đã dùng. `refId`: đơn / phiếu đang kiểm (dùng lại ở chính nó không tính).
+ */
+export async function usedByCustomer(tx: Tx, campaignIds: readonly string[], phones: ReadonlySet<string>, customer: string | null | undefined, refId: string) {
+  const out = new Map<string, number>();
+  const ids = [...new Set(campaignIds)];
+  if (!ids.length || (!phones.size && !customer)) return out;
+  const who = [
+    ...(phones.size ? [sql`used_phone IN (${sql.join([...phones])})`] : []),
+    ...(customer ? [sql`used_customer = ${customer}`] : []),
+  ];
+  const rows = (await sql<{ campaign_id: string; n: string }>`
+    SELECT campaign_id::text AS campaign_id, count(*) AS n FROM mod_voucher.codes
+     WHERE status = 'used' AND campaign_id::text IN (${sql.join(ids)}) AND COALESCE(used_ref_id, '') <> ${refId} AND (${sql.join(who, sql` OR `)})
+     GROUP BY 1`.execute(tx)).rows;
+  for (const r of rows) out.set(r.campaign_id, Number(r.n));
+  return out;
+}
+
+/**
+ * V5: phiếu trả một phần của đơn gốc → cộng số lượng đủ điều kiện đã trả vào từng mã tự phát chưa dùng của đơn; dưới ngưỡng thì thu hồi.
+ * Mỗi phiếu trả một lần (nhật ký 'return' theo phiếu — giao lại sự kiện không cộng hai lần). `returned`: số lượng đủ điều kiện của phiếu trả theo đợt.
+ */
+export async function applyPartialReturn(tx: Tx, tenantId: string | number, r: { orderId: string; orderCode: string; returnId: string; returnCode: string; branch: string },
+  returnedByCampaign: (c: Campaign) => number) {
+  const rows = (await sql<CodeDb>`SELECT ${CODE_COLS} FROM mod_voucher.codes WHERE issued_order_id = ${r.orderId} AND source = 'auto' AND status = 'active' ORDER BY code FOR UPDATE`.execute(tx)).rows.map(toCode);
+  const camps = await campaignsByIds(tx, rows.map((x) => x.campaignId));
+  const revoked: string[] = [];
+  for (const code of rows) {
+    const seen = (await sql<{ n: number }>`SELECT 1 AS n FROM mod_voucher.code_log WHERE code = ${code.code} AND action = 'return' AND ref_id = ${r.returnId} LIMIT 1`.execute(tx)).rows.length;
+    if (seen) continue;
+    const c = camps.get(code.campaignId);
+    if (!c?.autoRule) continue;
+    const q = returnedByCampaign(c);
+    if (q <= 0) continue;
+    const total = code.returnedQty + q;
+    await sql`UPDATE mod_voucher.codes SET returned_qty = ${total} WHERE code = ${code.code}`.execute(tx);
+    await addLog(tx, tenantId, { code: code.code, action: 'return', source: 'pos', refId: r.returnId, refCode: r.returnCode, branch: r.branch, amount: null,
+      note: `Trả ${q} hàng đủ điều kiện (đơn gốc ${r.orderCode}; đã trả ${total}${code.basisQty !== null ? ` / mua ${code.basisQty}` : ''})`, actor: 'system' });
+    if (!keepAfterReturn(code.basisQty, total, c.autoRule.minQty)) {
+      if (await revokeCode(tx, tenantId, code.code, `Trả một phần đơn gốc ${r.orderCode} (phiếu ${r.returnCode}) — còn dưới ${c.autoRule.minQty} hàng đủ điều kiện`, 'system',
+        { source: 'pos', refId: r.returnId, refCode: r.returnCode, branch: r.branch })) revoked.push(code.code);
+    }
+  }
+  return revoked;
 }

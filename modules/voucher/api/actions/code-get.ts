@@ -3,6 +3,7 @@
  * nhật ký phát / dùng / trả / thu hồi / dùng trùng.
  */
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: action voucher (đóng góp)
+// [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: kèm giá trị % / trần, mỗi khách, cửa hàng của đợt (đóng góp)
 import { Errors, defineAction, z } from '@bizcity/module-sdk';
 import { normalizeCode } from '../domain/voucher.js';
 import { campaignsByIds, codesByCode, displayStatus, logOf } from '../store.js';
@@ -22,7 +23,8 @@ export default defineAction({
     const camp = (await campaignsByIds(tx, [c.campaignId])).get(c.campaignId)!;
     return {
       ...c, state: displayStatus(c, todayVn()),
-      campaign: { id: camp.id, code: camp.code, name: camp.name, kind: camp.kind, issuer: camp.issuer, issuerPartnerCode: camp.issuerPartnerCode, faceValue: camp.faceValue, minOrder: camp.minOrder },
+      campaign: { id: camp.id, code: camp.code, name: camp.name, kind: camp.kind, issuer: camp.issuer, issuerPartnerCode: camp.issuerPartnerCode, faceValue: camp.faceValue, minOrder: camp.minOrder,
+        discountType: camp.discountType, discountPercent: camp.discountPercent, maxDiscount: camp.maxDiscount, perCustomer: camp.perCustomer, branchCodes: camp.branchCodes },
       log: await logOf(tx, code),
     };
   }),
