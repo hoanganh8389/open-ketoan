@@ -81,6 +81,14 @@ nhưng **chưa dùng được thật**:
 | M6 | "Tự động áp" của plugin cũ = không khai mã giảm giá; khai mã = chỉ áp khi khách đọc mã | Đúng nghĩa ô `couponCodes` sẵn có |
 | M7 | Flash sale / Khai trương / Sinh nhật là **mẫu dựng sẵn** từ loại có sẵn (không thêm khuôn riêng); giới hạn tổng số lượng toàn chương trình dùng hạn mức lượt cửa hàng | Tránh khuôn mới trùng nghĩa |
 | M8 | Chưa làm: lọc **lô / HSD** (K8 — máy bán chưa chọn lô lúc bán, lô cấp FEFO lúc ghi sổ), **nhóm (bộ) chương trình**, **nhập Excel cả chương trình**, báo cáo ma trận cửa hàng, tạo bằng AI | Làm đợt sau |
+| M9 | **Màn theo mẫu plugin cũ (27/11, S-CD-14…17):** Thêm chỉ còn **7 loại plugin cũ cho tạo** (ACTIVE_POLICY_TYPES): 5 Chiết khấu · 2 Mua X tặng Y · 1 Giảm giá cố định · 10 Voucher / Mã giảm giá · 13 Combo bộ sản phẩm · 14 Quà tặng theo giá trị đơn · 15 Mua đủ tặng giá thấp nhất. **Ẩn, không xoá code:** bậc, tổng đơn, quà tổng đơn @1, combo món, món rẻ nhất @1 riêng, mua X tặng Y @1, giá riêng từng mã / quà lựa chọn / quà nhân bội số dạng cũ của màn, mẫu Flash sale / Khai trương / Sinh nhật. Chương trình đã có của loại ẩn vẫn hiện và mở bằng form cũ | Hoàng 27/11: "ẩn bớt, để như các policy hiện có ở plugin policy cũ" |
+| M10 | Loại cũ **4 Theo lô hàng** và **12 Trường hợp đặc biệt (IT, JSON)** không hiện: 4 chờ lọc lô (K8); 12 là JSON thủ công của IT | Chưa có khuôn |
+| M11 | Ánh xạ loại cũ → khuôn: 5 / 1 → `price_lines@2` (từ SL = bậc của mã; "Tối đa (đ)" = trần tiền giảm cả mã trên một đơn); 2 → `buy_x_get_y@2` kiểu **mỗi mã tính riêng** (`each`, như engine cũ: số lần = Σ floor(SL mã / SL dòng)), nhiều quà = khách chọn 1; 10 → `order_discount@1` + mã khách đọc + tối đa mỗi khách; 13 → khuôn mới `pool_combo@2`; 14 → `order_gift@2` nhân bội số, nhiều quà khách chọn 1 (`choose`); 15 → `cheapest_free@1` | Đúng engine plugin cũ (`class-selling-policy-engine.php`) |
+| M12 | Mua X tặng Y nhiều **nhóm** mua – tặng trong một chương trình (plugin cũ "Thêm nhóm mua - tặng"): **một nhóm / chương trình**; nhiều nhóm thì lập nhiều chương trình (Nhân bản) | Khuôn một phần mua / một danh sách quà |
+| M13 | Ô cũ chưa có ở kế toán hiện **mờ** cho đủ mặt: Tích lũy thống kê cuối kỳ, Cách cộng quyền lợi quà + Mã nhóm quà (gộp quyền lợi giữa chương trình), Nhóm khách hàng; "Hủy/dừng chương trình" khi sửa = bản mới kết thúc hôm qua (vẫn qua duyệt) | Chưa có ở Core |
+| M14 | "Số lượng đơn hàng được áp dụng" = hạn mức lượt **mỗi cửa hàng** (0 = không giới hạn); tên + mô tả lưu ở lý do phát hành dạng "Tên — Mô tả"; Import Excel = dán từ Excel hoặc tệp CSV (module không có thư viện đọc .xlsx) | Khuôn nháp không có ô riêng |
+| M15 | **Mã chương trình tự sinh** khi Thêm: `TGS_<MMYY>_<NN>` (NN = số lớn nhất của tháng trong chương trình + nháp đang có, + 1), sửa được | Hoàng 28/11 |
+| M16 | **Bỏ luật hai người cho khuyến mại** (thay Q-CD-2 phần khuyến mại): người có quyền Duyệt khuyến mại (`pos:promo-approve`) tự lập và tự duyệt được; nút **Duyệt (phát hành)** trong chân form (Ghi · Gửi duyệt · Duyệt (phát hành) · Thoát). Tích điểm / voucher **giữ nguyên** luật duyệt hiện có — hỏi Hoàng có áp như vậy không | Hoàng 28/11 |
 
 ## 7. Kết quả chạy
 
@@ -93,7 +101,11 @@ nhưng **chưa dùng được thật**:
 | Ngày | Người | Nội dung |
 |---|---|---|
 | 27/11/2026 | Võ Hoàng | Giao làm đủ như plugin cũ; mặc định §6 rà khi nghiệm thu |
+| 27/11/2026 | Võ Hoàng | Màn theo mẫu plugin cũ: chỉ loại cũ, form 2 thẻ + bảng nhiều dòng (M9–M14) |
+| 28/11/2026 | Võ Hoàng | Mã tự sinh TGS_<MMYY>_<NN>; bỏ luật hai người cho khuyến mại, Duyệt trong form (M15, M16) |
 
 ## 9. Lịch sử
 
 - 27/11/2026 — Lập phiếu và làm.
+- 27/11/2026 — Làm lại màn theo mẫu plugin cũ (S-CD-14…17): khuôn `pool_combo@2`, `buy_x_get_y@2` mode each, `order_gift@2` choose, `price_lines@2` maxDiscount; thử 7 loại trên màn thật + máy bán.
+- 28/11/2026 — Mã tự sinh; Duyệt trong form, bỏ luật hai người cho khuyến mại.
