@@ -33,3 +33,12 @@ Menu: **Kho → Lô hàng → Tồn theo lô**. Bảng lọc bên trái như cá
 - **Lô theo phiếu**: danh sách phiếu có hàng đi theo lô (lọc ngày, chi nhánh / kho, loại phiếu, số phiếu hoặc mã hàng). Bấm một phiếu → từng dòng lấy lô nào, **từ kho nào**, tên lúc mua của lô. **Hoá đơn vẫn theo đúng bill ở cửa hàng** — bill một dòng thì hoá đơn một dòng, lô không tách dòng.
 
 Lô còn tồn và hạn dùng là căn cứ để lên chương trình xả hàng cận date (Chương trình bán BH12) và so sánh giá giữa các lô.
+
+## Thẻ Hạn dùng
+
+<!-- [2026-11-27 01:20 PM Nguyễn Văn Thủy] KHO05 — báo cáo lô và hạn dùng là một thẻ của màn này (đóng góp) -->
+
+- Lô **còn tồn** có hạn dùng, xếp **hạn gần trước**, mỗi dòng một chi nhánh · kho. Lọc cây chi nhánh + kho như thẻ Tồn theo lô.
+- Bốn thẻ số: **Đã hết hạn, Còn ≤ 7, ≤ 15, ≤ 30 ngày** — bấm để lọc nhanh, bấm lại để bỏ.
+- Phiếu nhập chỉ ghi hạn dùng (bỏ trống số lô) vẫn lên, cột Số lô ghi "không số". Lô không ghi hạn dùng: chọn **Không hạn dùng** ở ô Tình trạng hạn.
+- Lô đã hết hạn không xuất bán: lập Trả hàng NCC ghi đúng số lô, hoặc huỷ hàng có biên bản.

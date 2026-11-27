@@ -542,7 +542,7 @@ const SO_DU: NhapLoai = {
   id: 'so-du-tai-khoan', nhom: 'Số dư ban đầu', title: 'Số dư tài khoản đầu kỳ',
   desc: 'Dư Nợ / Dư Có từng tài khoản, công nợ theo đối tượng (131, 331…), theo chi nhánh — mỗi chi nhánh một phiếu số dư', keyField: 'accountCode',
   listPath: '/nghiep-vu/so-du-tai-khoan', invalidate: ['documents', 'document'], modes: false,
-  ghiChuNhap: 'Mỗi chi nhánh thành một phiếu số dư (ngày chốt = ngày cuối trước khi dùng phần mềm). Chi nhánh đã có phiếu số dư thì không nhập chồng: sửa phiếu đó, hoặc huỷ rồi nhập lại. Tổng Dư Nợ phải bằng tổng Dư Có của chi nhánh (hoặc ghi cột TK cân đối). Tiền mặt / tiền gửi (111, 112, 113) chỉ có Dư Nợ.',
+  ghiChuNhap: 'Mỗi chi nhánh thành một phiếu số dư (ngày chốt = ngày cuối trước khi dùng phần mềm). Chi nhánh đã có phiếu số dư thì không nhập chồng: sửa phiếu đó, hoặc huỷ rồi nhập lại. Nhập riêng từng chi nhánh mà Nợ ≠ Có thì phần lệch tự vào TK trung gian 999 (nhập đủ mọi chi nhánh thì về 0). Tiền mặt / tiền gửi (111, 112, 113) chỉ có Dư Nợ.',
   fields: [
     { key: 'branchCode', header: 'Chi nhánh', required: true, aliases: ['ma chi nhanh', 'don vi'], example: '00000', note: 'Mã chi nhánh trong sơ đồ tổ chức. Mỗi chi nhánh thành một phiếu số dư.' },
     { key: 'docDate', header: 'Ngày chốt số dư', required: true, aliases: ['ngay', 'ngay so du', 'ngay chung tu', 'ngay hach toan'], defaultValue: cuoiThangTruoc(), note: 'dd/mm/yyyy — thường là ngày cuối kỳ trước khi bắt đầu dùng phần mềm.' },
@@ -550,7 +550,6 @@ const SO_DU: NhapLoai = {
     { key: 'partnerCode', header: 'Mã đối tượng', aliases: ['doi tuong', 'ma khach hang', 'ma nha cung cap', 'ma kh', 'ma ncc', 'ma doi tuong'], note: 'Bắt buộc với tài khoản theo dõi đối tượng (131, 331, 141…).' },
     { key: 'debit', header: 'Dư Nợ', aliases: ['du no', 'so du no', 'no'], example: '10.000.000', note: 'Mỗi dòng ghi Dư Nợ hoặc Dư Có.' },
     { key: 'credit', header: 'Dư Có', aliases: ['du co', 'so du co', 'co'] },
-    { key: 'balancingAccount', header: 'TK cân đối', aliases: ['tai khoan can doi', 'tk chenh lech'], note: 'Để trống: tổng Dư Nợ phải bằng tổng Dư Có của chi nhánh. Ghi tài khoản (vd 4211) để nhận phần chênh lệch.' },
   ],
   run: async (rows, { dryRun }) => {
     const [accounts, branches, docs] = await Promise.all([
@@ -565,7 +564,7 @@ const SO_DU: NhapLoai = {
     const ex = codes.length ? await api.post<{ missing: string[] }>('/api/v1/partners/exists', { codes }) : { missing: [] };
     const thieuDT = new Set(ex.missing);
 
-    const out: (NhapDong & { g: string; debit: number; credit: number; bal: string })[] = rows.map((r) => {
+    const out: (NhapDong & { g: string; debit: number; credit: number })[] = rows.map((r) => {
       const row = Number(r._row);
       const errors: string[] = [];
       const branchCode = (r.branchCode ?? '').trim();
@@ -574,7 +573,6 @@ const SO_DU: NhapLoai = {
       const p = (r.partnerCode ?? '').trim();
       const debit = soTien(r.debit);
       const credit = soTien(r.credit);
-      const bal = (r.balancingAccount ?? '').trim();
       if (!branchCode) errors.push('Thiếu chi nhánh'); else if (!brs.has(branchCode)) errors.push(`Chi nhánh "${branchCode}" chưa có`);
       if (!date) errors.push(`Ngày chốt số dư "${r.docDate ?? ''}" không đọc được (dd/mm/yyyy)`);
       const info = acc.get(a);
@@ -588,9 +586,8 @@ const SO_DU: NhapLoai = {
       else if ((debit > 0) === (credit > 0)) errors.push('Mỗi dòng ghi Dư Nợ hoặc Dư Có (không cả hai, không để trống cả hai)');
       // [2026-11-26 07:50 PM Nguyễn Văn Thủy] SO-DU — tiền chỉ có số dư Nợ (khớp kiểm ở máy chủ) (đóng góp)
       else if (/^11[123]/.test(a) && credit > 0) errors.push(`Tài khoản ${a} là tiền: chỉ có Dư Nợ (số tiền đang có), không ghi Dư Có`);
-      if (bal && (!acc.has(bal) || laiLo(bal))) errors.push(`TK cân đối ${bal} không dùng được (cần tài khoản chi tiết, không phải doanh thu / chi phí)`);
-      return { row, key: `${branchCode} · ${a}${p ? ` · ${p}` : ''}`, action: errors.length ? 'error' : 'create', errors, g: `${branchCode}|${date}`, debit: debit || 0, credit: credit || 0, bal,
-        values: { branchCode, docDate: r.docDate, accountCode: a, partnerCode: p, debit: debit ? tien(debit) : '', credit: credit ? tien(credit) : '', balancingAccount: bal } };
+      return { row, key: `${branchCode} · ${a}${p ? ` · ${p}` : ''}`, action: errors.length ? 'error' : 'create', errors, g: `${branchCode}|${date}`, debit: debit || 0, credit: credit || 0,
+        values: { branchCode, docDate: r.docDate, accountCode: a, partnerCode: p, debit: debit ? tien(debit) : '', credit: credit ? tien(credit) : '' } };
     });
 
     // Kiểm theo phiếu (chi nhánh + ngày): đã có phiếu số dư, cân Nợ – Có.
@@ -602,10 +599,6 @@ const SO_DU: NhapLoai = {
       if (branchCode && daCo.has(branchCode)) loiNhom.push(`Chi nhánh ${branchCode} đã có phiếu số dư ${daCo.get(branchCode)} — sửa phiếu đó, hoặc huỷ trước khi nhập lại`);
       const ngays = new Set(out.filter((r) => r.g.startsWith(`${branchCode}|`)).map((r) => r.g));
       if (ngays.size > 1) loiNhom.push(`Chi nhánh ${branchCode} có nhiều ngày chốt số dư trong tệp — mỗi chi nhánh một ngày`);
-      const no = list.reduce((s, r) => s + r.debit, 0);
-      const co = list.reduce((s, r) => s + r.credit, 0);
-      const bal = list.find((r) => r.bal)?.bal;
-      if (Math.abs(no - co) >= 0.005 && !bal) loiNhom.push(`Chi nhánh ${branchCode}: tổng Dư Nợ ${tien(no)} ≠ tổng Dư Có ${tien(co)} (lệch ${tien(Math.abs(no - co))}) — sửa số hoặc ghi cột TK cân đối`);
       if (loiNhom.length) for (const r of list) { r.errors.push(...loiNhom.filter((e) => !r.errors.includes(e))); r.action = 'error'; }
     }
 
@@ -615,7 +608,7 @@ const SO_DU: NhapLoai = {
         const [branchCode, docDate] = g.split('|') as [string, string];
         try {
           await api.post('/api/v1/opening-balances', {
-            branchCode, docDate, description: 'Số dư đầu kỳ (nhập Excel)', balancingAccount: list.find((r) => r.bal)?.bal || undefined,
+            branchCode, docDate, description: 'Số dư đầu kỳ (nhập Excel)',
             lines: list.map((r) => ({ accountCode: r.values.accountCode, partnerCode: r.values.partnerCode || undefined, debit: r.debit, credit: r.credit })),
           });
         } catch (e) { for (const r of list) { r.action = 'error'; r.errors.push(e instanceof Error ? e.message : String(e)); } }
@@ -627,7 +620,7 @@ const SO_DU: NhapLoai = {
       for (const r of list) if (r.action !== 'error') { r.action = 'error'; r.errors.push('Phiếu số dư của chi nhánh này còn dòng lỗi — sửa hết rồi nhập cả phiếu'); }
     }
     const n = (x: NhapDong['action']) => out.filter((r) => r.action === x).length;
-    return { created: n('create'), updated: 0, failed: n('error'), rows: out.map(({ g: _g, debit: _d, credit: _c, bal: _b, ...r }) => r) };
+    return { created: n('create'), updated: 0, failed: n('error'), rows: out.map(({ g: _g, debit: _d, credit: _c, ...r }) => r) };
   },
 };
 

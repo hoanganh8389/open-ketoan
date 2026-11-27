@@ -95,7 +95,7 @@ export function SideNav({ menu, groups, active, onChoose, collapsed, onCollapse,
       <nav className="sidenav-body">
         <NutThemNhanh menu={menu} collapsed={collapsed} />
         <NhanPhanHe collapsed={collapsed} />
-        {nhomHien(groups).map((g) => {
+        {nhomHien(groups).filter((g) => g.key !== 'tra-cuu').map((g) => {
           const isActive = active?.key === g.key && pathname !== REPORT_PAGE;
           return (
             <button key={g.key} type="button" className={`gon-row${isActive ? ' active' : ''}${open?.key === g.key ? ' open' : ''}`} title={`${g.label} — bấm để vào ${g.homeLabel ?? 'Tổng quan'}, rê chuột để xem mọi màn`} onClick={() => { huyHen(); setOpen(null); onChoose(g.key); navigate(g.home); }} onMouseEnter={(e) => reVao(g, e.currentTarget)} onMouseLeave={reRa}>
@@ -107,6 +107,16 @@ export function SideNav({ menu, groups, active, onChoose, collapsed, onCollapse,
         <NavLink to={REPORT_PAGE} end className={() => `gon-row${pathname === REPORT_PAGE && !new URLSearchParams(search).get('nhom') ? ' active' : ''}`} title="Tất cả báo cáo, sổ sách"><BarChart3 size={17} /><span>Báo cáo</span></NavLink>
         {/* [2026-11-25 Nguyễn Văn Thủy] một mục gom mọi việc đang phát triển (đóng góp) */}
         <NavLink to={DANG_PHAT_TRIEN_PAGE} className={() => `gon-row${pathname === DANG_PHAT_TRIEN_PAGE ? ' active' : ''}`} title="Các việc đang phát triển, xếp theo nhóm menu"><Hammer size={17} /><span>Đang phát triển</span></NavLink>
+        {/* [2026-11-27 01:30 PM Nguyễn Văn Thủy] HT — Tra cứu xuống cuối menu trái (đóng góp) */}
+        {nhomHien(groups).filter((g) => g.key === 'tra-cuu').map((g) => {
+          const isActive = active?.key === g.key && pathname !== REPORT_PAGE;
+          return (
+            <button key={g.key} type="button" className={`gon-row${isActive ? ' active' : ''}${open?.key === g.key ? ' open' : ''}`} title={`${g.label} — bấm để vào ${g.homeLabel ?? 'Tổng quan'}, rê chuột để xem mọi màn`} onClick={() => { huyHen(); setOpen(null); onChoose(g.key); navigate(g.home); }} onMouseEnter={(e) => reVao(g, e.currentTarget)} onMouseLeave={reRa}>
+              <GonIcon name={g.icon} size={17} /><span>{g.label}</span>
+              <span role="button" tabIndex={-1} className="gon-arrow" title="Xem mọi màn của nhóm" aria-expanded={open?.key === g.key} onClick={(e) => { e.stopPropagation(); huyHen(); toggle(g, e); }}><ChevronRight size={14} /></span>
+            </button>
+          );
+        })}
       </nav>
       <button className="sidenav-toggle" title={collapsed ? 'Mở rộng menu (Ctrl + B)' : 'Thu gọn menu (Ctrl + B)'} onClick={() => onCollapse(!collapsed)}>
         {collapsed ? <PanelLeftOpen size={16} /> : <><PanelLeftClose size={16} /> Thu gọn</>}

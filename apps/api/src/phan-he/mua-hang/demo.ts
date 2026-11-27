@@ -90,10 +90,9 @@ export async function seedDemo(auth: AuthContext, opts: { reset?: boolean; mode?
   // 2. Số dư đầu kỳ công nợ NCC (30/09/2026). Dọn số dư mẫu còn sót của lượt nạp trước bị dừng giữa chừng — không bao giờ ghi trùng.
   await clearDemoOpenings(auth);
   const A = await resolveAccounts(db, auth.tenantId, await loadSettings(db, auth.tenantId));
-  const balancing = (await db.selectFrom('accounts').select('code').where('tenant_id', '=', auth.tenantId).where('code', 'in', ['4211', '421', '911']).where('is_posting', '=', true).execute())[0]?.code;
   for (const p of master.partners.filter((x) => x.openingDebt)) {
     const branch = docs.find((d) => d.partnerCode === p.code)?.branchCode ?? master.branches[0]!.code;
-    await voucherService.createOpening(auth, { branchCode: branch, docDate: '2026-09-30', description: `Số dư đầu kỳ phải trả ${p.name} (dữ liệu mẫu)`, balancingAccount: balancing, lines: [{ accountCode: A.payable, partnerCode: p.code, debit: 0, credit: p.openingDebt! }] });
+    await voucherService.createOpening(auth, { branchCode: branch, docDate: '2026-09-30', description: `Số dư đầu kỳ phải trả ${p.name} (dữ liệu mẫu)`, lines: [{ accountCode: A.payable, partnerCode: p.code, debit: 0, credit: p.openingDebt! }] });
   }
   // [2026-11-18 Nguyễn Văn Thủy] 2c. Hợp đồng mua Vinh Châu (Danh mục hợp đồng, 0163): giá, chính sách, đơn / phiếu nhập mẫu của NCC thuộc hợp đồng (đóng góp)
   {

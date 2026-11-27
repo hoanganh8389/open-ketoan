@@ -2,7 +2,7 @@
  * Màn hình của phân hệ Kho. Đường dẫn là duy nhất trong cả phần mềm: menu phân hệ khác trỏ tới cũng mở đúng màn này.
  * Thêm màn: import + một <Route> ở đây, mục menu ở menu.ts cùng thư mục.
  */
-import { Route } from 'react-router-dom';
+import { Navigate, Route } from 'react-router-dom';
 import { ChuyenKhoPage } from './chuyen-kho/ChuyenKhoPage';
 import { KiemKePage } from './kiem-ke/KiemKePage';
 import { CostingPage, ItemLedgerPage, StockMovementPage } from './inventory/InventoryPages';
@@ -19,6 +19,7 @@ export const khoRoutes = (
     <Route path="kho/chuyen-kho" element={<ChuyenKhoPage />} />
     <Route path="kho/kiem-ke" element={<KiemKePage />} />
     <Route path="kho/ton-theo-lo" element={<TonTheoLoPage />} />
+    <Route path="kho/bao-cao-lo-han" element={<Navigate to="/kho/ton-theo-lo?the=han-dung" replace />} />
     <Route path="nghiep-vu/tinh-gia-von" element={<CostingPage />} />
     <Route path="nghiep-vu/cong-thuc-gia-von" element={<CongThucGiaVonPage />} />
     <Route path="bao-cao/nhap-xuat-ton" element={<StockMovementPage />} />

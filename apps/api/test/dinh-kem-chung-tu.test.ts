@@ -107,6 +107,12 @@ describe('NT-QUY-001 — đính kèm chứng từ gốc trên phiếu chuyển t
 describe('NT-QUY-001 — đính kèm trên phiếu chuyển kho (khoá theo chứng từ đầu xuất)', () => {
   it('phiếu chuyển kho đã ghi có outDocKey; đính biên bản giao nhận theo khoá đó', async () => {
     for (const b of [{ code: 'KHO', name: 'Kho tổng' }, { code: 'SHOP1', name: 'Cửa hàng 1' }]) await call(ctx, 'POST', '/api/v1/branches', b);
+    // Có tồn trước khi chuyển (#68: không xuất chuyển kho vượt tồn).
+    expect((await call(ctx, 'POST', '/api/v1/documents', {
+      docType: 'purchase', docKey: 'NM-DK1', branchCode: 'KHO', docNo: 'NM-DK1', docDate: '2026-11-01', partner: { code: 'NCC-DK', name: 'NCC' },
+      lines: [{ lineKey: 'l1', sku: 'DK-SUA', name: 'Sữa thử đính kèm', unit: 'Lon', qty: 5, amountBeforeTax: 500000, taxCode: 'V08', taxAmount: 0 }],
+      totals: { beforeTax: 500000, tax: 0, total: 500000 },
+    })).status).toBeLessThan(300);
     const r = await call<{ data: { id: string; outDocKey: string } }>(ctx, 'POST', '/api/v1/kho/transfers', {
       docDate: '2026-11-10', fromBranchCode: 'KHO', toBranchCode: 'SHOP1', note: 'Thử đính kèm',
       lines: [{ lineKey: 'a', sku: 'DK-SUA', name: 'Sữa thử đính kèm', unit: 'Lon', qty: 2 }],

@@ -9,6 +9,8 @@
  *   Hoá đơn vẫn theo dòng bán như bill.
  */
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { HanDungLo } from './BaoCaoLoHanPage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
 import { api, errorText } from '@/lib/api';
@@ -245,7 +247,9 @@ function LoTheoPhieu({ initial }: { initial?: { docKey: string; docNo: string } 
 }
 
 export function TonTheoLoPage() {
-  const [tab, setTab] = useState<'ton' | 'phieu'>('ton');
+  // [2026-11-27 01:20 PM Nguyễn Văn Thủy] KHO05 — thẻ Hạn dùng (báo cáo lô và hạn dùng) gộp vào đây, không tách màn riêng; ?the=han-dung mở thẳng thẻ (đóng góp)
+  const [sp] = useSearchParams();
+  const [tab, setTab] = useState<'ton' | 'han' | 'phieu'>(sp.get('the') === 'han-dung' ? 'han' : 'ton');
   const [doc, setDoc] = useState<{ docKey: string; docNo: string } | null>(null);
   return (
     <div className="page">
@@ -253,10 +257,12 @@ export function TonTheoLoPage() {
         subtitle="Lô theo số lô + hạn dùng của nhà cung cấp, quản lý theo từng phân kho, giữ tên hàng lúc mua; hàng ra tự lấy lô hạn sớm trước; khách trả về đúng lô; giá vốn vẫn bình quân" />
       <div className="tabs" role="tablist" style={{ marginBottom: 8 }}>
         <button role="tab" className={`tab ${tab === 'ton' ? 'active' : ''}`} onClick={() => setTab('ton')}>Tồn theo lô</button>
+        <button role="tab" className={`tab ${tab === 'han' ? 'active' : ''}`} onClick={() => setTab('han')} title="Lô còn tồn xếp hạn dùng gần trước; hết hạn / cận date 7 – 15 – 30 ngày">Hạn dùng</button>
         <button role="tab" className={`tab ${tab === 'phieu' ? 'active' : ''}`} onClick={() => { setDoc(null); setTab('phieu'); }} title="Phiếu lấy hàng từ lô nào, ở kho nào">Lô theo phiếu</button>
       </div>
       {tab === 'ton'
         ? <TonLo onOpenDoc={(docKey, docNo) => { setDoc({ docKey, docNo }); setTab('phieu'); }} />
+        : tab === 'han' ? <HanDungLo />
         : <LoTheoPhieu key={doc?.docKey ?? 'all'} initial={doc} />}
     </div>
   );

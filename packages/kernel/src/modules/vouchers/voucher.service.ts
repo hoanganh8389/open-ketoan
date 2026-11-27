@@ -524,7 +524,26 @@ function fromVoucher(input: VoucherInput): ManualDoc {
   };
 }
 
-/** Số dư đầu kỳ → chứng từ nhập tay: mỗi dòng một bên; chênh lệch (nếu có) đưa vào tài khoản cân đối. */
+/** TK trung gian nhận phần lệch Nợ / Có của phiếu số dư đầu kỳ (nhập đủ mọi chi nhánh thì tự về 0). */
+export const TK_TRUNG_GIAN_SO_DU = '999';
+/** TK nhận phần lệch: chỉ TK trung gian 9xx (trừ 911); bỏ trống = 999. TK thật (1111, 4211…) bị từ chối — gác cổng cả khi gọi API trực tiếp. */
+function tkCanDoi(input: OpeningInput): string {
+  const b = input.balancingAccount?.trim() || TK_TRUNG_GIAN_SO_DU;
+  if (!/^9/.test(b) || b.startsWith('911')) {
+    throw Errors.validation(`Không dùng tài khoản ${b} để cân đối số dư đầu kỳ: phần lệch Nợ / Có tự ghi vào tài khoản trung gian ${TK_TRUNG_GIAN_SO_DU} (nhập đủ mọi chi nhánh thì tự về 0). Số dư thật của tài khoản nào thì nhập đúng dòng tài khoản đó.`);
+  }
+  return b;
+}
+/** Phiếu số dư lệch Nợ / Có mà chưa có TK trung gian 999: tạo một lần (tài khoản chi tiết, dư hai bên). */
+async function damBaoTkTrungGian(trx: Db, tenantId: string, input: OpeningInput) {
+  const no = input.lines.reduce((t, l) => t + toCents(l.debit), 0), co = input.lines.reduce((t, l) => t + toCents(l.credit), 0);
+  if (no === co) return;
+  const b = tkCanDoi(input);
+  if (await accountRepository.findByCode(trx, tenantId, b)) return;
+  await trx.insertInto('accounts').values({ tenant_id: tenantId, code: b, name: 'Chênh lệch số dư đầu kỳ (trung gian — nhập đủ chi nhánh thì về 0)', level: 1, normal_side: 'both', is_posting: true } as never)
+    .onConflict((oc) => oc.columns(['tenant_id', 'code']).doNothing()).execute();
+}
+/** Số dư đầu kỳ → chứng từ nhập tay: mỗi dòng một bên; chênh lệch (nếu có) vào TK trung gian 999. */
 function fromOpening(input: OpeningInput): ManualDoc {
   const debit = input.lines.reduce((s, l) => s + toCents(l.debit), 0);
   const credit = input.lines.reduce((s, l) => s + toCents(l.credit), 0);
@@ -558,9 +577,10 @@ function fromOpening(input: OpeningInput): ManualDoc {
         throw Errors.validation(`Mã đối tượng ${[...new Set(saiDT)].join(', ')} chưa có trong danh mục khách hàng / nhà cung cấp / nhân viên — khai báo đối tượng trước rồi nhập số dư.`);
       }
       const diff = debit - credit;
-      if (diff !== 0 && !input.balancingAccount) {
-        throw Errors.validation(`Tổng Dư Nợ (${fromCents(debit)}) khác tổng Dư Có (${fromCents(credit)}), lệch ${fromCents(Math.abs(diff))}. Kiểm tra lại, hoặc nhập "Tài khoản cân đối" để ghi phần chênh lệch.`);
-      }
+      // [2026-11-27 10:30 AM Nguyễn Văn Thủy] SO-DU — phần lệch Nợ / Có của phiếu (nhập riêng từng chi nhánh) LUÔN vào TK trung gian 9xx
+      // (mặc định 999, tự tạo nếu chưa có); KHÔNG cho chọn TK thật — trước để người dùng chọn 1111 làm TK cân đối, tiền mặt bị ghi bên Có (đóng góp)
+      const bal = tkCanDoi(input);
+      if (diff !== 0 && !accounts.get(bal)) throw Errors.validation(`Chưa có tài khoản trung gian ${bal} để ghi phần lệch số dư đầu kỳ — thêm ở Danh mục tài khoản`);
       // Mỗi dòng một số cặp riêng: số dư đầu không có tài khoản đối ứng.
       const lines: DraftLine[] = input.lines.map((l, i) => ({
         accountCode: l.accountCode,
@@ -572,7 +592,7 @@ function fromOpening(input: OpeningInput): ManualDoc {
         description: 'Số dư đầu kỳ',
       }));
       if (diff !== 0) {
-        lines.push({ accountCode: input.balancingAccount!, debit: diff < 0 ? fromCents(-diff) : 0, credit: diff > 0 ? fromCents(diff) : 0, pairNo: lines.length + 1, part: 'other', description: 'Cân đối số dư đầu kỳ' });
+        lines.push({ accountCode: bal, debit: diff < 0 ? fromCents(-diff) : 0, credit: diff > 0 ? fromCents(diff) : 0, pairNo: lines.length + 1, part: 'other', description: 'Cân đối số dư đầu kỳ' });
       }
       return lines;
     },
@@ -588,8 +608,8 @@ export const voucherService = {
   draftIn: (trx: Db, auth: AuthContext, input: VoucherInput, opts: { preview?: boolean } = {}) => draftManualIn(trx, auth, fromVoucher(input), opts),
   approveIn: approveDraftIn,
   approve: (auth: AuthContext, id: string) => db.transaction().execute((trx) => approveDraftIn(trx, auth, id)),
-  createOpening: (auth: AuthContext, input: OpeningInput) => createManual(auth, fromOpening(input)),
-  updateOpening: (auth: AuthContext, id: string, input: OpeningInput) => updateManual(auth, id, fromOpening(input)),
-  createOpeningIn: (trx: Db, auth: AuthContext, input: OpeningInput) => createManualIn(trx, auth, fromOpening(input)),
-  updateOpeningIn: (trx: Db, auth: AuthContext, id: string, input: OpeningInput) => updateManualIn(trx, auth, id, fromOpening(input)),
+  createOpening: (auth: AuthContext, input: OpeningInput) => db.transaction().execute(async (trx) => { await damBaoTkTrungGian(trx, auth.tenantId, input); return createManualIn(trx, auth, fromOpening(input)); }),
+  updateOpening: (auth: AuthContext, id: string, input: OpeningInput) => db.transaction().execute(async (trx) => { await damBaoTkTrungGian(trx, auth.tenantId, input); return updateManualIn(trx, auth, id, fromOpening(input)); }),
+  createOpeningIn: async (trx: Db, auth: AuthContext, input: OpeningInput) => { await damBaoTkTrungGian(trx, auth.tenantId, input); return createManualIn(trx, auth, fromOpening(input)); },
+  updateOpeningIn: async (trx: Db, auth: AuthContext, id: string, input: OpeningInput) => { await damBaoTkTrungGian(trx, auth.tenantId, input); return updateManualIn(trx, auth, id, fromOpening(input)); },
 };

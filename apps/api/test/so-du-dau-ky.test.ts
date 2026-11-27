@@ -10,6 +10,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb } from '../src/db/client.js';
 import { call, setupTenant, type TestCtx } from './helpers.js';
+import { sql } from 'kysely';
+import { db } from '../src/db/client.js';
+import { suaSoDuDauKyCu } from '../src/phan-he/ke-toan/sua-so-du-cu.js';
 
 let ctx: TestCtx;
 
@@ -95,7 +98,7 @@ describe('Số dư đầu kỳ ở báo cáo tổng hợp', () => {
 
 describe('Kiểm khi ghi phiếu số dư (lệch chuẩn)', () => {
   it('Dư Có tiền mặt → từ chối, nói rõ tiền chỉ có Dư Nợ', async () => {
-    const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-10-31', balancingAccount: '4211', lines: [{ accountCode: '1111', credit: 1_000_000 }] });
+    const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-10-31', lines: [{ accountCode: '1111', credit: 1_000_000 }] });
     expect(r.status).toBe(400);
     expect(JSON.stringify(r.body)).toContain('chỉ có số dư Nợ');
   });
@@ -112,5 +115,49 @@ describe('Kiểm khi ghi phiếu số dư (lệch chuẩn)', () => {
   it('doanh thu / chi phí → từ chối (như trước)', async () => {
     const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-10-31', lines: [{ accountCode: '5111', credit: 1_000_000 }, { accountCode: '1111', debit: 1_000_000 }] });
     expect(r.status).toBe(400);
+  });
+
+  // [2026-11-27 10:50 AM Nguyễn Văn Thủy] SO-DU — tình huống dev 27/11: chọn 1111 làm TK cân đối → tiền mặt ra Dư Có. Nay: không có TK cân đối,
+  // phần lệch tự vào 999 (tự tạo); TK thật làm cân đối bị từ chối (đóng góp)
+  it('phiếu chỉ có Dư Nợ tiền (không chọn TK cân đối): ghi được, phần lệch vào 999; sổ quỹ chi nhánh đó Dư Nợ, không ra Dư Có', async () => {
+    await call(ctx, 'POST', '/api/v1/branches', { code: 'CN-SD2', name: 'Chi nhánh số dư 2' });
+    const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN-SD2', docDate: '2026-10-31', lines: [{ accountCode: '1111', debit: 1_000_000 }, { accountCode: '1111', debit: 100_000 }] });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    const q = await call(ctx, 'GET', '/api/v1/reports/account-ledger?account=111&from=2026-11-01&to=2026-11-30&kind=cash&branchCodes=CN-SD2');
+    expect(q.status, JSON.stringify(q.body)).toBe(200);
+    expect(q.body.data.opening.debit).toBe(1_100_000);
+    expect(q.body.data.opening.credit).toBe(0);
+    const tb = await call(ctx, 'GET', '/api/v1/reports/trial-balance?from=2026-11-01&to=2026-11-30&branchCodes=CN-SD2');
+    const r999 = tb.body.data.rows.find((x: any) => x.code === '999');
+    expect(r999?.openingCredit).toBe(1_100_000);
+  });
+  it('gác cổng: chọn TK thật (1111, 4211) làm TK cân đối → từ chối', async () => {
+    for (const bal of ['1111', '4211']) {
+      const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-10-31', balancingAccount: bal, lines: [{ accountCode: '1121', debit: 100_000 }] });
+      expect(r.status).toBe(400);
+      expect(JSON.stringify(r.body)).toContain('Không dùng tài khoản');
+    }
+  });
+
+  // [2026-11-27 12:10 PM Nguyễn Văn Thủy] SO-DU — phiếu cũ (trước khi bỏ ô TK cân đối) ghi phần lệch vào 1111: khởi động tự sửa sang 999 (đóng góp)
+  it('tự sửa phiếu cũ ghi phần lệch vào 1111 (tiền mặt Dư Có): ghi lại bản điều chỉnh, 111 hết Dư Có, phần lệch ở 999', async () => {
+    await call(ctx, 'POST', '/api/v1/branches', { code: 'CN-SD3', name: 'Chi nhánh số dư 3' });
+    // Phiếu cũ: Dư Nợ 1111 = 300.000, phần lệch từng ghi Có 1111 (đóng vai dữ liệu cũ — nay máy chủ không cho lập kiểu này nữa).
+    const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN-SD3', docDate: '2026-10-31', lines: [{ accountCode: '1111', debit: 300_000 }] });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    await sql`UPDATE accounting_events SET payload = payload || '{"balancingAccount":"1111"}'::jsonb WHERE id = ${r.body.data.id}`.execute(db);
+    const tid = String((await sql<{ id: string }>`SELECT id FROM tenants WHERE code = ${ctx.tenantCode}`.execute(db)).rows[0]!.id);
+    const logs: string[] = [];
+    const n = await suaSoDuDauKyCu({ info: (m) => logs.push(m), warn: (m) => logs.push('WARN ' + m) }, tid);
+    expect(n, logs.join(' | ')).toBeGreaterThanOrEqual(1);
+    const ev = await sql<{ payload: any }>`SELECT payload FROM accounting_events WHERE id = ${r.body.data.id}`.execute(db);
+    expect(ev.rows[0]!.payload.balancingAccount).toBeUndefined();
+    const tb = await call(ctx, 'GET', '/api/v1/reports/trial-balance?from=2026-11-01&to=2026-11-30&branchCodes=CN-SD3');
+    const row = (c: string) => tb.body.data.rows.find((x: any) => x.code === c);
+    expect(row('999')?.openingCredit).toBe(300_000);
+    expect(row('1111')?.openingCredit ?? 0).toBe(0);
+    expect(row('1111')?.openingDebit).toBe(300_000);
+    // Chạy lại: không còn gì để sửa.
+    expect(await suaSoDuDauKyCu({ info: () => {}, warn: () => {} }, tid)).toBe(0);
   });
 });

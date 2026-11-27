@@ -36,7 +36,7 @@ export function LoHanPage() {
     const m = new Map<string, { rank: number; of: number }>();
     const groups = new Map<string, Lot[]>();
     for (const l of lots.filter((x) => x.qty > 0 && x.level !== 'expired')) groups.set(`${l.sku}|${l.branchCode}`, [...(groups.get(`${l.sku}|${l.branchCode}`) ?? []), l]);
-    for (const g of groups.values()) g.sort((a, b) => a.expDate.localeCompare(b.expDate)).forEach((l, i) => m.set(`${l.sku}|${l.branchCode}|${l.lotNo}`, { rank: i + 1, of: g.length }));
+    for (const g of groups.values()) g.sort((a, b) => a.expDate.localeCompare(b.expDate)).forEach((l, i) => m.set(`${l.sku}|${l.branchCode}|${l.lotNo}|${l.expDate}`, { rank: i + 1, of: g.length }));
     return m;
   }, [lots]);
   const warn = lots.some((l) => l.level !== 'ok' && l.qty > 0);
@@ -59,9 +59,9 @@ export function LoHanPage() {
           </div>
           <div className="table-wrap"><table className="grid"><thead><tr><th>Mã hàng</th><th>Lô</th><th>NSX</th><th>Hạn dùng</th><th className="num">Còn (ngày)</th><th>Chi nhánh</th><th className="num">Đã nhập</th><th className="num">Còn tồn</th><th title="Cùng mã, cùng chi nhánh: lô hạn dùng sớm hơn xuất trước (FEFO)">Xuất trước</th><th className="num">Giá trị</th><th>Nguồn nhập</th><th>Tình trạng</th></tr></thead><tbody>
             {rows.map((l, i) => (
-              <tr key={i}><td className="mono">{l.sku}</td><td className="mono">{l.lotNo}</td><td>{dmy(l.mfgDate)}</td><td>{dmy(l.expDate)}</td><td className="num">{l.days}</td><td>{names.branchName(l.branchCode)}</td>
+              <tr key={i}><td className="mono">{l.sku}</td><td className="mono">{l.lotNo || <span className="muted" title="Dòng phiếu nhập chỉ ghi hạn dùng, chưa ghi số lô">(không số lô)</span>}</td><td>{dmy(l.mfgDate)}</td><td>{dmy(l.expDate)}</td><td className="num">{l.days}</td><td>{names.branchName(l.branchCode)}</td>
                 <td className="num">{l.received}</td><td className="num"><b>{l.qty}</b></td>
-                <td>{(() => { const o = order.get(`${l.sku}|${l.branchCode}|${l.lotNo}`); return l.qty > 0 && l.level === 'expired' ? <span className="badge badge-bad">hết hạn — không xuất bán</span> : !o ? <span className="muted">hết tồn</span> : o.of === 1 ? <span className="muted">lô duy nhất</span> : o.rank === 1 ? <span className="badge badge-info">xuất lô này trước</span> : <span className="muted">thứ {o.rank} / {o.of}</span>; })()}</td>
+                <td>{(() => { const o = order.get(`${l.sku}|${l.branchCode}|${l.lotNo}|${l.expDate}`); return l.qty > 0 && l.level === 'expired' ? <span className="badge badge-bad">hết hạn — không xuất bán</span> : !o ? <span className="muted">hết tồn</span> : o.of === 1 ? <span className="muted">lô duy nhất</span> : o.rank === 1 ? <span className="badge badge-info">xuất lô này trước</span> : <span className="muted">thứ {o.rank} / {o.of}</span>; })()}</td>
                 <td className="num">{vnd(l.qty * l.unitCost)}</td><td style={{ fontSize: 12 }}>{l.docNo} · {dmy(l.receivedAt)} · {names.partnerName(l.partnerCode)}</td>
                 <td><span className={`badge ${LEVEL[l.level]![1]}`}>{LEVEL[l.level]![0]}</span></td></tr>
             ))}

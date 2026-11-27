@@ -20,7 +20,7 @@ Ví dụ:
    - Bấm **Nhập số dư đầu kỳ** để nhập tay, hoặc **Dán từ Excel** 4 cột.
    - Bấm **Nhập từ Excel** để nhập tệp cả công ty. Tệp có cột Chi nhánh, mỗi chi nhánh thành một phiếu.
 3. **Kiểm tra**:
-   - Ô **Kiểm tra** trên màn phải báo tổng Dư Nợ = tổng Dư Có, cùng một ngày chốt, TK cân đối không còn số dư.
+   - Ô **Kiểm tra** trên màn phải báo tổng Dư Nợ = tổng Dư Có, cùng một ngày chốt (TK trung gian 999 về 0), không còn phiếu báo đỏ.
    - Mở **Bảng cân đối số phát sinh (ACC10)** từ ngày sau ngày chốt: cột Số dư đầu kỳ phải khớp bảng số dư của bạn.
 
 Các thẻ **Tiền mặt / Tiền gửi ngân hàng / Công nợ khách hàng / Công nợ nhà cung cấp / Tạm ứng, nhân viên / Tài khoản khác** lọc bảng số dư theo nhóm. Bấm **Nhập số dư đầu kỳ** khi đang ở một thẻ thì dòng đầu được điền sẵn tài khoản của nhóm đó. **Theo phiếu** xem danh sách phiếu (mỗi chi nhánh một phiếu), mở để sửa hoặc huỷ.
@@ -43,12 +43,15 @@ Dòng sai tô đỏ và có chữ báo lỗi ngay trên dòng. Cạnh nút **Ghi
 
 ## Tổng Nợ phải bằng tổng Có
 
-- Nhập số dư **toàn công ty** trong một phiếu: hai tổng phải bằng nhau. Lệch nghĩa là nhập thiếu hoặc sai.
-- Nhập **riêng từng chi nhánh** thì số dư một chi nhánh thường không tự cân. Khi đó nhập **Tài khoản cân đối** (vd tài khoản trung gian 999). Nhập đủ mọi chi nhánh thì tài khoản này tự về 0. Ô Kiểm tra báo nếu nó còn số dư, nghĩa là còn thiếu.
+- Nhập số dư **toàn công ty**: tổng Dư Nợ phải bằng tổng Dư Có. Nếu lệch, nghĩa là đang nhập thiếu hoặc nhập sai.
+- Nhập **riêng từng chi nhánh**: số dư của một chi nhánh thường không tự cân. Phần lệch Nợ / Có của phiếu **tự ghi vào tài khoản trung gian 999**, người dùng không phải chọn gì. Phần mềm tự tạo TK 999 nếu chưa có.
+- Nhập đủ mọi chi nhánh thì 999 tự về 0. Nếu ô Kiểm tra còn báo lệch, nghĩa là còn thiếu số dư.
+- **Không có ô "Tài khoản cân đối".** Phần mềm cũng từ chối mọi tài khoản thật (1111, 4211…) dùng làm cân đối, kể cả khi gọi máy chủ trực tiếp. Trước đây chọn 1111 làm tài khoản cân đối khiến tiền mặt bị ghi Dư Có sai.
+- Phiếu cũ đã ghi phần lệch vào tài khoản thật sẽ bị ô Kiểm tra báo đỏ. Để sửa: mở phiếu, bấm **Sửa**, rồi bấm **Ghi lại**. Phần lệch sẽ chuyển sang 999.
 
 ## Nhập từ Excel
 
-- Bấm **Tải tệp mẫu** để lấy tệp mẫu, có sheet hướng dẫn từng cột: Chi nhánh, Ngày chốt số dư, Tài khoản, Mã đối tượng, Dư Nợ, Dư Có, TK cân đối.
+- Bấm **Tải tệp mẫu** để lấy tệp mẫu, có sheet hướng dẫn từng cột: Chi nhánh, Ngày chốt số dư, Tài khoản, Mã đối tượng, Dư Nợ, Dư Có. Không có cột TK cân đối (phần lệch tự vào 999).
 - Bước **Kiểm tra dữ liệu** báo lỗi từng dòng theo đúng quy tắc trên, chưa ghi gì.
 - Chi nhánh đã có phiếu số dư thì không nhập chồng: sửa phiếu đó, hoặc huỷ rồi nhập lại.
 - Phiếu của một chi nhánh còn dòng lỗi thì cả phiếu không ghi, tránh ghi nửa vời.
