@@ -197,7 +197,7 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     expect(await points(PHONE)).toMatchObject({ balance: 32, tierKey: 'member' });
   });
 
-  it('ca 4: bật nhân điểm theo hạng; khách tổng tích 1.200 (hạng Bạc ×1,2) mua 325.000 → +38,4 điểm', async () => {
+  it('ca 4: bật nhân điểm theo hạng; khách tổng tích 1.200 (hạng Bạc ×1,2) mua 325.000 → +38 điểm (38,4 làm tròn xuống — NT-BH-059)', async () => {
     const d = await draftFor('CN02', (c) => ({ ...c, settings: { ...c.settings, enableTierMultiplier: true } }));
     await approve([d.id]);
     const op = await req(owner, 'POST', `${L}/opening`, { asOf: vnDate(-1), rows: [{ customerCode: SILVER, totalEarned: 1200, balance: 1200 }] });
@@ -207,8 +207,8 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     expect(r.statusCode, r.body).toBe(201);
     await deliver();
     const earn = (await sql<{ points: string }>`SELECT points FROM mod_loyalty.entries WHERE tenant_id = ${tenantId} AND partner_code = ${SILVER} AND kind = 'earn' AND ref_type = 'order'`.execute(db)).rows;
-    expect(earn.map((e) => Number(e.points))).toEqual([38.4]);
-    expect((await points(SILVER)).balance).toBe(1238.4);
+    expect(earn.map((e) => Number(e.points))).toEqual([38]);
+    expect((await points(SILVER)).balance).toBe(1238);
   });
 
   it('ca 5: thêm quà "Bình sữa" 200 điểm, hạng tối thiểu Bạc → khách hạng Thành viên đổi bị từ chối "chưa đủ hạng"', async () => {
