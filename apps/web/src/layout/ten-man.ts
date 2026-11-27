@@ -47,6 +47,7 @@ export const TEN_MAN: Record<string, TenMan> = {
   '/bao-cao/so-chi-tiet-hang-hoa': { label: 'Sổ chi tiết vật tư hàng hóa' },
   '/bao-cao/chuyen-kho': { label: 'Sổ chuyển kho nội bộ' },
   '/kho/ton-theo-lo': { label: 'Tổng hợp tồn kho theo lô, hạn dùng' },
+  '/kho/bao-cao-lo-han': { label: 'Tổng hợp tồn kho theo lô, hạn dùng' },
   // Công cụ dụng cụ, tài sản cố định
   '/tai-san/cong-cu': { label: 'Quản lý công cụ dụng cụ' },
   '/tai-san/chi-phi-tra-truoc': { label: 'Chi phí trả trước' },
