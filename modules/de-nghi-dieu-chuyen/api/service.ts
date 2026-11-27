@@ -90,7 +90,7 @@ async function build(tx: Tx, i: SaveInput, docDate: string): Promise<Header> {
 }
 
 /** Lập mới (Chờ duyệt) hoặc sửa đề nghị đang chờ. */
-export async function save(ctx: ActionContext, i: SaveInput) {
+export async function luuDeNghi(ctx: ActionContext, i: SaveInput) {
   const today = vnToday();
   const row = await ctx.data.module(async (tx) => {
     if (i.id) {
@@ -139,7 +139,7 @@ export async function reject(ctx: ActionContext, id: string, reason: string) {
 export type ApproveInput = { step: 'prepare' | 'record' | 'abort'; note?: string; transfer?: { id: string; docNo: string; status?: string } };
 
 /** Duyệt — ba bước prepare / record / abort (xem đầu tệp). */
-export async function approve(ctx: ActionContext, id: string, i: ApproveInput) {
+export async function duyetDeNghi(ctx: ActionContext, id: string, i: ApproveInput) {
   if (i.step === 'abort') {
     return toPhieu(await ctx.data.module(async (tx) => {
       const cur = await getPhieu(tx, id, true);

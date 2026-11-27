@@ -5,7 +5,7 @@
  */
 // [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-056: lập / sửa đề nghị điều chuyển (đóng góp)
 import { defineAction, z } from '@bizcity/module-sdk';
-import { save } from '../service.js';
+import { luuDeNghi } from '../service.js';
 import { branchOfClaim } from '../store.js';
 
 const line = z.object({
@@ -29,5 +29,5 @@ export default defineAction({
   expose: { http: { method: 'POST', path: '/phieu' }, mcp: false, ai: 'deny' },
   evidence: { objectType: 'de-nghi-dieu-chuyen.phieu', objectId: (_i, o) => String((o as { id?: string }).id ?? '') || undefined },
   branchOf: async (ctx, i) => (i.id ? ctx.data.module((tx) => branchOfClaim(tx, i.id!, i.branchCode)) : i.branchCode),
-  handler: async (ctx, i) => save(ctx, i),
+  handler: async (ctx, i) => luuDeNghi(ctx, i),
 });

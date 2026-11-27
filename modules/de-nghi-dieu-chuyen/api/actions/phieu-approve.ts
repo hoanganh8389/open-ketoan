@@ -7,7 +7,7 @@
  */
 // [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-056: duyệt đề nghị → phiếu chuyển kho KHO01 (đóng góp)
 import { defineAction, z } from '@bizcity/module-sdk';
-import { approve } from '../service.js';
+import { duyetDeNghi } from '../service.js';
 import { branchOfClaim } from '../store.js';
 
 export default defineAction({
@@ -22,5 +22,5 @@ export default defineAction({
   expose: { http: { method: 'POST', path: '/phieu/:id/approve' }, mcp: false, ai: 'deny' },
   evidence: { objectType: 'de-nghi-dieu-chuyen.phieu', objectId: (i) => i.id },
   branchOf: async (ctx, i) => ctx.data.module((tx) => branchOfClaim(tx, i.id, i.branchCode)),
-  handler: async (ctx, { id, branchCode: _b, ...i }) => approve(ctx, id, i),
+  handler: async (ctx, { id, branchCode: _b, ...i }) => duyetDeNghi(ctx, id, i),
 });
