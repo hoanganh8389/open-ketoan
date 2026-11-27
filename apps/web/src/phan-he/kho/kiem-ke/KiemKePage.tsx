@@ -69,7 +69,7 @@ export function KiemKePage() {
                 { key: 'lineCount', header: 'Số dòng', type: 'number', width: 70 },
                 { key: 'shortage', header: 'Thiếu', title: 'Tổng số lượng thiếu (sổ > kiểm kê)', type: 'number', width: 85, sum: true, value: (r) => r.totals?.shortage ?? 0 },
                 { key: 'surplus', header: 'Thừa', title: 'Tổng số lượng thừa (kiểm kê > sổ)', type: 'number', width: 85, sum: true, value: (r) => r.totals?.surplus ?? 0 },
-                { key: 'poor', header: 'Kém / mất PC', title: 'Số lượng kém / mất phẩm chất chuyển kho cách ly', type: 'number', width: 95, sum: true, value: (r) => r.totals?.poorQty ?? 0 },
+                { key: 'poor', header: 'Không đủ CL', title: 'Số lượng không đủ chất lượng (kém / mất phẩm chất) chuyển kho cách ly', type: 'number', width: 95, sum: true, value: (r) => r.totals?.poorQty ?? 0 },
                 { key: 'status', header: 'Trạng thái', width: 160, value: (r) => r.statusText ?? '', render: (r) => <span className={`badge ${STATUS_CLASS[r.status]}`}>{r.statusText}</span> },
                 { key: 'decisionNo', header: 'Quyết định', type: 'code', width: 110 },
                 { key: 'purpose', header: 'Mục đích', width: 220 },
