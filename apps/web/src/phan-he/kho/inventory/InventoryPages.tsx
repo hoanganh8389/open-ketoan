@@ -426,7 +426,10 @@ function XemCongThuc({ ds, period, onClose }: { ds: Formula[]; period: string; o
 interface CostRun { separateTypes?: string[]; formulaCode?: string; formulaName?: string; formula?: Partial<CtOptions>; id: string; orgUid: string; centerCode: string; centerName: string; period: string; from: string; to: string; items: number; total: number; imported: number; vouchers: unknown; runBy: string; runAt: string }
 
 /* ------------------------------------------------------------------ ACC83 */
-interface StockFigures { openingQty: number; openingValue: number; inQty: number; inValue: number; outQty: number; outValue: number; closingQty: number; closingValue: number; purchaseQty: number; purchaseValue: number; cogsQty: number; cogsValue: number; uncosted: number }
+// [2026-11-27 kiennt] NT-KHO-005 — tách chuyển kho khỏi nhập / xuất; internal* = chuyển kho nội bộ trong phạm vi đang xem (đi và đến đều trong
+// chi nhánh / kho đã chọn) — dòng Tổng cộng / cộng gộp các kho trừ phần này để hàng kho tổng chuyển xuống shop không bị đếm hai lần (đóng góp)
+interface TransferFigures { transferInQty: number; transferInValue: number; transferOutQty: number; transferOutValue: number; internalInQty: number; internalInValue: number; internalOutQty: number; internalOutValue: number }
+interface StockFigures extends TransferFigures { openingQty: number; openingValue: number; inQty: number; inValue: number; outQty: number; outValue: number; closingQty: number; closingValue: number; purchaseQty: number; purchaseValue: number; cogsQty: number; cogsValue: number; uncosted: number }
 interface StockRow extends StockFigures { branchCode: string; branchName: string; sku: string; name: string; unit: string }
 interface StockData { rows: StockRow[]; uncosted: number }
 interface GroupRow extends StockFigures { key: string; label: string; skuCount: number }
@@ -436,15 +439,26 @@ const STOCK_VIEWS: [string, string][] = [
   ['item', 'Mặt hàng (chi tiết)'], ['itemGroup1', 'Nhóm hàng cấp 1'], ['itemGroup2', 'Nhóm hàng cấp 2'], ['itemGroup3', 'Nhóm hàng cấp 3'], ['itemGroup', 'Nhóm hàng gắn trên mặt hàng'], ['itemType', 'Loại hàng'], ['brand', 'Nhãn hiệu'], ['industry', 'Ngành hàng'], ['postingGroup', 'Nhóm hạch toán (hàng thường, khuyến mại…)'],
   ['branch', 'Chi nhánh'], ['supplier', 'Nhà cung cấp (mua hàng)'], ['supplierGroup', 'Nhóm nhà cung cấp (mua hàng)'],
 ];
+/** Dòng Tổng cộng: cộng cột, trừ phần chuyển kho nội bộ trong phạm vi xem (đã có ở cả kho đi lẫn kho đến). */
+const noiBo = (k: keyof StockFigures, internal: keyof TransferFigures) => (rows: StockFigures[]) => rows.reduce((t, r) => t + Number(r[k] ?? 0) - Number(r[internal] ?? 0), 0);
 const figureCols = (stock: boolean, extra: boolean): Column<StockFigures>[] => [
   ...(stock ? ([
     // [2026-11-27 kiennt] NT-MH-026 — số lượng tồn đầu / cuối kỳ không có thì ghi 0, không để trống (đóng góp)
     { key: 'openingQty', header: 'Số lượng', band: 'Đầu kỳ', type: 'qty', sum: true, showZero: true, value: (r) => Number(r.openingQty ?? 0) },
     { key: 'openingValue', header: 'Giá trị', band: 'Đầu kỳ', type: 'money', sum: true },
-    { key: 'inQty', header: 'Số lượng', band: 'Nhập kho', type: 'qty', sum: true },
-    { key: 'inValue', header: 'Giá trị', band: 'Nhập kho', type: 'money', sum: true },
-    { key: 'outQty', header: 'Số lượng', band: 'Xuất kho', type: 'qty', sum: true },
-    { key: 'outValue', header: 'Giá trị', band: 'Xuất kho', type: 'money', sum: true },
+    // NT-KHO-005: nhập / xuất tách phần chuyển kho; dòng Tổng cộng của cột chuyển kho (và cột tổng) bỏ phần chuyển nội bộ trong phạm vi xem
+    { key: 'inOther', header: 'Số lượng', band: 'Nhập mua / khác', type: 'qty', sum: true, value: (r) => r.inQty - (r.transferInQty ?? 0), title: 'Nhập mua, khách trả lại, điều chỉnh tăng (không gồm chuyển kho đến)' },
+    { key: 'inOtherValue', header: 'Giá trị', band: 'Nhập mua / khác', type: 'money', sum: true, value: (r) => r.inValue - (r.transferInValue ?? 0) },
+    { key: 'transferInQty', header: 'Số lượng', band: 'Nhập chuyển kho', type: 'qty', footerValue: noiBo('transferInQty', 'internalInQty'), title: 'Nhận từ kho / chi nhánh khác. Dòng Tổng cộng chỉ tính hàng nhận từ kho NGOÀI phạm vi đang xem' },
+    { key: 'transferInValue', header: 'Giá trị', band: 'Nhập chuyển kho', type: 'money', footerValue: noiBo('transferInValue', 'internalInValue') },
+    { key: 'outOther', header: 'Số lượng', band: 'Xuất bán / khác', type: 'qty', sum: true, value: (r) => r.outQty - (r.transferOutQty ?? 0), title: 'Xuất bán, trả nhà cung cấp, điều chỉnh giảm (không gồm chuyển kho đi)' },
+    { key: 'outOtherValue', header: 'Giá trị', band: 'Xuất bán / khác', type: 'money', sum: true, value: (r) => r.outValue - (r.transferOutValue ?? 0) },
+    { key: 'transferOutQty', header: 'Số lượng', band: 'Xuất chuyển kho', type: 'qty', footerValue: noiBo('transferOutQty', 'internalOutQty'), title: 'Chuyển sang kho / chi nhánh khác. Dòng Tổng cộng chỉ tính hàng chuyển ra kho NGOÀI phạm vi đang xem' },
+    { key: 'transferOutValue', header: 'Giá trị', band: 'Xuất chuyển kho', type: 'money', footerValue: noiBo('transferOutValue', 'internalOutValue') },
+    { key: 'inQty', header: 'Số lượng', band: 'Tổng nhập', type: 'qty', hidden: true, footerValue: noiBo('inQty', 'internalInQty') },
+    { key: 'inValue', header: 'Giá trị', band: 'Tổng nhập', type: 'money', hidden: true, footerValue: noiBo('inValue', 'internalInValue') },
+    { key: 'outQty', header: 'Số lượng', band: 'Tổng xuất', type: 'qty', hidden: true, footerValue: noiBo('outQty', 'internalOutQty') },
+    { key: 'outValue', header: 'Giá trị', band: 'Tổng xuất', type: 'money', hidden: true, footerValue: noiBo('outValue', 'internalOutValue') },
     { key: 'closingQty', header: 'Số lượng', band: 'Cuối kỳ', type: 'qty', sum: true, showZero: true, value: (r) => Number(r.closingQty ?? 0) },
     { key: 'closingValue', header: 'Giá trị', band: 'Cuối kỳ', type: 'money', sum: true },
   ] satisfies Column<StockFigures>[]) : []),
@@ -456,7 +470,13 @@ const figureCols = (stock: boolean, extra: boolean): Column<StockFigures>[] => [
   ] satisfies Column<StockFigures>[]) : []),
 ];
 
-const FIG_KEYS = ['openingQty', 'openingValue', 'inQty', 'inValue', 'outQty', 'outValue', 'closingQty', 'closingValue', 'purchaseQty', 'purchaseValue', 'cogsQty', 'cogsValue', 'uncosted'] as const;
+const FIG_KEYS = ['openingQty', 'openingValue', 'inQty', 'inValue', 'outQty', 'outValue', 'closingQty', 'closingValue', 'purchaseQty', 'purchaseValue', 'cogsQty', 'cogsValue', 'uncosted',
+  'transferInQty', 'transferInValue', 'transferOutQty', 'transferOutValue', 'internalInQty', 'internalInValue', 'internalOutQty', 'internalOutValue'] as const;
+/** Cộng gộp nhiều kho vào một dòng: chuyển kho nội bộ giữa các kho đó không còn là nhập / xuất của dòng gộp (NT-KHO-005). */
+const truNoiBo = <T extends StockFigures>(r: T): T => ({ ...r,
+  inQty: r.inQty - r.internalInQty, inValue: r.inValue - r.internalInValue, outQty: r.outQty - r.internalOutQty, outValue: r.outValue - r.internalOutValue,
+  transferInQty: r.transferInQty - r.internalInQty, transferInValue: r.transferInValue - r.internalInValue, transferOutQty: r.transferOutQty - r.internalOutQty, transferOutValue: r.transferOutValue - r.internalOutValue,
+  internalInQty: 0, internalInValue: 0, internalOutQty: 0, internalOutValue: 0 });
 type ItemRow = StockRow & { kind: 'group' | 'data' | 'subtotal'; label?: string };
 /** Tổng hợp tồn kho theo mặt hàng: nhiều kho (chi nhánh) thì nhóm "Kho: …" + Cộng nhóm; gộp thì cộng các kho theo mã. Dòng thiếu tên lấy tên ở kho khác. */
 function buildItemRows(rows: StockRow[], merge: boolean): ItemRow[] {
@@ -467,7 +487,7 @@ function buildItemRows(rows: StockRow[], merge: boolean): ItemRow[] {
   if (merge) {
     const by = new Map<string, StockRow>();
     for (const r of named) { const x = by.get(r.sku); if (x) add(x, r); else by.set(r.sku, { ...r, branchCode: '', branchName: '' }); }
-    return [...by.values()].sort((a, b) => a.sku.localeCompare(b.sku)).map((r) => ({ ...r, kind: 'data' }));
+    return [...by.values()].sort((a, b) => a.sku.localeCompare(b.sku)).map((r) => ({ ...truNoiBo(r), kind: 'data' }));
   }
   const branches = [...new Set(named.map((r) => r.branchCode))].sort();
   if (branches.length < 2) return named.map((r) => ({ ...r, kind: 'data' }));
@@ -522,7 +542,7 @@ export function StockMovementPage() {
           {d && d.uncosted > 0 && <div className="card-body muted">Có {d.uncosted} lần xuất / nhập chưa có giá trị (tháng chưa tính giá vốn): cột giá trị chưa đầy đủ. Vào <b>Tính giá vốn</b> để tính.</div>}
           {(view === 'item' ? q.isLoading : g.isLoading) ? <Loading /> : !d?.rows.length ? <Empty text="Không có hàng hoá phát sinh" /> : view === 'item' ? (
             <DataGrid
-              storageKey="acc83-v3"
+              storageKey="acc83-v4"
               rows={buildItemRows(q.data?.rows ?? [], merge)}
               rowKey={(r, i) => `${r.kind}-${r.branchCode}-${r.sku}-${i}`}
               rowKind={(r) => r.kind}
@@ -540,7 +560,7 @@ export function StockMovementPage() {
             />
           ) : (
             <DataGrid
-              storageKey={`acc83-${view}-v2`}
+              storageKey={`acc83-${view}-v3`}
               rows={g.data?.rows ?? []}
               rowKey={(r) => r.key}
               exportName={`nhap-xuat-ton-theo-${view}-${f.from}-${f.to}`}
