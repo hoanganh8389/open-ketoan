@@ -277,7 +277,7 @@ export function rewardsForCustomer(program: Pick<LoyaltyProgram, 'tiers' | 'poli
         rewardType: p.type === 6 ? 'voucher' : 'product',
         sku,
         productName: name,
-        quantity: Math.max(1, intval(raw.quantity ?? 1)),
+        quantity: Math.max(1, intval(p.type === 6 ? raw.voucher_quantity ?? raw.quantity ?? 1 : raw.quantity ?? 1)),
         points,
         basePoints: Math.max(0, intval(raw.points_required)),
         canRedeem: ctx.points >= points,

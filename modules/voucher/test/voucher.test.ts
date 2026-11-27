@@ -1,12 +1,14 @@
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: hàm thuần voucher (đóng góp)
 import { describe, expect, it } from 'vitest';
 import {
-  autoCode, autoEligible, campaignInput, campaignProblems, checkCode, displayStatus, expiryOf, normalizePhone, randomCode, type Campaign, type CartLine, type CodeRow,
+  autoCode, autoEligible, campaignInput, campaignProblems, checkCode, displayStatus, expiryOf, keepAfterReturn, normalizePhone, qualifyingQty, randomCode, valueLabel,
+  voucherBase, voucherValue, type Campaign, type CartLine, type CodeRow,
 } from '../api/domain/voucher.js';
 
 const camp = (p: Partial<Campaign> = {}): Campaign => ({
   id: 'c1', code: 'ABBOTT50K', name: 'Abbott 50K', kind: 'cash', issuer: 'brand', issuerPartnerCode: 'NCC-ABBOTT', paymentMethodCode: 'VC-ABBOTT', faceValue: 50_000,
-  minOrder: 0, validFrom: '2026-11-01', validTo: '2026-12-31', validDays: null, itemIds: [], brandCodes: [], issueMode: 'manual', autoRule: null, status: 'active', ...p,
+  minOrder: 0, validFrom: '2026-11-01', validTo: '2026-12-31', validDays: null, itemIds: [], brandCodes: [], issueMode: 'manual', autoRule: null, status: 'active',
+  discountType: 'amount', discountPercent: null, maxDiscount: null, perCustomer: null, branchCodes: [], ...p,
 });
 const code = (p: Partial<CodeRow> = {}): CodeRow => ({
   code: 'V1', campaignId: 'c1', phone: '0901111111', partnerCode: null, status: 'active', expiresOn: '2026-12-31', usedSource: null, usedRefId: null, usedRefCode: null,
@@ -80,5 +82,57 @@ describe('hạn, SĐT, khuôn đợt', () => {
     expect(campaignProblems(base)).toHaveLength(2);
     const np = campaignInput.parse({ code: 'Y', name: 'Y', kind: 'next_purchase', issuer: 'tgs', faceValue: 30_000, validFrom: '2026-11-18', issueMode: 'auto' });
     expect(campaignProblems(np)).toHaveLength(2);
+  });
+});
+
+// [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: voucher %, lô mã, mỗi khách, cửa hàng, trả một phần (đóng góp)
+describe('NT-BH-050 — voucher như chính sách voucher cũ', () => {
+  const pct = camp({ issuer: 'tgs', discountType: 'percent', discountPercent: 10, maxDiscount: 50_000, faceValue: 0 });
+  it('V1 giảm %: 10% đơn 930.000 = 93.000 → trần 50.000; đơn 300.000 = 30.000; không trần = đủ %; làm tròn đồng (nửa xa số 0)', () => {
+    expect(voucherValue(pct, 930_000)).toBe(50_000);
+    expect(voucherValue(pct, 300_000)).toBe(30_000);
+    expect(voucherValue({ ...pct, maxDiscount: null }, 930_000)).toBe(93_000);
+    expect(voucherValue({ ...pct, discountPercent: 7.5, maxDiscount: null }, 99_999)).toBe(7_500);
+    expect(voucherValue(camp(), 930_000)).toBe(50_000);
+    expect(valueLabel(pct)).toBe('Giảm 10%, tối đa 50.000đ');
+    expect(valueLabel(camp())).toBe('50.000đ');
+  });
+  it('V1 giảm % lần mua sau: tính trên tiền dòng áp dụng, không phải cả đơn', () => {
+    expect(voucherBase(['BIOMIL'], 930_000, cart)).toBe(600_000);
+    expect(voucherBase(null, 930_000, cart)).toBe(930_000);
+    expect(voucherValue({ ...pct, maxDiscount: null }, voucherBase(['SUA330'], 930_000, cart))).toBe(33_000);
+  });
+  it('V1 khuôn: giảm % phải có %; mệnh giá tiền phải có mệnh giá', () => {
+    const noPct = campaignInput.parse({ code: 'P', name: 'P', kind: 'cash', issuer: 'tgs', discountType: 'percent', validFrom: '2026-11-18' });
+    expect(campaignProblems(noPct).join()).toContain('phần trăm');
+    const ok = campaignInput.parse({ code: 'P', name: 'P', kind: 'cash', issuer: 'tgs', discountType: 'percent', discountPercent: 10, maxDiscount: 50_000, validFrom: '2026-11-18' });
+    expect(campaignProblems(ok)).toEqual([]);
+    const noFace = campaignInput.parse({ code: 'A', name: 'A', kind: 'cash', issuer: 'tgs', validFrom: '2026-11-18' });
+    expect(campaignProblems(noFace).join()).toContain('mệnh giá');
+    expect(() => campaignInput.parse({ code: 'P', name: 'P', kind: 'cash', issuer: 'tgs', discountType: 'percent', discountPercent: 120, validFrom: '2026-11-18' })).toThrow();
+  });
+  it('V2 mã lô không gắn SĐT: khách nào cũng dùng; mỗi khách tối đa N mã của đợt', () => {
+    const bearer = code({ phone: null });
+    expect(checkCode('V1', bearer, camp(), ctx({ phones: new Set(['0909999999']) }))).toEqual({ applicableSkus: null });
+    const limited = camp({ perCustomer: 1 });
+    expect(checkCode('V1', bearer, limited, ctx({ customerUsed: 0 }))).toEqual({ applicableSkus: null });
+    const r = checkCode('V1', bearer, limited, ctx({ customerUsed: 1 }));
+    expect(r).toMatchObject({ problem: { reason: 'VOUCHER_USED' } });
+    expect((r as { problem: { message: string } }).problem.message).toContain('tối đa 1');
+    // dùng lại ở chính đơn đó (gửi lại / duyệt lại) không bị tính quá lượt
+    expect(checkCode('V1', { ...bearer, status: 'used', usedRefId: 'o1' }, limited, ctx({ customerUsed: 1 }))).toEqual({ applicableSkus: null });
+  });
+  it('cửa hàng áp dụng: đúng cửa hàng được, khác cửa hàng → VOUCHER_NOT_APPLICABLE; không gửi cửa hàng thì không kiểm', () => {
+    const shop = camp({ branchCodes: ['08004'] });
+    expect(checkCode('V1', code(), shop, ctx({ branch: '08004' }))).toEqual({ applicableSkus: null });
+    expect(checkCode('V1', code(), shop, ctx({ branch: '18003' }))).toMatchObject({ problem: { reason: 'VOUCHER_NOT_APPLICABLE' } });
+    expect(checkCode('V1', code(), shop, ctx())).toEqual({ applicableSkus: null });
+  });
+  it('V5 trả một phần: mua 3 (ngưỡng 2) trả 1 → giữ; trả 2 → thu hồi; mã cũ không biết số mua → giữ', () => {
+    expect(qualifyingQty({ itemIds: ['item-biomil'], brandCodes: [] }, cart)).toBe(2);
+    expect(qualifyingQty({ itemIds: [], brandCodes: ['ABB', 'BIO'] }, cart)).toBe(3);
+    expect(keepAfterReturn(3, 1, 2)).toBe(true);
+    expect(keepAfterReturn(3, 2, 2)).toBe(false);
+    expect(keepAfterReturn(null, 5, 2)).toBe(true);
   });
 });

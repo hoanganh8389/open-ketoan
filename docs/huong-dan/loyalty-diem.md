@@ -52,6 +52,17 @@ Phiên bản phát hành là mã băm nội dung (`kt-…`); bản đã phát h�
 
 Khách đổi quà có **hạng tối thiểu** cao hơn hạng của mình: máy bán báo "… chưa đủ hạng: cần hạng …".
 
+<!-- [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thẻ Thành viên, ô thêm như plugin cũ (đóng góp) -->
+**Ô thêm như plugin cũ (NT-BH-051):** chương trình tích có *Tự động áp* (bỏ tích = không tự cộng điểm), *Giá trị đổi (đ / điểm)* (lưu để
+tham chiếu, máy bán không quy điểm ra tiền — dùng điểm qua quà / voucher), *Mô tả* (nhân điểm), *Ghi chú*; danh mục đổi có *Ưu tiên*,
+*Tự động áp*, *Từ ngày*; quà có *Theo dõi tồn*; voucher có *Số lượng* = số mã voucher phát mỗi lần đổi (trừ điểm một lần); hạng có *Màu*.
+
+## Thành viên (thẻ Thành viên)
+- **Tìm kiếm** theo mã khách, tên, SĐT (gõ không dấu được), lọc **Hạng**, bấm **Tìm**; **« Trước / Sau »** sang trang (50 khách / trang, điểm hiện tại giảm dần).
+- Cột: mã, tên, SĐT (danh mục đối tượng), **hạng** (theo tổng điểm đã tích, đổi điểm không tụt hạng), **điểm hiện tại**, **tổng tích**, **tổng đổi**, phát sinh cuối.
+- **Lịch sử** (hoặc bấm đúp dòng): mọi giao dịch điểm, mỗi dòng có điểm **Trước / Sau**, chứng từ, cửa hàng, mô tả, hạn lô.
+- **+ Cộng / − Trừ**: mở hộp *Lập yêu cầu điều chỉnh* điền sẵn khách — vẫn phải người khác duyệt mới ghi sổ (như thẻ Điều chỉnh).
+
 ## Điều chỉnh điểm tay (thẻ Điều chỉnh)
 1. **Lập điều chỉnh**: mã khách (máy bán: SĐT), số điểm (dương = cộng, âm = trừ), **lý do** (bắt buộc), chi nhánh (không bắt buộc). Màn hiện điểm khách đang có; trừ quá số điểm dùng được thì không cho lập.
 2. Người **khác** có quyền duyệt bấm **Duyệt / từ chối** → duyệt thì sổ điểm có dòng *Điều chỉnh* (cộng: lô không hết hạn; trừ: trừ lô hết hạn sớm nhất trước). Lúc duyệt mà khách không còn đủ điểm → chặn (không để số dư âm).
