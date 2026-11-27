@@ -155,6 +155,8 @@ export const ERROR_REASONS = {
   POS_MANUAL_DISCOUNT: 'Thu ngân không giảm tay (chỉ giảm theo chương trình khuyến mại); items: [{ lineId, sku }]',
   POS_NO_PRICE: 'Mã × ĐVT chưa có giá ở bảng giá cửa hàng — báo kế toán khai giá; items: [{ sku, unit }]',
   PHIEU_BAN_STOCK_SHORT: 'Phiếu bán nhập tay xuất quá tồn của kho trên phiếu khi bật công tắc chặn (BH17); items: [{ sku, need, have }]',
+  // [2026-11-27 kiennt] NGHIEM-THU — NT-KHO-003 chặn xuất âm ở phiếu chuyển kho KHO01 (BIZCITY-ERRORS 1.12.0-draft bổ sung §4c, đóng góp)
+  KHO_STOCK_SHORT: 'Phiếu chuyển kho (KHO01) xuất quá tồn kho xuất tại ngày phiếu khi bizcity.kho.negative_stock = block; items: [{ sku, need, have }]',
   // [2026-11-17 01:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-023 đơn đặt hàng (BIZCITY-ERRORS 1.14.0-draft §4c, đóng góp)
   PHIEU_BAN_ORDER_EXPIRED: 'Đơn đặt hàng nháp (báo giá) đã hết hạn hiệu lực — gia hạn hoặc lập đơn mới; kèm validUntil',
   PHIEU_BAN_NO_HOLD_WAREHOUSE: 'Cửa hàng chưa có kho KCB (hàng chờ bán) để giữ hàng cho đơn đặt hàng; kèm branchCode',

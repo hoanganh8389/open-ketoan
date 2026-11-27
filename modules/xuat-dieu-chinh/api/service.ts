@@ -105,7 +105,8 @@ export async function save(ctx: ActionContext, i: SaveInput) {
     return { row, belowCost };
   });
   if (prepared.belowCost.length) {
-    ctx.meta('warnings', prepared.belowCost.map((b) => `Dưới giá vốn: ${b.sku} giá ${b.unitPrice} < giá vốn ${b.unitCost}`));
+    // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-054: người không có documents:write (thu ngân máy bán) không nhận giá vốn (đóng góp)
+    ctx.meta('warnings', prepared.belowCost.map((b) => (isAccountant(ctx) ? `Dưới giá vốn: ${b.sku} giá ${b.unitPrice} < giá vốn ${b.unitCost}` : `Dưới giá vốn: ${b.sku} giá ${b.unitPrice}`)));
     ctx.evidence.note('belowCost', prepared.belowCost);
   }
   const r = prepared.row;

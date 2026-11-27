@@ -86,6 +86,10 @@
 /* Bảng dài (vẽ theo vùng đang thấy): mọi dòng cao bằng nhau — dòng có / không có ô nhập, dòng tiêu đề nhóm. */
 .tm-grid .dgrid-row td { height: 36px; padding-top: 2px; padding-bottom: 2px; }
 .tm-grid .dgrid-row .tm-input { height: 26px; }
+/* [2026-11-27 kiennt] NT-MH-029 — bảng rộng phải cuộn ngang (màn nhỏ / phóng to chữ): dòng tiêu đề nhóm (nhãn · NCC, shop…) bám mép trái
+   khung nhìn, không trôi mất khi cuộn sang phải — ô nhóm trải cả bảng nên phải bỏ cắt chữ / giới hạn rộng của ô (đóng góp) */
+.tm-grid table.dgrid-table tr.group-row > td { max-width: none; overflow: visible; }
+.tm-grid table.dgrid-table tr.group-row > td > * { position: sticky; left: 10px; display: inline-flex; flex-wrap: wrap; row-gap: 2px; width: max-content; max-width: max(300px, calc(100vw - 340px)); white-space: normal; }
 
 /* Ô Chi nhánh dạng cây thả xuống (Miền → Chi nhánh) — chung.tsx ChonChiNhanhCha. */
 .tm-cn { position: relative; }

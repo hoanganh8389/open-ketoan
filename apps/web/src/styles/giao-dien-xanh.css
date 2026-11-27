@@ -256,6 +256,9 @@ html.gd-xanh .catalog-toolbar .btn-primary svg { color: #fff; }
 .ct-total { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; padding-right: 8px; }
 .ct-total small { font-size: 12px; font-weight: 500; color: var(--ink-500); }
 .ct-total b { font-size: 24px; font-weight: 700; color: var(--ink-900); font-variant-numeric: tabular-nums; }
+/* [2026-11-27 kiennt] NT-KHO-006 — hộp thoại chứng từ có ô tổng (vd Phiếu chuyển kho "Tổng số lượng"): nút "? Hướng dẫn" cũng margin-left: auto nên
+   hai bên chia đôi chỗ trống → ô tổng nằm giữa. Nút đứng ngay sau ô tổng thì bỏ auto → ô tổng sát phải như phiếu mua hàng (đóng góp) */
+.ct-total + .modal-help { margin-left: 0; }
 .ct-keys { padding: 4px 18px; border-top: 1px solid var(--line-soft); font-size: 11.5px; color: var(--ink-500); background: var(--surface); }
 
 /* Form phiếu (VoucherModal, lớp .vf): đầu phiếu nền trắng, ô cao hơn, lưới dòng tiêu đề xanh xám, dòng cộng xám nhạt. */
