@@ -107,17 +107,13 @@ export function OpeningBalancesPage() {
     key: `${d.id}-${i}`, docId: d.id, docNo: d.docNo, docDate: d.payload.docDate, branchCode: d.payload.branchCode,
     account: l.accountCode, partner: l.partnerCode ?? '', debit: l.debit, credit: l.credit, nhom: nhomCua(l.accountCode),
   }))), [chiTiet.data]);
-  // Phần lệch của từng phiếu ghi vào TK cân đối (vd 999): còn số dư nghĩa là còn nhập thiếu.
-  const canDoi = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const d of chiTiet.data ?? []) {
-      const b = d.payload.balancingAccount;
-      if (!b) continue;
-      const lech = d.payload.lines.reduce((s, l) => s + l.debit - l.credit, 0);
-      if (Math.abs(lech) >= 0.005) m.set(b, (m.get(b) ?? 0) - lech);
-    }
-    return [...m].filter(([, v]) => Math.abs(v) >= 0.005);
-  }, [chiTiet.data]);
+  // [2026-11-27 10:40 AM Nguyễn Văn Thủy] SO-DU — phần lệch Nợ / Có của phiếu tự vào TK trung gian 999; phiếu CŨ đã ghi phần lệch vào TK thật
+  // (vd 1111 → tiền mặt bị dư Có) thì báo đỏ, mở phiếu bấm Sửa → Ghi lại là chuyển sang 999 (đóng góp)
+  const phieuSai = useMemo(() => (chiTiet.data ?? []).filter((d) => {
+    const b = d.payload.balancingAccount?.trim();
+    const lech = d.payload.lines.reduce((t, l) => t + l.debit - l.credit, 0);
+    return Boolean(b) && !/^9/.test(b!) && Math.abs(lech) >= 0.005;
+  }), [chiTiet.data]);
   const tongNo = dong.reduce((s, r) => s + r.debit, 0);
   const tongCo = dong.reduce((s, r) => s + r.credit, 0);
   const ngayChot = [...new Set(hieuLuc.map((r) => r.docDate))].sort();
@@ -172,11 +168,6 @@ export function OpeningBalancesPage() {
             <div><b>3. Kiểm tra</b><span>Ô Kiểm tra bên dưới: tổng Dư Nợ = tổng Dư Có. Mở <Link to="/bao-cao/can-doi-phat-sinh">Bảng cân đối số phát sinh (ACC10)</Link> từ ngày sau ngày chốt: cột Số dư đầu kỳ phải khớp bảng số dư của bạn.</span></div>
             <div className="so-du-giai-thich"><b>Đầu kỳ hay cuối kỳ?</b><span>Số nhập ở đây là số dư <b>cuối ngày chốt</b> = số dư <b>đầu kỳ</b> của kỳ đầu tiên dùng phần mềm. Mọi sổ, báo cáo luôn hiện số này ở dòng <b>Số dư đầu kỳ</b>, kể cả khi khoảng ngày xem có chứa ngày chốt. Số dư cuối kỳ phần mềm tự tính = đầu kỳ + phát sinh Nợ − phát sinh Có. Chỉ nhập một lần, kỳ sau không phải chuyển số dư.</span></div>
             <div className="so-du-giai-thich"><b>Không nhập ở đây</b><span>Doanh thu, chi phí (loại 5–8) và 911 không có số dư: lãi lỗ luỹ kế ghi 4211 / 4212. Tài khoản tổng hợp (vd 156 khi đã có 1561): nhập vào tài khoản chi tiết.</span></div>
-            <div className="so-du-giai-thich"><b>Số dư đầu kỳ khác (khai ở màn riêng, số tổng phải khớp số dư tài khoản ở đây)</b><span>
-              Tồn kho theo mặt hàng: <Link to="/tien-ich/nhap-excel?loai=ton-kho">Nhập Excel → Tồn kho đầu kỳ</Link> (số lượng) + giá vốn đầu kỳ ở bảng tính giá vốn ·
-              TSCĐ: <Link to="/tai-san/tscd">Thẻ tài sản cố định (ACC28)</Link> — nguyên giá, hao mòn luỹ kế ·
-              CCDC: <Link to="/tai-san/cong-cu">Công cụ dụng cụ (ACC22)</Link> · Chi phí trả trước: <Link to="/tai-san/chi-phi-tra-truoc">ACC23</Link> — giá trị còn lại, số kỳ còn phân bổ.
-            </span></div>
           </div>
         )}
       </div>
@@ -189,14 +180,15 @@ export function OpeningBalancesPage() {
           <span title="Tổng Dư Nợ / Dư Có mọi phiếu đang hiệu lực">Dư Nợ <b><Money value={tongNo} /></b> · Dư Có <b><Money value={tongCo} /></b>
             {Math.abs(tongNo - tongCo) < 0.005
               ? <span className="so-du-ok"> <CheckCircle2 size={14} /> Đã cân</span>
-              : <span className="so-du-canh-bao"> <AlertTriangle size={14} /> Lệch {money(Math.abs(tongNo - tongCo))} (ghi ở TK cân đối)</span>}</span>
+              : <span className="so-du-canh-bao" title="Nhập riêng từng chi nhánh thì số dư một chi nhánh thường không tự cân: phần lệch tự ghi vào TK trung gian 999; nhập đủ mọi chi nhánh thì về 0"> <AlertTriangle size={14} /> Lệch {money(Math.abs(tongNo - tongCo))} → TK trung gian 999 ({tongNo > tongCo ? 'Dư Có' : 'Dư Nợ'}) — còn thiếu số dư bên {tongNo > tongCo ? 'Có' : 'Nợ'}</span>}</span>
           {ngayChung
             ? <span title="Sổ, báo cáo xem từ ngày này trở đi hiện số dư ở dòng Số dư đầu kỳ">Ngày chốt <b>{date(ngayChung)}</b> → dùng phần mềm từ <b>{date(ngaySau(ngayChung))}</b>{!laCuoiThang(ngayChung) && <span className="so-du-canh-bao"> · ngày chốt thường là cuối tháng</span>}</span>
             : <span className="so-du-canh-bao"><AlertTriangle size={14} /> Các phiếu khác ngày chốt: {ngayChot.map((d) => date(d)).join(', ')} — nên cùng một ngày</span>}
-          {/* TK trung gian (9xx, vd 999): nhập đủ mọi chi nhánh thì tự về 0 — còn số là còn thiếu. TK thật (vd 4211) dùng làm cân đối: chỉ báo số đã dồn vào. */}
-          {canDoi.map(([tk, v]) => (tk.startsWith('9')
-            ? <span key={tk} className="so-du-canh-bao" title="Nhập đủ mọi chi nhánh thì TK cân đối trung gian tự về 0; còn số dư là còn thiếu"><AlertTriangle size={14} /> TK cân đối {tk} còn {v > 0 ? 'Dư Nợ' : 'Dư Có'} {money(Math.abs(v))} — còn thiếu số dư</span>
-            : <span key={tk} title="Phần lệch Nợ – Có của các phiếu được ghi vào tài khoản cân đối này">Phần lệch ghi vào {tk}: {v > 0 ? 'Dư Nợ' : 'Dư Có'} <b>{money(Math.abs(v))}</b> — kiểm tra đúng ý chưa</span>))}
+          {phieuSai.map((d) => (
+            <span key={d.id} className="so-du-loi" title="Trước đây được chọn tài khoản cân đối là tài khoản thật — phần lệch bị ghi sai bên">
+              <AlertTriangle size={14} /> Phiếu <a href="#" onClick={(e) => { e.preventDefault(); void open(d.id); }}>{d.docNo}</a> ghi phần lệch vào {d.payload.balancingAccount} (sai) — mở phiếu, bấm Sửa → Ghi lại để chuyển sang TK trung gian 999
+            </span>
+          ))}
         </div>
       )}
 
@@ -259,7 +251,6 @@ function OpeningForm({ existing, goiY, ngayChung, onClose, onSaved }: { existing
     // Phiếu mới: cùng ngày chốt với các phiếu đã có; chưa có thì cuối tháng trước.
     docDate: p?.docDate ?? (ngayChung || cuoiThangTruoc()),
     description: p?.description ?? 'Số dư đầu kỳ',
-    balancingAccount: p?.balancingAccount ?? '',
   });
   const [lines, setLines] = useState<LineDraft[]>(
     p?.lines.length ? p.lines.map((l) => ({ account: l.accountCode, partner: l.partnerCode ?? '', debit: l.debit ? money(l.debit) : '', credit: l.credit ? money(l.credit) : '' })) : [blank(goiY), blank(), blank()],
@@ -276,8 +267,6 @@ function OpeningForm({ existing, goiY, ngayChung, onClose, onSaved }: { existing
   const diff = totalDebit - totalCredit;
   const kiem = lines.map((l) => kiemDong(l, accountMap.get(l.account)));
   const soLoi = kiem.filter((k) => k.loi).length;
-  const balAcc = h.balancingAccount.trim();
-  const balLoi = balAcc && laiLo(balAcc) ? 'TK cân đối không được là doanh thu / chi phí / 911' : '';
 
   /** Đọc bảng dán từ Excel: mỗi dòng 4 cột cách nhau bằng tab (Tài khoản, Mã đối tượng, Dư Nợ, Dư Có). */
   const applyPaste = () => {
@@ -295,7 +284,6 @@ function OpeningForm({ existing, goiY, ngayChung, onClose, onSaved }: { existing
     branchCode,
     docDate: h.docDate,
     description: h.description,
-    balancingAccount: balAcc || undefined,
     lines: filled.map((l) => ({ accountCode: l.account.trim(), partnerCode: l.partner.trim() || undefined, debit: parseAmount(l.debit), credit: parseAmount(l.credit) })),
   });
   const viewAgain = useViewAgain();
@@ -309,7 +297,7 @@ function OpeningForm({ existing, goiY, ngayChung, onClose, onSaved }: { existing
   });
   // Vì sao chưa ghi được — hiện ngay cạnh nút Ghi sổ (không để người dùng đoán).
   const lyDo = readOnly ? '' : !branchCode ? 'Chưa chọn chi nhánh' : !h.docDate ? 'Chưa chọn ngày chốt số dư' : filled.length === 0 ? 'Chưa có dòng số dư nào (tài khoản + số tiền)'
-    : soLoi ? `${soLoi} dòng đang báo đỏ — sửa trước khi ghi` : balLoi || (diff !== 0 && !balAcc ? `Tổng Dư Nợ khác Dư Có ${money(Math.abs(diff))}: sửa số, hoặc ghi Tài khoản cân đối (vd 999)` : '');
+    : soLoi ? `${soLoi} dòng đang báo đỏ — sửa trước khi ghi` : '';
   const canSave = !readOnly && !lyDo;
   const ngayKhac = !readOnly && ngayChung && h.docDate && h.docDate !== ngayChung;
 
@@ -334,9 +322,6 @@ function OpeningForm({ existing, goiY, ngayChung, onClose, onSaved }: { existing
       <Field label="Ngày chốt số dư" hint="Ngày cuối cùng TRƯỚC khi bắt đầu dùng phần mềm (thường là cuối tháng). Dùng từ 01/11 → chốt 31/10. Sổ, báo cáo luôn hiện số này ở dòng Số dư đầu kỳ."
         error={ngayKhac ? `Các phiếu số dư khác đang chốt ngày ${date(ngayChung)} — nên cùng một ngày` : !readOnly && h.docDate && !laCuoiThang(h.docDate) ? 'Ngày chốt thường là ngày cuối tháng' : null}>
         <input type="date" className="input" value={h.docDate} disabled={readOnly} onChange={(e) => set({ docDate: e.target.value })} />
-      </Field>
-      <Field label="Tài khoản cân đối" hint="Chỉ cần khi số dư của chi nhánh này không tự cân (tổng Dư Nợ ≠ tổng Dư Có). Nhập đủ mọi chi nhánh thì tài khoản này tự về 0." error={balLoi || null}>
-        <AccountPicker postingOnly value={h.balancingAccount} disabled={readOnly} onChange={(balancingAccount) => set({ balancingAccount })} placeholder="Ví dụ 999" />
       </Field>
 
       <div className="full">
@@ -381,7 +366,7 @@ function OpeningForm({ existing, goiY, ngayChung, onClose, onSaved }: { existing
                 <td colSpan={2}>{!readOnly && <button className="btn btn-sm" onClick={() => setLines((xs) => [...xs, blank()])}><Plus size={14} /> Thêm dòng</button>}</td>
                 <td className="num" title="Tổng Dư Nợ">{money(totalDebit, { blankZero: false })}</td>
                 <td className="num" title="Tổng Dư Có">{money(totalCredit, { blankZero: false })}</td>
-                <td colSpan={2} style={{ fontWeight: 400 }} className={diff === 0 ? 'muted' : 'neg'}>{diff === 0 ? 'Đã cân' : `Lệch ${money(Math.abs(diff))} (${diff > 0 ? 'Nợ lớn hơn' : 'Có lớn hơn'})${balAcc ? ` → ghi vào ${balAcc}` : ''}`}</td>
+                <td colSpan={2} style={{ fontWeight: 400 }} className={diff === 0 ? 'muted' : 'neg'}>{diff === 0 ? 'Đã cân' : `Lệch ${money(Math.abs(diff))} (${diff > 0 ? 'Nợ lớn hơn' : 'Có lớn hơn'}) → tự ghi vào TK trung gian 999; nhập đủ mọi chi nhánh thì về 0`}</td>
               </tr>
             </tfoot>
           </table>

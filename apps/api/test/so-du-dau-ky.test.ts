@@ -95,7 +95,7 @@ describe('Số dư đầu kỳ ở báo cáo tổng hợp', () => {
 
 describe('Kiểm khi ghi phiếu số dư (lệch chuẩn)', () => {
   it('Dư Có tiền mặt → từ chối, nói rõ tiền chỉ có Dư Nợ', async () => {
-    const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-10-31', balancingAccount: '4211', lines: [{ accountCode: '1111', credit: 1_000_000 }] });
+    const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-10-31', lines: [{ accountCode: '1111', credit: 1_000_000 }] });
     expect(r.status).toBe(400);
     expect(JSON.stringify(r.body)).toContain('chỉ có số dư Nợ');
   });
@@ -112,5 +112,27 @@ describe('Kiểm khi ghi phiếu số dư (lệch chuẩn)', () => {
   it('doanh thu / chi phí → từ chối (như trước)', async () => {
     const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-10-31', lines: [{ accountCode: '5111', credit: 1_000_000 }, { accountCode: '1111', debit: 1_000_000 }] });
     expect(r.status).toBe(400);
+  });
+
+  // [2026-11-27 10:50 AM Nguyễn Văn Thủy] SO-DU — tình huống dev 27/11: chọn 1111 làm TK cân đối → tiền mặt ra Dư Có. Nay: không có TK cân đối,
+  // phần lệch tự vào 999 (tự tạo); TK thật làm cân đối bị từ chối (đóng góp)
+  it('phiếu chỉ có Dư Nợ tiền (không chọn TK cân đối): ghi được, phần lệch vào 999; sổ quỹ chi nhánh đó Dư Nợ, không ra Dư Có', async () => {
+    await call(ctx, 'POST', '/api/v1/branches', { code: 'CN-SD2', name: 'Chi nhánh số dư 2' });
+    const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN-SD2', docDate: '2026-10-31', lines: [{ accountCode: '1111', debit: 1_000_000 }, { accountCode: '1111', debit: 100_000 }] });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    const q = await call(ctx, 'GET', '/api/v1/reports/account-ledger?account=111&from=2026-11-01&to=2026-11-30&kind=cash&branchCodes=CN-SD2');
+    expect(q.status, JSON.stringify(q.body)).toBe(200);
+    expect(q.body.data.opening.debit).toBe(1_100_000);
+    expect(q.body.data.opening.credit).toBe(0);
+    const tb = await call(ctx, 'GET', '/api/v1/reports/trial-balance?from=2026-11-01&to=2026-11-30&branchCodes=CN-SD2');
+    const r999 = tb.body.data.rows.find((x: any) => x.code === '999');
+    expect(r999?.openingCredit).toBe(1_100_000);
+  });
+  it('gác cổng: chọn TK thật (1111, 4211) làm TK cân đối → từ chối', async () => {
+    for (const bal of ['1111', '4211']) {
+      const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-10-31', balancingAccount: bal, lines: [{ accountCode: '1121', debit: 100_000 }] });
+      expect(r.status).toBe(400);
+      expect(JSON.stringify(r.body)).toContain('Không dùng tài khoản');
+    }
   });
 });

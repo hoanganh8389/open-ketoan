@@ -39,7 +39,7 @@ beforeAll(async () => {
   const gp = await call(ctx, 'POST', '/api/v1/purchase/supplier-products', { rows: [{ partnerCode: null, sku: 'AN-GOLD', unit: 'Lon', price: 528000, priceIncludesVat: true, warnPct: 2 }] });
   expect(gp.status, JSON.stringify(gp.body)).toBe(200);
   await pol({ code: 'LO-ALL', kind: 'lot_tracking', name: 'Bắt buộc lô', scope: { sku: 'AN-GOLD' }, rule: { required: true } });
-  const ob = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-09-30', balancingAccount: '4211', lines: [{ accountCode: '3312', partnerCode: 'NCC-TB', credit: 480000000 }] });
+  const ob = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN01', docDate: '2026-09-30', lines: [{ accountCode: '3312', partnerCode: 'NCC-TB', credit: 480000000 }] });
   expect(ob.status, JSON.stringify(ob.body)).toBe(201);
 });
 afterAll(async () => { await ctx.app.close(); });

@@ -51,8 +51,9 @@ describe('Số dư tài khoản đầu kỳ', () => {
   });
   let id = '';
 
-  it('lệch Nợ – Có mà không có tài khoản cân đối thì từ chối', async () => {
-    const res = await call(ctx, 'POST', '/api/v1/opening-balances', opening({ lines: [{ accountCode: '1111', debit: 5000000 }] }));
+  // [2026-11-27 11:10 AM Nguyễn Văn Thủy] SO-DU — bỏ ô TK cân đối: lệch tự vào 999; TK thật làm cân đối thì từ chối (đóng góp)
+  it('chọn tài khoản thật (4211) làm cân đối thì từ chối', async () => {
+    const res = await call(ctx, 'POST', '/api/v1/opening-balances', opening({ balancingAccount: '4211', lines: [{ accountCode: '1111', debit: 5000000 }] }));
     expect(res.status).toBe(400);
   });
 
