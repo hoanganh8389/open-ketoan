@@ -21,7 +21,7 @@ const recalc = (l: InvoiceLine): InvoiceLine => {
 };
 export const blankLine = (n: number): InvoiceLine => ({ lineNo: n, nccSku: '', nccName: '', nccUnit: '', qty: 1, price: 0, discountAmount: 0, amount: 0, taxRate: 8, taxAmount: 0, isGift: false, sku: null, unit: null, matchSource: 'none' });
 
-export function BangDongHoaDon({ lines, onChange, readOnly, editNcc, partnerCode = '', names = {} }: { lines: InvoiceLine[]; onChange?: (lines: InvoiceLine[]) => void; readOnly?: boolean; editNcc?: boolean; partnerCode?: string; names?: Record<string, string> }) {
+export function BangDongHoaDon({ lines, onChange, readOnly, editNcc, partnerCode = '', names = {}, docDate }: { lines: InvoiceLine[]; onChange?: (lines: InvoiceLine[]) => void; readOnly?: boolean; editNcc?: boolean; partnerCode?: string; names?: Record<string, string>; /** Ngày hoá đơn: hiệu lực giá mua khi thêm nhanh mặt hàng. */ docDate?: string }) {
   const latest = useRef(lines);
   latest.current = lines;
   // Gõ tay: dòng chưa có mã, chưa tra (candidates chưa có) → dừng gõ 0,5 giây thì hỏi máy chủ nhận diện. Cách ghi đã học / đã khai
@@ -66,6 +66,13 @@ export function BangDongHoaDon({ lines, onChange, readOnly, editNcc, partnerCode
   const ed = !readOnly && editNcc;
   const txt = (i: number, k: 'nccSku' | 'nccName' | 'nccUnit', w: number) => <input className="input" style={{ width: w, height: 28 }} value={lines[i]![k]} onChange={(e) => set(i, { [k]: e.target.value, candidates: undefined })} />;
   const nb = (i: number, k: 'qty' | 'price' | 'discountAmount', w = 90) => <NumInput style={{ width: w, height: 28 }} value={lines[i]![k]} onChange={(n) => setCalc(i, { [k]: n ?? 0 })} />;
+  // [2026-11-27 03:55 PM Nguyễn Văn Thủy] MH22 — thêm nhanh mặt hàng từ dòng hoá đơn NCC: điền sẵn tên, ĐVT, thuế suất, giá mua theo NCC (đóng góp)
+  // Tên dài hơn 50 ký tự mà có tiền tố loại hàng "…: tên" (vd "Thực phẩm dinh dưỡng y học: Ensure …") thì lấy phần sau dấu hai chấm.
+  const tenGoiY = (s: string) => { const t = s.trim(); if (t.length <= 50) return t; const sau = t.includes(':') ? t.slice(t.indexOf(':') + 1).trim() : ''; return sau || t; };
+  const goiYThem = (l: InvoiceLine) => ({
+    name: tenGoiY(l.nccName), unit: l.nccUnit.trim() || undefined, taxRate: l.taxRate,
+    ncc: partnerCode ? { partnerCode, unit: l.nccUnit.trim(), price: l.isGift ? null : l.price || null, validFrom: docDate || new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10), nccSku: l.nccSku.trim() } : undefined,
+  });
   const choose = (i: number, sku: string, unit?: string) => set(i, { sku: sku || null, unit: sku ? unit ?? null : null, matchSource: sku ? 'manual' : 'none' });
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -105,7 +112,7 @@ export function BangDongHoaDon({ lines, onChange, readOnly, editNcc, partnerCode
                 <td>
                   {readOnly ? (l.sku ? <span><b className="mono">{l.sku}</b> {names[l.sku] ?? ''}</span> : <span className="mh-bad">chưa chọn mã</span>) : (
                     <>
-                      <ItemPicker canAdd value={l.sku ?? ''} onChange={(v) => choose(i, v)} placeholder="Chọn mã bên mình…" />
+                      <ItemPicker canAdd addInitial={goiYThem(l)} value={l.sku ?? ''} onChange={(v) => choose(i, v)} placeholder="Chọn mã bên mình…" />
                       {!l.sku && !!l.candidates?.length && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                           {l.candidates.map((c) => (
@@ -116,7 +123,7 @@ export function BangDongHoaDon({ lines, onChange, readOnly, editNcc, partnerCode
                         </div>
                       )}
                       {!l.sku && l.candidates === undefined && (l.nccName.trim().length >= 3 || l.nccSku.trim().length >= 2) && <div className="muted" style={{ fontSize: 11 }}>Đang tìm gợi ý…</div>}
-                      {!l.sku && l.candidates !== undefined && !l.candidates.length && <div className="muted" style={{ fontSize: 11 }}>Không có gợi ý — tìm theo tên / mã ở ô trên, hoặc khai mặt hàng mới ở DM10</div>}
+                      {!l.sku && l.candidates !== undefined && !l.candidates.length && <div className="muted" style={{ fontSize: 11 }}>Không có gợi ý — tìm theo tên / mã ở ô trên, hoặc bấm + để thêm mặt hàng mới (điền sẵn tên, ĐVT, thuế, giá mua theo hoá đơn)</div>}
                     </>
                   )}
                 </td>

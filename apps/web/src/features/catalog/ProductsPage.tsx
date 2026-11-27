@@ -19,7 +19,7 @@ import { CatalogToolbar } from '@/components/CatalogToolbar';
 import { NutNhapExcel } from '@/components/NhapExcelWizard';
 import { nhapLoai } from '@/lib/nhapExcel';
 import { GroupTree } from './GroupTree';
-import { ProductFullForm } from './ProductFullForm';
+import { ProductFullForm, type GoiYThemHang } from './ProductFullForm';
 import { ThanhSuaThue, type KetQuaSuaThue } from './SuaThueHangLoat';
 // [2026-11-07 05:50 PM Nguyễn Văn Thủy] PHASE-026 — mã số cha – con GĐ 1: cột Biến thể cạnh mã, lọc theo biến thể, Loại hàng (đóng góp)
 import { PrintButton, resolveScreen, useEffectivePrintSettings } from '@/components/print';
@@ -50,10 +50,10 @@ const SOURCE: Record<string, string> = { document: 'Tự thêm từ chứng từ
 
 /** Đường dẫn cây (cha / con / …) của một mã phân loại. */
 /** Form mặt hàng mở được từ bất kỳ màn nào (phiếu, bảng giá…): tự tải phân loại hàng. sku null = thêm mới. */
-export function ProductEditor({ sku, onClose, startTab, startEditing, initial, onSaved }: { sku: string | null; onClose: () => void; startTab?: string; startEditing?: boolean; initial?: { name?: string; groupCode?: string | null }; onSaved?: (sku: string) => void }) {
+export function ProductEditor({ sku, onClose, startTab, startEditing, initial, onSaved, goiY }: { sku: string | null; onClose: () => void; startTab?: string; startEditing?: boolean; initial?: { name?: string; groupCode?: string | null; units?: { unit: string; ratio: number; isDefault: boolean; isPurchaseDefault?: boolean; weightKg: number | null; note: string }[] }; onSaved?: (sku: string) => void; goiY?: GoiYThemHang }) {
   const classes = { brand: useClasses('brand'), industry: useClasses('industry'), group: useClasses('group'), type: useClasses('type') };
   const groupPath = useMemo(() => pathOf(classes.group.data ?? []), [classes.group.data]);
-  return <ProductFullForm sku={sku} classes={{ brand: classes.brand.data ?? [], industry: classes.industry.data ?? [], group: classes.group.data ?? [], type: classes.type.data ?? [] }} groupPath={groupPath} onClose={onClose} startTab={startTab} startEditing={startEditing} initial={initial} onSaved={onSaved} />;
+  return <ProductFullForm sku={sku} classes={{ brand: classes.brand.data ?? [], industry: classes.industry.data ?? [], group: classes.group.data ?? [], type: classes.type.data ?? [] }} groupPath={groupPath} onClose={onClose} startTab={startTab} startEditing={startEditing} initial={initial} onSaved={onSaved} goiY={goiY} />;
 }
 
 /** Đường dẫn trong cây: cấp 1 / cấp 2 / … — ghép theo tên (mặc định) hoặc theo mã. */
