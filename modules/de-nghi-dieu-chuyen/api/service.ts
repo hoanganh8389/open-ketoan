@@ -77,10 +77,9 @@ async function build(tx: Tx, i: SaveInput, docDate: string): Promise<Header> {
   const c = checkLines(i.lines, names, stock);
   let partner: { code: string; name: string } | null = null;
   const pc = (i.partnerCode ?? '').trim();
-  if (pc) {
-    partner = await partnerByCode(tx, pc);
-    if (!partner) c.findings.push({ field: 'partnerCode', code: 'DNDC_PARTNER_UNKNOWN', title: `Không có khách hàng ${pc} trong danh mục đối tượng`, level: 'block' });
-  }
+  // Khách chỉ để tham khảo (không bắt buộc, không vào KHO01): mã có trong danh mục đối tượng thì lấy tên ở đó; mã khách của website
+  // (máy bán tìm khách ở website) chưa có ở kế toán thì giữ nguyên mã + tên gửi lên, không chặn — như máy bán cũ.
+  if (pc) partner = (await partnerByCode(tx, pc)) ?? { code: pc, name: (i.partnerName ?? '').trim() };
   if (c.findings.length) throw findingsError(`Chưa lưu được đề nghị: ${c.findings.map((f) => f.title).join(' · ')}`, c.findings);
   return {
     docDate, branchCode: me.code, warehouseCode: wh, toBranchCode: to.code, toBranchName: to.name, partnerCode: partner?.code ?? null,

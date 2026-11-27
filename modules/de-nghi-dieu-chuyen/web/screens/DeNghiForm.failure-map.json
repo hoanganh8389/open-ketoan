@@ -47,7 +47,7 @@
     {
       "id": "Q-CHUNG-08",
       "ask": "Mỗi danh sách chọn chỉ nhận giá trị nào (đang dùng, cùng chi nhánh, đã duyệt)? Chưa có thì thêm tại chỗ được không, ai được thêm?",
-      "answer": "Chi nhánh đề nghị: trong phạm vi chi nhánh của người lập. Chi nhánh nhận: chi nhánh cha + các chi nhánh cùng cha đang dùng (như máy bán cũ theo cây MH15); chi nhánh gốc thì các chi nhánh gốc khác. Mặt hàng: đang dùng (ItemPicker). Khách hàng: tuỳ chọn, mã có trong danh mục. Không thêm tại chỗ."
+      "answer": "Chi nhánh đề nghị: trong phạm vi chi nhánh của người lập. Chi nhánh nhận: chi nhánh cha + các chi nhánh cùng cha đang dùng (như máy bán cũ theo cây MH15); chi nhánh gốc thì các chi nhánh gốc khác. Mặt hàng: đang dùng (ItemPicker). Khách hàng: tuỳ chọn, chỉ tham khảo (mã chưa có ở kế toán vẫn lưu nguyên mã + tên). Không thêm tại chỗ."
     },
     {
       "id": "Q-KHO-01",
