@@ -82,6 +82,7 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-MH-025](mua-hang/NT-MH-025-mh02-tab-ncc.md) | MH02: mỗi nhà cung cấp một tab (như file Excel công thức đặt hàng); Lập đơn theo tab | Chờ nghiệm thu |
 | [NT-MH-026](mua-hang/NT-MH-026-ton-dau-hien-0.md) | MH24, MH25, ACC83: số lượng tồn (tồn đầu, tồn cuối, tồn) không có thì ghi 0 | Chờ nghiệm thu |
 | [NT-MH-027](mua-hang/NT-MH-027-an-canh-bao-kho-tong.md) | MH02, MH16, MH17, MH18, MH19: ẩn khung cảnh báo vàng "Chưa nhận được kho tổng" | Chờ nghiệm thu |
+| [NT-MH-028](mua-hang/NT-MH-028-mh02-mo-nhieu-don.md) | MH02: lập nhiều đơn đặt thì mở tất cả, mỗi đơn một ô ở thanh dưới; tab tên dài không đè nhau | Chờ nghiệm thu |
 | [NT-HT-001](he-thong/NT-HT-001-so-do-to-chuc.md) | Sơ đồ tổ chức làm gốc: cây 3 cấp, gắn chi nhánh, mua hàng theo cây, bộ lọc cây chi nhánh / kho | Chờ nghiệm thu |
 | [NT-KHO-001](kho/NT-KHO-001-ton-o-chon-hang-theo-kho-xuat.md) | Ô chọn mặt hàng ở phiếu chuyển kho hiện tồn theo kho xuất, ngày phiếu | Đã chốt |
 | [NT-KHO-002](kho/NT-KHO-002-kiem-ke-kho.md) | Kiểm kê kho theo lô / HSD: biên bản kiểm kê → xác minh → quyết định xử lý; chênh lệch vào 1381 / 3381, hàng kém phẩm chất sang kho cách ly, tất toán theo quyết định | Đã chốt |

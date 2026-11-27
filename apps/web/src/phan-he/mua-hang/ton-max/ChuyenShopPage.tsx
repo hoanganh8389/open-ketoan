@@ -180,7 +180,7 @@ function DeXuat({ parent, seg, onDone }: { parent: string; seg: ReactNode; onDon
       </div>
       {khoTabs.length > 0 && <div className="mh19-tabs" role="tablist" title="Mỗi kho nhận (shop) một tab — Chốt đề nghị chỉ chốt các dòng của tab đang mở">
         <button type="button" role="tab" className={curKho ? '' : 'on'} onClick={() => setKhoTab('')}>Tất cả kho nhận <span>{allLines.length.toLocaleString('vi-VN')}</span></button>
-        {khoTabs.map(([k, x]) => <button key={k} type="button" role="tab" className={curKho === k ? 'on' : ''} title={`${k} · ${x.name} — kho ${x.wh}`} onClick={() => setKhoTab(k)}>{x.wh || k} <em>{x.name}</em> <span>{x.n.toLocaleString('vi-VN')}</span></button>)}
+        {khoTabs.map(([k, x]) => <button key={k} type="button" role="tab" className={curKho === k ? 'on' : ''} title={`${x.wh || k} · ${x.name} — ${x.n} dòng`} onClick={() => setKhoTab(k)}><b>{x.wh || k}</b><em>{x.name}</em><span>{x.n.toLocaleString('vi-VN')}</span></button>)}
       </div>}
       {over.length > 0 && <div className="alert alert-bad" style={{ margin: '0 12px 8px' }}>Tổng chia vượt tồn kho chuyển — sửa trước khi chốt: {over.join('; ')}</div>}
       {opts.allocation === 'manual' && lines.some((l) => l.short > 0) && <div className="alert alert-warn" style={{ margin: '0 12px 8px' }}>Chỉnh tay: các mã kho không đủ để trống cột Chuyển — tự nhập số cho từng shop (tổng mỗi mã ≤ tồn kho).</div>}
