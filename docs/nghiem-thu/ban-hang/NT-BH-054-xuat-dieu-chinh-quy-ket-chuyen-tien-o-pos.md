@@ -14,7 +14,7 @@
 Ba màn của máy bán trước đọc / ghi sổ website (sổ website chỉ còn bản sao đơn bán, không thấy nghiệp vụ lập ở kế toán). Từ phiếu này:
 - **Phiếu xuất điều chỉnh**: thu ngân lập / xem phiếu ở module BH06 của kế toán (cùng phiếu kế toán thấy ở BH06), trừ kho ngay khi ghi sổ.
 - **Phiếu chuyển tiền**: thu ngân lập chứng từ `cash_transfer` (trạng thái "đã gửi", kế toán xác nhận đã nhận tiền ở kế toán).
-- **Quản lý quỹ két**: sổ quỹ tiền mặt của cửa hàng đọc sổ cái TK 111 của chi nhánh (`GET /api/v1/cash-fund`).
+- **Quản lý quỹ két**: sổ quỹ tiền mặt của cửa hàng đọc sổ cái TK 111 của chi nhánh (`GET /api/v1/cash-fund (đề xuất, chưa có trong mã — ở nhánh code)`).
 - Máy bán không bao giờ thấy giá vốn: module BH06 bỏ giá vốn khỏi dữ liệu trả cho người không có quyền ghi chứng từ (`documents:write`).
 
 ## 2. Khai báo trước
@@ -26,7 +26,7 @@ Hình thức thanh toán TM gắn TK 111x; ngân hàng nhận khai ở danh mụ
 2. Máy bán → Phiếu chuyển tiền → Tạo: chi nhánh nhận, hình thức / ngân hàng nhận, số tiền → Lưu. Kế toán thấy phiếu "chờ xác nhận".
 3. Máy bán → Quản lý quỹ két: chọn khoảng ngày → sổ quỹ từng ngày + lịch sử quỹ.
 
-## 4. Số liệu đầu vào (test `apps/api/test/nt-bh-054-quy-ket-pos.test.ts`)
+## 4. Số liệu đầu vào (test `apps/api/test/nt-bh-054-quy-ket-pos.test.ts`) (đề xuất — tệp test ở nhánh code)
 
 | Chứng từ | Ngày | Hình thức | Số tiền |
 |---|---|---|---|
