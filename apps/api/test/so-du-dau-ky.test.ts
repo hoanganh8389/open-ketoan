@@ -10,6 +10,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDb } from '../src/db/client.js';
 import { call, setupTenant, type TestCtx } from './helpers.js';
+import { sql } from 'kysely';
+import { db } from '../src/db/client.js';
+import { suaSoDuDauKyCu } from '../src/phan-he/ke-toan/sua-so-du-cu.js';
 
 let ctx: TestCtx;
 
@@ -134,5 +137,27 @@ describe('Kiểm khi ghi phiếu số dư (lệch chuẩn)', () => {
       expect(r.status).toBe(400);
       expect(JSON.stringify(r.body)).toContain('Không dùng tài khoản');
     }
+  });
+
+  // [2026-11-27 12:10 PM Nguyễn Văn Thủy] SO-DU — phiếu cũ (trước khi bỏ ô TK cân đối) ghi phần lệch vào 1111: khởi động tự sửa sang 999 (đóng góp)
+  it('tự sửa phiếu cũ ghi phần lệch vào 1111 (tiền mặt Dư Có): ghi lại bản điều chỉnh, 111 hết Dư Có, phần lệch ở 999', async () => {
+    await call(ctx, 'POST', '/api/v1/branches', { code: 'CN-SD3', name: 'Chi nhánh số dư 3' });
+    // Phiếu cũ: Dư Nợ 1111 = 300.000, phần lệch từng ghi Có 1111 (đóng vai dữ liệu cũ — nay máy chủ không cho lập kiểu này nữa).
+    const r = await call(ctx, 'POST', '/api/v1/opening-balances', { branchCode: 'CN-SD3', docDate: '2026-10-31', lines: [{ accountCode: '1111', debit: 300_000 }] });
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    await sql`UPDATE accounting_events SET payload = payload || '{"balancingAccount":"1111"}'::jsonb WHERE id = ${r.body.data.id}`.execute(db);
+    const tid = String((await sql<{ id: string }>`SELECT id FROM tenants WHERE code = ${ctx.tenantCode}`.execute(db)).rows[0]!.id);
+    const logs: string[] = [];
+    const n = await suaSoDuDauKyCu({ info: (m) => logs.push(m), warn: (m) => logs.push('WARN ' + m) }, tid);
+    expect(n, logs.join(' | ')).toBeGreaterThanOrEqual(1);
+    const ev = await sql<{ payload: any }>`SELECT payload FROM accounting_events WHERE id = ${r.body.data.id}`.execute(db);
+    expect(ev.rows[0]!.payload.balancingAccount).toBeUndefined();
+    const tb = await call(ctx, 'GET', '/api/v1/reports/trial-balance?from=2026-11-01&to=2026-11-30&branchCodes=CN-SD3');
+    const row = (c: string) => tb.body.data.rows.find((x: any) => x.code === c);
+    expect(row('999')?.openingCredit).toBe(300_000);
+    expect(row('1111')?.openingCredit ?? 0).toBe(0);
+    expect(row('1111')?.openingDebit).toBe(300_000);
+    // Chạy lại: không còn gì để sửa.
+    expect(await suaSoDuDauKyCu({ info: () => {}, warn: () => {} }, tid)).toBe(0);
   });
 });

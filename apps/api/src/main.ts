@@ -37,6 +37,10 @@ async function start(): Promise<void> {
   const app = await withSite(DEFAULT_SITE_ID, () => buildApp());
   // Dispatcher sự kiện + đồng hồ (bizcity_event@1): chạy nhiều bản API cùng lúc vẫn đúng nhờ SKIP LOCKED + khoá chống trùng.
   const stopEvents = startEventRuntime(app.log);
+  // [2026-11-27 12:05 PM Nguyễn Văn Thủy] SO-DU — sửa phiếu số dư cũ ghi phần lệch vào TK thật → TK trung gian 999 (chạy nền, lỗi không chặn khởi động) (đóng góp)
+  void import('./phan-he/ke-toan/sua-so-du-cu.js')
+    .then(({ suaSoDuDauKyCu }) => withSite(DEFAULT_SITE_ID, () => suaSoDuDauKyCu({ info: (m) => app.log.info(m), warn: (m) => app.log.warn(m) })))
+    .catch((e) => app.log.warn(`Sửa số dư đầu kỳ cũ: ${(e as Error).message}`));
 
   const shutdown = async (signal: string) => {
     app.log.info(`Nhận ${signal}, đang dừng…`);
