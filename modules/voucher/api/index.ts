@@ -6,6 +6,8 @@ import campaignCreate from './actions/campaign-create.js';
 import campaignGet from './actions/campaign-get.js';
 import campaignList from './actions/campaign-list.js';
 import campaignUpdate from './actions/campaign-update.js';
+// [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: lô mã không gắn SĐT (đóng góp)
+import codeBatch from './actions/code-batch.js';
 import codeGenerate from './actions/code-generate.js';
 import codeGet from './actions/code-get.js';
 import codeImport from './actions/code-import.js';
@@ -22,6 +24,6 @@ import posReturn from './subscribers/pos-return.js';
 
 export default defineModule({
   manifest,
-  actions: [campaignList, campaignGet, campaignCreate, campaignUpdate, codeGenerate, codeImport, codeList, codeGet, codeRevoke, customerVouchers, orderQuote, reportGet, usageList],
+  actions: [campaignList, campaignGet, campaignCreate, campaignUpdate, codeGenerate, codeBatch, codeImport, codeList, codeGet, codeRevoke, customerVouchers, orderQuote, reportGet, usageList],
   subscribers: [posOrder, posReturn, phieuBanDoc],
 });

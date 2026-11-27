@@ -6,9 +6,9 @@ export const M = '/api/v1/m/loyalty';
 export type Rules = Record<string, unknown>;
 export type Policy = {
   id: number; code: string; title: string; type: number; priority: number; status: number; autoApply: boolean;
-  startDate: number; endDate: number; applyToBlogIds: number[]; rules: Rules;
+  startDate: number; endDate: number; applyToBlogIds: number[]; rules: Rules; notes?: string;
 };
-export type Tier = { key: string; name: string; minPoints: number; multiplier: number };
+export type Tier = { key: string; name: string; minPoints: number; multiplier: number; color?: string };
 export type Settings = { enablePosEarn: boolean; enablePosRedeem: boolean; enableTierMultiplier: boolean; minRedeemPoints: number; pointLabel: string };
 export type Content = { settings: Settings; tiers: Tier[]; policies: Policy[] };
 export type LogRow = { action: string; actorName: string; note: string; at: string };

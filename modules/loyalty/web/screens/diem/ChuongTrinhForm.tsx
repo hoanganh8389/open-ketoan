@@ -1,4 +1,5 @@
 // [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: thẻ Chương trình (L1) — chính sách tích loại 1–4, đủ trường như plugin cũ (đóng góp)
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: đủ ô như plugin tích điểm cũ (tự động áp, giá trị đổi, mô tả nhân điểm, ghi chú, theo dõi tồn quà, màu hạng) (đóng góp)
 /**
  * Soạn chính sách TÍCH điểm của nháp (loại 1 theo tiền, 2 theo mã hàng, 3 nhân điểm, 4 thưởng theo mức đơn). Chính sách đã phát hành không
  * xoá được — chỉ "Ngừng từ ngày" (Q-DM-01); chính sách mới chưa phát hành thì bỏ được. Mã trùng chặn ở ô Mã (Q-DM-02). Lỗi ô từ máy chủ
@@ -27,13 +28,14 @@ export function ChuongTrinhForm({ content, base, errs, readOnly, onChange }: Pro
         const r = p.rules;
         const isPublished = published.has(p.code.toUpperCase());
         return (
-          <div key={`${p.id}-${i}`} className="card" style={{ padding: 8, display: 'grid', gap: 6 }}>
+          <div key={`${p.id}-${i}`} className="card card-body" style={{ display: 'grid', gap: 8, margin: 0 }}>
             <Row>
               <Lbl text="Loại"><span className="badge badge-info">{TYPE_LABEL[p.type]}</span></Lbl>
               <Lbl text="Mã (*)" tip="Mã chính sách, không trùng trong cửa hàng"><TextIn errs={errs} path={`${at}.code`} value={p.code} width={120} disabled={readOnly || isPublished} onChange={(v) => setPolicy(i, { code: v })} /></Lbl>
               <Lbl text="Tên (*)"><TextIn errs={errs} path={`${at}.title`} value={p.title} width={240} disabled={readOnly} onChange={(v) => setPolicy(i, { title: v })} /></Lbl>
               <Lbl text="Ưu tiên" tip="Số nhỏ chạy trước"><NumIn errs={errs} path={`${at}.priority`} value={p.priority} width={60} disabled={readOnly} onChange={(v) => setPolicy(i, { priority: v })} /></Lbl>
               <Lbl text="Đang chạy"><input type="checkbox" checked={p.status === 1} disabled={readOnly} onChange={(e) => setPolicy(i, { status: e.target.checked ? 1 : 0 })} /></Lbl>
+              <Lbl text="Tự động áp" tip="Bỏ tích = chính sách không tự cộng điểm ở máy bán (như ô Tự động áp dụng của plugin cũ)"><input type="checkbox" checked={p.autoApply !== false} disabled={readOnly} onChange={(e) => setPolicy(i, { autoApply: e.target.checked })} /></Lbl>
               <Lbl text="Từ ngày"><input className="input" type="date" value={startToDay(p.startDate)} disabled={readOnly} onChange={(e) => setPolicy(i, { startDate: dayToStart(e.target.value) })} /></Lbl>
               <Lbl text="Ngừng từ ngày" tip="Chính sách đã phát hành không xoá — đặt ngày ngừng (bản mới)">
                 <span><input className="input" type="date" name={`${at}.endDate`} value={endToStopDay(p.endDate)} disabled={readOnly} onChange={(e) => setPolicy(i, { endDate: stopDayToEnd(e.target.value) })} /><Err errs={errs} path={`${at}.endDate`} /></span>
@@ -47,9 +49,14 @@ export function ChuongTrinhForm({ content, base, errs, readOnly, onChange }: Pro
               <Row>
                 <Lbl text="Số điểm (*)"><NumIn errs={errs} path={`${at}.rules.earn_rate`} value={Number(r.earn_rate ?? 0)} width={70} disabled={readOnly} onChange={(v) => setRules(i, { earn_rate: v })} /></Lbl>
                 <Lbl text="cho mỗi số tiền (*)"><NumIn errs={errs} path={`${at}.rules.earn_unit`} value={Number(r.earn_unit ?? 0)} width={110} disabled={readOnly} onChange={(v) => setRules(i, { earn_unit: v })} /></Lbl>
-                {p.type === 3 && <Lbl text="Nhân (×)" tip="Điểm thêm = điểm theo tiền × (hệ số − 1)"><NumIn errs={errs} path={`${at}.rules.rules.multiplier`} value={Number(rec(r.rules).multiplier ?? 2)} width={60} disabled={readOnly} onChange={(v) => setRules(i, { rules: { multiplier: v } })} /></Lbl>}
+                <Lbl text="Giá trị đổi (đ / điểm)" tip="Giá trị 1 điểm khi quy ra tiền — lưu như plugin cũ, để báo cáo; máy bán đổi điểm qua danh mục quà / voucher"><NumIn errs={errs} path={`${at}.rules.redeem_rate`} value={Number(r.redeem_rate ?? 1)} width={80} disabled={readOnly} onChange={(v) => setRules(i, { redeem_rate: v })} /></Lbl>
+                {p.type === 3 && <Lbl text="Mô tả" tip="VD: x2 điểm Tết Nguyên Đán — hiện ở chi tiết điểm của đơn"><TextIn errs={errs} path={`${at}.rules.rules.description`} value={String(rec(r.rules).description ?? '')} width={220} disabled={readOnly} onChange={(v) => setRules(i, { rules: { ...rec(r.rules), description: v } })} /></Lbl>}
+                {p.type === 3 && <Lbl text="Nhân (×)" tip="Điểm thêm = điểm theo tiền × (hệ số − 1)"><NumIn errs={errs} path={`${at}.rules.rules.multiplier`} value={Number(rec(r.rules).multiplier ?? 2)} width={60} disabled={readOnly} onChange={(v) => setRules(i, { rules: { ...rec(r.rules), multiplier: v } })} /></Lbl>}
               </Row>
             )}
+            <Row>
+              <Lbl text="Ghi chú" tip="Ghi chú nội bộ của chính sách"><TextIn errs={errs} path={`${at}.notes`} value={String(p.notes ?? '')} width={480} disabled={readOnly} onChange={(v) => setPolicy(i, { notes: v })} /></Lbl>
+            </Row>
             {p.type === 2 && (
               <Lines errs={errs} at={`${at}.rules.rules`} rows={arr(r.rules)} readOnly={readOnly} onChange={(rows) => setRules(i, { rules: rows })}
                 blank={{ sku: '', points: 1 }} render={(x, j, set) => (

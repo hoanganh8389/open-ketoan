@@ -328,11 +328,13 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
       footNote={error ? <span className="mh-bad">{errorText(error)}</span> : problems.length > 0 && !ro ? <span className="muted">Chưa ghi được: {problems.join(' · ')}</span> : null}
       footer={<>
         {printScreen && TRADE_TEMPLATES[v.docType] && value.id && <span data-view-ok><PrintButton screen={printScreen} templates={TRADE_TEMPLATES[v.docType]!} title="In phiếu theo nội dung đã ghi (sửa xong bấm Ghi rồi mới in)" getDocs={() => [value]} /></span>}
-        {!ro && <button className="btn btn-primary" disabled={saving || problems.length > 0} title={problems.join('; ')} onClick={() => onSave(saleInput(v))}>Ghi</button>}
-        {viewing && !readOnly && <button className="btn btn-primary" autoFocus title="Phím tắt: F2 / Enter" onClick={() => setViewing(false)}>Sửa</button>}
+        {/* [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-045: chân phiếu như phiếu mua — Ghi nút phụ, Duyệt (ghi sổ) nút chính đậm; Sửa (đang xem) nút phụ
+            khi có Duyệt bên cạnh để chỉ một nút chính (đóng góp) */}
+        {!ro && <button className={canApprove && onApprove ? 'btn' : 'btn btn-primary'} disabled={saving || problems.length > 0} title={problems.length ? `Chưa ghi được: ${problems.join('; ')}` : 'Lưu nháp (chưa ghi sổ)'} onClick={() => onSave(saleInput(v))}>Ghi</button>}
+        {viewing && !readOnly && <button className={canApprove && onApprove ? 'btn' : 'btn btn-primary'} autoFocus title="Phím tắt: F2 / Enter" onClick={() => setViewing(false)}>Sửa</button>}
         {/* NT-BH-045: Duyệt / Bỏ duyệt trong phiếu như phiếu mua — phiếu mới / đang sửa chưa ghi thì trang Ghi trước rồi Duyệt. */}
         {canApprove && onApprove && !readOnly && v.status !== 'approved' && (
-          <button className="btn" style={{ fontWeight: 600 }} disabled={saving || approving || problems.length > 0}
+          <button className="btn btn-primary" disabled={saving || approving || problems.length > 0}
             title={problems.length ? `Chưa duyệt được: ${problems.join('; ')}` : approving ? 'Đang duyệt…' : 'Ghi sổ phiếu (bút toán, công nợ, kho). Đang sửa chưa ghi thì tự Ghi rồi Duyệt'}
             onClick={() => onApprove(saleInput(v), !value.id || (!viewing && v !== value))}>{approving ? 'Đang duyệt…' : 'Duyệt (ghi sổ)'}</button>
         )}

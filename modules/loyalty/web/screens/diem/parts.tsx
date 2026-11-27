@@ -24,12 +24,17 @@ export function NumIn({ value, onChange, ...p }: InProps & { value: number | und
   );
 }
 
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: khối dùng lớp card / card-body của Core (tiêu đề + nút bên phải) thay fieldset tự vẽ (đóng góp)
 export const Box = ({ title, children, actions }: { title: ReactNode; children: ReactNode; actions?: ReactNode }) => (
-  <fieldset style={{ border: '1px solid var(--line, #ddd)', borderRadius: 6, padding: '8px 10px', display: 'grid', gap: 8, margin: '8px 0' }}>
-    <legend style={{ padding: '0 4px' }}><b>{title}</b></legend>
-    {actions && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{actions}</div>}
-    {children}
-  </fieldset>
+  <section className="card">
+    <div className="card-body" style={{ display: 'grid', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <b>{title}</b>
+        {actions && <><span style={{ flex: 1 }} />{actions}</>}
+      </div>
+      {children}
+    </div>
+  </section>
 );
 
 export const Row = ({ children }: { children: ReactNode }) => <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>{children}</div>;

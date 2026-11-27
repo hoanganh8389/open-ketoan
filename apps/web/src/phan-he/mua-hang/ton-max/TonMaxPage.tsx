@@ -174,13 +174,12 @@ export function TonMaxPage() {
           { name: 'Mã hàng', required: true, aliases: 'Mã SP, SKU', example: '110154035', note: 'Mã trong danh mục mặt hàng' },
           { name: 'Tên hàng', example: 'Sữa bột 800g', note: 'Chỉ để xem — nhập bỏ qua' },
           { name: 'ĐVT', example: 'Lon', note: 'Chỉ để xem' },
-          { name: 'Tồn', example: 12, note: 'Tồn hiện tại — chỉ để xem' },
-          { name: 'Gợi ý max', example: 30, note: 'Chỉ để xem' },
+          // [2026-11-27 09:45 AM Nguyễn Văn Thủy] #67 tab Test: tệp mẫu bỏ cột Tồn và Gợi ý max — chỉ mã chi nhánh, mã kho, mã hàng, tên, ĐVT, Tồn max, Tồn min (đóng góp)
           { name: 'Tồn max', required: true, aliases: 'Max', example: 24, note: 'Theo ĐVT nhỏ nhất (Lon, Hộp…). Để trống = bỏ qua dòng (không đổi)' },
           { name: 'Tồn min', aliases: 'Min', example: 0, note: 'Tuỳ chọn (thường chỉ khai cho kho). Trống = 0' },
         ],
         // [2026-11-25 kiennt] NT-MH-008 — tệp mẫu có sẵn mặt hàng đang dùng CHƯA CÓ MAX ở kho / shop đang xem (mã chi nhánh, mã kho điền sẵn;
-        // kèm tồn, gợi ý nếu có) — chỉ nhập số Tồn max (đóng góp)
+        // tồn, gợi ý xem trên lưới) — chỉ nhập số Tồn max (đóng góp)
         mau: async () => {
           const ds = await api.get<CatalogItem[]>('/api/v1/products', { status: 'active', pageSize: 1_000_000 });
           const br = target || parent, whc = q.data?.warehouseCode || wh;
@@ -188,7 +187,7 @@ export function TonMaxPage() {
           const list = [...new Set([...(q.data?.rows ?? []).map((r) => r.sku), ...ds.map((p) => p.sku)])].filter((x) => !((by.get(x)?.max ?? 0) > 0)).sort((a, b) => a.localeCompare(b));
           if (!list.length) throw new Error(`Mọi mặt hàng đang dùng đã có max ở ${br} kho ${whc} — sửa ngay trên lưới`);
           const pBy = new Map(ds.map((p) => [p.sku, p]));
-          return list.map((x) => { const r = by.get(x), p = pBy.get(x); return [br, whc, x, r?.name ?? p?.name ?? '', r?.baseUnit ?? p?.unit ?? '', r ? r.ton : '', r?.suggested || '', '', '']; });
+          return list.map((x) => { const r = by.get(x), p = pBy.get(x); return [br, whc, x, r?.name ?? p?.name ?? '', r?.baseUnit ?? p?.unit ?? '', '', '']; });
         },
         spec: [['branch', ['ma chi nhanh', 'ma shop', 'chi nhanh']], ['wh', ['ma kho', 'kho']], ['sku', ['ma hang', 'ma sp', 'sku']], ['max', ['ton max', 'max']], ['min', ['ton min', 'min']]],
         map: (r) => {
