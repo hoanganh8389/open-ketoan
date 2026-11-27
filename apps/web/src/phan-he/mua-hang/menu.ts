@@ -62,6 +62,7 @@ export const muaHangMenu: MenuItem[] = [
       { key: 'mh-th-nhom-hang', label: 'Tổng hợp mua hàng theo ngành, nhãn, nhóm hàng', path: '/mua-hang/tong-hop-nhom-hang', code: 'MH23C' },
       { key: 'mh-so-kho', label: 'Sổ kho theo mặt hàng', path: '/mua-hang/so-kho', code: 'MH24' },
       { key: 'mh-ton-kho', label: 'Tồn kho theo mặt hàng', path: '/mua-hang/ton-kho', code: 'MH25' },
+      { key: 'mh-bao-cao-lo-han', label: 'Báo cáo lô và hạn dùng', path: '/kho/bao-cao-lo-han', code: 'KHO08' },
       { key: 'mh-nhat-ky', label: 'Nhật ký mua hàng', path: '/mua-hang/nhat-ky', code: 'MH10' },
       { key: 'mh-doi-chieu', label: 'Đối chiếu đơn đặt ↔ phiếu nhập', path: '/mua-hang/doi-chieu', code: 'MH21' },
       { key: 'mh-bc-chinh-sach', label: 'Chi tiết chính sách mua hàng', path: '/mua-hang/chi-tiet-chinh-sach', code: 'MH14' },

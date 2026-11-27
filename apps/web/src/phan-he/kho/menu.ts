@@ -31,6 +31,8 @@ export const khoMenu: MenuItem[] = [
       { key: 'kho-chuyen-kho', label: 'Bảng kê chuyển kho', path: '/bao-cao/chuyen-kho', code: 'HH01' },
       // [2026-11-10 06:30 PM Nguyễn Văn Thủy] PHASE-026 — tồn theo lô (0098) (đóng góp)
       { key: 'kho-ton-theo-lo', label: 'Tồn theo lô', path: '/kho/ton-theo-lo', code: 'KHO05' },
+      // [2026-11-27 12:40 PM Nguyễn Văn Thủy] KHO08 — #70 tab Test: báo cáo lô và hạn dùng (Kho + Mua hàng) (đóng góp)
+      { key: 'kho-bao-cao-lo-han', label: 'Báo cáo lô và hạn dùng', path: '/kho/bao-cao-lo-han', code: 'KHO08' },
       { key: 'kho-the-kho', label: 'Thẻ kho', path: '/kho/the-kho', code: 'KHO06' },
       { key: 'kho-doi-chieu', label: 'Đối chiếu kho và sổ cái', path: '/kho/doi-chieu-so-cai', code: 'KHO07' },
     ],

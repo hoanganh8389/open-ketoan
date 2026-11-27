@@ -13,12 +13,14 @@ import { HanhTrinhMatHangPage } from './hanh-trinh/HanhTrinhMatHangPage';
 import { GrossProfitPage, ProfitByDepartmentPage, StockTransfersPage } from './reports/GoodsReportPages';
 // [2026-11-10 06:30 PM Nguyễn Văn Thủy] PHASE-026 — tồn theo lô (đóng góp)
 import { TonTheoLoPage } from '@/features/lots/TonTheoLoPage';
+import { BaoCaoLoHanPage } from '@/features/lots/BaoCaoLoHanPage';
 
 export const khoRoutes = (
   <>
     <Route path="kho/chuyen-kho" element={<ChuyenKhoPage />} />
     <Route path="kho/kiem-ke" element={<KiemKePage />} />
     <Route path="kho/ton-theo-lo" element={<TonTheoLoPage />} />
+    <Route path="kho/bao-cao-lo-han" element={<BaoCaoLoHanPage />} />
     <Route path="nghiep-vu/tinh-gia-von" element={<CostingPage />} />
     <Route path="nghiep-vu/cong-thuc-gia-von" element={<CongThucGiaVonPage />} />
     <Route path="bao-cao/nhap-xuat-ton" element={<StockMovementPage />} />

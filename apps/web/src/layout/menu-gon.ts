@@ -87,7 +87,7 @@ export const GON_DEFS: GonDef[] = [
       // [2026-11-25 Nguyễn Văn Thủy] #26 tab Test: khai báo đối tượng / mặt hàng dùng đúng màn của Danh mục tổng (DM13, DM10) — một nơi khai, cùng dữ liệu (đóng góp)
     ],
     reports: [
-      { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/tong-hop-chi-nhanh', '/mua-hang/tong-hop-nhom-hang', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/nhat-ky'] },
+      { label: 'Mua hàng', paths: ['/mua-hang/bao-cao', '/mua-hang/tong-hop-mat-hang', '/mua-hang/tong-hop-chi-nhanh', '/mua-hang/tong-hop-nhom-hang', '/kho/bao-cao-lo-han', '/mua-hang/doi-chieu', '/bao-cao/nhat-ky-mua-hang', '/mua-hang/nhat-ky'] },
       // [2026-11-21 Nguyễn Văn Thủy] nhóm báo cáo theo hợp đồng / chính sách (đóng góp)
       { label: 'Hợp đồng & chính sách', paths: ['/mua-hang/thuc-hien-chinh-sach', '/mua-hang/thuc-hien-hop-dong', '/mua-hang/chinh-sach-theo-hop-dong', '/mua-hang/chi-tiet-chinh-sach', '/mua-hang/doi-chieu-gia-hop-dong'] },
       { label: 'Công nợ phải trả', paths: ['/bao-cao/cong-no-phai-tra', '/bao-cao/chi-tiet-thanh-toan', '/mua-hang/cong-no-hop-dong', '/cong-no/doi-chieu', '/bao-cao/tuoi-no'] },
@@ -123,7 +123,7 @@ export const GON_DEFS: GonDef[] = [
       { label: 'Danh mục', paths: ['/danh-muc/mat-hang', '/danh-muc/so-do-to-chuc', '/danh-muc/loai-kho', '/danh-muc/don-vi-tinh'] },
     ],
     // [2026-11-25 Nguyễn Văn Thủy] #56 tab Test: Sổ kho (MH24) và Tồn kho theo mặt hàng (MH25) về báo cáo của Kho — đủ mọi luồng nhập / xuất, không riêng mua hàng (đóng góp)
-    reports: [{ label: 'Kho', paths: ['/mua-hang/so-kho', '/mua-hang/ton-kho', '/bao-cao/so-chi-tiet-hang-hoa', '/bao-cao/nhap-xuat-ton', '/bao-cao/ton-nhieu-kho', '/kho/the-kho', '/kho/ton-theo-lo', '/bao-cao/chuyen-kho', '/kho/doi-chieu-so-cai'] }],
+    reports: [{ label: 'Kho', paths: ['/mua-hang/so-kho', '/mua-hang/ton-kho', '/bao-cao/so-chi-tiet-hang-hoa', '/bao-cao/nhap-xuat-ton', '/bao-cao/ton-nhieu-kho', '/kho/the-kho', '/kho/ton-theo-lo', '/kho/bao-cao-lo-han', '/bao-cao/chuyen-kho', '/kho/doi-chieu-so-cai'] }],
   },
   {
     key: 'ccdc', label: 'Công cụ dụng cụ', icon: 'Hammer', description: 'Ghi tăng, phân bổ công cụ dụng cụ, chi phí trả trước', color: '#00838f', module: 'tai-san', homeLabel: 'Quy trình',

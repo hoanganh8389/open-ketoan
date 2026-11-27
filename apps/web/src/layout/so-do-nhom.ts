@@ -177,7 +177,7 @@ export const SO_DO: Record<string, SoDo> = {
     ],
     reports: [
       { label: 'Sổ chi tiết mua hàng', path: '/mua-hang/bao-cao' }, { label: 'Chi tiết công nợ phải trả nhà cung cấp', path: '/bao-cao/chi-tiet-thanh-toan' },
-      { label: 'Tổng hợp mua hàng theo mặt hàng', path: '/mua-hang/tong-hop-mat-hang' }, { label: 'Tổng hợp công nợ phải trả nhà cung cấp', path: '/bao-cao/cong-no-phai-tra' },
+      { label: 'Tổng hợp mua hàng theo mặt hàng', path: '/mua-hang/tong-hop-mat-hang' }, { label: 'Báo cáo lô và hạn dùng', path: '/kho/bao-cao-lo-han' }, { label: 'Tổng hợp công nợ phải trả nhà cung cấp', path: '/bao-cao/cong-no-phai-tra' },
       { label: 'Biên bản đối chiếu và xác nhận công nợ phải trả', path: '/cong-no/doi-chieu' },
     ],
     links: [{ label: 'Nhà cung cấp', icon: 'Truck', path: '/danh-muc/nha-cung-cap' }, L.vthh, { label: 'Hợp đồng mua', icon: 'FileSignature', path: '/mua-hang/hop-dong' }, { label: 'Chính sách mua', icon: 'Tags', path: '/mua-hang/chinh-sach' }, { label: 'Công thức đặt hàng', icon: 'Sigma', path: '/mua-hang/cong-thuc' }, { label: 'Cài đặt mua hàng', icon: 'Settings', path: '/mua-hang/cai-dat' }],
@@ -207,7 +207,7 @@ export const SO_DO: Record<string, SoDo> = {
     ],
     reports: [
       { label: 'Sổ chi tiết vật tư hàng hóa', path: '/bao-cao/so-chi-tiet-hang-hoa' }, { label: 'Tổng hợp tồn kho', path: '/bao-cao/nhap-xuat-ton' },
-      { label: 'Tổng hợp tồn kho theo lô', path: '/kho/ton-theo-lo' }, { label: 'Sổ chuyển kho nội bộ', path: '/bao-cao/chuyen-kho' },
+      { label: 'Tổng hợp tồn kho theo lô', path: '/kho/ton-theo-lo' }, { label: 'Báo cáo lô và hạn dùng', path: '/kho/bao-cao-lo-han' }, { label: 'Sổ chuyển kho nội bộ', path: '/bao-cao/chuyen-kho' },
       { label: 'Đối chiếu kho và sổ cái', path: '/kho/doi-chieu-so-cai' },
     ],
     links: [{ label: 'Cơ cấu tổ chức (kho)', icon: 'Network', path: '/danh-muc/so-do-to-chuc' }, { label: 'Loại kho', icon: 'Layers', path: '/danh-muc/loai-kho' }, L.vthh, { label: 'Đơn vị tính', icon: 'Ruler', path: '/danh-muc/don-vi-tinh' }],
