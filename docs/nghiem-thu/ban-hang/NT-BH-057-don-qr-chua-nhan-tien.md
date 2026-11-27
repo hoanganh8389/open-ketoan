@@ -26,7 +26,7 @@ ngân bấm "Xác nhận đã nhận tiền"; đơn huỷ trước khi tiền v�
 3. Bấm "Xác nhận đã nhận tiền" (hoặc ngân hàng báo có) → có phiếu thu tiền khách của phần QR; công nợ 131 của đơn về 0.
 4. Đơn khác: huỷ khi còn chờ tiền → doanh thu, thuế, công nợ đảo hết; không có phiếu thu.
 
-## 4. Số liệu đầu vào (test `apps/api/test/nt-bh-057-qr-chua-nhan-tien.test.ts`)
+## 4. Số liệu đầu vào (test `apps/api/test/nt-bh-057-qr-chua-nhan-tien.test.ts`) (đề xuất — tệp test ở nhánh code)
 
 | Đơn | Hàng | Thanh toán |
 |---|---|---|
@@ -63,8 +63,8 @@ ngân bấm "Xác nhận đã nhận tiền"; đơn huỷ trước khi tiền v�
 - M4: gửi phiếu thu TRƯỚC khi chuyển đơn sang hoàn tất (mã chứng từ cố định nên gọi lại an toàn).
 
 ## 7. Kết quả chạy
-- `apps/api/test/nt-bh-057-qr-chua-nhan-tien.test.ts` 4/4; hồi quy nt-bh-009 / 010 / 027 / 033 đạt (nt-bh-009 sửa khẳng định cũ "phiếu bán mang dòng thu QR").
-- `modules/pos/test/qr-receipt.test.ts` 3/3, test hàm module pos 164/164; `npx bizcity module check pos` ĐẠT.
+- `apps/api/test/nt-bh-057-qr-chua-nhan-tien.test.ts` 4/4; hồi quy nt-bh-009 / 010 / 027 / 033 đạt (nt-bh-009 sửa khẳng định cũ "phiếu bán mang dòng thu QR"). (đề xuất — tệp test ở nhánh code)
+- `modules/pos/test/qr-receipt.test.ts` 3/3, test hàm module pos 164/164; `npx bizcity module check pos` ĐẠT. (đề xuất — tệp test ở nhánh code)
 
 ## 8. Biên bản
 
