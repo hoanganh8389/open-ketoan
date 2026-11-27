@@ -26,10 +26,22 @@ export function checkRange(from: string, to: string): void {
 }
 
 /**
- * Chi nhánh được xem (Q-CHUNG-01): có `pos:report` → chi nhánh hỏi (phạm vi chi nhánh do Core so qua branchOf). Chỉ `pos:sell` → chỉ
- * chi nhánh của máy: trong phạm vi chi nhánh được gán; không giới hạn phạm vi thì chi nhánh của ca gần nhất người gọi mở; chưa mở ca
- * nào thì đơn vị chỉ có một chi nhánh. Chi nhánh khác → 403.
+ * Chi nhánh được xem (Q-CHUNG-01; NT-BH-055 — phân quyền theo tài khoản: nhân viên shop nào xem mọi màn của shop đó, quản trị xem hết):
+ *   - có `pos:report` (quản trị — vé máy bán cấp cho quản trị mạng) → chi nhánh hỏi (phạm vi chi nhánh do Core so qua branchOf);
+ *   - chỉ `pos:sell` (nhân viên) → chi nhánh của TÀI KHOẢN: phạm vi chi nhánh được gán ở Phân quyền (vai trò tại chi nhánh) nếu có;
+ *     không gán thì MỌI chi nhánh tài khoản đã mở ca hoặc đã bán (không chỉ ca gần nhất — một người bán ở nhiều shop vẫn xem được
+ *     từng shop của mình); chưa mở ca / bán lần nào thì đơn vị chỉ có một chi nhánh. Chi nhánh khác → 403 kèm lý do dễ hiểu.
  */
+// [2026-11-28 10:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-055: chi nhánh của tài khoản = phạm vi gán, không thì mọi chi nhánh đã mở ca / đã bán (đóng góp)
+export async function ownBranches(ctx: ActionContext, tx: Tx, branches: readonly string[]): Promise<string[]> {
+  if (ctx.branchScope) return [...ctx.branchScope];
+  const rows = (await sql<{ branch_code: string }>`
+    SELECT branch_code FROM mod_pos.shifts WHERE opened_by = ${ctx.actor.id}
+    UNION SELECT branch_code FROM mod_pos.orders WHERE created_by = ${ctx.actor.id}`.execute(tx)).rows.map((r) => r.branch_code);
+  const own = [...new Set(rows)].filter((c) => branches.includes(c)).sort();
+  return own.length ? own : branches.length === 1 ? [...branches] : [];
+}
+
 export async function allowedBranch(ctx: ActionContext, tx: Tx, asked: string | undefined): Promise<string> {
   const branches = (await sql<{ code: string }>`SELECT code FROM bizcity_read.branches WHERE is_active IS NOT FALSE ORDER BY code`.execute(tx)).rows.map((r) => r.code);
   if (asked && !branches.includes(asked)) throw Errors.validation(`Không có chi nhánh ${asked} trong danh mục kế toán`, { reason: 'POS_UNKNOWN_BRANCH', branchCode: asked, field: 'branch' });
@@ -38,16 +50,14 @@ export async function allowedBranch(ctx: ActionContext, tx: Tx, asked: string | 
     if (branches.length === 1) return branches[0]!;
     throw Errors.validation('Chọn chi nhánh cần xem', { reason: 'POS_BRANCH_REQUIRED', field: 'branch' });
   }
-  let own: string[];
-  if (ctx.branchScope) own = [...ctx.branchScope];
-  else {
-    const last = (await sql<{ branch_code: string }>`
-      SELECT branch_code FROM mod_pos.shifts WHERE opened_by = ${ctx.actor.id} ORDER BY opened_at DESC LIMIT 1`.execute(tx)).rows[0]?.branch_code;
-    own = last ? [last] : branches.length === 1 ? branches : [];
-  }
+  const own = await ownBranches(ctx, tx, branches);
   const want = asked ?? (own.length === 1 ? own[0] : undefined);
   if (!want) throw Errors.validation('Máy bán phải gửi chi nhánh (branch)', { reason: 'POS_BRANCH_REQUIRED', field: 'branch' });
-  if (!own.includes(want)) throw Errors.forbidden(`Xem số của chi nhánh ${want} cần quyền pos:report (chỉ xem được chi nhánh của máy)`);
+  if (!own.includes(want)) {
+    throw Errors.forbidden(own.length
+      ? `Tài khoản này chỉ xem được số của chi nhánh ${own.join(', ')} — không xem được ${want}. Cần xem mọi chi nhánh thì dùng tài khoản quản trị.`
+      : `Tài khoản này chưa thuộc chi nhánh nào: gán chi nhánh ${want} cho tài khoản ở Phân quyền (vai trò tại chi nhánh) của phần mềm kế toán, hoặc mở ca bán hàng tại cửa hàng này trước.`);
+  }
   return want;
 }
 

@@ -28,7 +28,7 @@ Cửa hàng thừa hàng / hàng chậm bán đề nghị chuyển hàng của m
 3. Người duyệt mở KHO04 → Xem / Duyệt → **Duyệt (lập chuyển kho)**: kiểm lại tồn, lập KHO01 xuất luôn từ kho mặc định chi nhánh đề nghị sang kho mặc định chi nhánh nhận; đề nghị → **Đã lập chuyển kho**, hiện số KHO01. Hoặc **Từ chối** (lý do ≥ 5 ký tự).
 4. Chi nhánh nhận xác nhận ở KHO01 Chuyển kho (Nhận hàng / Từ chối) như phiếu chuyển kho thường.
 
-## 4. Số liệu đầu vào (test `apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts`)
+## 4. Số liệu đầu vào (test `apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts`) (đề xuất — tệp test ở nhánh code)
 
 | Chi nhánh | Cha | Kho mặc định | Tồn SUA01 |
 |---|---|---|---|
