@@ -17,7 +17,7 @@
     {
       "id": "Q-CHUNG-01",
       "ask": "Ai được thêm / sửa / xoá / duyệt ở màn này? Không đủ quyền thì màn ẩn nút hay báo gì?",
-      "answer": "Tách quyền: loyalty:chinh-sach-lap / -sua / -duyet, loyalty:dieu-chinh-lap / -duyet (mặc định chỉ chủ đơn vị + kế toán trưởng; vai trò khác do quản trị Cho quyền ở HT12, màn BH19). Không quyền thì nút ẨN; máy chủ vẫn chặn 403. Người lập không tự duyệt (chốt 25/11 Võ Hoàng)."
+      "answer": "Tách quyền: loyalty:chinh-sach-lap / -sua / -duyet, loyalty:dieu-chinh-lap / -duyet (mặc định chủ đơn vị + kế toán trưởng; vai trò khác do quản trị Cho quyền ở HT12, màn BH19). Không quyền thì nút ẨN; máy chủ vẫn chặn 403. Chương trình / đổi điểm / cài đặt + hạng: người có quyền duyệt tự lập tự duyệt (Hoàng 28/11, NT-BH-059); điều chỉnh điểm tay: người lập không tự duyệt (chốt 25/11)."
     },
     {
       "id": "Q-CHUNG-02",
@@ -61,14 +61,14 @@
       "action": "duyet",
       "code": "FORBIDDEN",
       "level": "block",
-      "when": "Người lập tự duyệt / từ chối, hoặc không có quyền duyệt",
+      "when": "Không có quyền duyệt; hoặc người lập tự duyệt / từ chối ĐIỀU CHỈNH điểm của mình (chương trình thì người có quyền duyệt tự duyệt được — NT-BH-059)",
       "target": {
         "kind": "state"
       },
       "catchAt": [
         "module"
       ],
-      "hint": "Người lập không tự duyệt — nhờ người có quyền duyệt khác duyệt",
+      "hint": "Cần quyền Duyệt; điều chỉnh điểm do người khác duyệt",
       "test": "apps/api/test/nt-bh-039-tich-diem.test.ts#FORBIDDEN",
       "basis": "Q-CHUNG-01"
     },

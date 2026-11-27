@@ -2,12 +2,16 @@
 // [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: thêm thẻ Chương trình / Đổi điểm / Cài đặt + hạng / Điều chỉnh — khai, duyệt chính sách ở kế toán (đóng góp)
 /**
  * BH19 Điểm thành viên. Thẻ Tổng quan (NT-BH-020 kiểm 5): phát sinh điểm trong kỳ theo cửa hàng, số dư cuối kỳ theo hạng, danh sách khách.
- * NT-BH-039: thẻ Chương trình (L1), Đổi điểm (L2), Cài đặt + hạng (L3) soạn nháp chính sách theo cửa hàng → gửi duyệt → duyệt = phát hành
- * cho máy bán; thẻ Điều chỉnh (L4) cộng / trừ điểm tay có duyệt.
+ * NT-BH-059: theo luồng 4 bước — Cài đặt + hạng, Chương trình tích điểm, Đổi điểm (mỗi chương trình áp Tất cả / chọn cửa hàng; Ghi · Gửi
+ * duyệt · Duyệt phát hành), Thành viên & điều chỉnh (điều chỉnh tay vẫn người khác duyệt).
  */
-import { useState } from 'react';
-import { ChinhSachKhung } from './diem/ChinhSachKhung';
+import { useState, type ReactNode } from 'react';
+// [2026-11-28 03:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-059: BH19 theo luồng 1 Cài đặt + hạng → 2 Chương trình tích điểm → 3 Đổi điểm → 4 Thành viên & điều chỉnh;
+// khai theo chương trình áp cho Tất cả / chọn cửa hàng (thay khung soạn theo từng cửa hàng) (đóng góp)
+import { CaiDatTab } from './diem/CaiDatTab';
+import { ChuongTrinhTab } from './diem/ChuongTrinhTab';
 import { DieuChinhTab } from './diem/DieuChinhTab';
+import { M, type Overview } from './diem/model';
 // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thẻ Thành viên (tìm, lọc hạng, cộng / trừ, lịch sử trước / sau) như plugin cũ (đóng góp)
 import { ThanhVienTab } from './diem/ThanhVienTab';
 import { DataGrid, ErrorBox, FilterLayout, KpiCards, Loading, PageHeader, PeriodField, errorText, useApi, useQuery, type GridColumn } from '@bizcity/ui-kit';
@@ -48,21 +52,82 @@ const customerCols: GridColumn<Report['customers'][number]>[] = [
   { key: 'expire', header: 'Hết hạn trong kỳ', type: 'number', sum: true, width: 120, value: (c) => c.period.expire },
 ];
 
-const TABS = [['tong-quan', 'Tổng quan'], ['thanh-vien', 'Thành viên'], ['chuong-trinh', 'Chương trình'], ['doi-diem', 'Đổi điểm'], ['cai-dat', 'Cài đặt + hạng'], ['dieu-chinh', 'Điều chỉnh']] as const;
-type Tab = (typeof TABS)[number][0];
+const STEPS = [
+  { k: 'cai-dat', n: 1, label: 'Cài đặt + hạng', hint: 'Bật tích / đổi ở máy bán, tên gọi điểm, bảng hạng và hệ số — áp cho Tất cả hoặc chọn cửa hàng.' },
+  { k: 'chuong-trinh', n: 2, label: 'Chương trình tích điểm', hint: 'Khách mua được bao nhiêu điểm: theo tiền, theo mã hàng, nhân điểm dịp lễ, thưởng theo mức đơn.' },
+  { k: 'doi-diem', n: 3, label: 'Đổi điểm', hint: 'Khách dùng điểm đổi quà (mặt hàng) hoặc voucher, giới hạn theo hạng.' },
+  { k: 'thanh-vien', n: 4, label: 'Thành viên & điều chỉnh', hint: 'Tra điểm từng khách, lịch sử; cộng / trừ điểm tay (người khác duyệt).' },
+] as const;
+type Tab = 'tong-quan' | (typeof STEPS)[number]['k'];
 
 export function DiemThanhVienPage() {
   const [tab, setTab] = useState<Tab>('tong-quan');
+  const api = useApi();
+  const ov = useQuery({ queryKey: ['loyalty', 'overview'], queryFn: () => api.get<Overview>(`${M}/policies`) });
+  const d = ov.data;
+  const live = (types: number[]) => (d?.policies ?? []).filter((p) => types.includes(p.type) && (p.state === 'active' || p.state === 'scheduled')).length;
+  const status: Record<string, ReactNode> = d ? {
+    'cai-dat': `${d.settings.filter((s) => s.settings).length} / ${d.branches.length} cửa hàng đã có`,
+    'chuong-trinh': `${live([1, 2, 3, 4])} đang áp`,
+    'doi-diem': `${live([5, 6])} đang áp`,
+    'thanh-vien': d.pending ? `${d.pending} nháp chờ duyệt` : 'tra cứu, điều chỉnh',
+  } : {};
+  const go = (k: Tab) => () => setTab(k);
+  const step = STEPS.find((x) => x.k === tab);
+  const at = STEPS.findIndex((x) => x.k === tab);
+  const next: Tab | undefined = at >= 0 && at < STEPS.length - 1 ? (STEPS as readonly { k: Tab }[])[at + 1]!.k : undefined;
   return (
     <div>
-      <PageHeader title="Điểm thành viên" code="BH19" subtitle="Sổ điểm thành viên và chính sách tích điểm của từng cửa hàng (khai, duyệt ở kế toán). Điểm chỉ hạch toán lúc đổi (trên chứng từ bán)." />
-      {/* [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thẻ gạch chân (tabs) và khối card như các màn Core (đóng góp) */}
-      <div className="tabs" role="tablist" style={{ margin: '8px 0' }}>
-        {TABS.map(([k, label]) => (
-          <button key={k} type="button" role="tab" className={`tab ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{label}</button>
+      <PageHeader title="Điểm thành viên" code="BH19" subtitle="Khai theo 4 bước, mỗi chương trình áp cho Tất cả hoặc chọn cửa hàng; người có quyền duyệt tự lập tự duyệt. Điểm chỉ hạch toán lúc đổi (trên chứng từ bán)." />
+      {/* Thanh bước: bấm để mở bước; mỗi bước ghi tình trạng hiện tại. */}
+      <div className="tabs" role="tablist" style={{ margin: '8px 0', flexWrap: 'wrap' }}>
+        <button type="button" role="tab" className={`tab ${tab === 'tong-quan' ? 'active' : ''}`} onClick={go('tong-quan')}>Tổng quan</button>
+        {STEPS.map((x) => (
+          <button key={x.k} type="button" role="tab" className={`tab ${tab === x.k ? 'active' : ''}`} title={x.hint} onClick={go(x.k)}>
+            <span className="badge badge-info" style={{ marginRight: 6 }}>{x.n}</span>{x.label}
+            {status[x.k] ? <span className="muted" style={{ fontSize: 11.5, marginLeft: 6 }}>· {status[x.k]}</span> : null}
+          </button>
         ))}
       </div>
-      {tab === 'tong-quan' ? <TongQuan /> : tab === 'thanh-vien' ? <ThanhVienTab /> : tab === 'dieu-chinh' ? <DieuChinhTab /> : <ChinhSachKhung view={tab} />}
+      {step && <div className="muted" style={{ margin: '0 0 8px' }}>Bước {step.n}: {step.hint}{next && <> <button type="button" className="btn btn-xs" onClick={go(next)}>Bước {step.n + 1} →</button></>}</div>}
+      {tab === 'tong-quan' ? <><LuongBuoc d={d} status={status} onGo={(k) => setTab(k)} /><TongQuan /></>
+        : tab === 'thanh-vien' ? <BuocThanhVien />
+          : ov.isLoading ? <Loading /> : ov.error ? <ErrorBox error={errorText(ov.error)} /> : !d ? null
+            : tab === 'cai-dat' ? <CaiDatTab ov={d} onNext={go('chuong-trinh')} />
+              : <ChuongTrinhTab key={tab} group={tab === 'doi-diem' ? 'redeem' : 'earn'} ov={d} onNext={tab === 'chuong-trinh' ? go('doi-diem') : go('thanh-vien')} />}
+    </div>
+  );
+}
+
+/** Luồng khai ở Tổng quan: 4 thẻ bước, bước chưa làm hiện gợi ý bắt đầu. */
+function LuongBuoc({ d, status, onGo }: { d: Overview | undefined; status: Record<string, ReactNode>; onGo: (k: Tab) => void }) {
+  const todo = d ? (!d.settings.some((s) => s.settings) ? 'cai-dat' : !d.policies.some((p) => p.type <= 4) ? 'chuong-trinh' : null) : null;
+  return (
+    <section className="card" style={{ marginBottom: 12 }}>
+      <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
+        {STEPS.map((x) => (
+          <button key={x.k} type="button" className="card card-body" title={x.hint} onClick={() => onGo(x.k)}
+            style={{ margin: 0, textAlign: 'left', cursor: 'pointer', display: 'grid', gap: 4, borderColor: todo === x.k ? 'var(--warn, #d97706)' : undefined }}>
+            <span><span className="badge badge-info" style={{ marginRight: 6 }}>{x.n}</span><b>{x.label}</b></span>
+            <span className="muted" style={{ fontSize: 12 }}>{x.hint}</span>
+            <span style={{ fontSize: 12.5 }}>{todo === x.k ? <b style={{ color: 'var(--warn, #d97706)' }}>Bắt đầu ở đây →</b> : status[x.k] ?? ''}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Bước 4: Thành viên (tra cứu, cộng / trừ) và Điều chỉnh (yêu cầu cộng / trừ tay — người khác duyệt). */
+function BuocThanhVien() {
+  const [sub, setSub] = useState<'tv' | 'dc'>('tv');
+  return (
+    <div>
+      <div className="tabs" role="tablist" style={{ margin: '0 0 8px' }}>
+        <button type="button" role="tab" className={`tab ${sub === 'tv' ? 'active' : ''}`} onClick={() => setSub('tv')}>Thành viên</button>
+        <button type="button" role="tab" className={`tab ${sub === 'dc' ? 'active' : ''}`} onClick={() => setSub('dc')}>Điều chỉnh điểm</button>
+      </div>
+      {sub === 'tv' ? <ThanhVienTab /> : <DieuChinhTab />}
     </div>
   );
 }

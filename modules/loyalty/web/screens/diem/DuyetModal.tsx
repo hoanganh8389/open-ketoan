@@ -1,7 +1,7 @@
 // [2026-11-25 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-039: hộp Duyệt / Từ chối — nháp chính sách (duyệt riêng hoặc cùng lúc) và yêu cầu điều chỉnh điểm (đóng góp)
 /**
- * Duyệt = phát hành (nháp chính sách: thêm phiên bản mới cho máy bán) hoặc ghi sổ điểm (điều chỉnh). Người lập không tự duyệt — máy chủ chặn
- * (FORBIDDEN), hộp hiện nguyên câu. Nút khoá khi đang gửi (bấm hai lần chỉ một kết quả — Idempotency-Key). Từ chối bắt buộc lý do.
+ * Duyệt = phát hành (nháp chính sách: thêm phiên bản mới cho máy bán) hoặc ghi sổ điểm (điều chỉnh). Điều chỉnh: người lập không tự duyệt —
+ * máy chủ chặn (FORBIDDEN), hộp hiện nguyên câu; nháp chính sách: người có quyền duyệt tự duyệt được (NT-BH-059). Nút khoá khi đang gửi (bấm hai lần chỉ một kết quả — Idempotency-Key). Từ chối bắt buộc lý do.
  */
 import { useState } from 'react';
 import { ErrorBox, Modal, errorText, useApi, useMutation } from '@bizcity/ui-kit';
@@ -45,7 +45,8 @@ export function DuyetModal(p: Props) {
         {p.items.map((x) => (
           <label key={x.id} style={{ display: 'flex', gap: 6 }}><input type="checkbox" name="ids" checked={ids.includes(x.id)} onChange={() => toggle(x.id)} />{label(x)}</label>
         ))}
-        <span className="muted">Người lập không tự duyệt mục của mình.</span>
+        {/* [2026-11-28 04:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-059: chương trình — người có quyền duyệt tự duyệt được; điều chỉnh điểm vẫn người khác duyệt (đóng góp) */}
+        <span className="muted">{p.kind === 'program' ? 'Duyệt = phát hành nháp của cửa hàng (gồm mọi thay đổi trong nháp đó).' : 'Người lập không tự duyệt điều chỉnh của mình.'}</span>
         {rejecting && <label style={{ display: 'grid', gap: 2 }}>Lý do từ chối (*)<input className="input" name="reason" value={reason} onChange={(e) => setReason(e.target.value)} /></label>}
         {go.error ? <ErrorBox error={errorText(go.error)} /> : null}
       </div>

@@ -1,0 +1,142 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": {
+    "code": "BH19CT",
+    "label": "BH19 — Chương trình tích điểm / đổi điểm (áp Tất cả / chọn cửa hàng)",
+    "file": "modules/loyalty/web/screens/diem/ChuongTrinhModal.tsx",
+    "route": "/app/loyalty/diem",
+    "entities": [
+      "loyalty/policies",
+      "loyalty/program-drafts"
+    ]
+  },
+  "actions": [
+    "them",
+    "sua",
+    "duyet"
+  ],
+  "questions": [
+    {
+      "id": "Q-CHUNG-01",
+      "ask": "Ai được thêm / sửa / xoá / duyệt ở màn này? Không đủ quyền thì màn ẩn nút hay báo gì?",
+      "answer": "Tách quyền: loyalty:chinh-sach-lap / -sua / -duyet, loyalty:dieu-chinh-lap / -duyet (mặc định chủ đơn vị + kế toán trưởng; vai trò khác do quản trị Cho quyền ở HT12, màn BH19). Không quyền thì nút ẨN; máy chủ vẫn chặn 403. Chương trình / đổi điểm / cài đặt + hạng: người có quyền duyệt tự lập tự duyệt (Hoàng 28/11, NT-BH-059); điều chỉnh điểm tay: người lập không tự duyệt (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-02",
+      "ask": "Chứng từ đã ghi sổ / đã duyệt thì sửa, xoá ra sao: chặn, bỏ duyệt, hay lập chứng từ đảo?",
+      "answer": "Chương trình đã phát hành không xoá: sửa = phiên bản mới; bỏ cửa hàng khỏi \"Áp dụng cho\" = ngừng ở cửa hàng đó (status 0 + ngày ngừng), bản cũ giữ để tra (Q-DM-01). Mã đã phát hành không đổi (chốt 25/11, NT-BH-059)."
+    },
+    {
+      "id": "Q-CHUNG-03",
+      "ask": "Hai người cùng mở và cùng sửa một chứng từ thì người lưu sau thấy gì?",
+      "answer": "Lưu theo chương trình gộp vào nháp đang mở của từng cửa hàng (khoá theo cửa hàng khi ghi) — thay đổi khác trong nháp giữ nguyên; Duyệt ngay chỉ phát hành bản đang chạy + đúng chương trình này (NT-BH-059)."
+    },
+    {
+      "id": "Q-CHUNG-04",
+      "ask": "Ngày chứng từ thuộc kỳ đã khoá, hoặc ngoài năm tài chính, thì màn báo trước hay chỉ báo khi ghi sổ?",
+      "answer": "Không áp dụng: chính sách và sổ điểm không ghi sổ cái (điểm chỉ hạch toán lúc đổi, trên chứng từ bán) (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-05",
+      "ask": "Mạng chập chờn hoặc bấm Lưu hai lần thì có sinh hai chứng từ không?",
+      "answer": "Một kết quả: lệnh ghi có Idempotency-Key, nút khoá khi đang gửi; duyệt lại mục đã duyệt bị chặn theo trạng thái (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-06",
+      "ask": "Ô nào bắt buộc? Bỏ trống hoặc sai kiểu thì báo ở ô nào, trước hay sau khi bấm?",
+      "answer": "Báo tại ô; máy chủ trả mọi lỗi một lần (details.findings → error.fields), màn tô đỏ đúng ô (chốt 25/11)."
+    },
+    {
+      "id": "Q-CHUNG-07",
+      "ask": "Thoát form giữa chừng hoặc bị từ chối thì dữ liệu đã nhập còn không? Có lưu nháp không?",
+      "answer": "Có nút Ghi (nháp); đóng hộp / rời trang khi còn thay đổi chưa lưu thì hỏi lại. Nháp bị từ chối giữ nguyên nội dung để sửa gửi lại."
+    },
+    {
+      "id": "Q-CHUNG-08",
+      "ask": "Mỗi danh sách chọn chỉ nhận giá trị nào (đang dùng, cùng chi nhánh, đã duyệt)? Chưa có thì thêm tại chỗ được không, ai được thêm?",
+      "answer": "Ô chọn mặt hàng / quà chỉ liệt kê mặt hàng đang dùng; không tạo mặt hàng tại chỗ (khai ở Danh mục). Máy chủ kiểm lại mã hàng quà (chốt 25/11)."
+    },
+    {
+      "id": "Q-DM-01",
+      "ask": "Xoá một chương trình đang dùng thì sao?",
+      "answer": "Không xoá chương trình đã phát hành — bỏ tích Đang chạy / đặt Ngừng từ ngày / bỏ cửa hàng khỏi Áp dụng cho; chương trình mới chưa phát hành thì bỏ khỏi nháp (chốt 25/11)."
+    },
+    {
+      "id": "Q-DM-02",
+      "ask": "Mã có được trùng không? Mã sinh thế nào?",
+      "answer": "Mã không trùng trong cửa hàng (LOYALTY_POLICY_CODE_DUP). Thêm mới tự sinh TD_<MMYY>_<NN> (tích) / DD_<MMYY>_<NN> (đổi), sửa được tới khi phát hành (Hoàng 28/11, như TGS_ của khuyến mại)."
+    }
+  ],
+  "rows": [
+    {
+      "id": "BH19CT-01",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Thiếu tên / số điểm / số tiền / mã hàng / phần thưởng (LOYALTY_FIELD_REQUIRED) — trả mọi lỗi một lần, đường dẫn policies.0.*",
+      "target": {
+        "kind": "field",
+        "path": "policies.0.title"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Ô tô đỏ ở thẻ có dấu ⚠ — sửa rồi lưu lại",
+      "test": "apps/api/test/nt-bh-059-tich-diem-de-dung.test.ts#LOYALTY_FIELD_REQUIRED"
+    },
+    {
+      "id": "BH19CT-02",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Chọn cửa hàng nhưng không tích cửa hàng nào, hoặc cửa hàng không có ở danh mục (LOYALTY_BRANCH_UNKNOWN)",
+      "target": {
+        "kind": "selector",
+        "path": "target",
+        "catalog": "branch",
+        "allow": "active"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Chọn ít nhất một cửa hàng, hoặc chọn Tất cả cửa hàng",
+      "test": "apps/api/test/nt-bh-059-tich-diem-de-dung.test.ts#LOYALTY_BRANCH_UNKNOWN"
+    },
+    {
+      "id": "BH19CT-03",
+      "action": "duyet",
+      "code": "FORBIDDEN",
+      "level": "block",
+      "when": "Người chỉ có quyền lập bấm Duyệt (phát hành) — nút đã ẩn, máy chủ vẫn chặn",
+      "target": {
+        "kind": "state"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Cần quyền Duyệt chính sách tích điểm — bấm Gửi duyệt",
+      "test": "apps/api/test/nt-bh-059-tich-diem-de-dung.test.ts#FORBIDDEN",
+      "basis": "Q-CHUNG-01"
+    },
+    {
+      "id": "BH19CT-04",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Mã trùng chương trình khác của cửa hàng (LOYALTY_POLICY_CODE_DUP)",
+      "target": {
+        "kind": "field",
+        "path": "policies.0.code"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Đổi mã khác (mã tự sinh TD_/DD_ không trùng)",
+      "test": "modules/loyalty/test/program-draft.test.ts#DRAFT_CODES.codeDup",
+      "basis": "Q-DM-02"
+    }
+  ]
+}

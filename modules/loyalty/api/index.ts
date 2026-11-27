@@ -26,9 +26,12 @@ import draftUpdate from './actions/draft-update.js';
 // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thẻ Thành viên (đóng góp)
 import memberHistory from './actions/member-history.js';
 import memberList from './actions/member-list.js';
+// [2026-11-28 02:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-059: khai theo chương trình cho Tất cả / chọn cửa hàng (đóng góp)
+import policyOverview from './actions/policy-overview.js';
+import policySave from './actions/policy-save.js';
 import expireDaily from './subscribers/expire-daily.js';
 import orderEarn from './subscribers/order-recorded.js';
 import returnReverse from './subscribers/return-recorded.js';
 
 export default defineModule({ manifest, actions: [programPut, programGet, customerGet, redeemQuote, voucherGet, openingImport, reportGet, orderPoints,
-  draftList, draftGet, draftCreate, draftUpdate, draftApprove, draftReject, adjustmentList, adjustmentGet, adjustmentCreate, adjustmentApprove, adjustmentReject, memberList, memberHistory], subscribers: [orderEarn, returnReverse, expireDaily] });
+  draftList, draftGet, draftCreate, draftUpdate, draftApprove, draftReject, adjustmentList, adjustmentGet, adjustmentCreate, adjustmentApprove, adjustmentReject, memberList, memberHistory, policyOverview, policySave], subscribers: [orderEarn, returnReverse, expireDaily] });

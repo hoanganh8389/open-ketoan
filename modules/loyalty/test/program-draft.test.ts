@@ -41,9 +41,15 @@ describe('nháp chính sách tích điểm (NT-BH-039)', () => {
     expect(mergePolicies(null, apply)).toBe(apply);
   });
 
-  it('ca 4: bật nhân theo hạng, hạng Bạc ×1,2, đơn 325.000 → 38,4 (bộ tính làm tròn 2 số lẻ, không đổi)', () => {
+  // [2026-11-28 04:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-059: điểm làm tròn xuống (38,4 → 38) (đóng góp)
+  it('ca 4: bật nhân theo hạng, hạng Bạc ×1,2, đơn 325.000 → 38 (38,4 làm tròn xuống — NT-BH-059)', () => {
     const r = calculateEarnPoints(base, { storeId: 0, now: 1_800_000_000, orderTotal: 325_000, tierKey: 'silver', items: [] });
-    expect(r.totalPoints).toBe(38.4);
+    expect(r.totalPoints).toBe(38);
+  });
+
+  it('ca 4b: hạng Vàng ×1,5 cho 7,5 điểm → 7 (không cộng điểm lẻ)', () => {
+    const r = calculateEarnPoints(base, { storeId: 0, now: 1_800_000_000, orderTotal: 50_000, tierKey: 'gold', items: [] });
+    expect(Number.isInteger(r.totalPoints)).toBe(true);
   });
 
   it('ca 5: quà hạng tối thiểu Bạc, khách Thành viên đổi → "chưa đủ hạng"', () => {
