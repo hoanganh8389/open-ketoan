@@ -7,6 +7,7 @@ Cộng số liệu bán hàng theo một góc nhìn. Chọn góc nhìn ở hàng
 | Theo ngày | Xem doanh số từng ngày, đối chiếu với báo cáo cuối ngày của cửa hàng |
 | Theo tháng | So sánh các tháng |
 | Theo chi nhánh | So sánh doanh thu giữa các cửa hàng |
+| Theo kho | Doanh số theo kho xuất / nhận của dòng (dòng không ghi kho tính vào kho mặc định của chi nhánh); cột Chi nhánh cho biết kho thuộc cửa hàng nào |
 | Theo mặt hàng | Mặt hàng nào bán nhiều, trả lại nhiều |
 | Theo khách hàng | Doanh số từng khách |
 | Theo loại thuế | Doanh thu tách theo thuế suất |

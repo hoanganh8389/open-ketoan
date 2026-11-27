@@ -19,13 +19,15 @@ import { PrintButton } from '@/components/print';
 import { summaryTemplates } from './mauIn/baoCaoBanHang';
 import { MaThut, gopNhom, usePartnerFamilies, type GopRow } from '../../../features/catalog/nhomChaCon';
 
-type GroupBy = 'document' | 'day' | 'month' | 'branch' | 'product' | 'customer' | 'taxCode' | 'industry' | 'brand' | 'itemGroup' | 'itemGroup1' | 'itemGroup2' | 'itemGroup3' | 'itemType' | 'customerGroup' | 'department' | 'employee';
+type GroupBy = 'document' | 'day' | 'month' | 'branch' | 'warehouse' | 'product' | 'customer' | 'taxCode' | 'industry' | 'brand' | 'itemGroup' | 'itemGroup1' | 'itemGroup2' | 'itemGroup3' | 'itemType' | 'customerGroup' | 'department' | 'employee';
 /** Mỗi cách nhóm: nhãn thẻ, tiêu đề cột mã / tên / thông tin thêm (để trống = không hiện cột). */
 const GROUPS: { key: GroupBy; tab: string; keyHead: string; labelHead?: string; extraHead?: string }[] = [
   { key: 'document', tab: 'Theo phiếu', keyHead: 'Số phiếu' },
   { key: 'day', tab: 'Theo ngày', keyHead: 'Ngày' },
   { key: 'month', tab: 'Theo tháng', keyHead: 'Tháng' },
   { key: 'branch', tab: 'Theo chi nhánh', keyHead: 'Mã chi nhánh', labelHead: 'Tên chi nhánh' },
+  // [2026-11-26 09:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-047: xem theo kho (dòng không ghi kho = kho mặc định của chi nhánh) (đóng góp)
+  { key: 'warehouse', tab: 'Theo kho', keyHead: 'Mã kho', labelHead: 'Tên kho', extraHead: 'Chi nhánh' },
   { key: 'product', tab: 'Theo mặt hàng', keyHead: 'Mã hàng', labelHead: 'Tên hàng', extraHead: 'ĐVT' },
   { key: 'customer', tab: 'Theo khách hàng', keyHead: 'Mã khách', labelHead: 'Tên khách hàng', extraHead: 'Mã số thuế' },
   { key: 'taxCode', tab: 'Theo loại thuế', keyHead: 'Loại thuế' },

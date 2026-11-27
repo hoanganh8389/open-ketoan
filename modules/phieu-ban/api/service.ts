@@ -9,11 +9,11 @@
 import { randomUUID } from 'node:crypto';
 import { Errors, type ActionContext } from '@bizcity/module-sdk';
 import { findChannel, type ChannelItem } from './domain/doc.js';
-import { computeDoc, docKeyOf, overReturn, returnableBySku, stockShortByWarehouse, stockShortOf, toLedgerDoc, withGiftWarehouse, type Body, type DocInput, type Kind } from './domain/doc.js';
+import { computeDoc, docKeyOf, lockReturnLines, returnableByLine, returnableBySku, stockShortByWarehouse, stockShortOf, toLedgerDoc, withGiftWarehouse, type Body, type DocInput, type Kind } from './domain/doc.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: voucher TGS / hãng (đóng góp)
 import { applyVouchers, stripVouchers, type QuotedVoucher, type VoucherBody } from './domain/voucher.js';
 import {
-  activeMethods, approvedReturnsOf, lockVoucher, voucherHeldByOther, lockedStock, serviceSkus, branchExists, catalogFor, getDoc, noTaken, partnerByCode, saleByNo, saveDoc, setStatus, takeNo, taxRates, toTradeDoc,
+  activeMethods, approvedReturnsOf, approvedSales, lockVoucher, voucherHeldByOther, lockedStock, serviceSkus, branchExists, catalogFor, getDoc, noTaken, partnerByCode, saleByNo, saveDoc, setStatus, takeNo, taxRates, toTradeDoc,
   type DocRow, type Tx,
 } from './store.js';
 
@@ -99,18 +99,31 @@ export async function withChannel(ctx: ActionContext, input: DocInput, id?: stri
   return { ...rest, saleChannel: c.code, saleChannelName: c.name } as DocInput;
 }
 
-/** Kiểm + tính một phiếu (nháp hoặc lúc duyệt). Phiếu trả: nối phiếu bán gốc của module theo số (cùng cửa hàng) nếu có. */
-async function prepare(tx: Tx, kind: Kind, input: DocInput) {
-  if (!(await branchExists(tx, input.branchCode))) fail([`Chi nhánh ${input.branchCode} không có / ngừng dùng`]);
+// [2026-11-26 07:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: phiếu trả BẮT BUỘC nối phiếu bán gốc đã duyệt của module (cùng cửa hàng); dòng trả khoá
+// theo dòng gốc (giá, thuế, chiết khấu theo tỉ lệ), kiểm còn trả TỪNG DÒNG ở cả lúc Ghi và lúc Duyệt (trước: chỉ lúc duyệt, cộng theo mã) (đóng góp)
+/** Kiểm + tính một phiếu (nháp hoặc lúc duyệt). Phiếu trả: phải nối phiếu bán gốc của module theo số (cùng cửa hàng), dòng trả theo dòng gốc. */
+async function prepare(tx: Tx, kind: Kind, input0: DocInput, selfId?: string) {
+  if (!(await branchExists(tx, input0.branchCode))) fail([`Chi nhánh ${input0.branchCode} không có / ngừng dùng`]);
+  let input = input0;
+  let original: DocRow | null = null;
+  const returnProblems: string[] = [];
+  if (kind === 'sale_return') {
+    const no = input.originalDocNo?.trim();
+    original = no ? await saleByNo(tx, input.branchCode, no) : null;
+    if (!no) returnProblems.push('Phiếu trả phải chọn phiếu bán gốc (ô Phiếu gốc) — trả theo dòng của phiếu đã bán');
+    else if (!original) returnProblems.push(`Không có phiếu bán ${no} ở cửa hàng ${input.branchCode}`);
+    else if (original.status !== 'approved') returnProblems.push(`Phiếu bán gốc ${original.doc_no} chưa duyệt`);
+    else {
+      const done = (await approvedReturnsOf(tx, original.doc_id, selfId)).flatMap((x) => x.body.lines);
+      const locked = lockReturnLines(input.lines, original.body.lines, returnableByLine(original.body.lines, done), original.doc_no);
+      returnProblems.push(...locked.problems);
+      input = { ...input, lines: locked.lines as DocInput['lines'] };
+    }
+  }
   const catalog = await catalogFor(tx, input.lines.map((l) => l.sku));
   const partner = input.partner?.code ? await partnerByCode(tx, input.partner.code) : null;
   const { body, problems } = computeDoc(input, { catalog, taxRates: await taxRates(tx), methods: await activeMethods(tx), partner });
-  let original: DocRow | null = null;
-  if (kind === 'sale_return' && input.originalDocNo) {
-    original = await saleByNo(tx, input.branchCode, input.originalDocNo);
-    // Số gốc không phải phiếu của module (đơn máy bán, phiếu WP…): giữ làm tham khảo, không kiểm số còn trả.
-  }
-  return { body, problems, catalog, original };
+  return { body, problems: [...returnProblems, ...problems], catalog, original };
 }
 
 /** Lưu nháp: thêm (id trống) hoặc sửa phiếu nháp. Số trống → cấp theo cửa hàng; số gõ tay → không trùng trong cửa hàng + loại. */
@@ -135,7 +148,7 @@ export async function saveDraftIn(tx: Tx, ctx: ActionContext, kind: Kind, input:
   if (cur && cur.kind !== kind) throw Errors.validation('Sai loại phiếu');
   if (cur && cur.status !== 'draft') throw Errors.conflict('Phiếu đã duyệt — bỏ duyệt rồi mới sửa');
   const order = opts.order ?? cur?.body.order;
-  const prepared = await prepare(tx, kind, { ...input, order });
+  const prepared = await prepare(tx, kind, { ...input, order }, cur?.doc_id);
   if (prepared.problems.length) fail(prepared.problems);
   const body = withGiftWarehouse(prepared.body, opts.giftWarehouse ?? null);
   if (cur && order && opts.onLinkedEdit) {
@@ -234,17 +247,15 @@ export async function approve(ctx: ActionContext, id: string) {
   const prepared = await ctx.data.module(async (tx) => {
     const r = await getDoc(tx, id, true);
     if (r.status === 'approved') throw Errors.conflict('Phiếu đã duyệt');
-    const p0 = await prepare(tx, r.kind, asInput(r));
+    const p0 = await prepare(tx, r.kind, asInput(r), r.doc_id);
     if (p0.problems.length) fail(p0.problems);
     const p = { ...p0, body: withGiftWarehouse(p0.body, r.branch_code === head.branch_code ? giftWh : null) };
     // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-030 Q4: phiếu trả này trả hết hàng bán (không kể quà) của phiếu gốc → báo module pos trả lượt khuyến mại (đóng góp)
     let originalFullyReturned = false;
     if (r.kind === 'sale_return' && p.original) {
-      if (p.original.status !== 'approved') fail([`Phiếu bán gốc ${p.original.doc_no} chưa duyệt`]);
+      // NT-BH-046: còn trả từng dòng đã kiểm trong prepare (phiếu trả khoá FOR UPDATE; hai phiếu trả nháp cùng dòng → duyệt sau bị chặn).
       const done = (await approvedReturnsOf(tx, p.original.doc_id, r.doc_id)).flatMap((x) => x.body.lines);
       const sold = p.original.body.lines.filter((l) => !l.isGift);
-      const over = overReturn(p.body.lines, returnableBySku(sold, done));
-      if (over.length) fail(over.map((x) => `Trả vượt số đã bán của phiếu ${p.original!.doc_no} — ${x}`));
       originalFullyReturned = [...returnableBySku(sold, [...done, ...p.body.lines].filter((l) => !l.isGift)).values()].every((q) => q <= 1e-9);
     }
     if (r.kind === 'sale' && blockStock) {
@@ -336,7 +347,43 @@ export async function returnable(ctx: ActionContext, id: string) {
   return ctx.data.module(async (tx) => {
     const r = await getDoc(tx, id);
     if (r.kind !== 'sale') throw Errors.validation('Chỉ phiếu bán mới có số còn trả được');
-    const left = returnableBySku(r.body.lines.filter((l) => !l.isGift), (await approvedReturnsOf(tx, r.doc_id)).flatMap((x) => x.body.lines));
-    return { docNo: r.doc_no, status: r.status, lines: r.body.lines.filter((l) => !l.isGift).map((l) => ({ lineKey: l.lineKey, sku: l.sku, name: l.name, unit: l.unit, qty: l.qty, returnable: Math.max(0, left.get(l.sku) ?? 0) })) };
+    // NT-BH-046: còn trả theo TỪNG DÒNG (cả dòng quà — khách trả quà về kho quà, NT-BH-035), kèm giá / thuế / chiết khấu của dòng gốc.
+    return returnableOf(r, (await approvedReturnsOf(tx, r.doc_id)).flatMap((x) => x.body.lines));
+  });
+}
+
+// [2026-11-26 07:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: còn trả theo dòng + danh sách phiếu gốc để chọn ở BH11 (đóng góp)
+/** Còn trả từng dòng của một phiếu bán (đã trừ các phiếu trả đã duyệt). */
+function returnableOf(r: DocRow, returned: Body['lines']) {
+  const left = returnableByLine(r.body.lines, returned);
+  return {
+    id: r.doc_id, docNo: r.doc_no, docDate: r.doc_date, status: r.status, branchCode: r.branch_code, warehouseCode: r.warehouse_code ?? undefined,
+    partner: r.body.partner, totals: r.body.totals,
+    lines: r.body.lines.map((l) => ({
+      lineKey: l.lineKey, sku: l.sku, name: l.name, unit: l.unit, qty: l.qty, unitPrice: l.unitPrice, discount: l.discount, taxCode: l.taxCode,
+      isGift: l.isGift, ...(l.warehouseCode ? { warehouseCode: l.warehouseCode } : {}),
+      returned: Math.max(0, Math.round((l.qty - (left.get(l.lineKey)?.qty ?? 0)) * 10_000) / 10_000),
+      returnable: Math.max(0, left.get(l.lineKey)?.qty ?? 0),
+    })),
+  };
+}
+
+/**
+ * Phiếu bán ĐÃ DUYỆT để chọn làm phiếu gốc ở BH11: của một cửa hàng, theo khách (mã) hoặc tìm theo số phiếu (khách lẻ), mới trước;
+ * mỗi phiếu kèm còn trả từng dòng. `open` = chỉ phiếu còn dòng trả được.
+ */
+export async function returnSources(ctx: ActionContext, f: { branch: string; partnerCode?: string; search?: string; from?: string; to?: string; open?: boolean; limit?: number }) {
+  return ctx.data.module(async (tx) => {
+    const rows = await approvedSales(tx, {
+      branch: f.branch, limit: f.limit ?? 50, ...(f.partnerCode ? { partnerCode: f.partnerCode } : {}), ...(f.search ? { search: f.search } : {}),
+      ...(f.from ? { from: f.from } : {}), ...(f.to ? { to: f.to } : {}),
+    });
+    const out = [];
+    for (const r of rows) {
+      const x = returnableOf(r, (await approvedReturnsOf(tx, r.doc_id)).flatMap((y) => y.body.lines));
+      if (f.open && !x.lines.some((l) => l.returnable > 0)) continue;
+      out.push(x);
+    }
+    return { items: out };
   });
 }

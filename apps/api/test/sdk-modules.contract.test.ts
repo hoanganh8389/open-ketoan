@@ -102,6 +102,8 @@ describe.skipIf(!targets.length)('Hợp đồng module SDK', () => {
         for (const a of defs.get(key)!.actions) {
           const h = a.expose.http;
           if (!h || h.method !== 'GET' || h.path.includes(':')) continue;
+          // [2026-11-26 09:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-048: <key>.secrets.read (platform.secrets §6.2) chỉ cho khoá app — phiên người dùng, kể cả chủ đơn vị, luôn 403; test riêng ở secrets.test.ts (đóng góp)
+          if (a.id === `${key}.secrets.read`) continue;
           const r = await app.inject({ method: 'GET', url: `/api/v1/m/${key}${h.path}`, headers: { authorization: `Bearer ${ctx.token}` } });
           expect(r.statusCode, `${a.id}: ${r.body}`).toBe(200);
         }

@@ -123,7 +123,8 @@ describe.skipIf(!HAS)('NT-BH-015 — phiếu bán / trả nhập tay vào sổ t
   });
 
   it('§5 dòng 7, §6 dòng 6: trả nối phiếu gốc (originalDocKey), không trả quá số còn trả; bỏ duyệt phiếu bán còn phiếu trả → chặn', async () => {
-    const ret = (qty: number) => ({ docType: 'sale_return', docDate: TODAY, branchCode: 'CN01', partner: { code: 'KH001' }, originalDocNo: saleNo, lines: [{ lineKey: 'R1', sku: 'SUA330', qty, unitPrice: 300_000 }] });
+    // [2026-11-26 08:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: dòng trả nối dòng L1 của phiếu gốc; trả quá còn trả bị chặn ngay lúc Ghi (trước: lúc duyệt) (đóng góp)
+    const ret = (qty: number) => ({ docType: 'sale_return', docDate: TODAY, branchCode: 'CN01', partner: { code: 'KH001' }, originalDocNo: saleNo, lines: [{ lineKey: 'R1', sku: 'SUA330', qty, originalLineKey: 'L1' }] });
     const r1 = await req('POST', '/docs', ret(1));
     expect(r1.statusCode, r1.body).toBe(200);
     expect(r1.json().data.docNo).toBe(`TL${PERIOD}000001`);
@@ -133,9 +134,8 @@ describe.skipIf(!HAS)('NT-BH-015 — phiếu bán / trả nhập tay vào sổ t
     expect(payload.originalDocKey).toBe(`phieu-ban:${saleId}`);
     expect((await req('GET', `/docs/${saleId}/returnable`)).json().data.lines[0]).toMatchObject({ sku: 'SUA330', qty: 3, returnable: 2 });
     const r2 = await req('POST', '/docs', ret(3));
-    const a2 = await req('POST', `/docs/${r2.json().data.id}/approve`);
-    expect(a2.statusCode).toBe(400);
-    expect(a2.json().error.message).toContain('còn trả được 2');
+    expect(r2.statusCode).toBe(400);
+    expect(r2.json().error.message).toContain('còn trả được 2');
     const u = await req('POST', `/docs/${saleId}/unapprove`, {});
     expect(u.statusCode).toBe(400);
     expect(u.json().error.message).toContain('bỏ duyệt phiếu trả trước');

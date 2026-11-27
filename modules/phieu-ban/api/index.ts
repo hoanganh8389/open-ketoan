@@ -8,6 +8,8 @@ import docDelete from './actions/doc-delete.js';
 import docGet from './actions/doc-get.js';
 import docList from './actions/doc-list.js';
 import docReturnable from './actions/doc-returnable.js';
+// [2026-11-26 07:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: phiếu gốc cho BH11 (đóng góp)
+import docReturnSources from './actions/doc-return-sources.js';
 import docUnapprove from './actions/doc-unapprove.js';
 import docUpdate from './actions/doc-update.js';
 import quoteGet from './actions/quote-get.js';
@@ -40,6 +42,6 @@ import orderTransferSources from './actions/order-transfer-sources.js';
 import orderTransferCreate from './actions/order-transfer-create.js';
 import orderHold from './actions/order-hold.js';
 
-export default defineModule({ manifest, actions: [docList, docGet, docCreate, docUpdate, docDelete, docApprove, docUnapprove, docReturnable, quoteGet,
+export default defineModule({ manifest, actions: [docList, docGet, docCreate, docUpdate, docDelete, docApprove, docUnapprove, docReturnable, docReturnSources, quoteGet,
   orderList, orderGet, orderHistory, orderSettings, orderCreate, orderUpdate, orderImport, orderSend, orderApprove, orderReject, orderDeliver, orderClose, orderCancel, channelSummary, customerDocs,
   shipmentCreate, shipmentStatus, orderCopy, voucherCheck, orderTransferSources, orderTransferCreate, orderHold], subscribers: [] });

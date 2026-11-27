@@ -143,7 +143,8 @@ export const GON_DEFS: GonDef[] = [
     the: ['/thue/to-khai-gtgt', '/thue/quyet-toan-tndn', '/thue/hoa-don-rui-ro'],
     sections: [
       { label: 'Khai thuế', paths: ['/thue/to-khai-gtgt', '/thue/quyet-toan-tndn', '/thue/bo-sung-thong-tin', '/thue/nguoi-nop-thue'], soon: ['Giấy nộp tiền vào ngân sách'] },
-      { label: 'Hoá đơn', paths: ['/thue/hoa-don-co-quan-thue', '/thue/hoa-don-rui-ro'] },
+      // [2026-11-26 09:50 PM Võ Hoàng] NGHIEM-THU — NT-BH-048: THUE03 Hoá đơn điện tử (module hoa-don-dien-tu) vào nhóm Hoá đơn (đóng góp)
+      { label: 'Hoá đơn', paths: ['/thue/hoa-don-co-quan-thue', '/thue/hoa-don-rui-ro', '/app/hoa-don-dien-tu'] },
     ],
     reports: [{ label: 'Thuế', paths: ['/thue/bang-ke-ban-ra', '/thue/bang-ke-mua-vao', '/thue/tong-hop'] }],
   },
