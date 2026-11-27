@@ -164,7 +164,7 @@ export function NhapHoaDon({ mode, partnerCode = '', lockPartner, onClose, onDon
           <div style={{ fontWeight: 600 }}>Hoá đơn {invoiceLabel(x)} · {dmy(x.date)} · tiền hàng {vnd(x.totalBeforeTax)} · thuế {vnd(x.totalTax)} · tổng {vnd(x.total)}{x.duplicateOf && <span className="badge badge-gray" style={{ marginLeft: 6 }}>Đã có — bỏ qua</span>}</div>
           {!x.date && !x.duplicateOf && <div style={{ fontSize: 12, margin: '4px 0' }}>Ngày hoá đơn (tệp không có): <input className="input" type="date" style={{ height: 26, width: 150 }} onChange={(e) => setList(list.map((y, i) => (i === k ? { ...y, date: e.target.value, warnings: y.warnings.filter((w) => w !== 'Thiếu ngày hoá đơn') } : y)))} /></div>}
           {!!x.warnings.length && <div className="mh-warn" style={{ fontSize: 12 }}>{x.warnings.join(' · ')}</div>}
-          <BangDongHoaDon lines={x.lines} partnerCode={partner} readOnly={Boolean(x.duplicateOf)} onChange={(lines) => setList(list.map((y, i) => (i === k ? { ...y, lines } : y)))} />
+          <BangDongHoaDon lines={x.lines} partnerCode={partner} docDate={x.date} readOnly={Boolean(x.duplicateOf)} onChange={(lines) => setList(list.map((y, i) => (i === k ? { ...y, lines } : y)))} />
         </div>
       ))}
       </div>

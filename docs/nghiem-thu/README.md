@@ -91,6 +91,8 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-KHO-004](kho/NT-KHO-004-hang-giu-ho-chi-so-luong.md) | Hàng nhận giữ hộ (KNB) chỉ ghi số lượng: bỏ giá trị dòng kho giữ hộ, chặn chuyển giữ hộ ↔ của mình, giá vốn tính riêng | Đã chốt |
 | [NT-KHO-005](kho/NT-KHO-005-acc83-tach-chuyen-kho.md) | ACC83 Tổng hợp tồn kho: tách chuyển kho khỏi nhập / xuất, tổng cộng bỏ trùng chuyển kho nội bộ | Chờ nghiệm thu |
 | [NT-KHO-006](kho/NT-KHO-006-tong-so-luong-ben-phai.md) | KHO01 Phiếu chuyển kho: ô "Tổng số lượng" ở góc phải như các phiếu khác | Chờ nghiệm thu |
+| [NT-KHO-007](kho/NT-KHO-007-kiem-ke-khong-du-chat-luong.md) | Biên bản kiểm kê: gộp Kém PC + Mất PC thành "Không đủ chất lượng" | Chờ nghiệm thu |
+| [NT-KHO-008](kho/NT-KHO-008-kiem-ke-them-dong-tay.md) | Biên bản kiểm kê: nút "+ Thêm dòng" cho hàng / lô / HSD không có trong sổ | Chờ nghiệm thu |
 | [NT-QUY-001](quy/NT-QUY-001-dinh-kem-chung-tu-goc.md) | Đính kèm chứng từ gốc trên phiếu tiền, phiếu chuyển tiền, phiếu kho | Đã chốt |
 | [NT-DM-001](danh-muc/NT-DM-001-bo-ten-tieng-anh-tai-khoan.md) | Bỏ tên tiếng Anh của tài khoản (ACC1, API, Excel, dữ liệu mẫu, CSDL — chép giá trị cũ sang bảng lưu) | Nháp |
 | [NT-DM-002](danh-muc/NT-DM-002-sua-loi-danh-muc.md) | Sửa lỗi danh mục mức cao, trung bình: thêm trùng mã ghi đè, xoá cha còn con / mục đang dùng, vòng nhóm cha, gợi ý NCC ngừng | Chờ nghiệm thu |
@@ -110,5 +112,6 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-DM-016](danh-muc/NT-DM-016-khach-hang-dien-thoai-nhap-excel.md) | DM12: "Di động" → "Điện thoại"; nhập Excel khách hàng đủ cột của form, cột liên kết tra theo tên | Đã chốt |
 | [NT-DM-017](danh-muc/NT-DM-017-mau-nhap-gia-co-san-hang.md) | DM14: tệp mẫu nhập giá có sẵn mọi mặt hàng / ĐVT của bảng giá (giá đang có điền sẵn) | Đã chốt |
 | [NT-DM-018](danh-muc/NT-DM-018-bien-the-chi-ma-cuoi.md) | DM10: mã biến thể chỉ thêm ở cuối mã cha (bỏ ô chữ đầu; mã mới có chữ đầu bị chặn) | Đã chốt |
+| [NT-DM-019](danh-muc/NT-DM-019-ma-nhom-khi-nhap-excel.md) | Nhập mặt hàng từ Excel: bước kiểm tra hiện mã ngành / nhãn / nhóm như DM11 (không hiện mã nội bộ) | Chờ nghiệm thu |
 
 Bộ 25 tình huống mua hàng cũ: `docs/kiem-thu/ke-hoach-test-mua-hang.xlsx` và test `apps/api/test/mua-hang-25-tinh-huong.test.ts`.

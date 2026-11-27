@@ -10,10 +10,10 @@
  */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { errorText } from '@/lib/api';
+import { api, errorText } from '@/lib/api';
 import { today } from '@/lib/format';
 import { BranchPicker } from '@/components/filters';
-import { PartnerPicker } from '@/components/pickers';
+import { ItemPicker, PartnerPicker } from '@/components/pickers';
 import { Modal, NumInput } from '@/components/ui';
 import { FormTabs } from '@/components/FormBlocks';
 import { HelpDrawer } from '@/components/HelpDrawer';
@@ -37,12 +37,37 @@ export function BienBanKiemKe({ value, onClose, onChanged }: { value: KkDoc; onC
   const draft = v.status === 'draft';
   const set = (p: Partial<KkDoc>) => setV((o) => ({ ...o, ...p }));
   const setLine = (i: number, p: Partial<KkLine>) => setV((o) => ({ ...o, lines: o.lines.map((l, j) => (j === i ? { ...l, ...p } : l)) }));
+  // [2026-11-27 kiennt] NT-KHO-008 — "+ Thêm dòng" thêm một dòng trống cuối bảng, sửa ngay trên dòng: Mã hàng / Tên hàng là ô tìm
+  // (chọn ở ô nào cũng điền mã + tên + ĐVT), Số lô, HSD gõ tay. Dòng thêm tay = lô mới, sổ 0 (đóng góp)
+  const tayOf = (l: KkLine) => Boolean(draft && l.newLot && !l.bookQty);
+  const themDong = () => set({ lines: [...v.lines, { lineKey: `T${Date.now().toString(36)}`, sku: '', name: '', unit: '', lotNo: '', bookQty: 0, newLot: true, countedQty: 0, poorQty: 0, lostQty: 0, note: 'Thêm tay khi kiểm kê' }] });
+  const chonMa = async (i: number, sku: string) => {
+    if (!sku) { setLine(i, { sku: '', name: '', unit: '' }); return; }
+    setLine(i, { sku });
+    let info: { sku: string; name: string; unit?: string } | undefined;
+    try { info = (await api.get<{ sku: string; name: string; unit?: string }[]>('/api/v1/inventory/items', { search: sku, limit: 5 })).find((x) => x.sku === sku); } catch { /* giữ mã */ }
+    setLine(i, { sku, name: info?.name ?? sku, unit: info?.unit ?? '' });
+  };
+  /** Dòng thêm tay chưa chọn mã / trùng mã + lô với dòng khác → không cho ghi. */
+  const loiDong = (() => {
+    const out: string[] = [];
+    const seen = new Map<string, number>();
+    v.lines.forEach((l, i) => {
+      if (!l.sku) { out.push(`Dòng ${i + 1} chưa chọn mã hàng (xoá dòng nếu không dùng)`); return; }
+      const k = `${l.sku}|${l.lotNo ?? ''}`;
+      if (seen.has(k)) out.push(`Dòng ${i + 1} trùng mã ${l.sku}${l.lotNo ? ` lô ${l.lotNo}` : ' không lô'} với dòng ${seen.get(k)! + 1}`); else seen.set(k, i);
+    });
+    return out;
+  })();
   const input = (): KkInput => ({ docNo: v.docNo, countDate: v.countDate, branchCode: v.branchCode, warehouseCode: v.warehouseCode, quarantineWarehouse: v.quarantineWarehouse, purpose: v.purpose, conclusion: v.conclusion, members: v.members.filter((m) => m.name.trim()), lines: v.lines });
   const run = async (fn: () => Promise<KkDoc & { message?: string }>, ok?: string) => {
     setBusy(true); setErr(''); setMsg('');
     try { const d = await fn(); setV(d); onChanged(d); setMsg(d.message ?? ok ?? ''); return d; } catch (e) { setErr(errorText(e)); return null; } finally { setBusy(false); }
   };
-  const save = () => run(() => (v.id ? kkApi.update(v.id, input()) : kkApi.create(input())), 'Đã ghi biên bản (nháp, chưa đụng sổ).');
+  const save = () => {
+    if (loiDong.length) { setErr(loiDong.join(' · ')); setMsg(''); return Promise.resolve(null); }
+    return run(() => (v.id ? kkApi.update(v.id, input()) : kkApi.create(input())), 'Đã ghi biên bản (nháp, chưa đụng sổ).');
+  };
 
   /** Lấy số tồn: số theo sổ đến hết ngày kiểm kê; giữ số đã nhập của dòng cùng mã + lô. */
   const layTon = async () => {
@@ -58,7 +83,9 @@ export function BienBanKiemKe({ value, onClose, onChanged }: { value: KkDoc; onC
     } catch (e) { setErr(errorText(e)); } finally { setBusy(false); }
   };
 
-  /** Dán từ Excel: Mã hàng | Số lô | Số kiểm kê | Kém PC | Mất PC | HSD thực tế. Lô lạ của mã đã có → dòng lô mới; mã lạ → báo lỗi. */
+  // [2026-11-27 kiennt] NT-KHO-007 — gộp Kém PC + Mất PC thành một cột "Không đủ chất lượng" (hai cột vốn xử lý như nhau: cộng lại,
+  // chuyển kho cách ly). Dữ liệu vẫn hai trường: nhập mới ghi vào poorQty, lostQty = 0; biên bản cũ hiện tổng (đóng góp)
+  /** Dán từ Excel: Mã hàng | Số lô | Số kiểm kê | Không đủ chất lượng | HSD thực tế (mẫu cũ 6 cột Kém PC | Mất PC vẫn nhận, cộng lại). Lô lạ của mã đã có → dòng lô mới; mã lạ → báo lỗi. */
   const onPaste = (text: string) => {
     const lines = [...v.lines];
     const bad: string[] = [];
@@ -67,9 +94,12 @@ export function BienBanKiemKe({ value, onClose, onChanged }: { value: KkDoc; onC
       const c = raw.split('\t').map((x) => x.trim());
       if (!c[0] || /^mã/i.test(c[0])) continue;
       const num = (s?: string) => (s ? Number(s.replace(/\./g, '').replace(',', '.')) : 0);
-      const [sku, lot = '', counted, poor, lost, hsd] = c;
+      const cu = c.length >= 6; // mẫu cũ: Kém PC, Mất PC tách hai cột
+      const [sku, lot = '', counted] = c;
+      const kem = cu ? num(c[3]) + num(c[4]) : num(c[3]);
+      const hsd = cu ? c[5] : c[4];
       const i = lines.findIndex((l) => l.sku === sku && l.lotNo === lot);
-      const p = { countedQty: num(counted), poorQty: num(poor), lostQty: num(lost), ...(hsd ? { actualExpDate: hsd.includes('/') ? hsd.split('/').reverse().join('-') : hsd } : {}) };
+      const p = { countedQty: num(counted), poorQty: kem, lostQty: 0, ...(hsd ? { actualExpDate: hsd.includes('/') ? hsd.split('/').reverse().join('-') : hsd } : {}) };
       if (i >= 0) { lines[i] = { ...lines[i]!, ...p }; n++; continue; }
       const same = lines.find((l) => l.sku === sku);
       if (!same) { bad.push(sku); continue; }
@@ -126,34 +156,45 @@ export function BienBanKiemKe({ value, onClose, onChanged }: { value: KkDoc; onC
         <div className="full row kk-bar">
           <b>Vật tư, hàng hoá</b>
           {draft && <button type="button" className="btn btn-sm" disabled={busy || !v.branchCode} onClick={() => void layTon()} title="Điền mọi mặt hàng × lô có tồn hoặc có phát sinh trong tháng ở kho kiểm, đến hết ngày kiểm kê">Lấy số tồn</button>}
-          {draft && <button type="button" className="btn btn-sm" disabled={!v.lines.length} onClick={() => setPaste('')} title="Dán từ Excel: Mã hàng, Số lô, Số kiểm kê, Kém PC, Mất PC, HSD thực tế">Nhập kết quả từ Excel</button>}
+          {/* [2026-11-27 kiennt] NT-KHO-008 — thêm tay một dòng: mã hàng / số lô / HSD chưa có hoặc đã hết trong sổ nhưng thực tế còn ở cửa hàng (đóng góp) */}
+          {draft && <button type="button" className="btn btn-sm" disabled={!v.branchCode} onClick={themDong} title="Thêm một dòng trống cuối bảng: hàng có thực tế nhưng sổ không có (mã chưa lấy số tồn, số lô / HSD đã hết hoặc chưa có trong hệ thống) — số theo sổ = 0, ghi nhận chênh lệch thì nhập thừa đúng lô / HSD">+ Thêm dòng</button>}
+          {draft && <button type="button" className="btn btn-sm" disabled={!v.lines.length} onClick={() => setPaste('')} title="Dán từ Excel: Mã hàng, Số lô, Số kiểm kê, Không đủ chất lượng, HSD thực tế">Nhập kết quả từ Excel</button>}
           <span className="muted" style={{ marginLeft: 'auto', fontSize: 12 }}>Số lượng theo đơn vị tính tồn kho. Chênh lệch = kiểm kê − sổ.</span>
         </div>
         <div className="full kk-lines">
           <table className="grid-table">
             <thead><tr>
               <th>#</th><th>Mã hàng</th><th>Tên hàng</th><th>ĐVT</th><th>Số lô</th><th title="HSD ghi trên sổ (lô)">HSD sổ</th><th title="HSD thực tế trên hàng; khác sổ thì đánh dấu (chưa đổi HSD của lô trong sổ)">HSD thực tế</th>
-              <th className="num" title="Tồn theo sổ đến hết ngày kiểm kê">Theo sổ</th><th className="num" title="Số đếm thực tế (gồm cả hàng kém / mất phẩm chất)">Theo kiểm kê</th><th className="num" title="Kiểm kê − sổ: âm = thiếu, dương = thừa">Chênh lệch</th>
-              <th className="num" title="Còn hàng nhưng kém phẩm chất — chuyển kho cách ly">Kém PC</th><th className="num" title="Mất phẩm chất — chuyển kho cách ly chờ xử lý">Mất PC</th><th>Ghi chú</th>
+              <th className="num" title="Tồn theo sổ đến hết ngày kiểm kê">Theo sổ</th><th className="num" title="Số đếm thực tế (gồm cả hàng không đủ chất lượng)">Theo kiểm kê</th><th className="num" title="Kiểm kê − sổ: âm = thiếu, dương = thừa">Chênh lệch</th>
+              <th className="num" title="Hàng kém hoặc mất phẩm chất (hỏng, móp, hết hạn…) — chuyển kho cách ly chờ xử lý, không ghi giảm 156">Không đủ chất lượng</th><th>Ghi chú</th>
             </tr></thead>
             <tbody>
               {v.lines.map((l, i) => { const d = diffOf(l); return (
                 <tr key={l.lineKey} className={d ? 'kk-diff' : ''}>
-                  <td>{i + 1}</td><td className="mono">{l.sku}</td><td>{l.name}{l.newLot && <span className="badge badge-info" style={{ marginLeft: 6 }}>lô mới</span>}</td><td>{l.unit}</td>
+                  {tayOf(l) ? <>
+                    <td><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>{i + 1}<button type="button" className="kk-xoa" title="Xoá dòng thêm tay" onClick={() => set({ lines: v.lines.filter((_, j) => j !== i) })}>×</button></span></td>
+                    <td><ItemPicker value={l.sku} onChange={(c) => void chonMa(i, c)} placeholder="Mã hàng" style={{ minWidth: 120 }} /></td>
+                    <td><ItemPicker value={l.sku} nameFirst onChange={(c) => void chonMa(i, c)} placeholder="Tên hàng — gõ tên để tìm" style={{ minWidth: 200 }} /></td>
+                    <td>{l.unit}</td>
+                    <td><input className="input mono" value={l.lotNo ?? ''} onChange={(e) => setLine(i, { lotNo: e.target.value })} placeholder="Số lô" style={{ minWidth: 80 }} /></td>
+                    <td><input className="input" type="date" value={l.expDate ?? ''} title="Hạn dùng của lô (thêm tay)" onChange={(e) => setLine(i, { expDate: e.target.value || undefined, actualExpDate: e.target.value || undefined })} /></td>
+                  </> : <>
+                  <td>{i + 1}</td><td className="mono">{l.sku}</td><td>{l.name}{l.newLot && <span className="badge badge-info" style={{ marginLeft: 6 }}>{l.lotNo ? 'lô mới' : 'thêm tay'}</span>}</td><td>{l.unit}</td>
                   <td className="mono">{l.lotNo}</td><td>{viDate(l.expDate)}</td>
+                  </>}
                   <td><input className={`input ${l.actualExpDate && l.expDate && l.actualExpDate !== l.expDate ? 'kk-warn' : ''}`} type="date" disabled={!draft} value={l.actualExpDate ?? ''} title={l.actualExpDate && l.expDate && l.actualExpDate !== l.expDate ? 'HSD thực tế khác sổ' : undefined} onChange={(e) => setLine(i, { actualExpDate: e.target.value || undefined })} /></td>
                   <td className="num">{qty(l.bookQty)}</td>
                   <td><NumInput value={l.countedQty} blankZero={false} disabled={!draft} onChange={(n) => setLine(i, { countedQty: n ?? 0 })} /></td>
                   <td className={`num ${d < 0 ? 'kk-neg' : d > 0 ? 'kk-pos' : ''}`}>{d > 0 ? '+' : ''}{qty(d)}</td>
-                  <td><NumInput value={l.poorQty} disabled={!draft} onChange={(n) => setLine(i, { poorQty: n ?? 0 })} /></td>
-                  <td><NumInput value={l.lostQty} disabled={!draft} onChange={(n) => setLine(i, { lostQty: n ?? 0 })} /></td>
+                  <td><NumInput value={(l.poorQty ?? 0) + (l.lostQty ?? 0)} disabled={!draft} onChange={(n) => setLine(i, { poorQty: n ?? 0, lostQty: 0 })} /></td>
                   <td><input className="input" disabled={!draft} value={l.note ?? ''} onChange={(e) => setLine(i, { note: e.target.value || undefined })} /></td>
                 </tr>); })}
-              {!v.lines.length && <tr><td colSpan={13} className="muted" style={{ textAlign: 'center', padding: 12 }}>Chưa có dòng — chọn chi nhánh, kho, ngày rồi bấm Lấy số tồn</td></tr>}
+              {!v.lines.length && <tr><td colSpan={12} className="muted" style={{ textAlign: 'center', padding: 12 }}>Chưa có dòng — chọn chi nhánh, kho, ngày rồi bấm Lấy số tồn</td></tr>}
             </tbody>
-            {v.lines.length > 0 && <tfoot><tr className="ck-total"><td colSpan={7} style={{ textAlign: 'right' }}><b>Tổng</b></td><td className="num"><b>{qty(totals.book)}</b></td><td className="num"><b>{qty(totals.counted)}</b></td><td className="num"><b>{totals.diff > 0 ? '+' : ''}{qty(totals.diff)}</b></td><td className="num" colSpan={2}><b>{qty(totals.poor)}</b></td><td /></tr></tfoot>}
+            {v.lines.length > 0 && <tfoot><tr className="ck-total"><td colSpan={7} style={{ textAlign: 'right' }}><b>Tổng</b></td><td className="num"><b>{qty(totals.book)}</b></td><td className="num"><b>{qty(totals.counted)}</b></td><td className="num"><b>{totals.diff > 0 ? '+' : ''}{qty(totals.diff)}</b></td><td className="num"><b>{qty(totals.poor)}</b></td><td /></tr></tfoot>}
           </table>
         </div>
+        {draft && loiDong.length > 0 && <div className="full" style={{ fontSize: 12, color: 'var(--danger, #b42318)' }}>Chưa ghi được: {loiDong.join(' · ')}</div>}
         <div className="full kk-two">
           <div>
             <div className="kk-bar"><b>Thành viên tham gia</b>{draft && <button type="button" className="btn btn-xs" onClick={() => set({ members: [...v.members, { name: '', title: '', represent: '' }] })}>+ Thêm</button>}</div>
@@ -177,6 +218,7 @@ export function BienBanKiemKe({ value, onClose, onChanged }: { value: KkDoc; onC
       {tab === 'xm' && <XacMinh v={v} busy={busy} onSave={(b) => void run(() => kkApi.verify(v.id, b), 'Đã ghi biên bản xác minh.')} />}
       {tab === 'qd' && <QuyetDinh v={v} busy={busy} onSave={(b) => void run(() => kkApi.decide(v.id, b), 'Đã ghi quyết định xử lý.')} />}
       {paste !== null && <DanExcel onCancel={() => setPaste(null)} onOk={onPaste} />}
+
     </Modal>
   );
 }
@@ -265,8 +307,8 @@ function DanExcel({ onOk, onCancel }: { onOk: (text: string) => void; onCancel: 
   const [t, setT] = useState('');
   return (
     <Modal title="Nhập kết quả kiểm kê từ Excel" onClose={onCancel} footer={<><button className="btn btn-primary" disabled={!t.trim()} onClick={() => onOk(t)}>Nhận</button><button className="btn" onClick={onCancel}>Huỷ</button></>}>
-      <div className="full muted" style={{ fontSize: 12 }}>Chép các cột theo thứ tự: <b>Mã hàng · Số lô · Số kiểm kê · Kém PC · Mất PC · HSD thực tế</b> (ô trống được). Lô chưa có của mã đã có thì thêm dòng lô mới; mã không có trên biên bản thì báo, không thêm.</div>
-      <textarea className="input full" rows={10} autoFocus value={t} onChange={(e) => setT(e.target.value)} placeholder={'HANG01\tL01\t80\t2\t0\nHANG01\tL02\t38\t\t\t15/12/2026'} />
+      <div className="full muted" style={{ fontSize: 12 }}>Chép các cột theo thứ tự: <b>Mã hàng · Số lô · Số kiểm kê · Không đủ chất lượng · HSD thực tế</b> (ô trống được). Lô chưa có của mã đã có thì thêm dòng lô mới; mã không có trên biên bản thì báo, không thêm.</div>
+      <textarea className="input full" rows={10} autoFocus value={t} onChange={(e) => setT(e.target.value)} placeholder={'HANG01\tL01\t80\t2\nHANG01\tL02\t38\t\t15/12/2026'} />
     </Modal>
   );
 }

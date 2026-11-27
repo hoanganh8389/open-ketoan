@@ -1,0 +1,143 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": {
+    "code": "KHO04",
+    "label": "KHO04 — Đề nghị điều chuyển (lập, sửa, huỷ, duyệt → phiếu chuyển kho KHO01, từ chối)",
+    "file": "modules/de-nghi-dieu-chuyen/web/screens/DeNghiForm.tsx",
+    "route": "/app/de-nghi-dieu-chuyen",
+    "entities": ["de-nghi-dieu-chuyen/phieu", "kho/chuyen-kho"]
+  },
+  "actions": ["lap", "sua", "huy", "duyet", "tu-choi"],
+  "questions": [
+    {
+      "id": "Q-CHUNG-01",
+      "ask": "Ai được thêm / sửa / xoá / duyệt ở màn này? Không đủ quyền thì màn ẩn nút hay báo gì?",
+      "answer": "Ba quyền (HT12): de-nghi-dieu-chuyen:xem, :lap (lập / sửa / huỷ đề nghị đang chờ), :duyet (duyệt, từ chối). Mặc định: chủ đơn vị, kế toán trưởng, kế toán đủ ba; staff (thu ngân, quản lý cửa hàng — theo chi nhánh được gán) xem + lập. Duyệt còn cần kho:chuyen-kho-lap vì duyệt lập phiếu KHO01. Không quyền → ẩn nút (useCan), máy chủ vẫn 403 FORBIDDEN. Máy bán: vé POS mang :xem + :lap (không có :duyet) — như máy bán cũ, cửa hàng không tự duyệt."
+    },
+    {
+      "id": "Q-CHUNG-02",
+      "ask": "Chứng từ đã ghi sổ / đã duyệt thì sửa, xoá ra sao: chặn, bỏ duyệt, hay lập chứng từ đảo?",
+      "answer": "Đề nghị không phải chứng từ ghi sổ. Chỉ đề nghị Chờ duyệt mới sửa / huỷ / từ chối / duyệt; Đã lập chuyển kho, Từ chối, Đã huỷ → khoá (CONFLICT). Sai sau khi đã lập KHO01 thì xử lý ở phiếu chuyển kho (KHO01: từ chối nhận / huỷ) — không bỏ duyệt đề nghị."
+    },
+    {
+      "id": "Q-CHUNG-03",
+      "ask": "Hai người cùng mở và cùng sửa một chứng từ thì người lưu sau thấy gì?",
+      "answer": "Sửa gửi kèm phiên bản: phiên bản cũ → CONFLICT 'Đề nghị đã được người khác sửa — tải lại' (ca 3). Hai người duyệt cùng lúc: người sau gặp CONFLICT 'đang lập phiếu chuyển kho' (chỗ giữ 2 phút) hoặc 'Đã lập chuyển kho' — không sinh hai phiếu KHO01."
+    },
+    {
+      "id": "Q-CHUNG-04",
+      "ask": "Ngày chứng từ thuộc kỳ đã khoá, hoặc ngoài năm tài chính, thì màn báo trước hay chỉ báo khi ghi sổ?",
+      "answer": "Ngày đề nghị = hôm nay (không chọn). Khi duyệt, phiếu KHO01 lấy ngày hôm nay; kỳ khoá do action Kho kiểm (PERIOD_LOCKED) — màn báo lỗi của KHO01 và đề nghị về Chờ duyệt (bước abort)."
+    },
+    {
+      "id": "Q-CHUNG-05",
+      "ask": "Mạng chập chờn hoặc bấm Lưu hai lần thì có sinh hai chứng từ không?",
+      "answer": "Không: mọi lệnh ghi cần Idempotency-Key (useApi / máy bán tự gắn), nút khoá khi đang gửi. Duyệt: ghi KHO01 vào đề nghị lần hai với cùng phiếu không ghi lại (ca 6)."
+    },
+    {
+      "id": "Q-CHUNG-06",
+      "ask": "Ô nào bắt buộc? Bỏ trống hoặc sai kiểu thì báo ở ô nào, trước hay sau khi bấm?",
+      "answer": "Chi nhánh đề nghị, chi nhánh nhận, ít nhất một dòng có mã + SL > 0 (dòng thiếu mã / SL ≤ 0 bị bỏ như máy bán cũ); hạn dùng dạng yyyy-mm-dd hoặc dd/mm/yyyy; từ chối: lý do ≥ 5 ký tự. SL vượt tồn tô đỏ ngay ở ô; máy chủ trả hết lỗi một lần (details.findings) — form tô ô theo field."
+    },
+    {
+      "id": "Q-CHUNG-07",
+      "ask": "Thoát form giữa chừng hoặc bị từ chối thì dữ liệu đã nhập còn không? Có lưu nháp không?",
+      "answer": "Không có nháp (như máy bán cũ: lưu là Chờ duyệt, còn sửa / huỷ được trong ngày). Máy chủ từ chối → form giữ nguyên dữ liệu, tô ô lỗi."
+    },
+    {
+      "id": "Q-CHUNG-08",
+      "ask": "Mỗi danh sách chọn chỉ nhận giá trị nào (đang dùng, cùng chi nhánh, đã duyệt)? Chưa có thì thêm tại chỗ được không, ai được thêm?",
+      "answer": "Chi nhánh đề nghị: trong phạm vi chi nhánh của người lập. Chi nhánh nhận: chi nhánh cha + các chi nhánh cùng cha đang dùng (như máy bán cũ theo cây MH15); chi nhánh gốc thì các chi nhánh gốc khác. Mặt hàng: đang dùng (ItemPicker). Khách hàng: tuỳ chọn, chỉ tham khảo (mã chưa có ở kế toán vẫn lưu nguyên mã + tên). Không thêm tại chỗ."
+    },
+    {
+      "id": "Q-KHO-01",
+      "ask": "Kho trên chứng từ có thuộc chi nhánh / bộ phận của chứng từ không? Kho ngừng dùng thì sao?",
+      "answer": "Kho xuất = kho mặc định (hoặc kho duy nhất) đang dùng của chi nhánh đề nghị; kho nhận = kho mặc định của chi nhánh nhận, lấy lúc duyệt. Chi nhánh không có kho dùng được → chặn khi lập / duyệt."
+    },
+    {
+      "id": "Q-KHO-02",
+      "ask": "Xuất trước ngày nhập, xuất quá tồn theo lô / hạn dùng thì chặn hay cảnh báo, chỉ vào dòng nào?",
+      "answer": "Tồn so theo mã (cộng các dòng cùng mã) ở kho xuất, kiểm lúc lập / sửa và lại lúc duyệt; vượt → chặn DNDC_OVER_STOCK ở ô SL dòng đầu của mã. Lô / hạn dùng chỉ ghi chú sang KHO01 (KHO01 kiểm tiếp khi xuất)."
+    },
+    {
+      "id": "Q-KHO-03",
+      "ask": "Chuyển kho: đã xuất ở kho đi mà chưa nhận ở kho đến thì hàng đang ở đâu, quá bao lâu thì nhắc, ai nhận?",
+      "answer": "Duyệt lập KHO01 ở chế độ xuất luôn: hàng rời kho xuất, nằm ở hàng đi đường của KHO01 tới khi chi nhánh nhận bấm Nhận hàng / Từ chối ở màn Chuyển kho (luồng KHO01 sẵn có)."
+    },
+    {
+      "id": "Q-KHO-04",
+      "ask": "Quy đổi đơn vị tính (thùng / lon) lệch, số lẻ không hợp lệ với đơn vị thì báo ở ô nào?",
+      "answer": "Đề nghị ghi theo ĐVT của mặt hàng (như máy bán cũ); KHO01 kiểm số lẻ / quy đổi khi duyệt và màn báo lỗi của KHO01."
+    },
+    {
+      "id": "Q-KHO-05",
+      "ask": "Tồn tối thiểu / tối đa, định mức kho đặt ở đâu? Vượt thì cảnh báo ở màn nào, có mở được nguồn không?",
+      "answer": "Không áp ở đề nghị (máy bán cũ chỉ hiện min / max để tham khảo; không lưu)."
+    }
+  ],
+  "rows": [
+    {
+      "id": "KHO04-01", "action": "lap", "code": "VALIDATION_ERROR", "level": "block",
+      "when": "Tổng SL của một mã vượt tồn kho xuất (DNDC_OVER_STOCK)",
+      "target": { "kind": "field", "path": "lines.*.qty" }, "catchAt": ["ui", "module"],
+      "hint": "Sản phẩm X chỉ còn N, không thể điều chuyển M — giảm số lượng",
+      "test": "apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts#DNDC_OVER_STOCK", "basis": "Q-KHO-02 (ca 2)"
+    },
+    {
+      "id": "KHO04-02", "action": "lap", "code": "VALIDATION_ERROR", "level": "block",
+      "when": "Chi nhánh nhận ngoài danh sách được nhận (DNDC_TO_NOT_ALLOWED) hoặc bỏ trống (DNDC_TO_REQUIRED)",
+      "target": { "kind": "field", "path": "toBranchCode" }, "catchAt": ["ui", "module"],
+      "hint": "Chọn chi nhánh cha hoặc chi nhánh cùng cha",
+      "test": "apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts#DNDC_TO_NOT_ALLOWED", "basis": "Q-CHUNG-08 (ca 2)"
+    },
+    {
+      "id": "KHO04-03", "action": "lap", "code": "VALIDATION_ERROR", "level": "block",
+      "when": "Không còn dòng có mã + SL > 0 (DNDC_NO_LINES)",
+      "target": { "kind": "field", "path": "lines" }, "catchAt": ["ui", "module"],
+      "hint": "Thêm ít nhất một mặt hàng có số lượng",
+      "test": "apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts#DNDC_NO_LINES", "basis": "Q-CHUNG-06 (ca 2)"
+    },
+    {
+      "id": "KHO04-04", "action": "lap", "code": "VALIDATION_ERROR", "level": "block",
+      "when": "Mã hàng không có / đã ngừng (DNDC_SKU_UNKNOWN / DNDC_SKU_INACTIVE), hạn dùng sai dạng (DNDC_EXP_FORMAT)",
+      "target": { "kind": "field", "path": "lines.*.sku" }, "catchAt": ["ui", "module"],
+      "hint": "Chọn mặt hàng đang dùng; hạn dùng dạng dd/mm/yyyy",
+      "test": "modules/de-nghi-dieu-chuyen/test/rules.test.ts#DNDC_SKU_UNKNOWN", "basis": "Q-CHUNG-06"
+    },
+    {
+      "id": "KHO04-05", "action": "sua", "code": "CONFLICT", "level": "block",
+      "when": "Sửa bằng phiên bản cũ, hoặc đề nghị không còn Chờ duyệt",
+      "target": { "kind": "form" }, "catchAt": ["module"],
+      "hint": "Tải lại đề nghị",
+      "test": "apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts#409", "basis": "Q-CHUNG-03 (ca 3, 6)"
+    },
+    {
+      "id": "KHO04-06", "action": "lap", "code": "FORBIDDEN", "level": "block",
+      "when": "Lập / huỷ cho chi nhánh ngoài phạm vi của mình (BRANCH_OUT_OF_SCOPE), hoặc khai chi nhánh khác chi nhánh của đề nghị",
+      "target": { "kind": "field", "path": "branchCode" }, "catchAt": ["module"],
+      "hint": "Chỉ lập đề nghị cho chi nhánh mình làm việc",
+      "test": "apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts#403", "basis": "Q-CHUNG-01 (ca 2, 7)"
+    },
+    {
+      "id": "KHO04-07", "action": "duyet", "code": "FORBIDDEN", "level": "block",
+      "when": "Không có de-nghi-dieu-chuyen:duyet (hoặc kho:chuyen-kho-lap khi lập KHO01)",
+      "target": { "kind": "form" }, "catchAt": ["ui", "module"],
+      "hint": "Nhờ người có quyền duyệt / lập chuyển kho",
+      "test": "apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts#403", "basis": "Q-CHUNG-01 (ca 4)"
+    },
+    {
+      "id": "KHO04-08", "action": "tu-choi", "code": "VALIDATION_ERROR", "level": "block",
+      "when": "Lý do từ chối dưới 5 ký tự (DNDC_REASON_REQUIRED)",
+      "target": { "kind": "field", "path": "reason" }, "catchAt": ["ui", "module"],
+      "hint": "Nhập lý do từ chối",
+      "test": "apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts#DNDC_REASON_REQUIRED", "basis": "Q-CHUNG-06 (ca 7)"
+    },
+    {
+      "id": "KHO04-09", "action": "duyet", "code": "CONFLICT", "level": "block",
+      "when": "Duyệt đề nghị đã huỷ / từ chối / đã lập chuyển kho",
+      "target": { "kind": "form" }, "catchAt": ["module"],
+      "hint": "Đề nghị không còn chờ duyệt — tải lại",
+      "test": "apps/api/test/nt-bh-056-de-nghi-dieu-chuyen.test.ts#409", "basis": "Q-CHUNG-02 (ca 6, 7)"
+    }
+  ]
+}
