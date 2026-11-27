@@ -66,11 +66,12 @@ export async function partnerExists(tx: Tx, code: string): Promise<boolean> {
   return (await sql`SELECT 1 FROM bizcity_read.partners WHERE code = ${code}`.execute(tx)).rows.length > 0;
 }
 
-export type Entry = LedgerEntry & { meta?: Record<string, unknown> };
+export type Entry = LedgerEntry & { meta?: Record<string, unknown>; branchCode?: string };
 
 type EntryRow = {
   entry_id: string; kind: LedgerEntry['kind']; points: string; at: string; expires_at: string | null; allocations: { lotId: string; points: number }[] | null;
   ref_type: 'order' | 'return' | 'manual'; ref_id: string; ref_code: string | null; note: string | null; meta: Record<string, unknown> | null;
+  branch_code: string | null;
 };
 
 const iso = (s: string) => new Date(s).toISOString();
@@ -78,13 +79,13 @@ const iso = (s: string) => new Date(s).toISOString();
 /** Sổ điểm của một khách, theo thời gian. */
 export async function entriesOf(tx: Tx, partnerCode: string): Promise<Entry[]> {
   const rows = (await sql<EntryRow>`
-    SELECT entry_id, kind, points, at::text, expires_at::text, allocations, ref_type, ref_id, ref_code, note, meta
+    SELECT entry_id, kind, points, at::text, expires_at::text, allocations, ref_type, ref_id, ref_code, note, meta, branch_code
       FROM mod_loyalty.entries WHERE partner_code = ${partnerCode} ORDER BY at, created_at`.execute(tx)).rows;
   return rows.map((r) => ({
     id: r.entry_id, kind: r.kind, points: Number(r.points), at: iso(r.at), expiresAt: r.expires_at ? iso(r.expires_at) : null,
     ...(r.allocations ? { allocations: r.allocations } : {}),
     ref: { type: r.ref_type, id: r.ref_id, ...(r.ref_code ? { code: r.ref_code } : {}) },
-    ...(r.note ? { note: r.note } : {}), ...(r.meta ? { meta: r.meta } : {}),
+    ...(r.note ? { note: r.note } : {}), ...(r.meta ? { meta: r.meta } : {}), ...(r.branch_code ? { branchCode: r.branch_code } : {}),
   }));
 }
 
@@ -180,4 +181,30 @@ export async function orderPoints(tx: Tx, f: { from: string; to: string; branche
        ${f.partnerCode !== undefined ? sql`AND partner_code = ${f.partnerCode}` : sql``}
      GROUP BY ref_id, partner_code ORDER BY ref_id`.execute(tx)).rows
     .map((r) => ({ refId: r.ref_id, refCode: r.ref_code ?? '', partnerCode: r.partner_code, branchCode: r.branch_code ?? '', earned: Number(r.earned), redeemed: Number(r.redeemed) }));
+}
+
+// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thẻ Thành viên — gom sổ điểm theo khách, tên / SĐT đọc ở danh mục đối tượng (đóng góp)
+/** Mỗi khách có sổ điểm một dòng: số dư, tổng tích, tổng hoàn (âm), tổng đổi (dương), lần phát sinh cuối. */
+export async function memberAggs(tx: Tx) {
+  return (await sql<{ partner_code: string; balance: string; earned: string; reversed: string; redeemed: string; last_at: string }>`
+    SELECT partner_code, sum(points) AS balance,
+           coalesce(sum(points) FILTER (WHERE kind = 'earn'), 0) AS earned,
+           coalesce(sum(points) FILTER (WHERE kind = 'reverse'), 0) AS reversed,
+           coalesce(-sum(points) FILTER (WHERE kind = 'redeem'), 0) AS redeemed,
+           max(at)::text AS last_at
+      FROM mod_loyalty.entries GROUP BY partner_code`.execute(tx)).rows
+    .map((r) => ({ partnerCode: r.partner_code, balance: Number(r.balance), earned: Number(r.earned), reversed: Number(r.reversed), redeemed: Number(r.redeemed), lastAt: iso(r.last_at) }));
+}
+
+/** Tên / SĐT của các khách (danh mục đối tượng, chỉ đọc). */
+export async function partnersByCodes(tx: Tx, codes: readonly string[]) {
+  const out = new Map<string, { code: string; name: string; phone: string }>();
+  for (let i = 0; i < codes.length; i += 1000) {
+    const part = codes.slice(i, i + 1000);
+    if (!part.length) continue;
+    const rows = (await sql<{ code: string; name: string | null; phone: string | null; mobile: string | null }>`
+      SELECT code, name, phone, mobile FROM bizcity_read.partners WHERE code IN (${sql.join(part)})`.execute(tx)).rows;
+    for (const r of rows) out.set(r.code, { code: r.code, name: r.name ?? '', phone: r.mobile || r.phone || '' });
+  }
+  return out;
 }
