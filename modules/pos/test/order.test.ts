@@ -155,9 +155,18 @@ describe('NT-BH-004 — trường hợp lệch chuẩn (tầng tính)', () => {
   it('QR trả hết và phần QR trong chia tiền: nhận; qrAmount = phần QR; ghi sổ theo hình thức QR', () => {
     const all = computeOrder({ draft: draft({ payment: { mode: 'qr' } }), catalog, paymentMethods: methods });
     expect('problem' in all ? all.problem.reason : all.qrAmount).toBe(324_000);
-    if (!('problem' in all)) expect(all.payments).toEqual([{ methodCode: 'QR', amount: 324_000 }]);
+    // [2026-11-28 03:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-057: phần QR chưa nhận tiền không vào payments của phiếu bán (công nợ còn mở),
+    // ghi ở qrParts để lúc xác nhận lập phiếu thu tiền khách (đóng góp)
+    if (!('problem' in all)) {
+      expect(all.payments).toEqual([]);
+      expect(all.qrParts).toEqual([{ methodCode: 'QR', amount: 324_000 }]);
+    }
     const split = computeOrder({ draft: draft({ payment: { mode: 'split', parts: [{ method: 'TM', amount: 24_000 }, { method: 'QR', amount: 300_000 }] } }), catalog, paymentMethods: methods });
     expect('problem' in split ? split.problem.reason : split.qrAmount).toBe(300_000);
+    if (!('problem' in split)) {
+      expect(split.payments).toEqual([{ methodCode: 'TM', amount: 24_000 }]);
+      expect(split.qrParts).toEqual([{ methodCode: 'QR', amount: 300_000 }]);
+    }
   });
   // [2026-11-12 10:40 PM Võ Hoàng] POS-KM — quà / giảm theo chương trình bán có căn cứ (NT-BH-003) (đóng góp)
   it('NT-BH-003: quà 0đ + giảm theo chương trình có policyRef → nhận, phiếu mang policyRefs; thiếu căn cứ → POS_GIFT_WITHOUT_POLICY', () => {
