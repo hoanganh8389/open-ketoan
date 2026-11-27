@@ -446,7 +446,10 @@ interface ItemRow { sku: string; name: string; unit: string; stock?: number | nu
  */
 // [2026-11-19 Nguyễn Văn Thủy] đã chọn nhãn hàng (nhóm cấp 2) thì chỉ tìm / chọn được mặt hàng thuộc nhãn đó (đóng góp)
 // [2026-11-19 Nguyễn Văn Thủy] khoanh vùng theo hàng hoá của hợp đồng + nút điền nhanh các mã đã khai (đóng góp)
-export function ItemPicker({ canAdd, only, brands, skus, ...p }: BaseProps & { canAdd?: boolean; only?: (sku: string) => boolean; /** Chỉ mặt hàng thuộc các nhãn này (trống = mọi nhãn). */ brands?: string[]; /** Chỉ các mã này (vd hàng hoá của hợp đồng; trống = không khoanh). */ skus?: string[] }) {
+// [2026-11-27 03:55 PM Nguyễn Văn Thủy] MH22 — thêm nhanh mặt hàng từ dòng hoá đơn NCC: điền sẵn tên, ĐVT, thuế suất, giá mua theo NCC (đóng góp)
+/** Điền sẵn khi bấm + thêm mặt hàng (vd từ dòng hoá đơn NCC): tên, ĐVT, thuế suất, giá mua theo NCC. */
+export interface ThemHangGoiY { name?: string; unit?: string; taxRate?: number | null; ncc?: { partnerCode: string; unit: string; price: number | null; validFrom: string; nccSku: string } }
+export function ItemPicker({ canAdd, only, brands, skus, addInitial, ...p }: BaseProps & { addInitial?: ThemHangGoiY; canAdd?: boolean; only?: (sku: string) => boolean; /** Chỉ mặt hàng thuộc các nhãn này (trống = mọi nhãn). */ brands?: string[]; /** Chỉ các mã này (vd hàng hoá của hợp đồng; trống = không khoanh). */ skus?: string[] }) {
   const brandKey = (brands ?? []).filter(Boolean).join(',');
   const skuKey = (skus ?? []).filter(Boolean).join(',');
   const [q, setQ] = useState('');
@@ -474,7 +477,13 @@ export function ItemPicker({ canAdd, only, brands, skus, ...p }: BaseProps & { c
       />
       {adding !== null && (
         <Suspense fallback={null}>
-          <ProductEditor sku={null} initial={adding ? { name: adding.trim() } : undefined} onSaved={(sku) => { if (sku) p.onChange(sku); }} onClose={() => setAdding(null)} />
+          <ProductEditor sku={null}
+            initial={adding.trim() || addInitial?.name || addInitial?.unit ? {
+              ...(adding.trim() || addInitial?.name ? { name: adding.trim() || addInitial?.name } : {}),
+              ...(addInitial?.unit ? { units: [{ unit: addInitial.unit, ratio: 1, isDefault: true, isPurchaseDefault: true, weightKg: null, note: '' }] } : {}),
+            } : undefined}
+            goiY={addInitial ? { taxRate: addInitial.taxRate, ncc: addInitial.ncc?.partnerCode ? [{ ...addInitial.ncc, incVat: false }] : undefined } : undefined}
+            onSaved={(sku) => { if (sku) p.onChange(sku); }} onClose={() => setAdding(null)} />
         </Suspense>
       )}
     </>

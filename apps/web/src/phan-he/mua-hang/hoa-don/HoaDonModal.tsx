@@ -98,7 +98,7 @@ export function HoaDonModal({ id, partnerCode = '', lockPartner, onClose, onSave
       </div>
       {tab === 'hang' && <>
         {unmatched > 0 && !note && v.lines.some((l) => l.nccName || l.nccSku) && <div className="alert alert-warn" style={{ margin: '6px 0' }}>{unmatched} dòng chưa biết là mã nào bên mình. {id ? 'Bấm Sửa → chọn' : 'Chọn'} mã (bấm gợi ý hoặc tìm) → Ghi. Phần mềm nhớ cách NCC ghi tên / mã này, lần sau tự nhận.</div>}
-        <BangDongHoaDon lines={v.lines} partnerCode={v.partnerCode} names={prodNames} editNcc={!id || v.source === 'manual'} onChange={(lines: InvoiceLine[]) => set({ lines })} />
+        <BangDongHoaDon lines={v.lines} partnerCode={v.partnerCode} docDate={v.date} names={prodNames} editNcc={!id || v.source === 'manual'} onChange={(lines: InvoiceLine[]) => set({ lines })} />
       </>}
       {tab === 'doi-soat' && <DoiSoat data={detail.data} />}
       {tab === 'tep' && id && <TepDinhKem ownerType="invoice" ownerId={id} defaultKind="hoa_don" />}
