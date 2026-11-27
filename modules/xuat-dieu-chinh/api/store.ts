@@ -36,6 +36,11 @@ export function toPhieu(r: PhieuRow) {
 }
 export type Phieu = ReturnType<typeof toPhieu>;
 
+// [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-054: người không có documents:write (thu ngân máy bán) không nhận giá vốn (đóng góp)
+/** Bỏ giá vốn khỏi cảnh báo dưới giá vốn khi người xem không phải kế toán (chỉ còn mã + giá bán). */
+export const hideCost = (p: Phieu, accountant: boolean): Phieu =>
+  accountant ? p : { ...p, belowCost: (p.belowCost ?? []).map((b) => ({ sku: b.sku, unitPrice: b.unitPrice, unitCost: null as unknown as number })) };
+
 export async function getPhieu(tx: Tx, id: string, lock = false): Promise<PhieuRow> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw Errors.notFound(`phiếu xuất điều chỉnh ${id}`);
   const r = (await sql<PhieuRow>`SELECT ${COLS} FROM mod_xuat_dieu_chinh.phieu WHERE doc_id = ${id}::uuid AND status <> 'deleted' ${lock ? sql`FOR UPDATE` : sql``}`.execute(tx)).rows[0];

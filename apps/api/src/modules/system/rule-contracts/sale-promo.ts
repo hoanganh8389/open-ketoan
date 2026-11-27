@@ -34,6 +34,11 @@ export const promoConditions = z.object({
   couponCodes: z.array(z.string().trim().min(1).max(64)).min(1).max(500).optional(),
   birthdayMonth: z.boolean().optional(),
   memberLevels: z.array(z.string().trim().min(1).max(32)).min(1).max(50).optional(),
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): thêm tuỳ chọn, không đổi nghĩa ô cũ — sinh nhật theo ngày / tuần, loại đơn (đóng góp)
+  /** Sinh nhật theo ngày (đúng ngày sinh) / tuần (cùng tuần thứ Hai–Chủ nhật với ngày sinh năm nay); tháng dùng birthdayMonth. */
+  birthdayScope: z.enum(['day', 'week', 'month']).optional(),
+  /** Loại đơn được áp: retail (bán lẻ), wholesale (bán sỉ), so (đơn đặt hàng). Nguồn không gửi loại đơn = bán lẻ. */
+  orderTypes: z.array(z.enum(['retail', 'wholesale', 'so'])).min(1).max(3).optional(),
 }).strict();
 
 const common = {
@@ -54,6 +59,8 @@ export interface PromoContext {
   at?: { time?: string; weekday?: number };
   customer?: { birthday?: string; memberLevel?: string };
   coupons?: string[];
+  /** Loại đơn (NT-BH-049): retail / wholesale / so; vắng = retail. */
+  orderType?: string;
   /** Cửa nạp tính lại: điều kiện không biết được coi như đạt. */
   lenient?: boolean;
 }
@@ -112,7 +119,10 @@ export function conditionsBlock(c: z.infer<typeof promoConditions> | undefined, 
   if (c.timeFrom || c.timeTo) {
     const t = ctx?.at?.time;
     if (!t) return 'chương trình theo khung giờ — cần at.time';
-    if ((c.timeFrom && t < c.timeFrom) || (c.timeTo && t > c.timeTo)) return `chỉ áp ${c.timeFrom ?? '00:00'}–${c.timeTo ?? '23:59'}`;
+    // NT-BH-049 (K9): giờ bắt đầu sau giờ kết thúc = khung qua đêm (22:00–02:00).
+    const overnight = Boolean(c.timeFrom && c.timeTo && c.timeTo < c.timeFrom);
+    const ok = overnight ? t >= c.timeFrom! || t <= c.timeTo! : !((c.timeFrom && t < c.timeFrom) || (c.timeTo && t > c.timeTo));
+    if (!ok) return `chỉ áp ${c.timeFrom ?? '00:00'}–${c.timeTo ?? '23:59'}${overnight ? ' (qua đêm)' : ''}`;
   }
   if (c.couponCodes) {
     const have = new Set((ctx?.coupons ?? []).map((x) => x.trim().toUpperCase()));
@@ -122,6 +132,23 @@ export function conditionsBlock(c: z.infer<typeof promoConditions> | undefined, 
     const b = ctx?.customer?.birthday; const d = ctx?.docDate;
     if (!b) return 'chương trình sinh nhật — cần ngày sinh của khách';
     if (!d || b.slice(-5, -3) !== d.slice(5, 7)) return 'không phải tháng sinh nhật của khách';
+  }
+  if (c.birthdayScope && c.birthdayScope !== 'month') {
+    const b = ctx?.customer?.birthday; const d = ctx?.docDate;
+    if (!b) return 'chương trình sinh nhật — cần ngày sinh của khách';
+    if (!d) return 'chương trình sinh nhật — cần ngày chứng từ';
+    const md = b.slice(-5);
+    if (c.birthdayScope === 'day' && md !== d.slice(5)) return 'không phải ngày sinh nhật của khách';
+    if (c.birthdayScope === 'week') {
+      const ms = (x: string) => Date.parse(`${x}T00:00:00Z`);
+      const thisYear = `${d.slice(0, 4)}-${md}`;
+      const wk = (x: string) => { const t = ms(x); const wd = (new Date(t).getUTCDay() + 6) % 7; return t - wd * 86_400_000; };
+      if (Number.isNaN(ms(thisYear)) || wk(thisYear) !== wk(d)) return 'không phải tuần sinh nhật của khách';
+    }
+  }
+  if (c.orderTypes) {
+    const ot = ctx?.orderType ?? 'retail';
+    if (!c.orderTypes.includes(ot as 'retail')) return `chỉ áp đơn ${c.orderTypes.map((x) => ({ retail: 'bán lẻ', wholesale: 'bán sỉ', so: 'đặt hàng' })[x]).join(', ')}`;
   }
   if (c.memberLevels) {
     const lv = ctx?.customer?.memberLevel;
@@ -342,11 +369,12 @@ const commonDocs = [
   { name: 'validFrom / validTo', type: 'YYYY-MM-DD', required: false, doc: 'Thời gian chương trình' },
   { name: 'priority', type: 'số nguyên', required: false, doc: 'Mặc định 0; lớn tính trước' },
   { name: 'exclusive', type: 'boolean', required: false, doc: 'Áp riêng: dòng đã dùng thì chương trình sau không áp' },
-  { name: 'conditions', type: 'object', required: false, doc: 'weekdays[1..7], timeFrom / timeTo (HH:MM), minOrderAmount, couponCodes[], birthdayMonth, memberLevels[]' },
+  { name: 'conditions', type: 'object', required: false, doc: 'weekdays[1..7], timeFrom / timeTo (HH:MM; bắt đầu sau kết thúc = qua đêm), minOrderAmount, couponCodes[], birthdayMonth, birthdayScope (day|week|month), orderTypes[retail|wholesale|so], memberLevels[]' },
   { name: 'legalCapPct', type: 'số 0–100 | null', required: false, doc: 'Trần NĐ81 (mặc định 50 % tiền dòng); null = miễn' },
 ];
 const dateIssues = (p: { validFrom?: string; validTo?: string }) => (p.validFrom && p.validTo && p.validTo < p.validFrom ? [{ path: 'validTo', message: 'Ngày kết thúc trước ngày bắt đầu' }] : []);
-const timeIssues = (p: { conditions?: { timeFrom?: string; timeTo?: string } }) => (p.conditions?.timeFrom && p.conditions.timeTo && p.conditions.timeTo < p.conditions.timeFrom ? [{ path: 'conditions.timeTo', message: 'Giờ kết thúc trước giờ bắt đầu' }] : []);
+// NT-BH-049 (K9): giờ kết thúc trước giờ bắt đầu = khung qua đêm, không còn là lỗi; chỉ chặn hai giờ trùng nhau (khung rỗng).
+const timeIssues = (p: { conditions?: { timeFrom?: string; timeTo?: string } }) => (p.conditions?.timeFrom && p.conditions.timeTo && p.conditions.timeTo === p.conditions.timeFrom ? [{ path: 'conditions.timeTo', message: 'Giờ kết thúc trùng giờ bắt đầu' }] : []);
 const treat = (o: PromoOutput): Treatment[] => [
   ...(o.gifts.length ? [{ on: 'gift', reasonCode: 'XTA1.4', confirmed: false }] : []),
   ...(o.total > 0 ? [{ on: 'discount', reasonCode: 'GGHB', confirmed: false }] : []),

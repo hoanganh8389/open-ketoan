@@ -1,7 +1,7 @@
 // [2026-11-25 10:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-040 §4, §5: khuôn sale.promo.*@2 qua hàm thuần và qua endpoint; @1 giữ nguyên (đóng góp)
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  buyXGetYV2Vectors, orderGiftV2Vectors, priceLinesVectors, saleBuyXGetYV2, saleOrderGiftV2, salePriceLines, scopeLines,
+  buyXGetYV2Vectors, orderGiftV2Vectors, poolComboVectors, priceLinesVectors, saleBuyXGetYV2, saleOrderGiftV2, salePoolCombo, salePriceLines, scopeLines,
 } from '../src/modules/system/rule-contracts/sale-promo-v2.js';
 import {
   cheapestFreeVectors, comboVectors, orderDiscountVectors, orderGiftVectors, saleCheapestFree, saleCombo, saleOrderDiscount, saleOrderGift, saleTiered, tieredVectors,
@@ -16,6 +16,46 @@ const vs = (x: unknown) => x as Vec[];
 const SETS: [AnyRuleContract, Vec[]][] = [[salePriceLines, vs(priceLinesVectors)], [saleBuyXGetYV2, vs(buyXGetYV2Vectors)], [saleOrderGiftV2, vs(orderGiftV2Vectors)]];
 const run = (c: AnyRuleContract, v: Vec) => c.evaluate(c.params.parse(v.params), v.input);
 const byName = (vs: Vec[], start: string) => vs.find((v) => v.name.startsWith(start))!;
+
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): ngữ nghĩa plugin cũ — trần tiền giảm (Tối đa đ), mua X tặng Y "mỗi mã tính riêng",
+// quà theo giá trị đơn cho chọn quà, combo bộ sản phẩm (pool) (đóng góp)
+describe('NT-BH-049 — khuôn theo plugin chính sách cũ', () => {
+  const L = (lineKey: string, sku: string, qty: number, price?: number) => ({ lineKey, sku, qty, ...(price !== undefined ? { price } : {}) });
+  const base = { priority: 0, exclusive: false, legalCapPct: null };
+  it('price_lines: Tối đa (đ) của dòng kẹp tiền giảm cả mã; bậc có trần riêng', () => {
+    const p = salePriceLines.params.parse({ ...base, lines: [{ sku: 'A', pct: 20, maxDiscount: 50_000 }, { sku: 'B', tiers: [{ min: 1, pct: 10 }, { min: 3, pct: 20, maxDiscount: 30_000 }] }] });
+    const o = salePriceLines.evaluate(p, { lines: [L('a1', 'A', 2, 100_000), L('a2', 'A', 2, 100_000), L('b', 'B', 3, 100_000)] }) as { discounts: { lineKey: string; amount: number }[]; total: number };
+    expect(o.discounts.map((d) => [d.lineKey, d.amount])).toEqual([['a1', 40_000], ['a2', 10_000], ['b', 30_000]]);
+    expect(o.total).toBe(80_000);
+  });
+  it('buy_x_get_y@2 each: mỗi mã tính riêng — 4 A (mua 2) + 3 B (mua 3) → 3 lần quà', () => {
+    const p = saleBuyXGetYV2.params.parse({ ...base, buy: { items: [{ sku: 'A', qty: 2 }, { sku: 'B', qty: 3 }], mode: 'each' }, get: { options: [{ sku: 'Q', qty: 1 }], choose: 1 } });
+    const o = saleBuyXGetYV2.evaluate(p, { lines: [L('a', 'A', 4, 10_000), L('b', 'B', 3, 10_000)] }) as { gifts: unknown[] };
+    expect(o.gifts).toEqual([{ sku: 'Q', qty: 3 }]);
+    const none = saleBuyXGetYV2.evaluate(p, { lines: [L('a', 'A', 1, 10_000), L('b', 'B', 2, 10_000)] }) as { gifts: unknown[]; blocked: string };
+    expect(none.gifts).toEqual([]);
+    expect(none.blocked).toContain('2 A hoặc 3 B');
+    expect(saleBuyXGetYV2.publishChecks(saleBuyXGetYV2.params.parse({ ...base, buy: { items: [{ sku: 'A' }], mode: 'each' }, get: { options: [{ sku: 'Q', qty: 1 }] } })).map((x) => x.path)).toContain('buy.items.0.qty');
+  });
+  it('order_gift@2 choose: hai quà, chọn 1 — chưa chọn → pendingChoice; chọn Q2 → tặng Q2 × số lần', () => {
+    const p = saleOrderGiftV2.params.parse({ ...base, tiers: [{ minOrder: 500_000, gifts: [{ sku: 'Q1', qty: 1 }, { sku: 'Q2', qty: 1 }] }], multiply: true, choose: 1 });
+    const lines = [L('a', 'A', 1, 1_100_000)];
+    const o = saleOrderGiftV2.evaluate(p, { lines }) as { gifts: unknown[]; pendingChoice: { choose: number; times: number; options: { sku: string; qty: number }[] } };
+    expect(o.gifts).toEqual([]);
+    expect(o.pendingChoice.times).toBe(2);
+    expect(o.pendingChoice.options).toEqual([{ sku: 'Q1', qty: 2 }, { sku: 'Q2', qty: 2 }]);
+    const c = saleOrderGiftV2.evaluate(p, { lines, context: { giftChoice: ['Q2'] } }) as { gifts: unknown[] };
+    expect(c.gifts).toEqual([{ sku: 'Q2', qty: 2 }]);
+  });
+  it('pool_combo@2: bộ ca chuẩn, đăng ký, kiểm phát hành', () => {
+    expect(getRuleContract('sale.promo.pool_combo@2')).toBe(salePoolCombo);
+    for (const v of vs(poolComboVectors)) {
+      expect(run(salePoolCombo, v), v.name).toEqual(v.output);
+      expect(salePoolCombo.publishChecks(salePoolCombo.params.parse(v.params))).toEqual([]);
+    }
+    expect(salePoolCombo.publishChecks(salePoolCombo.params.parse({ ...base, skus: ['A'], combo: { minDistinct: 3, pct: 10 } })).map((x) => x.path)).toEqual(['combo.minDistinct']);
+  });
+});
 
 describe('NT-BH-040 — hàm thuần, bộ ca chuẩn', () => {
   it('đăng ký đủ ba khuôn @2, miền sale; describe() trả đúng bộ ca', () => {
@@ -123,7 +163,9 @@ describe('NT-BH-040 — qua endpoint (phát hành nội tuyến → evaluate)', 
       for (const v of vs) {
         // Ca cửa nạp, ca phạm vi nhóm / nhãn (bộ tính tra danh mục) và ca chọn quà (giftChoice) chờ nối ở policy-service — xem báo cáo NT-BH-040.
         const needsEngine = v.input.context?.lenient || v.input.context?.giftChoice || v.input.lines.some((l) => 'groupCodes' in l || 'brandCode' in l)
-          || (v.output as { pendingChoice?: unknown }).pendingChoice || (v.output as { detail?: { unknown?: unknown } }).detail?.unknown;
+          || (v.output as { pendingChoice?: unknown }).pendingChoice || (v.output as { detail?: { unknown?: unknown } }).detail?.unknown
+          // NT-BH-049: ca có ngữ cảnh (giờ, khách, ngày) chạy ở hàm thuần — vòng này gọi evaluate không kèm ngữ cảnh.
+          || Object.keys(v.input.context ?? {}).length > 0;
         if (needsEngine) continue;
         const key = `KM2-${++n}`;
         const pub = await call(ctx, 'POST', '/api/v1/policies', { key, ruleContract: c.id, params: v.params, effectiveFrom: '2026-01-01', reason: 'Bộ ca chuẩn khuyến mại @2' });
@@ -154,6 +196,43 @@ describe('NT-BH-040 — qua endpoint (phát hành nội tuyến → evaluate)', 
     });
     expect(m.status).toBe(400);
     expect(m.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: bộ tính nhận giftChoice (chưa chọn → pendingChoices) và tự điền nhóm / nhãn của dòng (đóng góp)
+  it('NT-BH-049: quà lựa chọn — chưa chọn → pendingChoices; chọn Q2 → tặng Q2', async () => {
+    const params = { buy: { items: [{ sku: 'A' }, { sku: 'B' }], mode: 'any', qty: 3 }, get: { options: [{ sku: 'Q1', qty: 1 }, { sku: 'Q2', qty: 1 }], choose: 1 } };
+    const pub = await call(ctx, 'POST', '/api/v1/policies', { key: 'KM2-CHON', ruleContract: 'sale.promo.buy_x_get_y@2', params, effectiveFrom: '2026-01-01', reason: 'thử quà lựa chọn' });
+    expect(pub.status, JSON.stringify(pub.body)).toBe(201);
+    const lines = [{ lineKey: 'a', sku: 'A', qty: 2, price: 100_000 }, { lineKey: 'b', sku: 'B', qty: 1, price: 100_000 }];
+    const p1 = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines, policies: [{ key: 'KM2-CHON' }] });
+    expect(p1.status, JSON.stringify(p1.body)).toBe(200);
+    expect(p1.body.data.gifts).toEqual([]);
+    expect(p1.body.data.pendingChoices).toEqual([expect.objectContaining({ key: 'KM2-CHON', choose: 1, options: [{ sku: 'Q1', qty: 1 }, { sku: 'Q2', qty: 1 }] })]);
+    const p2 = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines, policies: [{ key: 'KM2-CHON' }], giftChoice: { 'KM2-CHON': ['Q2'] } });
+    expect(p2.status, JSON.stringify(p2.body)).toBe(200);
+    expect(p2.body.data.gifts.map((g: { sku: string; qty: number }) => [g.sku, g.qty])).toEqual([['Q2', 1]]);
+    expect(p2.body.data.pendingChoices).toBeUndefined();
+  });
+
+  it('NT-BH-049: phạm vi nhóm — bộ tính tự tra nhóm của dòng (mã không có ở danh mục = không thuộc nhóm, không còn "chưa biết nhóm")', async () => {
+    const pub = await call(ctx, 'POST', '/api/v1/policies', { key: 'KM2-NHOM', ruleContract: 'sale.promo.price_lines@2', effectiveFrom: '2026-01-01', reason: 'thử phạm vi nhóm',
+      params: { basis: 'qty', scope: { groupCodes: ['NHOM-KHONG-CO'] }, lines: [{ sku: 'ZZ-KHONG-CO', pct: 10 }] } });
+    expect(pub.status, JSON.stringify(pub.body)).toBe(201);
+    const r = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines: [{ lineKey: 'z', sku: 'ZZ-KHONG-CO', qty: 1, price: 100_000 }], policies: [{ key: 'KM2-NHOM' }] });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.data.skipped[0].reason).toContain('giỏ không có mã nào của chương trình');
+    expect(r.body.data.skipped[0].reason).not.toContain('chưa biết nhóm');
+  });
+
+  it('NT-BH-049: loại đơn — chương trình chỉ đơn sỉ không áp đơn máy bán, áp khi orderType = wholesale', async () => {
+    const pub = await call(ctx, 'POST', '/api/v1/policies', { key: 'KM2-SI', ruleContract: 'sale.promo.price_lines@2', effectiveFrom: '2026-01-01', reason: 'thử loại đơn',
+      params: { basis: 'qty', conditions: { orderTypes: ['wholesale'] }, lines: [{ sku: 'A', pct: 10 }] } });
+    expect(pub.status, JSON.stringify(pub.body)).toBe(201);
+    const lines = [{ lineKey: 'a', sku: 'A', qty: 1, price: 100_000 }];
+    const le = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines, policies: [{ key: 'KM2-SI' }], orderType: 'retail' });
+    expect(le.body.data.discounts).toEqual([]);
+    const si = await call(ctx, 'POST', '/api/v1/policies/evaluate', { docDate: '2026-06-15', lines, policies: [{ key: 'KM2-SI' }], orderType: 'wholesale' });
+    expect(si.body.data.discounts.map((d: { amount: number }) => d.amount)).toEqual([10_000]);
   });
 
   it('GET /rule-contracts/:id mô tả ba khuôn @2', async () => {
