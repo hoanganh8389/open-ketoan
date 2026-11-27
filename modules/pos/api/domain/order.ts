@@ -115,6 +115,10 @@ export type ComputedOrder = {
   offsets: { docKey: string; amount: number }[];
   /** Phần trả bằng QR chuyển khoản (NT-BH-009): > 0 thì đơn chờ trả tiền tới khi tiền về / thu ngân xác nhận. */
   qrAmount: number;
+  // [2026-11-28 03:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-057: phần QR KHÔNG nằm trong `payments` (chưa nhận tiền) — công nợ 131 của phiếu bán còn mở; khi tiền về /
+  // thu ngân xác nhận, module gửi phiếu thu tiền khách (customer_payment) theo từng phần dưới đây (đóng góp)
+  /** Các phần QR chờ tiền (mã hình thức kế toán + số tiền) — ghi phiếu thu lúc xác nhận. */
+  qrParts: { methodCode: string; amount: number }[];
   change: number;
   customer: OrderCustomer;
   /** Voucher TGS / hãng đã trừ (NT-BH-026): số tiền thực trừ từng mã (≤ mệnh giá, phần dư mất). */
@@ -279,7 +283,7 @@ export function computeOrder(input: ComputeInput): ComputedOrder | { problem: Or
   if (input.loyalty?.lenient) {
     const who = resolveCustomer(input);
     if ('problem' in who) return who;
-    return { lines, subtotal, taxTotal, total, payments: [], offsets: [], change: 0, customer: who.customer, qrAmount: 0, voucherUses: [] };
+    return { lines, subtotal, taxTotal, total, payments: [], offsets: [], change: 0, customer: who.customer, qrAmount: 0, qrParts: [], voucherUses: [] };
   }
   if (total !== draft.clientTotal) {
     return fail('conflict', 'POS_PRICE_CHANGED', `Tổng máy tính ${draft.clientTotal} khác tổng máy chủ tính ${total} — tải lại giỏ`, { clientTotal: draft.clientTotal, total });
@@ -308,6 +312,7 @@ export function computeOrder(input: ComputeInput): ComputedOrder | { problem: Or
   let offsetPaid = 0;
   let change = 0;
   let qrAmount = 0;
+  let qrParts: ComputedOrder['qrParts'] = [];
   const p = draft.payment;
   if (p.mode === 'cash') {
     const cash = paymentMethods.find((m) => paymentKind(m.code) === 'cash');
@@ -337,12 +342,16 @@ export function computeOrder(input: ComputeInput): ComputedOrder | { problem: Or
     if (ex && offsetPaid !== ex.credit) {
       return fail('validation', 'POS_SPLIT_MISMATCH', `Phần đối trừ ${offsetPaid} phải đúng bằng tiền hàng trả ${ex.credit}`, { credit: ex.credit, offset: offsetPaid });
     }
-    payments = [...voucherPays, ...p.parts.filter((x) => !isOffsetMethod(x.method)).map((x) => ({ methodCode: x.method, amount: x.amount }))];
+    // NT-BH-057: phần QR chưa nhận tiền — không ghi thu tiền lúc bán (ghi khi xác nhận)
+    qrParts = p.parts.filter((x) => !isOffsetMethod(x.method) && paymentKind(x.method) === 'qr' && x.amount > 0).map((x) => ({ methodCode: x.method, amount: x.amount }));
+    payments = [...voucherPays, ...p.parts.filter((x) => !isOffsetMethod(x.method) && paymentKind(x.method) !== 'qr').map((x) => ({ methodCode: x.method, amount: x.amount }))];
   } else if (p.mode === 'qr') {
     // Trả hết bằng QR chuyển khoản (NT-BH-009): ghi sổ theo hình thức QR của danh mục; đơn chờ trả tiền.
     const qr = paymentMethods.find((m) => paymentKind(m.code) === 'qr');
     if (!qr) return fail('validation', 'POS_UNKNOWN_METHOD', 'Danh mục hình thức thanh toán chưa có QR chuyển khoản', { method: 'QR' });
-    payments = [...voucherPays, ...(due > 0 ? [{ methodCode: qr.code, amount: due }] : [])];
+    // NT-BH-057: trả hết bằng QR — phiếu bán chỉ ghi doanh thu + công nợ; thu tiền ghi khi tiền về / thu ngân xác nhận
+    payments = [...voucherPays];
+    qrParts = due > 0 ? [{ methodCode: qr.code, amount: due }] : [];
     qrAmount = due;
   } else {
     return fail('validation', 'POS_NOT_SUPPORTED_YET', 'Hình thức thanh toán chưa nhận ở đợt này');
@@ -354,7 +363,7 @@ export function computeOrder(input: ComputeInput): ComputedOrder | { problem: Or
 
   if (ex && p.mode !== 'split') return fail('validation', 'POS_SPLIT_MISMATCH', 'Đổi hàng phải có phần đối trừ đúng bằng tiền hàng trả', { credit: ex.credit });
   const offsets = ex && ex.credit > 0 ? [{ docKey: ex.returnDocKey, amount: ex.credit }] : [];
-  return { lines, subtotal, taxTotal, total, payments, offsets, change, customer, qrAmount, voucherUses };
+  return { lines, subtotal, taxTotal, total, payments, offsets, change, customer, qrAmount, qrParts, voucherUses };
 }
 
 // ── Đầu ra ────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -479,7 +488,8 @@ export function toOrderSnapshot(o: ComputedOrder, meta: { draft: OrderDraft; cod
     code: meta.code,
     // Đơn có phần QR chờ tiền về / thu ngân xác nhận (NT-BH-009); hạn mã 5 phút, gia hạn trong ngày bán.
     status: (o.qrAmount > 0 ? 'awaiting_payment' : 'completed') as 'completed' | 'awaiting_payment',
-    ...(o.qrAmount > 0 ? { qr: { amount: o.qrAmount, status: 'waiting' as const, expiresAt: new Date(Date.parse(meta.createdAt) + QR_HOLD_MS).toISOString() } } : {}),
+    // NT-BH-057: `parts` = phần QR chưa ghi thu tiền — có trường này thì lúc xác nhận module gửi phiếu thu (đơn cũ không có: thu tiền đã ghi lúc bán).
+    ...(o.qrAmount > 0 ? { qr: { amount: o.qrAmount, status: 'waiting' as const, expiresAt: new Date(Date.parse(meta.createdAt) + QR_HOLD_MS).toISOString(), parts: o.qrParts } } : {}),
     businessDate: draft.businessDate,
     createdAt: meta.createdAt,
     // NT-BH-034: MST / email / địa chỉ / tên công ty thu ngân sửa tại chỗ — có thì lưu kèm để màn hoá đơn điền sẵn.
