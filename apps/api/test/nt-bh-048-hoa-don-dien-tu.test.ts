@@ -168,6 +168,21 @@ describe.skipIf(!HAS)('NT-BH-048 — THUE03 Hoá đơn điện tử khai ở k�
     expect(ok(await req(null, 'GET', `${M}/cai-dat/export`, undefined)).configVersion).toMatch(/^\d+\.\d+$/);
   });
 
+  // [2026-11-26 11:40 PM Võ Hoàng] NGHIEM-THU — NT-BH-048 M9: khoá kt_ của cầu nối (reports:read) đọc được export, không có bí mật; khoá thiếu reports:read bị 403 (đóng góp)
+  it('ca 5b (M9): khoá kt_ có reports:read đọc export (không bí mật); khoá chỉ catalog:write → 403', async () => {
+    const kt = ok(await req(null, 'POST', '/api/v1/api-keys', { name: 'nt048 cầu nối', scopes: ['reports:read'] })) as { key: string };
+    const ex = await req(null, 'GET', `${M}/cai-dat/export?branchCode=08004`, undefined, { 'x-api-key': kt.key });
+    const d = ok(ex) as { chiNhanh: { branchCode: string; templateCode: string; mst: string }[] };
+    expect(d.chiNhanh).toHaveLength(1);
+    expect(d.chiNhanh[0]).toMatchObject({ branchCode: '08004', templateCode: '1/002', mst: '0100109106' });
+    expect(ex.raw).not.toContain(MK);
+    expect(ex.raw).not.toContain(MK_PORTAL);
+    const kw = ok(await req(null, 'POST', '/api/v1/api-keys', { name: 'nt048 chỉ danh mục', scopes: ['catalog:write'] })) as { key: string };
+    expect((await req(null, 'GET', `${M}/cai-dat/export`, undefined, { 'x-api-key': kw.key })).status).toBe(403);
+    // Khoá kt_ vẫn không đọc được bí mật (chưa có phạm vi secrets:read:hoa-don-dien-tu — M9: tạm lấy mật khẩu ở website).
+    expect((await req(null, 'GET', `${M}/secrets/read?name=hoa-don-dien-tu.viettel.password`, undefined, { 'x-api-key': kt.key })).status).toBe(403);
+  });
+
   it('ca 10: thử kết nối — chỉ một GET tới API base URL, Basic đúng tài khoản; 200 / 401 / lỗi mạng báo đúng câu, ghi nhật ký', async () => {
     const calls: { url: string; method: string; auth: string | null }[] = [];
     const fake = (status: number | Error) => vi.fn(async (url: string, init: RequestInit) => {
