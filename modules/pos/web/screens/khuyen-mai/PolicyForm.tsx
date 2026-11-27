@@ -3,7 +3,7 @@
  * "Thông tin chương trình" / "Khuyến mãi theo mặt hàng", bảng nhiều dòng cho MỌI loại (cả Mua X tặng Y), Thêm dòng, Import Excel (dán / tệp CSV),
  * Chọn cột, tên sản phẩm + đơn vị tự điền theo danh mục. Lưu = bản nháp ở module pos → người có quyền duyệt → phát hành (như KmForm).
  */
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-15…17): form chính sách như plugin cũ (đóng góp)
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-15…17): form chính sách như plugin cũ (đóng góp)
 import { useMemo, useState, type ReactNode } from 'react';
 import { Modal, errorText, useApi, useCan, useMutation, useQuery } from '@bizcity/ui-kit';
 import { M } from '../../lib';
@@ -67,7 +67,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   const prodOf = (s: string) => (prods.data ?? []).find((p) => p.sku === s.trim());
   const under24 = (prods.data ?? []).filter((p) => p.isUnder24m);
 
-  // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: chân form như phiếu BH10 / phiếu mua — Ghi · Gửi duyệt · Duyệt (phát hành) · Thoát; người có quyền
+  // [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: chân form như phiếu BH10 / phiếu mua — Ghi · Gửi duyệt · Duyệt (phát hành) · Thoát; người có quyền
   // Duyệt khuyến mại duyệt ngay chương trình mình lập (bỏ luật hai người, Hoàng chốt 28/11) (đóng góp)
   const approver = can('pos:promo-approve');
   type Act = 'draft' | 'submit' | 'approve';
@@ -112,6 +112,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   };
   const nameCell = (s: string) => <span className={prodOf(s) ? '' : 'muted'} style={{ fontSize: 12.5 }}>{s.trim() ? (prodOf(s)?.name ?? (prods.isLoading ? '…' : 'Không có trong danh mục')) : ''}</span>;
   const showCol = (k: string) => !hidden.includes(k);
+  // nuot-loi: localStorage có thể bị trình duyệt chặn (chế độ riêng tư) — cột vẫn ẩn / hiện trong phiên, chỉ không nhớ lại
   const toggleCol = (k: string) => { const n = hidden.includes(k) ? hidden.filter((x) => x !== k) : [...hidden, k]; setHidden(n); try { localStorage.setItem('pos.km.cot-an', JSON.stringify(n)); } catch { /* bỏ qua */ } };
   const delBtn = (onDel: () => void) => <button type="button" className="btn btn-xs" title="Xoá dòng" aria-label="Xoá dòng" onClick={onDel}>×</button>;
   type Col<R> = { k: string; h: string; w?: number; opt?: boolean; cell: (r: R, i: number) => ReactNode };

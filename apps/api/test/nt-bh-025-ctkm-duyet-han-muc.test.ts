@@ -105,7 +105,7 @@ describe.skipIf(!HAS)('NT-BH-025 — CTKM duyệt, cảnh báo trùng, hạn m�
     const pol = await call(ctx, 'GET', `/api/v1/policies?domain=sale&at=${TODAY}`);
     expect(pol.body.data.items.map((x: { policyKey: string }) => x.policyKey)).not.toContain('KM10-SUA330');
 
-    // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: bỏ luật hai người cho khuyến mại (Hoàng chốt 28/11) — người lập có quyền duyệt tự duyệt được;
+    // [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: bỏ luật hai người cho khuyến mại (Hoàng chốt 28/11) — người lập có quyền duyệt tự duyệt được;
     // ca này giữ luồng KTT duyệt; ca tự duyệt ở nt-bh-049 (đóng góp)
     const pub = await approveAndPublish(d.id);
     expect(pub).toMatchObject({ status: 'published', publishedVersion: 1, approvedByName: 'Kế toán trưởng' });

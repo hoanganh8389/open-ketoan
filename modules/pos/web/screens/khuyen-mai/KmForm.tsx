@@ -8,7 +8,7 @@
  */
 // [2026-11-14 01:10 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: form khuyến mại 6 loại (đóng góp)
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: lưu nháp + gửi duyệt, hạn mức lượt, cảnh báo trùng (đóng góp)
-// [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: form khuyến mại dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
+// [2026-11-22 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-037: form khuyến mại dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 // [2026-11-25 10:50 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: ba loại @2 — bảng nhiều mã (K1), mã mua + quà lựa chọn (K2), nhân bội số (K4), chọn nhóm / nhãn (K3); hỏi trước khi bỏ thay đổi (đóng góp)
 import { useState, type ReactNode } from 'react';
 import { BranchCheckList, DocSheet, DocSheetPanel, ErrorBox, Field, Loading, Modal, errorText, useApi, useMutation, useQuery } from '@bizcity/ui-kit';
@@ -60,7 +60,7 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
   const api = useApi();
   const [f, setF] = useState<Form>(initial);
   const [warn, setWarn] = useState<{ msg: string; overlaps: Overlap[] } | null>(null);
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K11): dán bảng mã từ Excel vào "Giá riêng từng mã" (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K11): dán bảng mã từ Excel vào "Giá riêng từng mã" (đóng góp)
   const [paste, setPaste] = useState<string | null>(null);
   const set = (p: Partial<Form>) => setF((x) => ({ ...x, ...p }));
   const tp = toParams(f);
@@ -72,7 +72,7 @@ export function KmForm({ initial, editing, draftId, onClose, onDone }: { initial
   const close = () => { if (!dirty || window.confirm('Còn thay đổi chưa lưu — bỏ thay đổi và đóng? (Bấm Huỷ để quay lại, rồi Lưu nháp)')) onClose(); };
   // Bản nháp đã lưu: đọc cảnh báo trùng đang có (cùng API hộp Duyệt); bản mới thì máy chủ báo khi Lưu.
   const ov = useQuery({ queryKey: ['km', 'overlaps', draftId], enabled: Boolean(draftId), queryFn: () => api.get<Overlap[]>(`${M}/promo/drafts/${draftId}/overlaps`) });
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K5): cảnh báo hàng dưới 24 tháng (NĐ100/2014: không khuyến mại sản phẩm dinh dưỡng cho trẻ dưới 24 tháng) — chỉ cảnh báo (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K5): cảnh báo hàng dưới 24 tháng (NĐ100/2014: không khuyến mại sản phẩm dinh dưỡng cho trẻ dưới 24 tháng) — chỉ cảnh báo (đóng góp)
   const promoSkus = [...new Set([
     ...f.skus.split(/[\s,;]+/), ...f.priceLines.map((x) => x.sku), ...f.buyItems.map((x) => x.sku), ...f.items.map((x) => x.sku), f.buy.sku,
   ].map((x) => x.trim()).filter(Boolean))].sort();

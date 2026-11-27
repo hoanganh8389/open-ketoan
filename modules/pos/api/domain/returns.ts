@@ -34,7 +34,7 @@ export type SoldLine = {
   itemId: string | null;
   isGift: boolean;
   promotionId?: number;
-  // [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038: quà của khuyến mại Core nhóm theo mã chương trình (policyRef.key) (đóng góp)
+  // [2026-11-25 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-038: quà của khuyến mại Core nhóm theo mã chương trình (policyRef.key) (đóng góp)
   /** Dòng quà của khuyến mại Core (BH18): mã chương trình (`policyRef.key`) khi không có `promotionId` số của khuyến mại website. */
   policyKey?: string;
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-024 Q2: dòng quà đổi điểm (giftKey `lp:…`) không trả được (đóng góp)
@@ -138,7 +138,7 @@ export function requiredGiftReturns(
   return out;
 }
 
-// [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-038 Q1: hàng chính của chương trình Core đọc từ nội dung chương trình (đóng góp)
+// [2026-11-25 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-038 Q1: hàng chính của chương trình Core đọc từ nội dung chương trình (đóng góp)
 /** Một chương trình trong `core.policy.list` (các trường module dùng). */
 export type PolicyListItem = { policyKey: string; version: number; ruleContract: string; params: unknown };
 
@@ -149,7 +149,7 @@ export type PolicyListItem = { policyKey: string; version: number; ruleContract:
 export function policyMainSkus(item: Pick<PolicyListItem, 'ruleContract' | 'params'> | undefined): string[] | null {
   if (!item || !item.params || typeof item.params !== 'object') return null;
   const p = item.params as { buy?: { sku?: unknown; items?: unknown }; skus?: unknown; scope?: { skus?: unknown } };
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: khuôn @2 — hàng chính là các mã mua (buy.items) / mã lẻ của phạm vi; chỉ nhóm / nhãn → null (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: khuôn @2 — hàng chính là các mã mua (buy.items) / mã lẻ của phạm vi; chỉ nhóm / nhãn → null (đóng góp)
   const strs = (v: unknown) => (Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && s !== '') : []);
   if (item.ruleContract === 'sale.promo.buy_x_get_y@2') {
     const s = [...new Set([...(Array.isArray(p.buy?.items) ? (p.buy!.items as { sku?: unknown }[]).map((x) => x?.sku) : []).filter((x): x is string => typeof x === 'string' && x !== ''), ...strs(p.scope?.skus)])];
@@ -281,7 +281,7 @@ export type ReturnInput = {
    */
   badWarehouse?: string | null;
   badWarehouseIssue?: string;
-  // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-035 Q2: quà khách trả (nguyên vẹn) về kho quà KKM của cửa hàng nhận trả (đóng góp)
+  // [2026-11-21 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-035 Q2: quà khách trả (nguyên vẹn) về kho quà KKM của cửa hàng nhận trả (đóng góp)
   /** Kho quà KKM của cửa hàng nhận trả (khoá bizcity.pos.gift_warehouses, đã kiểm); null / trống = chưa khai → quà về kho bán như cũ. */
   giftWarehouse?: string | null;
   /** NT-BH-038 Q1: mã hàng chính theo mã chương trình Core có quà trên đơn (null = mọi dòng không phải quà). Thiếu khoá → null. */

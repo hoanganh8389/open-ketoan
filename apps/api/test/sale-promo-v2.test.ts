@@ -17,7 +17,7 @@ const SETS: [AnyRuleContract, Vec[]][] = [[salePriceLines, vs(priceLinesVectors)
 const run = (c: AnyRuleContract, v: Vec) => c.evaluate(c.params.parse(v.params), v.input);
 const byName = (vs: Vec[], start: string) => vs.find((v) => v.name.startsWith(start))!;
 
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): ngữ nghĩa plugin cũ — trần tiền giảm (Tối đa đ), mua X tặng Y "mỗi mã tính riêng",
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): ngữ nghĩa plugin cũ — trần tiền giảm (Tối đa đ), mua X tặng Y "mỗi mã tính riêng",
 // quà theo giá trị đơn cho chọn quà, combo bộ sản phẩm (pool) (đóng góp)
 describe('NT-BH-049 — khuôn theo plugin chính sách cũ', () => {
   const L = (lineKey: string, sku: string, qty: number, price?: number) => ({ lineKey, sku, qty, ...(price !== undefined ? { price } : {}) });
@@ -198,7 +198,7 @@ describe('NT-BH-040 — qua endpoint (phát hành nội tuyến → evaluate)', 
     expect(m.body.error.code).toBe('VALIDATION_ERROR');
   });
 
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: bộ tính nhận giftChoice (chưa chọn → pendingChoices) và tự điền nhóm / nhãn của dòng (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: bộ tính nhận giftChoice (chưa chọn → pendingChoices) và tự điền nhóm / nhãn của dòng (đóng góp)
   it('NT-BH-049: quà lựa chọn — chưa chọn → pendingChoices; chọn Q2 → tặng Q2', async () => {
     const params = { buy: { items: [{ sku: 'A' }, { sku: 'B' }], mode: 'any', qty: 3 }, get: { options: [{ sku: 'Q1', qty: 1 }, { sku: 'Q2', qty: 1 }], choose: 1 } };
     const pub = await call(ctx, 'POST', '/api/v1/policies', { key: 'KM2-CHON', ruleContract: 'sale.promo.buy_x_get_y@2', params, effectiveFrom: '2026-01-01', reason: 'thử quà lựa chọn' });

@@ -1,5 +1,5 @@
 # NT-BH-049 · Khuyến mại BH18 đủ như plugin cũ — khuôn @2 dùng được thật, đủ cài đặt một chương trình, máy bán chọn quà
-<!-- [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: chốt theo giao việc 27/11 "làm đủ như plugin cũ" (đóng góp) -->
+<!-- [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: chốt theo giao việc 27/11 "làm đủ như plugin cũ" (đóng góp) -->
 
 | | |
 |---|---|

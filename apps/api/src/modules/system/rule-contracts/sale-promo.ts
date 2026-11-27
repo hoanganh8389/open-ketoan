@@ -34,7 +34,7 @@ export const promoConditions = z.object({
   couponCodes: z.array(z.string().trim().min(1).max(64)).min(1).max(500).optional(),
   birthdayMonth: z.boolean().optional(),
   memberLevels: z.array(z.string().trim().min(1).max(32)).min(1).max(50).optional(),
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): thêm tuỳ chọn, không đổi nghĩa ô cũ — sinh nhật theo ngày / tuần, loại đơn (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): thêm tuỳ chọn, không đổi nghĩa ô cũ — sinh nhật theo ngày / tuần, loại đơn (đóng góp)
   /** Sinh nhật theo ngày (đúng ngày sinh) / tuần (cùng tuần thứ Hai–Chủ nhật với ngày sinh năm nay); tháng dùng birthdayMonth. */
   birthdayScope: z.enum(['day', 'week', 'month']).optional(),
   /** Loại đơn được áp: retail (bán lẻ), wholesale (bán sỉ), so (đơn đặt hàng). Nguồn không gửi loại đơn = bán lẻ. */

@@ -4,7 +4,7 @@
  * Loại cũ chưa có khuôn (4 theo lô hàng, 12 JSON thủ công của IT) không hiện; loại mới của màn (bậc, combo món, flash sale, hạn mức…) ẨN, code giữ nguyên
  * (chương trình đã lưu của các loại đó vẫn mở bằng form cũ KmForm). Không gọi API, không React — test ở modules/pos/test/khuyen-mai-du-nhu-cu.test.ts.
  */
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-14, S-CD-16, S-CD-17): form chính sách như plugin cũ — 7 loại cũ, bảng nhiều dòng mọi loại (đóng góp)
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-14, S-CD-16, S-CD-17): form chính sách như plugin cũ — 7 loại cũ, bảng nhiều dòng mọi loại (đóng góp)
 import { list, num } from './model';
 
 /** Loại chương trình theo plugin cũ (mã số = selling_policy_type cũ). */
@@ -342,7 +342,7 @@ export function parsePaste(text: string): string[][] {
   return out.filter((c) => c[0]);
 }
 
-// [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: mã chương trình tự sinh khi Thêm — TGS_<MMYY>_<NN> như plugin cũ (VD TGS_1126_01), vẫn sửa được (đóng góp)
+// [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: mã chương trình tự sinh khi Thêm — TGS_<MMYY>_<NN> như plugin cũ (VD TGS_1126_01), vẫn sửa được (đóng góp)
 /** Mã kế tiếp của tháng `today` (YYYY-MM-DD): TGS_<MMYY>_<NN>, NN = số lớn nhất đang có của tháng đó + 1 (2 chữ số, quá 99 thì dài hơn). */
 export function nextPolicyCode(keys: readonly string[], today: string): string {
   const mmyy = `${today.slice(5, 7)}${today.slice(2, 4)}`;

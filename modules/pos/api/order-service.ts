@@ -68,7 +68,7 @@ async function nonPolicyCoupons(ctx: ActionContext, draft: OrderDraft, coupons: 
 
 async function quoteLoyalty(ctx: ActionContext, draft: OrderDraft, branchCode: string, base: ReturnType<typeof computeOrder>) {
   if ('problem' in base) raise(base.problem);
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: mã giảm giá CHUNG của chương trình khuyến mại (BH18, ô "Mã giảm giá" / loại Voucher – Mã giảm giá
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: mã giảm giá CHUNG của chương trình khuyến mại (BH18, ô "Mã giảm giá" / loại Voucher – Mã giảm giá
   // của plugin cũ) đã được Core tính theo dòng (policyRef + promoDiscount) — không đem tra như voucher đổi điểm (trước: đơn bị từ chối
   // "Không có voucher …"). Chỉ mã KHÔNG thuộc chương trình nào đơn đang áp mới hỏi module loyalty (đóng góp)
   const coupons = await nonPolicyCoupons(ctx, draft, couponCodes(draft));
@@ -159,7 +159,7 @@ async function quoteVouchers(ctx: ActionContext, tx: Parameters<Parameters<Actio
  */
 export async function checkStock(tx: Parameters<Parameters<ActionContext['data']['module']>[0]>[0], branchCode: string,
   lines0: readonly { sku: string; qty: number; warehouse?: string }[], day: string = todayVn()): Promise<StockShort[]> {
-  // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-035 §3.3: dòng mặt hàng dịch vụ không ghi thẻ kho → không khoá, không kiểm tồn (đóng góp)
+  // [2026-11-21 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-035 §3.3: dòng mặt hàng dịch vụ không ghi thẻ kho → không khoá, không kiểm tồn (đóng góp)
   const svc = await serviceSkus(tx, lines0.map((l) => l.sku), day);
   const lines = lines0.filter((l) => !svc.has(l.sku));
   const skus = [...new Set(lines.map((l) => l.sku))].sort();
@@ -245,7 +245,7 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
     if (quotaShort.length && !draft.offlineCreatedAt) {
       throw Errors.validation(quotaMessage(quotaShort, branch.code), { reason: 'POS_PROMO_QUOTA', items: quotaShort });
     }
-    // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): lượt khuyến mại theo khách — khách đã dùng hết lượt thì không nhận đơn còn áp (đóng góp)
+    // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): lượt khuyến mại theo khách — khách đã dùng hết lượt thì không nhận đơn còn áp (đóng góp)
     const customerShort = await checkCustomerQuota(tx, computed.customer?.code ?? null, promoKeys, draft.id);
     if (customerShort.length && !draft.offlineCreatedAt) {
       throw Errors.validation(`Khách ${customerShort[0]!.customer} đã dùng hết lượt khuyến mại: ${customerShort.map((s) => `${s.key} (đã dùng ${s.used}/${s.quota})`).join('; ')} — bỏ khuyến mại đó khỏi đơn rồi thanh toán lại`,

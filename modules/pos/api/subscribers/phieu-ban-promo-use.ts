@@ -41,7 +41,7 @@ export default defineSubscriber({
       if (evt.type === 'phieu-ban.doc.cancelled') return releaseUses(tx, 'phieu-ban', d.docId, 'unapprove');
       const uses = usesOf(d.doc?.lines ?? []);
       if (!uses.length || !d.doc?.docDate) return;
-      // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): ghi mã khách để tính lượt theo khách (đóng góp)
+      // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): ghi mã khách để tính lượt theo khách (đóng góp)
       await recordUses(tx, ctx.tenantId, { source: 'phieu-ban', refId: d.docId, refCode: d.doc.docNo ?? '', branch: d.branchCode, date: d.doc.docDate, uses, customer: d.doc.partner?.code || null });
     });
   },

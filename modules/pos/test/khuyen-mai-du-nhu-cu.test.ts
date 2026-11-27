@@ -1,4 +1,4 @@
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: khuyến mại đủ như plugin cũ — khuôn @2 lưu nháp được, ĐVT quy đổi, dán từ Excel,
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: khuyến mại đủ như plugin cũ — khuôn @2 lưu nháp được, ĐVT quy đổi, dán từ Excel,
 // sinh nhật ngày / tuần, loại đơn, khung qua đêm, hàng chính của chương trình @2 khi trả (đóng góp)
 import { describe, expect, it } from 'vitest';
 import { draftContentSchema, skusOf } from '../api/domain/promo.js';
@@ -95,7 +95,7 @@ describe('NT-BH-049 — lượt theo khách (K6)', () => {
   });
 });
 
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-14…17): form chính sách theo mẫu plugin cũ ↔ params (đóng góp)
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-14…17): form chính sách theo mẫu plugin cũ ↔ params (đóng góp)
 
 describe('NT-BH-049 — form kiểu plugin cũ', () => {
   const D0 = '2026-11-27';

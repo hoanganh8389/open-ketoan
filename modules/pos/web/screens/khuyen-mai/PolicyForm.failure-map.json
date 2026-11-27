@@ -1,0 +1,280 @@
+{
+  "schema": "bizcity_failure_map@1",
+  "screen": {
+    "code": "BH18",
+    "label": "Khai khuyến mại (BH18) — form 2 thẻ như plugin cũ, 7 loại cũ (NT-BH-049)",
+    "file": "modules/pos/web/screens/khuyen-mai/PolicyForm.tsx",
+    "entities": [
+      "mod_pos.promo_drafts",
+      "policy (sale.promo.*)"
+    ]
+  },
+  "actions": [
+    "them",
+    "sua"
+  ],
+  "codeSources": [],
+  "questions": [
+    {
+      "id": "Q-CHUNG-01",
+      "ask": "Ai được thêm / sửa / xoá / duyệt ở màn này? Không đủ quyền thì màn ẩn nút hay báo gì?",
+      "answer": "Chốt 28/11 (Võ Hoàng): lập / sửa nháp = settings:write; Duyệt (phát hành) = pos:promo-approve, người có quyền tự lập và tự duyệt (bỏ luật hai người cho khuyến mại); nút Duyệt nằm trong form, chỉ hiện với người có quyền. Máy chủ vẫn chặn người không có quyền (403)."
+    },
+    {
+      "id": "Q-CHUNG-02",
+      "ask": "Chứng từ đã ghi sổ / đã duyệt thì sửa, xoá ra sao: chặn, bỏ duyệt, hay lập chứng từ đảo?",
+      "answer": "Chốt 25/11: bản đã phát hành không sửa; \"Sửa\" lập nháp mới, duyệt xong là bản mới, bản cũ giữ nguyên. Nháp đã duyệt / đã phát hành không sửa được (CONFLICT, reason POS_PROMO_DRAFT_STATE)."
+    },
+    {
+      "id": "Q-CHUNG-03",
+      "ask": "Hai người cùng mở và cùng sửa một chứng từ thì người lưu sau thấy gì?",
+      "answer": "Chốt 25/11: người lưu sau bị chặn \"Nháp đã đổi lúc … bởi …, tải lại\" (so phiên bản → CONFLICT). Hiện trạng: lưu nháp chưa so phiên bản (người sau ghi đè) — việc này nằm ở api/domain + action nháp, ngoài phạm vi NT-BH-040; đã báo trưởng nhóm (dòng BH18-09)."
+    },
+    {
+      "id": "Q-CHUNG-04",
+      "ask": "Ngày chứng từ thuộc kỳ đã khoá, hoặc ngoài năm tài chính, thì màn báo trước hay chỉ báo khi ghi sổ?",
+      "answer": "Chốt 25/11: không áp dụng — khai khuyến mại không ghi sổ. Ngày áp lùi về trước hôm nay cần lý do (Core chặn khi phát hành)."
+    },
+    {
+      "id": "Q-CHUNG-05",
+      "ask": "Mạng chập chờn hoặc bấm Lưu hai lần thì có sinh hai chứng từ không?",
+      "answer": "Chốt 25/11: một kết quả. Nút Lưu khoá khi đang gửi; action nháp idempotency required (Idempotency-Key); cùng mã khuyến mại có nháp đang mở thì lần thứ hai bị chặn CONFLICT (POS_PROMO_DRAFT_STATE)."
+    },
+    {
+      "id": "Q-CHUNG-06",
+      "ask": "Ô nào bắt buộc? Bỏ trống hoặc sai kiểu thì báo ở ô nào, trước hay sau khi bấm?",
+      "answer": "Chốt 25/11: báo trước khi bấm ở khung Kiểm tra (theo tên ô / dòng / bậc), nút Lưu khoá tới khi hết lỗi; máy chủ trả mọi lỗi một lần (error.details với path của ô)."
+    },
+    {
+      "id": "Q-CHUNG-07",
+      "ask": "Thoát form giữa chừng hoặc bị từ chối thì dữ liệu đã nhập còn không? Có lưu nháp không?",
+      "answer": "Chốt 25/11: có nút \"Lưu nháp\"; bấm Đóng / Esc khi còn thay đổi chưa lưu thì hỏi trước (NT-BH-040 thêm). Bị từ chối: nháp giữ nguyên nội dung, người lập sửa rồi gửi lại."
+    },
+    {
+      "id": "Q-CHUNG-08",
+      "ask": "Mỗi danh sách chọn chỉ nhận giá trị nào (đang dùng, cùng chi nhánh, đã duyệt)? Chưa có thì thêm tại chỗ được không, ai được thêm?",
+      "answer": "Chốt 25/11: ô chọn nhóm hàng / nhãn hàng (K3) chỉ liệt kê mã phân loại đang dùng; không thêm tại chỗ (khai ở Danh mục → Nhóm hàng). Mã đã chọn nay ngừng dùng vẫn hiện, gắn \"(ngừng)\" để người khai bỏ. Mã hàng / quà gõ mã; Core kiểm khuôn khi phát hành."
+    },
+    {
+      "id": "Q-DM-01",
+      "ask": "Mã đã dùng trong chứng từ thì đổi mã, đổi tên, xoá ra sao (ngừng dùng, gộp, phiên bản mới)?",
+      "answer": "Chốt 25/11: chương trình đã dùng không xoá, chỉ \"Ngừng từ ngày\" (phát hành bản mới); không đổi mã khuyến mại của nháp (VALIDATION_ERROR ở ô key)."
+    },
+    {
+      "id": "Q-DM-02",
+      "ask": "Trùng mã, trùng tên, trùng mã số thuế thì chặn hay cảnh báo, chỉ vào đâu?",
+      "answer": "Chốt 25/11: trùng mã khuyến mại đang có nháp mở trong cùng đơn vị → CHẶN, chỉ vào ô Mã khuyến mại. Trùng chương trình (cùng mã hàng, cùng cửa hàng, giao thời gian) chỉ cảnh báo sau khi lưu. Trong một chương trình @2: một mã chỉ khai một lần (dòng giá, mã mua, quà) — chặn ở khung Kiểm tra, Core chặn lại khi phát hành."
+    },
+    {
+      "id": "Q-DM-03",
+      "ask": "Thiếu thông tin hạch toán (đơn vị tính nhỏ nhất, nhóm hạch toán) thì lưu nháp hay chặn? Nháp có được dùng trong chứng từ không?",
+      "answer": "Không áp dụng: chương trình khuyến mại không hạch toán; số lượng khai theo đơn vị nhỏ nhất. Nháp chưa duyệt / chưa phát hành không áp ở máy bán."
+    },
+    {
+      "id": "Q-BAN-01",
+      "ask": "Giá bán lấy từ bảng giá nào? Bán dưới giá tối thiểu / dưới giá vốn thì chặn hay cảnh báo, ai duyệt?",
+      "answer": "Chốt 25/11: giá chương trình dưới giá vốn → CẢNH BÁO lúc duyệt (không chặn), ghi nhật ký. Hiện trạng: màn duyệt chưa so giá vốn — ngoài phạm vi NT-BH-040 (khuôn @2 chỉ tính giảm), dòng BH18-10 ghi lại. Trần NĐ81 (legalCapPct, mặc định 50 %) Core kẹp lúc tính."
+    },
+    {
+      "id": "Q-BAN-02",
+      "ask": "Khách có hạn mức công nợ / hạn thanh toán không? Vượt thì chặn hay cảnh báo, mở được công nợ hiện tại không?",
+      "answer": "Không áp dụng cho màn khai khuyến mại (không có khách, không công nợ)."
+    },
+    {
+      "id": "Q-BAN-03",
+      "ask": "Xuất quá tồn, bán hàng chưa nhập kho thì sao? Đơn vị có cho âm kho không, cấu hình ở đâu?",
+      "answer": "Không áp dụng ở màn khai; tồn của quà kiểm ở máy bán (POS chặn bán quá tồn, chốt 25/11)."
+    },
+    {
+      "id": "Q-BAN-04",
+      "ask": "Thông tin hoá đơn điện tử (mã số thuế khách, tên, địa chỉ, thuế suất) thiếu hoặc sai thì báo trước khi phát hành chưa?",
+      "answer": "Không áp dụng: màn khai khuyến mại không phát hành hoá đơn."
+    },
+    {
+      "id": "Q-BAN-05",
+      "ask": "Trả hàng, giảm giá sau bán đi chứng từ nào, có trỏ về hoá đơn gốc không? Trả vượt số đã bán thì sao?",
+      "answer": "Không áp dụng ở màn khai; trả hàng theo NT-BH-030 / 038 (lượt khuyến mại trả lại khi trả cả đơn)."
+    }
+  ],
+  "rows": [
+    {
+      "id": "BH18-01",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Mã khuyến mại trống / sai khuôn (key)",
+      "target": {
+        "kind": "field",
+        "path": "key"
+      },
+      "catchAt": [
+        "ui",
+        "module"
+      ],
+      "hint": "Mã khuyến mại 2–64 ký tự chữ, số, dấu chấm, gạch (vd KM-TET-2026) — sửa ô Mã rồi lưu lại.",
+      "test": "apps/api/test/sale-promo-v2.test.ts#VALIDATION_ERROR"
+    },
+    {
+      "id": "BH18-02",
+      "action": "them",
+      "code": "CONFLICT",
+      "level": "block",
+      "when": "Mã khuyến mại đã có nháp đang mở (key) — kể cả bấm Lưu hai lần",
+      "target": {
+        "kind": "field",
+        "path": "key"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Mã này đã có bản nháp đang mở — mở bản nháp đó ở thẻ Nháp để sửa, không lập nháp thứ hai.",
+      "test": "apps/api/test/nt-bh-025-ctkm-duyet-han-muc.test.ts#POS_PROMO_DRAFT_STATE"
+    },
+    {
+      "id": "BH18-03",
+      "action": "sua",
+      "code": "CONFLICT",
+      "level": "block",
+      "when": "Sửa nháp đã duyệt / đã phát hành",
+      "target": {
+        "kind": "state",
+        "path": "status"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Nháp đã duyệt hoặc đã phát hành không sửa được — bấm Sửa ở chương trình để lập nháp mới.",
+      "test": "apps/api/test/nt-bh-025-ctkm-duyet-han-muc.test.ts#POS_PROMO_DRAFT_STATE"
+    },
+    {
+      "id": "BH18-04",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Giá riêng từng mã (K1): dòng chưa có mã, mã khai hai lần, dòng không có mức giảm hoặc vừa mức giảm vừa bậc, bậc không tăng dần (priceLines)",
+      "target": {
+        "kind": "field",
+        "path": "priceLines"
+      },
+      "catchAt": [
+        "ui",
+        "kernel"
+      ],
+      "hint": "Mỗi mã một dòng, chọn đúng một cách giảm hoặc bật \"theo bậc\" với các bậc tăng dần — sửa dòng được nêu ở khung Kiểm tra.",
+      "test": "apps/api/test/sale-promo-v2.test.ts#VALIDATION_ERROR"
+    },
+    {
+      "id": "BH18-05",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Mua nhiều mã (K2a): kiểu bất kỳ thiếu tổng số lượng, kiểu đủ từng mã thiếu số lượng của mã, không có mã mua lẫn phạm vi, mã mua trùng (buyItems)",
+      "target": {
+        "kind": "field",
+        "path": "buyItems"
+      },
+      "catchAt": [
+        "ui",
+        "kernel"
+      ],
+      "hint": "Nhập tổng số lượng (mua bất kỳ) hoặc số lượng từng mã (mua đủ từng mã); không có mã mua thì phải chọn phạm vi nhóm / nhãn.",
+      "test": "apps/api/test/sale-promo-v2.test.ts#VALIDATION_ERROR"
+    },
+    {
+      "id": "BH18-06",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Quà lựa chọn (K2b): chưa có quà, quà trùng mã, số quà được chọn lớn hơn số quà khai (choose)",
+      "target": {
+        "kind": "field",
+        "path": "choose"
+      },
+      "catchAt": [
+        "ui",
+        "kernel"
+      ],
+      "hint": "Số món khách được chọn phải từ 1 tới số quà đã khai — thêm quà hoặc giảm số được chọn.",
+      "test": "apps/api/test/sale-promo-v2.test.ts#VALIDATION_ERROR"
+    },
+    {
+      "id": "BH18-07",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Quà nhân bội số (K4): bật nhân mà có bậc ngưỡng 0, số lần tối đa không phải số nguyên ≥ 1 (maxTimes)",
+      "target": {
+        "kind": "field",
+        "path": "maxTimes"
+      },
+      "catchAt": [
+        "ui",
+        "kernel"
+      ],
+      "hint": "Nhân bội số cần ngưỡng tổng đơn lớn hơn 0 ở mọi bậc; số lần tối đa là số nguyên từ 1, để trống nếu không giới hạn.",
+      "test": "apps/api/test/sale-promo-v2.test.ts#VALIDATION_ERROR"
+    },
+    {
+      "id": "BH18-08",
+      "action": "them",
+      "code": null,
+      "level": "warn",
+      "when": "Phạm vi (K3): nhóm / nhãn đã chọn nay ngừng dùng ở danh mục (groupCodes, brandCodes)",
+      "target": {
+        "kind": "field",
+        "path": "groupCodes"
+      },
+      "catchAt": [
+        "ui"
+      ],
+      "hint": "Nhóm / nhãn gắn \"(ngừng)\" không còn dùng ở danh mục — bấm × để bỏ, chọn mã đang dùng."
+    },
+    {
+      "id": "BH18-09",
+      "action": "sua",
+      "code": null,
+      "level": "warn",
+      "when": "Hai người cùng sửa một nháp — người lưu sau (Q-CHUNG-03, chưa làm: lưu nháp chưa so phiên bản)",
+      "target": {
+        "kind": "state",
+        "path": "updatedAt"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Nháp đã đổi bởi người khác — tải lại nháp rồi sửa tiếp (cần thêm so phiên bản ở action nháp, ngoài phạm vi NT-BH-040)."
+    },
+    {
+      "id": "BH18-10",
+      "action": "them",
+      "code": null,
+      "level": "warn",
+      "when": "Giá chương trình dưới giá vốn (Q-BAN-01, chưa làm ở màn duyệt)",
+      "target": {
+        "kind": "field",
+        "path": "priceLines"
+      },
+      "catchAt": [
+        "module"
+      ],
+      "hint": "Giá chương trình thấp hơn giá vốn — người duyệt xem lại trước khi duyệt; vẫn duyệt được và được ghi nhật ký."
+    },
+    {
+      "id": "BH18-11",
+      "action": "them",
+      "code": "VALIDATION_ERROR",
+      "level": "block",
+      "when": "Đến ngày trước từ ngày; giờ kết thúc trước giờ bắt đầu (validTo, timeTo)",
+      "target": {
+        "kind": "field",
+        "path": "validTo"
+      },
+      "catchAt": [
+        "ui",
+        "kernel"
+      ],
+      "hint": "Ngày (giờ) kết thúc phải sau ngày (giờ) bắt đầu — sửa ô Đến ngày / khung giờ.",
+      "test": "apps/api/test/sale-promo-v2.test.ts#VALIDATION_ERROR"
+    }
+  ]
+}

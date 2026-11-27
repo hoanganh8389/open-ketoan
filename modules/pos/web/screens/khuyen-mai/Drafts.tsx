@@ -110,7 +110,7 @@ export function DraftsTab({ today, onEdit, onMsg }: { today: string; onEdit: (d:
  * Duyệt + phát hành một bản nháp (dùng chung hộp Duyệt và nút "Duyệt (phát hành)" trong form chương trình): module ghi "đã duyệt" + hạn mức →
  * phát hành vào sổ chính sách (quyền người duyệt) → ghi bản đã phát hành. Trả số bản.
  */
-// [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: tách hàm để form chương trình duyệt tại chỗ (đóng góp)
+// [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: tách hàm để form chương trình duyệt tại chỗ (đóng góp)
 export async function approveAndPublish(api: ReturnType<typeof useApi>, draft: Draft, note?: string): Promise<number> {
   const d = draft.status === 'approved' ? draft : await api.post<Draft>(`${M}/promo/drafts/${draft.id}/approve`, note?.trim() ? { note: note.trim() } : {});
   const pub = await api.post<{ version: number }>('/api/v1/policies', {

@@ -18,7 +18,7 @@ import { HanMucList, HanMucReport } from './khuyen-mai/HanMucTab';
 import { QUOTA_KINDS, type Program } from './khuyen-mai/han-muc';
 import { KmForm } from './khuyen-mai/KmForm';
 import { KIND_BY_CONTRACT, KIND_INFO, STATUS_LABEL, STOP_REASON, emptyForm, fromParams, statusOf, stopParams, type Form, type PromoKind } from './khuyen-mai/model';
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-14, S-CD-15, S-CD-18): Thêm mở form kiểu plugin cũ (loại chọn trong form, chỉ 7 loại cũ);
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-14, S-CD-15, S-CD-18): Thêm mở form kiểu plugin cũ (loại chọn trong form, chỉ 7 loại cũ);
 // loại mới của màn (bậc, combo món, flash sale, hạn mức…) ẩn khỏi Thêm — chương trình đã có vẫn mở bằng form cũ; thanh nút như màn danh mục (đóng góp)
 import { PolicyForm } from './khuyen-mai/PolicyForm';
 import { OLD_TYPE, emptyOld, nextPolicyCode, oldFromParams, type OldForm } from './khuyen-mai/old-types';
@@ -122,7 +122,7 @@ export function KhuyenMaiPage() {
     const x = await api.get<{ items?: Draft[] } | Draft[]>(`${M}/promo/drafts`, { status: 'published', q: key });
     return (Array.isArray(x) ? x : x.items ?? []).filter((d) => d.key === key)[0];
   };
-  // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: Thêm điền sẵn mã TGS_<MMYY>_<NN> kế tiếp (chương trình + nháp đang có), sửa được (đóng góp)
+  // [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: Thêm điền sẵn mã TGS_<MMYY>_<NN> kế tiếp (chương trình + nháp đang có), sửa được (đóng góp)
   const addNew = async () => {
     const drafts = await api.get<Draft[] | { items?: Draft[] }>(`${M}/promo/drafts`, { q: 'TGS_' }).then((x) => (Array.isArray(x) ? x : x.items ?? [])).catch(() => [] as Draft[]);
     const key = nextPolicyCode([...rows.map((r) => r.key), ...drafts.map((d) => d.key)], d0);
@@ -132,6 +132,7 @@ export function KhuyenMaiPage() {
     mutationFn: async (r: Row): Promise<{ old?: OldForm; f?: Form }> => {
       const p = await loadParams(r);
       const eff = d0 > (r.last.effectiveFrom ?? '') ? nextDay(d0) : (r.last.effectiveFrom ?? d0);
+      // nuot-loi: chưa có bản đã phát hành (chương trình mới) thì lấy nội dung từ dòng đang chọn
       const pub = await lastPublished(r.key).catch(() => undefined);
       const old = oldFromParams(r.contract, p.params!, { key: r.key, reason: pub?.reason ?? r.note, branchCodes: p.scope?.branchCodes, quota: pub?.quota ?? null, today: d0, effectiveFrom: eff });
       if (old) return { old };
@@ -141,7 +142,7 @@ export function KhuyenMaiPage() {
     },
     onSuccess: (x) => (x.old ? setOldForm({ f: x.old, editing: true }) : setForm({ f: x.f!, editing: true })),
   });
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K11): nhân bản — mở form Thêm chép nội dung khuyến mại đang chọn, mã để trống, áp từ hôm nay (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K11): nhân bản — mở form Thêm chép nội dung khuyến mại đang chọn, mã để trống, áp từ hôm nay (đóng góp)
   const copy = useMutation({
     mutationFn: async (r: Row): Promise<{ old?: OldForm; f?: Form }> => {
       const p = await loadParams(r);

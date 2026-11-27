@@ -20,7 +20,7 @@ export const KIND_INFO: Record<PromoKind, { contract: string; label: string; hin
   price_lines: { contract: 'sale.promo.price_lines@2', label: 'Giá riêng từng mã (nhiều mã)', hint: 'Một chương trình nhiều mã, mỗi mã một giá / một mức giảm / một bảng bậc riêng' },
   buy_x_get_y2: { contract: 'sale.promo.buy_x_get_y@2', label: 'Mua nhiều mã tặng quà (quà lựa chọn)', hint: 'Mua A hoặc B (gộp số lượng) / mua đủ A và B; khách chọn 1 (hoặc N) trong nhiều quà' },
   order_gift2: { contract: 'sale.promo.order_gift@2', label: 'Quà theo tổng đơn (nhân bội số)', hint: 'Đơn từ … tặng quà; bật nhân bội số: đủ 2 lần ngưỡng tặng 2 lần quà' },
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: combo bộ sản phẩm (pool, loại 13 cũ) — chỉ khai bằng form kiểu cũ; có ở đây để danh sách nhận ra khuôn (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: combo bộ sản phẩm (pool, loại 13 cũ) — chỉ khai bằng form kiểu cũ; có ở đây để danh sách nhận ra khuôn (đóng góp)
   pool_combo: { contract: 'sale.promo.pool_combo@2', label: 'Combo bộ sản phẩm', hint: 'Mua đủ N mã khác nhau trong pool giảm % cả pool; chưa đủ thì giảm theo số lượng từng mã' },
 };
 export const KIND_BY_CONTRACT: Record<string, PromoKind> = Object.fromEntries(Object.entries(KIND_INFO).map(([k, v]) => [v.contract, k as PromoKind]));
@@ -33,7 +33,7 @@ export type Form = {
   /** Trần NĐ81 (% tiền dòng); trống = mặc định 50; `noCap` = miễn trần (người khai chịu trách nhiệm). */
   legalCapPct: string; noCap: boolean;
   weekdays: number[]; timeFrom: string; timeTo: string; minOrderAmount: string; couponCodes: string; birthdayMonth: boolean; memberLevels: string;
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): sinh nhật theo ngày / tuần / tháng, loại đơn (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): sinh nhật theo ngày / tuần / tháng, loại đơn (đóng góp)
   /** '' = không theo sinh nhật; month = tháng sinh (ô birthdayMonth cũ); week / day = tuần / đúng ngày sinh. */
   birthdayScope: '' | 'day' | 'week' | 'month';
   /** Loại đơn được áp; rỗng = mọi loại. */

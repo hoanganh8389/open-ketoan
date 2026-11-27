@@ -122,7 +122,7 @@ export async function importDrafts(tx: Tx, ctx: ActionContext, source: string, i
 export async function approveDraft(tx: Tx, ctx: ActionContext, id: string, note?: string) {
   const r = await getRow(tx, id, true);
   if (!['pending', 'draft', 'rejected'].includes(r.status)) throw Errors.conflict(`Bản nháp ${r.policy_key} đang ở trạng thái "${r.status}" — không duyệt được`, { reason: 'POS_PROMO_DRAFT_STATE', status: r.status });
-  // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: bỏ luật hai người cho khuyến mại (Hoàng chốt 28/11, thay Q-CD-2 phần khuyến mại) — người có quyền
+  // [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: bỏ luật hai người cho khuyến mại (Hoàng chốt 28/11, thay Q-CD-2 phần khuyến mại) — người có quyền
   // Duyệt khuyến mại tự lập và tự duyệt được; quyền vẫn gác ở action (pos:promo-approve), nhật ký ghi người duyệt (đóng góp)
   await sql`UPDATE mod_pos.promo_drafts SET status = 'approved', approved_by = ${ctx.actor.id}, approved_by_name = ${ctx.actor.name || null}, approved_at = now(),
       updated_by = ${ctx.actor.id}, updated_at = now() WHERE draft_id = ${id}::uuid`.execute(tx);
@@ -227,7 +227,7 @@ export async function quotaState(tx: Tx, branch: string, keys: readonly string[]
  * Máy bán nhận đơn: khoá cửa hàng × chương trình (thứ tự mã cố định) tới hết giao dịch — hai máy cùng áp một chương trình chạy nối
  * tiếp, đơn sau thấy lượt của đơn trước (như khoá tồn NT-BH-021). Trả chương trình đã hết lượt.
  */
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): lượt theo khách — đếm đơn / phiếu còn tính của cùng khách áp chương trình (đóng góp)
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): lượt theo khách — đếm đơn / phiếu còn tính của cùng khách áp chương trình (đóng góp)
 /** Chương trình đã hết lượt của khách (hạn mức `@khach`); khách lẻ (không mã) không xét. Khoá theo khách × chương trình. */
 export async function checkCustomerQuota(tx: Tx, customer: string | null | undefined, keys: readonly string[], excludeRef: string): Promise<(QuotaShort & { customer: string })[]> {
   const list = [...new Set(keys)].sort();

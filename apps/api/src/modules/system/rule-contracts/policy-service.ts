@@ -80,7 +80,7 @@ export interface EvalLine { lineKey: string; sku: string; qty: number; itemId?: 
 export interface EvaluateRequest {
   docDate: string; branchCode?: string; channel?: string; lines: EvalLine[]; policies?: { key: string; version?: number }[];
   at?: { time?: string; weekday?: number }; customer?: { birthday?: string; memberLevel?: string }; coupons?: string[];
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: quà lựa chọn theo chương trình (khuôn @2) và loại đơn (lẻ / sỉ / đơn đặt hàng) (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: quà lựa chọn theo chương trình (khuôn @2) và loại đơn (lẻ / sỉ / đơn đặt hàng) (đóng góp)
   /** Mã quà người bán đã chọn, theo mã chương trình: { "KM-QUA": ["Q2"] }. */
   giftChoice?: Record<string, string[]>;
   /** Loại đơn: retail (bán lẻ, mặc định máy bán), wholesale (bán sỉ), so (đơn đặt hàng). */

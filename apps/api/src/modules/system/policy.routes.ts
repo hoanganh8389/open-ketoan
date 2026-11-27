@@ -83,7 +83,7 @@ const evaluate = defineAction({
     at: z.object({ time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM').optional(), weekday: z.number().int().min(1).max(7).optional() }).optional(),
     customer: z.object({ birthday: z.string().trim().max(10).optional(), memberLevel: z.string().trim().max(32).optional() }).optional(),
     coupons: z.array(z.string().trim().min(1).max(64)).max(20).optional(),
-    // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: quà lựa chọn theo chương trình (khuôn @2: chưa chọn → pendingChoices) và loại đơn (đóng góp)
+    // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: quà lựa chọn theo chương trình (khuôn @2: chưa chọn → pendingChoices) và loại đơn (đóng góp)
     giftChoice: z.record(code, z.array(code).max(20)).optional(),
     orderType: z.enum(['retail', 'wholesale', 'so']).optional(),
   }),

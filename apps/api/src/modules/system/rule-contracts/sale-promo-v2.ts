@@ -120,13 +120,13 @@ export const priceLinesParams = z.object({
   basis: z.enum(['qty', 'amount']).default('qty'),
   lines: z.array(z.object({
     sku, itemId: itemId.optional(), ...way,
-    // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): "Tối đa (đ)" của plugin cũ — trần tiền giảm của cả mã trên một chứng từ, theo dòng / bậc (đóng góp)
+    // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): "Tối đa (đ)" của plugin cũ — trần tiền giảm của cả mã trên một chứng từ, theo dòng / bậc (đóng góp)
     tiers: z.array(z.object({ min: pos, ...way, maxDiscount: money.optional() }).strict()).min(1).max(20).optional(),
     /** Số lượng tối đa được giảm trên một chứng từ (theo thứ tự dòng). */
     maxQty: pos.optional(),
     /** Trần tiền giảm của cả mã trên một chứng từ (không khai bậc, hoặc bậc không khai trần riêng). */
     maxDiscount: money.optional(),
-    // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7): khai theo đơn vị quy đổi (vd Thùng = 48): bậc số lượng, số lượng tối đa, giá / giảm
+    // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7): khai theo đơn vị quy đổi (vd Thùng = 48): bậc số lượng, số lượng tối đa, giá / giảm
     // tiền mỗi cái tính theo đơn vị này; bộ tính quy về đơn vị nhỏ nhất (giỏ gửi theo đơn vị nhỏ nhất) (đóng góp)
     unit: z.object({ name: z.string().trim().min(1).max(32), ratio: pos }).strict().optional(),
   }).strict()).min(1).max(500),
@@ -254,7 +254,7 @@ export const orderGiftV2Params = z.object({
   /** Bật: tặng floor(tổng đơn / ngưỡng của bậc đạt được) lần quà của bậc đó. */
   multiply: z.boolean().default(false),
   maxTimes: z.number().int().positive().optional(),
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): quà theo giá trị đơn của plugin cũ — nhiều quà thì khách chọn (mặc định tặng hết) (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): quà theo giá trị đơn của plugin cũ — nhiều quà thì khách chọn (mặc định tặng hết) (đóng góp)
   /** Số món khách chọn trong quà của bậc; vắng = tặng hết các quà của bậc. */
   choose: z.number().int().min(1).max(20).optional(),
 }).strict();
@@ -305,7 +305,7 @@ export const priceLinesVectors: V<PriceLinesParams>[] = [
   { name: 'maxQty 3: 5 A chỉ giảm 3 cái (10.000 / cái), rải theo thứ tự dòng',
     params: { ...base, basis: 'qty', lines: [{ sku: 'A', amountPerUnit: 10_000, maxQty: 3 }] }, input: { lines: [L('a1', 'A', 2, 100_000), L('a2', 'A', 3, 100_000)] },
     output: { discounts: [{ lineKey: 'a1', sku: 'A', qty: 2, amount: 20_000 }, { lineKey: 'a2', sku: 'A', qty: 3, amount: 10_000 }], gifts: [], total: 30_000, touched: ['a1', 'a2'], noPrice: [], detail: { entries: [{ sku: 'A', base: 5 }] } } },
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7, K9): ca đơn vị quy đổi và khung giờ qua đêm (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7, K9): ca đơn vị quy đổi và khung giờ qua đêm (đóng góp)
   { name: 'K7 đơn vị Thùng = 4: từ 2 thùng giá 360.000 / thùng — 8 hộp × 100.000 → giá 90.000 / hộp, giảm 80.000',
     params: { ...base, basis: 'qty', lines: [{ sku: 'A', unit: { name: 'Thùng', ratio: 4 }, tiers: [{ min: 2, unitPrice: 360_000 }] }] }, input: { lines: [L('a', 'A', 8, 100_000)] },
     output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 8, amount: 80_000 }], gifts: [], total: 80_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 8, tierMin: 2, unit: 'Thùng', ratio: 4 }] } } },
@@ -412,7 +412,7 @@ const commonDocs = [
 const scopeStep = 'phạm vi: dòng có sku ∈ scope.skus, hoặc (groupCodes trống hoặc giao lines[].groupCodes) và (brandCodes trống hoặc chứa lines[].brandCode); thiếu nhóm / nhãn của dòng → chặn (cửa nạp: không xác định)';
 const lineInput = 'lines[]: { lineKey, sku, qty, itemId?, price?, groupCodes? (nhóm + nhóm cha, bộ tính điền), brandCode? (bộ tính điền) }; context?';
 const dateIssues = (p: { validFrom?: string; validTo?: string }) => (p.validFrom && p.validTo && p.validTo < p.validFrom ? [{ path: 'validTo', message: 'Ngày kết thúc trước ngày bắt đầu' }] : []);
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): giờ kết thúc trước giờ bắt đầu = khung qua đêm (conditionsBlock xử lý); chỉ chặn hai giờ trùng nhau (đóng góp)
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): giờ kết thúc trước giờ bắt đầu = khung qua đêm (conditionsBlock xử lý); chỉ chặn hai giờ trùng nhau (đóng góp)
 const timeIssues = (p: { conditions?: { timeFrom?: string; timeTo?: string } }) => (p.conditions?.timeFrom && p.conditions.timeTo && p.conditions.timeTo === p.conditions.timeFrom ? [{ path: 'conditions.timeTo', message: 'Giờ kết thúc trùng giờ bắt đầu' }] : []);
 const ascending = (xs: number[]) => xs.every((x, i) => i === 0 || x > xs[i - 1]!);
 const keyOf = (t: { sku: string; itemId?: string }) => t.itemId ?? `sku:${t.sku}`;
@@ -519,7 +519,7 @@ export const saleOrderGiftV2: RuleContract<OrderGiftV2Params, PromoInputV2, Prom
 };
 
 // ── d) Combo bộ sản phẩm (pool) — loại 13 của plugin cũ (NT-BH-049, S-CD-16) ─────────────────────────────────────────────
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: khuôn pool_combo@2 — mua đủ N mã KHÁC NHAU trong pool thì giảm % mọi dòng pool; chưa đủ thì giảm theo bậc SL từng mã (đóng góp)
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: khuôn pool_combo@2 — mua đủ N mã KHÁC NHAU trong pool thì giảm % mọi dòng pool; chưa đủ thì giảm theo bậc SL từng mã (đóng góp)
 export const poolComboParams = z.object({
   ...common,
   /** Các mã thuộc pool (1–500). */

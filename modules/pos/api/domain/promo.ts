@@ -6,12 +6,12 @@
 import { z } from '@bizcity/module-sdk';
 
 /** Khuôn khuyến mại nội tuyến của màn BH18 (Core kiểm lại nội dung khi phát hành). */
-// [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049: mở ba khuôn @2 (NT-BH-040) cho bản nháp — trước đây màn có loại @2 nhưng lưu bị từ chối (đóng góp)
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: mở ba khuôn @2 (NT-BH-040) cho bản nháp — trước đây màn có loại @2 nhưng lưu bị từ chối (đóng góp)
 export const PROMO_CONTRACTS = [
   'sale.promo.tiered@1', 'sale.promo.order_discount@1', 'sale.promo.order_gift@1',
   'sale.promo.combo@1', 'sale.promo.cheapest_free@1', 'sale.promo.buy_x_get_y@1',
   'sale.promo.price_lines@2', 'sale.promo.buy_x_get_y@2', 'sale.promo.order_gift@2',
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): combo bộ sản phẩm (pool) — loại 13 của plugin cũ (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): combo bộ sản phẩm (pool) — loại 13 của plugin cũ (đóng góp)
   'sale.promo.pool_combo@2',
 ] as const;
 
@@ -21,7 +21,7 @@ export const quotaSchema = z.object({
   perBranch: z.number().int().min(0).max(1_000_000).optional(),
   /** Số lượt riêng từng cửa hàng: { "CN01": 2 }. */
   branches: z.record(z.string().trim().min(1).max(32), z.number().int().min(0).max(1_000_000)).optional(),
-  // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): số lượt tối đa mỗi khách (đơn có khách; khách lẻ không giới hạn) (đóng góp)
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): số lượt tối đa mỗi khách (đơn có khách; khách lẻ không giới hạn) (đóng góp)
   perCustomer: z.number().int().min(1).max(1_000_000).optional(),
 });
 export type Quota = z.infer<typeof quotaSchema>;
