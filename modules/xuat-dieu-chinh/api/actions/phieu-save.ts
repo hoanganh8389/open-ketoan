@@ -4,8 +4,8 @@
  */
 // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: lưu nháp / ghi sổ phiếu BH06 (đóng góp)
 import { defineAction, z } from '@bizcity/module-sdk';
-import { save } from '../service.js';
-import { branchOfPhieu } from '../store.js';
+import { isAccountant, save } from '../service.js';
+import { branchOfPhieu, hideCost } from '../store.js';
 
 const line = z.object({
   lineKey: z.string().trim().max(64).optional(), sku: z.string().trim().max(64), unit: z.string().trim().max(32).optional(), unitQty: z.coerce.number(),
@@ -33,5 +33,6 @@ export default defineAction({
     const cur = i.id ? await ctx.data.module((tx) => branchOfPhieu(tx, i.id!)) : null;
     return [...new Set([cur, i.branchCode].filter((b): b is string => Boolean(b)))];
   },
-  handler: async (ctx, i) => save(ctx, i),
+  // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-054: phiếu trả về không mang giá vốn cho người không phải kế toán (đóng góp)
+  handler: async (ctx, i) => hideCost(await save(ctx, i), isAccountant(ctx)),
 });
