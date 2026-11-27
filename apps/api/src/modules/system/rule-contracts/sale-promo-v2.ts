@@ -120,9 +120,15 @@ export const priceLinesParams = z.object({
   basis: z.enum(['qty', 'amount']).default('qty'),
   lines: z.array(z.object({
     sku, itemId: itemId.optional(), ...way,
-    tiers: z.array(z.object({ min: pos, ...way }).strict()).min(1).max(20).optional(),
+    // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): "Tối đa (đ)" của plugin cũ — trần tiền giảm của cả mã trên một chứng từ, theo dòng / bậc (đóng góp)
+    tiers: z.array(z.object({ min: pos, ...way, maxDiscount: money.optional() }).strict()).min(1).max(20).optional(),
     /** Số lượng tối đa được giảm trên một chứng từ (theo thứ tự dòng). */
     maxQty: pos.optional(),
+    /** Trần tiền giảm của cả mã trên một chứng từ (không khai bậc, hoặc bậc không khai trần riêng). */
+    maxDiscount: money.optional(),
+    // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7): khai theo đơn vị quy đổi (vd Thùng = 48): bậc số lượng, số lượng tối đa, giá / giảm
+    // tiền mỗi cái tính theo đơn vị này; bộ tính quy về đơn vị nhỏ nhất (giỏ gửi theo đơn vị nhỏ nhất) (đóng góp)
+    unit: z.object({ name: z.string().trim().min(1).max(32), ratio: pos }).strict().optional(),
   }).strict()).min(1).max(500),
 }).strict();
 export type PriceLinesParams = z.infer<typeof priceLinesParams>;
@@ -154,15 +160,20 @@ export function evaluatePriceLines(p: PriceLinesParams, input: PromoInputV2): Pr
     const ls = hit.filter((l) => owner.get(l.lineKey) === i && hasPrice(l));
     if (!ls.length) return;
     const base = p.basis === 'qty' ? r4(ls.reduce((s, l) => s + l.qty, 0)) : ls.reduce((s, l) => s + Math.round(l.qty * l.price!), 0);
-    const tier = e.tiers ? [...e.tiers].reverse().find((t) => base >= t.min - EPS) : undefined;
-    const w: Way | undefined = e.tiers ? tier : e;
-    entries.push({ sku: e.sku, base, ...(tier ? { tierMin: tier.min } : {}) });
+    // K7: đơn vị quy đổi — ngưỡng số lượng × tỉ lệ, giá / giảm tiền mỗi cái ÷ tỉ lệ (về đơn vị nhỏ nhất).
+    const k = e.unit?.ratio ?? 1;
+    const minOf = (m: number) => (p.basis === 'qty' ? m * k : m);
+    const tier = e.tiers ? [...e.tiers].reverse().find((t) => base >= minOf(t.min) - EPS) : undefined;
+    const w0: Way | undefined = e.tiers ? tier : e;
+    const w: Way | undefined = w0 && k !== 1 ? { pct: w0.pct, amountPerUnit: w0.amountPerUnit != null ? w0.amountPerUnit / k : w0.amountPerUnit, unitPrice: w0.unitPrice != null ? w0.unitPrice / k : w0.unitPrice } : w0;
+    entries.push({ sku: e.sku, base, ...(tier ? { tierMin: tier.min } : {}), ...(e.unit ? { unit: e.unit.name, ratio: k } : {}) });
     if (!w || !hasWay(w)) return;
-    let room = e.maxQty ?? Infinity;
+    let room = e.maxQty != null ? e.maxQty * k : Infinity;
+    let cash = (tier as { maxDiscount?: number } | undefined)?.maxDiscount ?? e.maxDiscount ?? Infinity;
     for (const l of ls) {
-      if (room <= EPS) break;
+      if (room <= EPS || cash <= 0) break;
       const q = Math.min(l.qty, room); room = r4(room - q);
-      const amount = discountOf(q, l.price!, w);
+      const amount = Math.min(cash, discountOf(q, l.price!, w)); cash -= amount;
       if (amount > 0) discounts.push({ lineKey: l.lineKey, sku: l.sku, qty: l.qty, amount });
     }
   });
@@ -180,8 +191,8 @@ export const buyXGetYV2Params = z.object({
   buy: z.object({
     /** Mã phải mua. Trống = mọi dòng trong phạm vi (cần `scope`). */
     items: z.array(target).max(50).default([]),
-    /** any: Σ số lượng các mã ≥ qty; all: đủ `items[].qty` từng mã. */
-    mode: z.enum(['any', 'all']).default('any'),
+    /** any: Σ số lượng các mã ≥ qty; all: đủ `items[].qty` từng mã; each (plugin cũ, NT-BH-049): mỗi mã tính riêng, số lần = Σ floor(SL mã / items[].qty). */
+    mode: z.enum(['any', 'all', 'each']).default('any'),
     qty: pos.optional(),
   }).strict(),
   get: z.object({
@@ -204,11 +215,12 @@ export function evaluateBuyXGetYV2(p: BuyXGetYV2Params, input: PromoInputV2): Pr
   const bought = r4(buyLines.reduce((s, l) => s + l.qty, 0));
   let times: number;
   if (p.buy.mode === 'all') times = Math.min(...p.buy.items.map((t) => Math.floor(qtyOf(t) / (t.qty ?? 1) + EPS)));
+  else if (p.buy.mode === 'each') times = p.buy.items.reduce((s, t) => s + Math.floor(qtyOf(t) / (t.qty ?? 1) + EPS), 0);
   else times = Math.floor(bought / (p.buy.qty ?? 1) + EPS);
   if (!p.repeat) times = Math.min(times, 1);
   if (!Number.isFinite(times) || times <= 0) {
-    const need = p.buy.mode === 'all'
-      ? p.buy.items.map((t) => `${t.qty ?? 1} ${t.sku}`).join(' và ')
+    const need = p.buy.mode === 'all' || p.buy.mode === 'each'
+      ? p.buy.items.map((t) => `${t.qty ?? 1} ${t.sku}`).join(p.buy.mode === 'all' ? ' và ' : ' hoặc ')
       : `${p.buy.qty ?? 1} trong ${p.buy.items.length ? p.buy.items.map((t) => t.sku).join(', ') : 'phạm vi'}`;
     return empty({ blocked: `chưa đủ điều kiện mua (${need}); mới mua ${bought}`, detail: { bought, times: 0 } });
   }
@@ -242,6 +254,9 @@ export const orderGiftV2Params = z.object({
   /** Bật: tặng floor(tổng đơn / ngưỡng của bậc đạt được) lần quà của bậc đó. */
   multiply: z.boolean().default(false),
   maxTimes: z.number().int().positive().optional(),
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): quà theo giá trị đơn của plugin cũ — nhiều quà thì khách chọn (mặc định tặng hết) (đóng góp)
+  /** Số món khách chọn trong quà của bậc; vắng = tặng hết các quà của bậc. */
+  choose: z.number().int().min(1).max(20).optional(),
 }).strict();
 export type OrderGiftV2Params = z.infer<typeof orderGiftV2Params>;
 
@@ -257,10 +272,21 @@ export function evaluateOrderGiftV2(p: OrderGiftV2Params, input: PromoInputV2): 
   if (!tier) return empty({ blocked: `tổng đơn ${vnd(amount)} chưa đủ ${vnd(p.tiers[0]!.minOrder)}`, detail: { orderAmount: amount } });
   let times = p.multiply && tier.minOrder > 0 ? Math.floor(amount / tier.minOrder) : 1;
   if (p.multiply && p.maxTimes !== undefined) times = Math.min(times, p.maxTimes);
-  return {
-    discounts: [], gifts: tier.gifts.map((g) => ({ sku: g.sku, ...(g.itemId ? { itemId: g.itemId } : {}), qty: r4(g.qty * times) })), total: 0,
-    touched: sc.lines.map((l) => l.lineKey), noPrice: [], detail: { orderAmount: amount, tierMin: tier.minOrder, times },
-  };
+  const per = (g: { sku: string; itemId?: string; qty: number }): GiftOut => ({ sku: g.sku, ...(g.itemId ? { itemId: g.itemId } : {}), qty: r4(g.qty * times) });
+  const touched = sc.lines.map((l) => l.lineKey);
+  const detail = { orderAmount: amount, tierMin: tier.minOrder, times };
+  if (p.choose !== undefined && tier.gifts.length > p.choose) {
+    const chosen = [...new Set((ctx?.giftChoice ?? []).map((x) => x.trim()).filter(Boolean))];
+    const pending = (problem?: string): PromoOutputV2 => (ctx?.lenient
+      ? empty({ indeterminate: true })
+      : { ...empty({ touched, detail }), pendingChoice: { choose: p.choose!, times, options: tier.gifts.map(per), ...(problem ? { problem } : {}) } });
+    if (!chosen.length) return pending();
+    const wrong = chosen.filter((s) => !tier.gifts.some((g) => g.sku === s));
+    if (wrong.length) return pending(`${wrong.join(', ')} không có trong danh sách quà của bậc đạt được`);
+    if (chosen.length !== p.choose) return pending(`phải chọn ${p.choose} món quà, đang chọn ${chosen.length}`);
+    return { discounts: [], gifts: tier.gifts.filter((g) => chosen.includes(g.sku)).map(per), total: 0, touched, noPrice: [], detail };
+  }
+  return { discounts: [], gifts: tier.gifts.map(per), total: 0, touched, noPrice: [], detail };
 }
 
 // ── Bộ ca chuẩn (NT-BH-040 §4, §5) ────────────────────────────────────────────────────────────────────────────────────
@@ -279,6 +305,28 @@ export const priceLinesVectors: V<PriceLinesParams>[] = [
   { name: 'maxQty 3: 5 A chỉ giảm 3 cái (10.000 / cái), rải theo thứ tự dòng',
     params: { ...base, basis: 'qty', lines: [{ sku: 'A', amountPerUnit: 10_000, maxQty: 3 }] }, input: { lines: [L('a1', 'A', 2, 100_000), L('a2', 'A', 3, 100_000)] },
     output: { discounts: [{ lineKey: 'a1', sku: 'A', qty: 2, amount: 20_000 }, { lineKey: 'a2', sku: 'A', qty: 3, amount: 10_000 }], gifts: [], total: 30_000, touched: ['a1', 'a2'], noPrice: [], detail: { entries: [{ sku: 'A', base: 5 }] } } },
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7, K9): ca đơn vị quy đổi và khung giờ qua đêm (đóng góp)
+  { name: 'K7 đơn vị Thùng = 4: từ 2 thùng giá 360.000 / thùng — 8 hộp × 100.000 → giá 90.000 / hộp, giảm 80.000',
+    params: { ...base, basis: 'qty', lines: [{ sku: 'A', unit: { name: 'Thùng', ratio: 4 }, tiers: [{ min: 2, unitPrice: 360_000 }] }] }, input: { lines: [L('a', 'A', 8, 100_000)] },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 8, amount: 80_000 }], gifts: [], total: 80_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 8, tierMin: 2, unit: 'Thùng', ratio: 4 }] } } },
+  { name: 'K7 đơn vị Thùng = 4: 7 hộp chưa đủ 2 thùng → không áp',
+    params: { ...base, basis: 'qty', lines: [{ sku: 'A', unit: { name: 'Thùng', ratio: 4 }, tiers: [{ min: 2, unitPrice: 360_000 }] }] }, input: { lines: [L('a', 'A', 7, 100_000)] },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chưa dòng nào đạt mức giảm của chương trình', detail: { entries: [{ sku: 'A', base: 7, unit: 'Thùng', ratio: 4 }] } } },
+  { name: 'K9 khung qua đêm 22:00–02:00, lúc 23:30 → áp 10 %',
+    params: { ...base, basis: 'qty', conditions: { timeFrom: '22:00', timeTo: '02:00' }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { at: { time: '23:30' } } },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 10_000 }], gifts: [], total: 10_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 1 }] } } },
+  { name: 'K9 khung qua đêm 22:00–02:00, lúc 12:00 → không áp',
+    params: { ...base, basis: 'qty', conditions: { timeFrom: '22:00', timeTo: '02:00' }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { at: { time: '12:00' } } },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chỉ áp 22:00–02:00 (qua đêm)' } },
+  { name: 'K9 chỉ đơn bán sỉ — đơn máy bán (bán lẻ) → không áp',
+    params: { ...base, basis: 'qty', conditions: { orderTypes: ['wholesale'] }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)] },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chỉ áp đơn bán sỉ' } },
+  { name: 'K9 sinh nhật theo ngày — đúng ngày sinh → áp',
+    params: { ...base, basis: 'qty', conditions: { birthdayScope: 'day' }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { docDate: '2026-11-27', customer: { birthday: '1990-11-27' } } },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 10_000 }], gifts: [], total: 10_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 1 }] } } },
+  { name: 'K9 sinh nhật theo tuần — sinh 25/11, mua 27/11 (cùng tuần thứ Hai 23/11) → áp',
+    params: { ...base, basis: 'qty', conditions: { birthdayScope: 'week' }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { docDate: '2026-11-27', customer: { birthday: '1990-11-25' } } },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 10_000 }], gifts: [], total: 10_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 1 }] } } },
   { name: 'làm tròn đồng: 3 A × 33.333 giảm 15 % → 15.000',
     params: { ...base, basis: 'qty', lines: [{ sku: 'A', pct: 15 }] }, input: { lines: [L('a', 'A', 3, 33_333)] },
     output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 3, amount: 15_000 }], gifts: [], total: 15_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 3 }] } } },
@@ -364,7 +412,8 @@ const commonDocs = [
 const scopeStep = 'phạm vi: dòng có sku ∈ scope.skus, hoặc (groupCodes trống hoặc giao lines[].groupCodes) và (brandCodes trống hoặc chứa lines[].brandCode); thiếu nhóm / nhãn của dòng → chặn (cửa nạp: không xác định)';
 const lineInput = 'lines[]: { lineKey, sku, qty, itemId?, price?, groupCodes? (nhóm + nhóm cha, bộ tính điền), brandCode? (bộ tính điền) }; context?';
 const dateIssues = (p: { validFrom?: string; validTo?: string }) => (p.validFrom && p.validTo && p.validTo < p.validFrom ? [{ path: 'validTo', message: 'Ngày kết thúc trước ngày bắt đầu' }] : []);
-const timeIssues = (p: { conditions?: { timeFrom?: string; timeTo?: string } }) => (p.conditions?.timeFrom && p.conditions.timeTo && p.conditions.timeTo < p.conditions.timeFrom ? [{ path: 'conditions.timeTo', message: 'Giờ kết thúc trước giờ bắt đầu' }] : []);
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): giờ kết thúc trước giờ bắt đầu = khung qua đêm (conditionsBlock xử lý); chỉ chặn hai giờ trùng nhau (đóng góp)
+const timeIssues = (p: { conditions?: { timeFrom?: string; timeTo?: string } }) => (p.conditions?.timeFrom && p.conditions.timeTo && p.conditions.timeTo === p.conditions.timeFrom ? [{ path: 'conditions.timeTo', message: 'Giờ kết thúc trùng giờ bắt đầu' }] : []);
 const ascending = (xs: number[]) => xs.every((x, i) => i === 0 || x > xs[i - 1]!);
 const keyOf = (t: { sku: string; itemId?: string }) => t.itemId ?? `sku:${t.sku}`;
 const dupIssue = (list: { sku: string; itemId?: string }[], path: string, what: string) => (new Set(list.map(keyOf)).size !== list.length ? [{ path, message: `Một mã chỉ khai một lần trong ${what}` }] : []);
@@ -416,8 +465,8 @@ export const saleBuyXGetYV2: RuleContract<BuyXGetYV2Params, PromoInputV2, PromoO
   publishChecks: (p) => [
     ...dateIssues(p), ...timeIssues(p), ...dupIssue(p.buy.items, 'buy.items', 'phần mua'), ...dupIssue(p.get.options, 'get.options', 'danh sách quà'),
     ...(p.buy.mode === 'any' && p.buy.qty === undefined ? [{ path: 'buy.qty', message: 'Kiểu "mua bất kỳ" cần tổng số lượng phải mua' }] : []),
-    ...(p.buy.mode === 'all' && !p.buy.items.length ? [{ path: 'buy.items', message: 'Kiểu "mua đủ từng mã" cần danh sách mã phải mua' }] : []),
-    ...(p.buy.mode === 'all' ? p.buy.items.flatMap((t, i) => (t.qty === undefined ? [{ path: `buy.items.${i}.qty`, message: `${t.sku}: kiểu "mua đủ từng mã" cần số lượng của mã` }] : [])) : []),
+    ...(p.buy.mode !== 'any' && !p.buy.items.length ? [{ path: 'buy.items', message: 'Kiểu "mua đủ từng mã" / "mỗi mã tính riêng" cần danh sách mã phải mua' }] : []),
+    ...(p.buy.mode !== 'any' ? p.buy.items.flatMap((t, i) => (t.qty === undefined ? [{ path: `buy.items.${i}.qty`, message: `${t.sku}: kiểu "mua đủ từng mã" cần số lượng của mã` }] : [])) : []),
     ...(!p.buy.items.length && !(p.scope?.skus?.length || p.scope?.groupCodes?.length || p.scope?.brandCodes?.length) ? [{ path: 'buy.items', message: 'Chưa khai mã phải mua hoặc phạm vi (nhóm / nhãn)' }] : []),
     ...(p.get.choose > p.get.options.length ? [{ path: 'get.choose', message: `Số quà được chọn (${p.get.choose}) lớn hơn số quà khai (${p.get.options.length})` }] : []),
     ...(p.maxGiftQty !== undefined && p.maxGiftQty < Math.min(...p.get.options.map((o) => o.qty)) ? [{ path: 'maxGiftQty', message: 'Trần quà nhỏ hơn số quà một lần — chính sách không bao giờ tặng đủ' }] : []),
@@ -426,7 +475,7 @@ export const saleBuyXGetYV2: RuleContract<BuyXGetYV2Params, PromoInputV2, PromoO
   describe: () => ({
     params: [...commonDocs,
       { name: 'buy.items', type: '[{ sku, itemId?, qty? }]', required: false, doc: '0–50 mã phải mua; trống = mọi dòng trong phạm vi' },
-      { name: 'buy.mode', type: "'any' | 'all'", required: false, doc: 'any (mặc định): Σ số lượng các mã ≥ buy.qty; all: đủ items[].qty từng mã' },
+      { name: 'buy.mode', type: "'any' | 'all' | 'each'", required: false, doc: 'any (mặc định): Σ số lượng các mã ≥ buy.qty; all: đủ items[].qty từng mã; each: mỗi mã tính riêng (plugin cũ), số lần = Σ floor(SL mã / items[].qty)' },
       { name: 'buy.qty', type: 'number > 0', required: false, doc: 'Tổng số lượng một lần (kiểu any)' },
       { name: 'get.options', type: '[{ sku, itemId?, qty }]', required: true, doc: '1–20 món quà, số lượng một lần' },
       { name: 'get.choose', type: 'số nguyên 1..options', required: false, doc: 'Khách chọn bao nhiêu món (mặc định 1); bằng số món khai = tặng hết, không cần chọn' },
@@ -435,7 +484,7 @@ export const saleBuyXGetYV2: RuleContract<BuyXGetYV2Params, PromoInputV2, PromoO
     spec: {
       input: `${lineInput} — context.giftChoice: mã quà đã chọn cho chương trình này`,
       steps: ['kiểm điều kiện chung', scopeStep, 'dòng mua = dòng trong phạm vi khớp một buy.items (trống = mọi dòng trong phạm vi)',
-        'any: times = floor(Σ qty / buy.qty + 1e-9); all: times = min floor(qty mã / items[].qty + 1e-9); repeat = false → times ≤ 1',
+        'any: times = floor(Σ qty / buy.qty + 1e-9); all: times = min floor(qty mã / items[].qty + 1e-9); each: times = Σ floor(qty mã / items[].qty + 1e-9); repeat = false → times ≤ 1',
         'options ≤ choose → tặng hết; không thì cần context.giftChoice: trống → pendingChoice; có mã ngoài options / số mã ≠ choose → pendingChoice + problem',
         'quà = món đã chọn theo thứ tự options, qty = round4(times × qty); kẹp maxGiftQty theo thứ tự', 'cửa nạp (lenient) cần chọn mà không biết lựa chọn → indeterminate'],
       output: 'PromoOutput + pendingChoice?{ choose, times, options[], problem? }',
@@ -457,7 +506,8 @@ export const saleOrderGiftV2: RuleContract<OrderGiftV2Params, PromoInputV2, Prom
     params: [...commonDocs,
       { name: 'tiers', type: '[{ minOrder, gifts[{ sku, itemId?, qty }] }]', required: true, doc: 'Quà của bậc cao nhất đạt được' },
       { name: 'multiply', type: 'boolean', required: false, doc: 'Bật: tặng floor(tổng đơn / ngưỡng bậc) lần quà' },
-      { name: 'maxTimes', type: 'số nguyên > 0', required: false, doc: 'Trần số lần khi nhân bội số' }],
+      { name: 'maxTimes', type: 'số nguyên > 0', required: false, doc: 'Trần số lần khi nhân bội số' },
+      { name: 'choose', type: 'số nguyên 1..20', required: false, doc: 'Bậc có nhiều quà hơn choose → khách chọn choose món (context.giftChoice); vắng = tặng hết' }],
     spec: {
       input: lineInput,
       steps: [scopeStep, 'tổng đơn = Σ tiền trọn các dòng trong phạm vi (thiếu giá ở cửa nạp → không xác định)', 'kiểm điều kiện chung',
@@ -468,4 +518,92 @@ export const saleOrderGiftV2: RuleContract<OrderGiftV2Params, PromoInputV2, Prom
   }),
 };
 
-export const SALE_PROMO_V2_CONTRACTS = [salePriceLines, saleBuyXGetYV2, saleOrderGiftV2];
+// ── d) Combo bộ sản phẩm (pool) — loại 13 của plugin cũ (NT-BH-049, S-CD-16) ─────────────────────────────────────────────
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: khuôn pool_combo@2 — mua đủ N mã KHÁC NHAU trong pool thì giảm % mọi dòng pool; chưa đủ thì giảm theo bậc SL từng mã (đóng góp)
+export const poolComboParams = z.object({
+  ...common,
+  /** Các mã thuộc pool (1–500). */
+  skus: z.array(sku).min(1).max(500),
+  /** Bậc theo số lượng của CHÍNH mã đó (mua cùng mã) — áp khi chưa đủ combo. */
+  qtyTiers: z.array(z.object({ min: pos, pct: z.number().positive().max(100) }).strict()).max(20).default([]),
+  /** Combo: đủ `minDistinct` mã khác nhau thì giảm `pct` % trên mọi dòng pool. */
+  combo: z.object({ minDistinct: z.number().int().min(1).max(500), pct: z.number().positive().max(100) }).strict().optional(),
+}).strict();
+export type PoolComboParams = z.infer<typeof poolComboParams>;
+
+export function evaluatePoolCombo(p: PoolComboParams, input: PromoInputV2): PromoOutputV2 {
+  const ctx = input.context;
+  const blocked = conditionsBlock(p.conditions, ctx, orderAmountOf(input.lines.filter((l) => okQty(l.qty))));
+  if (blocked) return empty({ blocked });
+  const ls = input.lines.filter((l) => okQty(l.qty) && p.skus.includes(l.sku));
+  if (!ls.length) return empty({ blocked: 'giỏ không có mã nào của combo' });
+  const noPrice = ls.filter((l) => !hasPrice(l)).map((l) => l.lineKey);
+  if (noPrice.length && ctx?.lenient) return empty({ indeterminate: true });
+  const priced = ls.filter(hasPrice);
+  const distinct = new Set(ls.map((l) => l.sku)).size;
+  const touched = ls.map((l) => l.lineKey);
+  const discounts: PromoDiscount[] = [];
+  const pctOff = (l: PromoLineV2, pct: number) => Math.min(Math.round(l.qty * l.price!), Math.round((Math.round(l.qty * l.price!) * pct) / 100));
+  const comboOn = Boolean(p.combo && distinct >= p.combo.minDistinct);
+  if (comboOn) {
+    for (const l of priced) { const amount = pctOff(l, p.combo!.pct); if (amount > 0) discounts.push({ lineKey: l.lineKey, sku: l.sku, qty: l.qty, amount }); }
+  } else {
+    const tiers = [...p.qtyTiers].sort((a, b) => a.min - b.min);
+    for (const s of new Set(priced.map((l) => l.sku))) {
+      const mine = priced.filter((l) => l.sku === s);
+      const q = r4(ls.filter((l) => l.sku === s).reduce((t, l) => t + l.qty, 0));
+      const tier = [...tiers].reverse().find((t) => q >= t.min - EPS);
+      if (!tier) continue;
+      for (const l of mine) { const amount = pctOff(l, tier.pct); if (amount > 0) discounts.push({ lineKey: l.lineKey, sku: l.sku, qty: l.qty, amount }); }
+    }
+  }
+  const total = discounts.reduce((t, d) => t + d.amount, 0);
+  const detail = { distinct, combo: comboOn };
+  if (!discounts.length) {
+    return empty({ blocked: p.combo ? `mới ${distinct} mã khác nhau, cần ${p.combo.minDistinct}; chưa mã nào đạt bậc số lượng` : 'chưa mã nào đạt bậc số lượng', touched, noPrice, detail });
+  }
+  return { discounts, gifts: [], total, touched, noPrice, detail };
+}
+
+export const poolComboVectors: V<PoolComboParams>[] = [
+  { name: 'pool A, B, C; combo 2 mã khác nhau giảm 20 % — A 100.000 + B 50.000 → giảm 20.000 + 10.000',
+    params: { ...base, skus: ['A', 'B', 'C'], qtyTiers: [{ min: 2, pct: 10 }], combo: { minDistinct: 2, pct: 20 } },
+    input: { lines: [L('a', 'A', 1, 100_000), L('b', 'B', 1, 50_000), L('x', 'X', 1, 10_000)] },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 20_000 }, { lineKey: 'b', sku: 'B', qty: 1, amount: 10_000 }], gifts: [], total: 30_000, touched: ['a', 'b'], noPrice: [], detail: { distinct: 2, combo: true } } },
+  { name: 'chưa đủ combo — 3 A (100.000) đạt bậc 2 cái giảm 10 % → 30.000',
+    params: { ...base, skus: ['A', 'B'], qtyTiers: [{ min: 2, pct: 10 }], combo: { minDistinct: 2, pct: 20 } },
+    input: { lines: [L('a', 'A', 3, 100_000)] },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 3, amount: 30_000 }], gifts: [], total: 30_000, touched: ['a'], noPrice: [], detail: { distinct: 1, combo: false } } },
+  { name: 'chưa đủ combo, chưa đạt bậc — 1 A → không giảm',
+    params: { ...base, skus: ['A', 'B'], qtyTiers: [{ min: 2, pct: 10 }], combo: { minDistinct: 2, pct: 20 } },
+    input: { lines: [L('a', 'A', 1, 100_000)] },
+    output: { discounts: [], gifts: [], total: 0, touched: ['a'], noPrice: [], blocked: 'mới 1 mã khác nhau, cần 2; chưa mã nào đạt bậc số lượng', detail: { distinct: 1, combo: false } } },
+];
+
+export const salePoolCombo: RuleContract<PoolComboParams, PromoInputV2, PromoOutputV2> = {
+  id: 'sale.promo.pool_combo@2', domain: 'sale', title: 'Combo bộ sản phẩm (mua đủ nhiều mã khác nhau)', params: poolComboParams,
+  publishChecks: (p) => [
+    ...dateIssues(p), ...timeIssues(p),
+    ...(new Set(p.skus).size !== p.skus.length ? [{ path: 'skus', message: 'Một mã chỉ khai một lần trong pool' }] : []),
+    ...(!ascending(p.qtyTiers.map((t) => t.min)) ? [{ path: 'qtyTiers', message: 'Các bậc số lượng phải tăng dần, không trùng mức' }] : []),
+    ...(!p.combo && !p.qtyTiers.length ? [{ path: 'combo', message: 'Khai quy tắc combo hoặc ít nhất một bậc số lượng' }] : []),
+    ...(p.combo && p.combo.minDistinct > p.skus.length ? [{ path: 'combo.minDistinct', message: `Số mã khác nhau tối thiểu (${p.combo.minDistinct}) lớn hơn số mã trong pool (${p.skus.length})` }] : []),
+  ],
+  window: promoWindow, evaluate: evaluatePoolCombo, explain: explainOf('Combo bộ sản phẩm'), treatment: treat,
+  describe: () => ({
+    params: [...commonDocs,
+      { name: 'skus', type: 'string[]', required: true, doc: '1–500 mã thuộc pool' },
+      { name: 'qtyTiers', type: '[{ min, pct }]', required: false, doc: 'Bậc theo số lượng của chính mã (chưa đủ combo)' },
+      { name: 'combo', type: '{ minDistinct, pct }', required: false, doc: 'Đủ minDistinct mã khác nhau → giảm pct % mọi dòng pool' }],
+    spec: {
+      input: lineInput,
+      steps: ['kiểm điều kiện chung', 'dòng pool = dòng có mã trong skus', 'distinct = số mã khác nhau của dòng pool',
+        'distinct ≥ combo.minDistinct → giảm combo.pct % tiền từng dòng pool (làm tròn đồng)',
+        'không thì từng mã: SL mã ≥ bậc cao nhất có min ≤ SL → giảm pct % tiền các dòng của mã'],
+      output: 'PromoOutput (detail { distinct, combo })',
+    },
+    vectors: poolComboVectors,
+  }),
+};
+
+export const SALE_PROMO_V2_CONTRACTS = [salePriceLines, saleBuyXGetYV2, saleOrderGiftV2, salePoolCombo];

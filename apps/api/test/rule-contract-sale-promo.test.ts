@@ -27,7 +27,9 @@ describe('Hàm thuần — bộ ca chuẩn (NT-BH-012 §4, §5)', () => {
     expect(issues(saleCombo, { items: [{ sku: 'A', qty: 1 }, { sku: 'A', qty: 2 }], comboPrice: 10 })).toContain('items');
     expect(issues(saleCombo, { items: [{ sku: 'A', qty: 1 }], comboPrice: 10, discountPct: 5 })).toContain('comboPrice');
     expect(issues(saleCheapestFree, { skus: ['A'], buyQty: 2, freeQty: 2 })).toContain('freeQty');
-    expect(issues(saleOrderGift, { conditions: { timeFrom: '20:00', timeTo: '08:00' }, tiers: [{ minOrder: 1, gifts: [{ sku: 'Q', qty: 1 }] }] })).toContain('conditions.timeTo');
+    // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): giờ bắt đầu sau giờ kết thúc = khung qua đêm (hợp lệ); hai giờ trùng nhau mới là lỗi (đóng góp)
+    expect(issues(saleOrderGift, { conditions: { timeFrom: '20:00', timeTo: '08:00' }, tiers: [{ minOrder: 1, gifts: [{ sku: 'Q', qty: 1 }] }] })).not.toContain('conditions.timeTo');
+    expect(issues(saleOrderGift, { conditions: { timeFrom: '20:00', timeTo: '20:00' }, tiers: [{ minOrder: 1, gifts: [{ sku: 'Q', qty: 1 }] }] })).toContain('conditions.timeTo');
     expect(saleTiered.params.safeParse({ skus: ['A'], tiers: [{ min: 3, pct: 120 }] }).success).toBe(false);
   });
 });

@@ -16,7 +16,7 @@ import { serviceSkus, stockAtWarehouse, stockOf, warehousesFor } from './catalog
 import { stockNeeds, stockShortages, stockShortMessage, type StockShort } from './domain/stock.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: hạn mức lượt khuyến mại theo cửa hàng (đóng góp)
 import { usesOf } from './domain/promo.js';
-import { checkQuota, quotaMessage, recordUses } from './promo.js';
+import { checkCustomerQuota, checkQuota, quotaMessage, recordUses } from './promo.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: voucher TGS / hãng, voucher lần mua sau tự phát (đóng góp)
 import type { QuotedVoucher } from './domain/voucher.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-031: kênh bán của đơn theo danh mục Kênh bán hàng (đóng góp)
@@ -51,9 +51,27 @@ type Quote = { enabled: boolean; tierKey?: string; tierName?: string; balance?: 
  * quyền của thu ngân). Đơn có đổi điểm hoặc voucher mà module chưa bật / báo lỗi → chặn, nói rõ. Đơn chỉ có khách: hỏi để in điểm
  * trên bill, module chưa bật thì bỏ qua. `base`: đơn tính thử chưa có voucher (tổng để kiểm đơn tối thiểu, chia tiền giảm).
  */
+/** Bỏ các mã là "mã giảm giá" của chương trình khuyến mại đơn đang áp (theo policyRefs) — Core đã tính, không phải voucher đổi điểm. */
+async function nonPolicyCoupons(ctx: ActionContext, draft: OrderDraft, coupons: string[]): Promise<string[]> {
+  const keys = new Set((draft.policyRefs ?? []).map((r) => r.key));
+  if (!coupons.length || !keys.size) return coupons;
+  let items: { policyKey: string; params: unknown }[] = [];
+  try {
+    items = (await ctx.actions.call<{ items: { policyKey: string; params: unknown }[] }>('core.policy.list', { domain: 'sale', at: draft.businessDate })).items;
+  } catch { return coupons; }
+  const used = new Set(items.filter((i) => keys.has(i.policyKey)).flatMap((i) => {
+    const c = (i.params as { conditions?: { couponCodes?: unknown } } | null)?.conditions?.couponCodes;
+    return Array.isArray(c) ? c.filter((x): x is string => typeof x === 'string').map((x) => x.trim().toUpperCase()) : [];
+  }));
+  return coupons.filter((c) => !used.has(c));
+}
+
 async function quoteLoyalty(ctx: ActionContext, draft: OrderDraft, branchCode: string, base: ReturnType<typeof computeOrder>) {
   if ('problem' in base) raise(base.problem);
-  const coupons = couponCodes(draft);
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: mã giảm giá CHUNG của chương trình khuyến mại (BH18, ô "Mã giảm giá" / loại Voucher – Mã giảm giá
+  // của plugin cũ) đã được Core tính theo dòng (policyRef + promoDiscount) — không đem tra như voucher đổi điểm (trước: đơn bị từ chối
+  // "Không có voucher …"). Chỉ mã KHÔNG thuộc chương trình nào đơn đang áp mới hỏi module loyalty (đóng góp)
+  const coupons = await nonPolicyCoupons(ctx, draft, couponCodes(draft));
   const redeem = draft.loyalty?.redeem ?? [];
   const customer = base.customer?.code;
   if (redeem.length && !customer) throw Errors.validation('Đổi điểm phải chọn khách thành viên', { field: 'loyalty' });
@@ -141,7 +159,7 @@ async function quoteVouchers(ctx: ActionContext, tx: Parameters<Parameters<Actio
  */
 export async function checkStock(tx: Parameters<Parameters<ActionContext['data']['module']>[0]>[0], branchCode: string,
   lines0: readonly { sku: string; qty: number; warehouse?: string }[], day: string = todayVn()): Promise<StockShort[]> {
-  // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-035 §3.3: dòng mặt hàng dịch vụ không ghi thẻ kho → không khoá, không kiểm tồn (đóng góp)
+  // [2026-11-21 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-035 §3.3: dòng mặt hàng dịch vụ không ghi thẻ kho → không khoá, không kiểm tồn (đóng góp)
   const svc = await serviceSkus(tx, lines0.map((l) => l.sku), day);
   const lines = lines0.filter((l) => !svc.has(l.sku));
   const skus = [...new Set(lines.map((l) => l.sku))].sort();
@@ -227,6 +245,12 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
     if (quotaShort.length && !draft.offlineCreatedAt) {
       throw Errors.validation(quotaMessage(quotaShort, branch.code), { reason: 'POS_PROMO_QUOTA', items: quotaShort });
     }
+    // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): lượt khuyến mại theo khách — khách đã dùng hết lượt thì không nhận đơn còn áp (đóng góp)
+    const customerShort = await checkCustomerQuota(tx, computed.customer?.code ?? null, promoKeys, draft.id);
+    if (customerShort.length && !draft.offlineCreatedAt) {
+      throw Errors.validation(`Khách ${customerShort[0]!.customer} đã dùng hết lượt khuyến mại: ${customerShort.map((s) => `${s.key} (đã dùng ${s.used}/${s.quota})`).join('; ')} — bỏ khuyến mại đó khỏi đơn rồi thanh toán lại`,
+        { reason: 'POS_PROMO_QUOTA', items: customerShort });
+    }
 
     // Mã phiếu: dùng số máy đã được cấp trước (đúng khuôn, đã cấp, chưa dùng); không thì cấp số mới. Khoá theo số để hai máy
     // cùng dùng một số đã cấp không cùng qua bước "chưa dùng".
@@ -264,7 +288,7 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
                 ${JSON.stringify(draft)}::jsonb, ${ctx.actor.id}, ${ctx.actor.name || null})`.execute(tx);
       // Lượt dùng chương trình khuyến mại (NT-BH-025): một dòng mỗi chương trình của đơn, cùng giao dịch với đơn.
       const uses = usesOf(computed.lines.map((l) => ({ policyRef: l.draft.policyRef, isGift: l.draft.isGift, qty: l.draft.unitQty, discount: l.draft.promoDiscount })));
-      await recordUses(tx, ctx.tenant.id, { source: 'pos', refId: draft.id, refCode: code, branch: branch.code, date: draft.businessDate, uses, offlineOver: quotaShort.map((q) => q.key) });
+      await recordUses(tx, ctx.tenant.id, { source: 'pos', refId: draft.id, refCode: code, branch: branch.code, date: draft.businessDate, uses, offlineOver: quotaShort.map((q) => q.key), customer: computed.customer?.code ?? null });
       // Voucher TGS / hãng (NT-BH-026): mã đang dùng duy nhất (chỉ mục voucher_uses_live) — cùng giao dịch với đơn, còn giữ khoá theo mã.
       for (const v of computed.voucherUses) {
         await sql`INSERT INTO mod_pos.voucher_uses (tenant_id, code, order_id, order_code, branch_code, business_date, kind, method_code, amount, face_value, campaign_id)

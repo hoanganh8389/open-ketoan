@@ -5,10 +5,14 @@
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: hàm thuần nháp / trùng / hạn mức khuyến mại (đóng góp)
 import { z } from '@bizcity/module-sdk';
 
-/** Sáu khuôn khuyến mại nội tuyến của màn BH18 (Core kiểm lại nội dung khi phát hành). */
+/** Khuôn khuyến mại nội tuyến của màn BH18 (Core kiểm lại nội dung khi phát hành). */
+// [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: mở ba khuôn @2 (NT-BH-040) cho bản nháp — trước đây màn có loại @2 nhưng lưu bị từ chối (đóng góp)
 export const PROMO_CONTRACTS = [
   'sale.promo.tiered@1', 'sale.promo.order_discount@1', 'sale.promo.order_gift@1',
   'sale.promo.combo@1', 'sale.promo.cheapest_free@1', 'sale.promo.buy_x_get_y@1',
+  'sale.promo.price_lines@2', 'sale.promo.buy_x_get_y@2', 'sale.promo.order_gift@2',
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): combo bộ sản phẩm (pool) — loại 13 của plugin cũ (đóng góp)
+  'sale.promo.pool_combo@2',
 ] as const;
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày dạng YYYY-MM-DD');
@@ -17,6 +21,8 @@ export const quotaSchema = z.object({
   perBranch: z.number().int().min(0).max(1_000_000).optional(),
   /** Số lượt riêng từng cửa hàng: { "CN01": 2 }. */
   branches: z.record(z.string().trim().min(1).max(32), z.number().int().min(0).max(1_000_000)).optional(),
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K6): số lượt tối đa mỗi khách (đơn có khách; khách lẻ không giới hạn) (đóng góp)
+  perCustomer: z.number().int().min(1).max(1_000_000).optional(),
 });
 export type Quota = z.infer<typeof quotaSchema>;
 
@@ -38,6 +44,15 @@ export function skusOf(contract: string, p: Record<string, unknown>): string[] |
   switch (contract) {
     case 'sale.promo.combo@1': return [...new Set((Array.isArray(p.items) ? p.items : []).flatMap(sku))];
     case 'sale.promo.buy_x_get_y@1': return [...new Set([...sku(p.buy), ...sku(p.get)])];
+    // NT-BH-049: khuôn @2 — mã của dòng / mã mua + quà / mã lẻ của phạm vi; phạm vi chỉ nhóm / nhãn (không mã lẻ) coi như cả đơn.
+    case 'sale.promo.price_lines@2': return [...new Set((Array.isArray(p.lines) ? p.lines : []).flatMap(sku))];
+    case 'sale.promo.buy_x_get_y@2': {
+      const b = (p.buy ?? {}) as { items?: unknown[] }, g = (p.get ?? {}) as { options?: unknown[] };
+      const sc = list(((p.scope ?? {}) as { skus?: unknown }).skus);
+      const s = [...new Set([...(b.items ?? []).flatMap(sku), ...sc])];
+      return s.length ? [...new Set([...s, ...(g.options ?? []).flatMap(sku)])] : null;
+    }
+    case 'sale.promo.order_gift@2': { const s = list(((p.scope ?? {}) as { skus?: unknown }).skus); return s.length ? s : null; }
     case 'sale.promo.order_discount@1':
     case 'sale.promo.order_gift@1': { const s = list(p.skus); return s.length ? s : null; }
     default: return list(p.skus);
@@ -76,17 +91,21 @@ export function overlapOf(a: PromoShape, b: PromoShape): { skus: string[] | null
   return { skus, branches };
 }
 
-/** Hạn mức thành dòng bảng promo_quotas: cửa hàng `*` = mặc định. */
+/** Dòng hạn mức theo khách trong promo_quotas (NT-BH-049, K6) — không trùng mã cửa hàng thật. */
+export const CUSTOMER_QUOTA = '@khach';
+
+/** Hạn mức thành dòng bảng promo_quotas: cửa hàng `*` = mặc định; `@khach` = lượt mỗi khách. */
 export function quotaRows(q: Quota | null | undefined): { branch: string; quota: number }[] {
   if (!q) return [];
   const rows = Object.entries(q.branches ?? {}).map(([branch, quota]) => ({ branch, quota }));
   if (q.perBranch !== undefined) rows.push({ branch: '*', quota: q.perBranch });
+  if (q.perCustomer !== undefined) rows.push({ branch: CUSTOMER_QUOTA, quota: q.perCustomer });
   return rows;
 }
 
 /** Hạn mức của cửa hàng: dòng riêng, không thì dòng `*`; không có = không giới hạn (undefined). */
 export function quotaFor(rows: readonly { branch_code: string; quota: number }[], branch: string): number | undefined {
-  return (rows.find((r) => r.branch_code === branch) ?? rows.find((r) => r.branch_code === '*'))?.quota;
+  return (rows.find((r) => r.branch_code === branch && branch !== CUSTOMER_QUOTA) ?? rows.find((r) => r.branch_code === '*'))?.quota;
 }
 
 export type PromoUse = { key: string; discount: number; giftQty: number };

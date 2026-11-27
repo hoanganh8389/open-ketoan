@@ -199,6 +199,8 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         note: p.note, exciseRate: p.excise_rate === null ? null : Number(p.excise_rate), taxOutCode: p.tax_out_code, taxInCode: p.tax_in_code, updatedAt: p.updated_at, updatedBy: p.updated_by, parentSku: p.parent_sku, createdAt: p.created_at, createdBy: p.created_by,
         variantCode: (p as unknown as { variant_code: string }).variant_code,
         sendToTax: (p as unknown as { send_to_tax?: boolean }).send_to_tax ?? true, // [2026-11-09 07:30 PM Nguyễn Văn Thủy] PHASE-026 — ô Gửi lên thuế (0093) (đóng góp)
+        // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K5): cờ hàng dưới 24 tháng cho màn Khuyến mại cảnh báo NĐ100 (đóng góp)
+        isUnder24m: p.is_under_24m,
       })), pageMeta(f, Number(total?.n ?? 0)));
     },
   });

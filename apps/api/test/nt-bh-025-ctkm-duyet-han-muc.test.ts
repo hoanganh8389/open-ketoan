@@ -97,7 +97,7 @@ describe.skipIf(!HAS)('NT-BH-025 — CTKM duyệt, cảnh báo trùng, hạn m�
     await ctx?.app.close();
   });
 
-  it('§3 dòng 1–3: lập "Giảm 10 % SUA330" = nháp, chưa áp; người lập không tự duyệt; KTT duyệt → phát hành, nhật ký ghi người duyệt', async () => {
+  it('§3 dòng 1–3: lập "Giảm 10 % SUA330" = nháp, chưa áp; KTT duyệt → phát hành, nhật ký ghi người duyệt', async () => {
     const c = await req(ctx, 'POST', `${M}/promo/drafts`, { ...tiered('KM10-SUA330', 'SUA330', 10), reason: 'Giảm 10 % SUA330', submit: true });
     expect(c.statusCode, c.body).toBe(200);
     const d = c.json().data.draft;
@@ -105,8 +105,8 @@ describe.skipIf(!HAS)('NT-BH-025 — CTKM duyệt, cảnh báo trùng, hạn m�
     const pol = await call(ctx, 'GET', `/api/v1/policies?domain=sale&at=${TODAY}`);
     expect(pol.body.data.items.map((x: { policyKey: string }) => x.policyKey)).not.toContain('KM10-SUA330');
 
-    const self = await req(ctx, 'POST', `${M}/promo/drafts/${d.id}/approve`, {});
-    expect(self.statusCode, self.body).toBe(403);
+    // [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: bỏ luật hai người cho khuyến mại (Hoàng chốt 28/11) — người lập có quyền duyệt tự duyệt được;
+    // ca này giữ luồng KTT duyệt; ca tự duyệt ở nt-bh-049 (đóng góp)
     const pub = await approveAndPublish(d.id);
     expect(pub).toMatchObject({ status: 'published', publishedVersion: 1, approvedByName: 'Kế toán trưởng' });
     const pol2 = await call(ctx, 'GET', `/api/v1/policies?domain=sale&at=${TODAY}`);
