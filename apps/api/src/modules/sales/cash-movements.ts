@@ -1,4 +1,4 @@
-// @bizcity-layer D modules/sales
+// @bizcity-layer D modules/ban-hang
 // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-052: tiền vào / ra quỹ, ngân hàng từ chứng từ không phải phiếu thu chi (bán, trả hàng, thu tiền khách…) — đọc từ sổ cái để hiện ở ACC51 / ACC54 (đóng góp)
 /**
  * TIỀN TỪ CHỨNG TỪ KHÁC (chỉ đọc).
