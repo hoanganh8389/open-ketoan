@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
 import { Modal, NumInput } from '@/components/ui';
+import { DataGrid } from '@/components/DataGrid';
 
 export interface ReturnSourceLine {
   lineKey: string; sku: string; name: string; unit: string; qty: number; unitPrice: number; discount: number; taxCode: string;
@@ -21,7 +22,6 @@ export interface ReturnSource {
 export type PickedReturn = { source: ReturnSource; lines: { line: ReturnSourceLine; qty: number }[] };
 
 const money = (n: number) => n.toLocaleString('vi-VN');
-const dmy = (d: string) => d.split('-').reverse().join('/');
 
 /** Đọc phiếu gốc theo cửa hàng + khách hoặc số phiếu. */
 export function returnSources(p: { branch: string; partnerCode?: string; search?: string; open?: boolean }) {
@@ -45,9 +45,11 @@ export function ChonPhieuGoc({ branchCode, partnerCode, search: search0, onPick,
   const [qty, setQty] = useState<Record<string, number>>({});
   const [tich, setTich] = useState<Record<string, boolean>>({});
   const chon = (d: ReturnSource) => {
+    if (doc?.id === d.id) return;
     setDoc(d);
     setQty(Object.fromEntries(d.lines.map((l) => [l.lineKey, l.returnable])));
-    setTich({});
+    // Tích sẵn mọi dòng còn trả (SL = còn trả): thường khách trả cả phiếu; bỏ tích / sửa SL dòng không trả.
+    setTich(Object.fromEntries(d.lines.filter((l) => l.returnable > 0).map((l) => [l.lineKey, true])));
   };
   const picked = doc ? doc.lines.filter((l) => tich[l.lineKey] && (qty[l.lineKey] ?? 0) > 0) : [];
   const over = doc ? doc.lines.filter((l) => tich[l.lineKey] && (qty[l.lineKey] ?? 0) > l.returnable + 1e-9) : [];
@@ -60,65 +62,65 @@ export function ChonPhieuGoc({ branchCode, partnerCode, search: search0, onPick,
           onClick={() => doc && onPick({ source: doc, lines: picked.map((l) => ({ line: l, qty: qty[l.lineKey] ?? 0 })) })}>Đưa vào phiếu</button>
         <button className="btn" onClick={onClose}>Thoát</button>
       </>}>
-      <form className="row" style={{ gap: 6, marginBottom: 8, alignItems: 'center' }} data-no-search onSubmit={(e) => { e.preventDefault(); setTerm(search.trim()); setDoc(null); }}>
-        <span className="muted" style={{ fontSize: 12 }}>
-          {partnerCode ? <>Phiếu đã duyệt của khách <b>{partnerCode}</b> tại cửa hàng <b>{branchCode}</b> — hoặc tìm theo số phiếu:</> : <>Khách lẻ: gõ <b>số phiếu bán gốc</b> (cửa hàng {branchCode}):</>}
+      {/* [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-046: hộp chọn phiếu gốc làm lại bằng thành phần chung — thân hộp thoại là lưới 4 cột nên mọi khối
+          phải chiếm cả hàng (.full); hai bảng dùng DataGrid; chọn phiếu là tích sẵn mọi dòng còn trả với SL = còn trả → "Đưa vào phiếu" bấm được ngay (đóng góp) */}
+      <form className="full row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }} data-no-search onSubmit={(e) => { e.preventDefault(); setTerm(search.trim()); setDoc(null); }}>
+        <span title="Nguồn danh sách phiếu gốc">
+          {partnerCode && !term ? <>Phiếu bán đã duyệt của khách <b className="mono">{partnerCode}</b> · cửa hàng <b className="mono">{branchCode}</b></>
+            : <>Tìm phiếu bán đã duyệt theo số phiếu · cửa hàng <b className="mono">{branchCode}</b></>}
         </span>
-        <input className="input mono" style={{ width: 200 }} value={search} placeholder="Số phiếu, vd BH2611000001" onChange={(e) => setSearch(e.target.value.toUpperCase())} />
-        <button className="btn btn-sm" type="submit" title="Tìm phiếu bán đã duyệt theo số phiếu (gõ một phần số cũng được)">Tìm</button>
+        <span style={{ flex: 1 }} />
+        <input className="input mono" style={{ width: 240, height: 28 }} value={search} placeholder="Số phiếu, vd BH2611000001" title="Gõ số phiếu bán gốc (một phần số cũng được) rồi bấm Tìm — dùng cho khách lẻ"
+          onChange={(e) => setSearch(e.target.value.toUpperCase())} />
+        <button className="btn btn-sm" type="submit" title="Tìm phiếu bán đã duyệt theo số phiếu">Tìm</button>
         {term && partnerCode && <button className="btn btn-sm" type="button" onClick={() => { setSearch(''); setTerm(''); setDoc(null); }} title="Quay lại danh sách phiếu của khách">Phiếu của khách</button>}
       </form>
-      {q.error && <div className="alert alert-bad">{errorText(q.error)}</div>}
-      <table className="grid-table" style={{ width: '100%' }}>
-        <thead><tr>
-          <th style={{ width: 90 }} title="Ngày phiếu bán">Ngày</th><th style={{ width: 130 }} title="Số phiếu bán gốc">Số phiếu</th><th title="Khách trên phiếu gốc">Khách</th>
-          <th style={{ width: 120 }} title="Tổng tiền thanh toán của phiếu gốc">Tổng tiền</th><th style={{ width: 110 }} title="Số dòng còn trả được / số dòng">Dòng còn trả</th>
-        </tr></thead>
-        <tbody>
-          {(q.data ?? []).map((d) => (
-            <tr key={d.id} className={doc?.id === d.id ? 'selected' : ''} style={{ cursor: 'pointer' }} onClick={() => chon(d)}>
-              <td>{dmy(d.docDate)}</td><td className="mono">{d.docNo}</td><td>{d.partner ? `${d.partner.code} — ${d.partner.name}` : 'Khách lẻ'}</td>
-              <td className="num">{money(d.totals.total)}</td><td className="num">{d.lines.filter((l) => l.returnable > 0).length} / {d.lines.length}</td>
-            </tr>
-          ))}
-          {!q.isLoading && !(q.data ?? []).length && (
-            <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 10 }}>
-              {!byPartner && !term ? 'Gõ số phiếu bán gốc rồi bấm Tìm' : 'Không có phiếu bán đã duyệt còn trả được'}
-            </td></tr>
-          )}
-          {q.isLoading && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 10 }}>Đang tải…</td></tr>}
-        </tbody>
-      </table>
+      {q.error && <div className="full alert alert-bad">{errorText(q.error)}</div>}
+      <div className="full">
+        <DataGrid<ReturnSource> rows={q.data ?? []} rowKey={(d) => d.id} storageKey="bh11-chon-phieu-goc-v2" maxHeight="220px" footerLabel={false}
+          emptyText={q.isLoading ? 'Đang tải…' : !byPartner && !term ? 'Gõ số phiếu bán gốc rồi bấm Tìm' : 'Không có phiếu bán đã duyệt còn trả được'}
+          onRowClick={chon} onSelect={(d) => { if (d) chon(d); }}
+          rowClassName={(d) => (doc?.id === d.id ? 'selected' : '')}
+          columns={[
+            { key: 'docDate', header: 'Ngày', title: 'Ngày phiếu bán', type: 'date', width: 100 },
+            { key: 'docNo', header: 'Số phiếu', title: 'Số phiếu bán gốc', type: 'code', width: 140 },
+            { key: 'partner', header: 'Khách', title: 'Khách trên phiếu gốc', width: 260, value: (d) => (d.partner ? `${d.partner.code} — ${d.partner.name}` : 'Khách lẻ') },
+            { key: 'total', header: 'Tổng tiền', title: 'Tổng tiền thanh toán của phiếu gốc', type: 'money', width: 130, value: (d) => d.totals.total },
+            { key: 'conTra', header: 'Dòng còn trả', title: 'Số dòng còn trả được / số dòng của phiếu', width: 110, value: (d) => `${d.lines.filter((l) => l.returnable > 0).length} / ${d.lines.length}` },
+          ]} />
+      </div>
 
-      {doc && (
-        <>
-          <h4 style={{ margin: '10px 0 4px' }}>Dòng của phiếu {doc.docNo} — tích dòng cần trả</h4>
-          <table className="grid-table" style={{ width: '100%' }}>
-            <thead><tr>
-              <th style={{ width: 30 }}><input type="checkbox" title="Tích / bỏ tích mọi dòng còn trả" checked={doc.lines.filter((l) => l.returnable > 0).every((l) => tich[l.lineKey])}
-                onChange={(e) => setTich(Object.fromEntries(doc.lines.filter((l) => l.returnable > 0).map((l) => [l.lineKey, e.target.checked])))} /></th>
-              <th style={{ width: 110 }}>Mã hàng</th><th>Tên hàng</th><th style={{ width: 60 }}>ĐVT</th>
-              <th style={{ width: 70 }} title="Số lượng trên phiếu gốc">SL bán</th><th style={{ width: 70 }} title="Đã trả ở các phiếu trả đã duyệt">Đã trả</th>
-              <th style={{ width: 75 }} title="SL bán − đã trả của dòng này">Còn trả</th><th style={{ width: 95 }} title="SL khách trả lần này (không quá Còn trả)">SL trả</th>
-              <th style={{ width: 105 }} title="Đơn giá trước thuế của dòng gốc — dòng trả dùng đúng giá này">Đơn giá</th>
-            </tr></thead>
-            <tbody>
-              {doc.lines.map((l) => {
-                const none = l.returnable <= 0;
-                return (
-                  <tr key={l.lineKey} className={none ? 'muted' : ''}>
-                    <td style={{ textAlign: 'center' }}><input type="checkbox" disabled={none} title={none ? 'Dòng đã trả hết' : 'Trả dòng này'} checked={Boolean(tich[l.lineKey])} onChange={(e) => setTich({ ...tich, [l.lineKey]: e.target.checked })} /></td>
-                    <td className="mono">{l.sku}</td><td>{l.name}{l.isGift && <span className="badge badge-gray" style={{ marginLeft: 4 }}>quà</span>}</td><td>{l.unit}</td>
-                    <td className="num">{l.qty}</td><td className="num">{l.returned || ''}</td><td className="num"><b>{l.returnable}</b></td>
-                    <td><NumInput value={qty[l.lineKey] ?? 0} disabled={none || !tich[l.lineKey]} title={none ? 'Dòng đã trả hết' : !tich[l.lineKey] ? 'Tích dòng trước' : `Tối đa ${l.returnable}`}
-                      onChange={(n) => setQty({ ...qty, [l.lineKey]: Math.max(0, n ?? 0) })} /></td>
-                    <td className="num">{l.isGift ? <span className="muted">tặng</span> : money(l.unitPrice)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </>
+      {doc ? (
+        <div className="full">
+          <div className="row" style={{ alignItems: 'center', gap: 8, margin: '4px 0' }}>
+            <b>Dòng của phiếu {doc.docNo}</b>
+            <span className="muted">· tích dòng cần trả, sửa SL trả (không quá Còn trả); giá, chiết khấu, thuế theo dòng gốc</span>
+          </div>
+          <DataGrid<ReturnSourceLine> rows={doc.lines} rowKey={(l) => l.lineKey} storageKey="bh11-chon-phieu-goc-dong-v2" maxHeight="260px" footerLabel={false}
+            rowClassName={(l) => (l.returnable <= 0 ? 'muted' : '')}
+            columns={[
+              { key: 'tich', width: 44, noFilter: true, noSort: true, noExport: true, value: () => '',
+                header: <input type="checkbox" title="Tích / bỏ tích mọi dòng còn trả" checked={doc.lines.some((l) => l.returnable > 0) && doc.lines.filter((l) => l.returnable > 0).every((l) => tich[l.lineKey])}
+                  onChange={(e) => setTich(Object.fromEntries(doc.lines.filter((l) => l.returnable > 0).map((l) => [l.lineKey, e.target.checked])))} />,
+                render: (l) => <input type="checkbox" disabled={l.returnable <= 0} title={l.returnable <= 0 ? 'Dòng đã trả hết' : 'Trả dòng này'} checked={Boolean(tich[l.lineKey])}
+                  onClick={(e) => e.stopPropagation()} onChange={(e) => setTich({ ...tich, [l.lineKey]: e.target.checked })} /> },
+              { key: 'sku', header: 'Mã hàng', title: 'Mã hàng', type: 'code', width: 120 },
+              { key: 'name', header: 'Tên hàng', title: 'Tên hàng', width: 260, render: (l) => <>{l.name}{l.isGift && <span className="badge badge-gray" style={{ marginLeft: 4 }}>quà</span>}</> },
+              { key: 'unit', header: 'ĐVT', title: 'Đơn vị tính', width: 70 },
+              { key: 'qty', header: 'SL bán', title: 'Số lượng trên phiếu gốc', type: 'qty', width: 80 },
+              { key: 'returned', header: 'Đã trả', title: 'Đã trả ở các phiếu trả đã duyệt', type: 'qty', width: 80 },
+              { key: 'returnable', header: 'Còn trả', title: 'SL bán − đã trả của dòng này', type: 'qty', width: 80, bold: true, showZero: true },
+              { key: 'slTra', header: 'SL trả', title: 'SL khách trả lần này (không quá Còn trả)', width: 110, noFilter: true, noSort: true, value: (l) => qty[l.lineKey] ?? 0,
+                render: (l) => <NumInput value={qty[l.lineKey] ?? 0} disabled={l.returnable <= 0 || !tich[l.lineKey]}
+                  title={l.returnable <= 0 ? 'Dòng đã trả hết' : !tich[l.lineKey] ? 'Tích dòng trước' : `Tối đa ${l.returnable}`}
+                  onChange={(n) => setQty({ ...qty, [l.lineKey]: Math.max(0, n ?? 0) })} /> },
+              { key: 'unitPrice', header: 'Đơn giá', title: 'Đơn giá trước thuế của dòng gốc — dòng trả dùng đúng giá này', type: 'money', width: 120,
+                render: (l) => (l.isGift ? <span className="muted">tặng</span> : money(l.unitPrice)) },
+            ]} />
+          {why && <div className="muted" style={{ marginTop: 4 }} role="status">{why}</div>}
+        </div>
+      ) : (
+        <div className="full muted" role="status">Bấm một phiếu ở bảng trên để xem các dòng còn trả.</div>
       )}
     </Modal>
   );
