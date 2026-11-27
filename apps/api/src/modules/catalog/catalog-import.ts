@@ -45,7 +45,12 @@ export async function importProducts(trx: ActionTx, tenantId: string, actor: str
   ]);
   const existing = new Map(products.map((p) => [p.sku, p.unit]));
   const className = new Map(classes.map((c) => [`${c.kind}|${c.code}`, c.name]));
-  const showClass = (kind: string, c: string | null | undefined) => (c ? `${c} — ${className.get(`${kind}|${c}`) ?? ''}`.replace(/ — $/, '') : '');
+  // [2026-11-27 kiennt] NT-DM-019 — màn kiểm tra hiện MÃ NHƯ DM11 (mã ngành / nhãn / nhóm dùng ghép mã hàng — sku_code), không hiện mã nội bộ
+  // tự đánh số (vd "11 — Sữa bột" thay vì "2 — Sữa bột"). Ngành / nhãn lưu ở loại riêng thì lấy sku_code của nút cùng mã trên cây nhóm hàng;
+  // mục không có mã DM11 (mã tự đặt như NH-IMP) thì hiện mã như cũ (đóng góp)
+  const classSku = new Map(classes.filter((c) => c.sku_code).map((c) => [`${c.kind}|${c.code}`, c.sku_code!]));
+  const maHien = (kind: string, c: string) => classSku.get(`${kind}|${c}`) ?? classSku.get(`group|${c}`) ?? c;
+  const showClass = (kind: string, c: string | null | undefined) => (c ? `${maHien(kind, c)} — ${className.get(`${kind}|${c}`) ?? ''}`.replace(/ — $/, '') : '');
   const beforeOf = new Map(products.map((p) => [p.sku, {
     sku: p.sku, name: p.name, unit: p.unit, note: p.note, groupCode: showClass('group', p.group_code), industryCode: showClass('industry', p.industry_code),
     brandCode: showClass('brand', p.brand_code), typeCode: showClass('type', p.type_code), postingGroupCode: p.posting_group_code ?? '',
