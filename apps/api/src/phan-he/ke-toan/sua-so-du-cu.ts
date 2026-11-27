@@ -1,3 +1,4 @@
+// @bizcity-layer D modules/ke-toan
 // [2026-11-27 12:05 PM Nguyễn Văn Thủy] SO-DU — sửa dữ liệu một lần khi khởi động: phiếu số dư đầu kỳ cũ lệch Nợ / Có mà phần lệch
 // ghi vào tài khoản THẬT (vd 1111 → tiền mặt ra Dư Có) được ghi lại bản điều chỉnh, phần lệch chuyển sang TK trung gian 999 (đóng góp)
 /**
