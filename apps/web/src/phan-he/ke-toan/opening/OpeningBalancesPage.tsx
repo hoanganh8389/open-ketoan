@@ -109,6 +109,7 @@ export function OpeningBalancesPage() {
   }))), [chiTiet.data]);
   // [2026-11-27 10:40 AM Nguyễn Văn Thủy] SO-DU — phần lệch Nợ / Có của phiếu tự vào TK trung gian 999; phiếu CŨ đã ghi phần lệch vào TK thật
   // (vd 1111 → tiền mặt bị dư Có) thì báo đỏ, mở phiếu bấm Sửa → Ghi lại là chuyển sang 999 (đóng góp)
+  const [moKiem, setMoKiem] = useState(false);
   const phieuSai = useMemo(() => (chiTiet.data ?? []).filter((d) => {
     const b = d.payload.balancingAccount?.trim();
     const lech = d.payload.lines.reduce((t, l) => t + l.debit - l.credit, 0);
@@ -173,24 +174,29 @@ export function OpeningBalancesPage() {
       </div>
 
       {/* Kiểm tra nhanh toàn công ty */}
-      {hieuLuc.length > 0 && (
-        <div className="card so-du-kiem">
-          <b>Kiểm tra</b>
-          <span title="Số phiếu số dư đang hiệu lực (không tính phiếu đã huỷ)">{hieuLuc.length} phiếu · {new Set(hieuLuc.map((r) => r.branchCode)).size} chi nhánh</span>
-          <span title="Tổng Dư Nợ / Dư Có mọi phiếu đang hiệu lực">Dư Nợ <b><Money value={tongNo} /></b> · Dư Có <b><Money value={tongCo} /></b>
-            {Math.abs(tongNo - tongCo) < 0.005
-              ? <span className="so-du-ok"> <CheckCircle2 size={14} /> Đã cân</span>
-              : <span className="so-du-canh-bao" title="Nhập riêng từng chi nhánh thì số dư một chi nhánh thường không tự cân: phần lệch tự ghi vào TK trung gian 999; nhập đủ mọi chi nhánh thì về 0"> <AlertTriangle size={14} /> Lệch {money(Math.abs(tongNo - tongCo))} → TK trung gian 999 ({tongNo > tongCo ? 'Dư Có' : 'Dư Nợ'}) — còn thiếu số dư bên {tongNo > tongCo ? 'Có' : 'Nợ'}</span>}</span>
-          {ngayChung
-            ? <span title="Sổ, báo cáo xem từ ngày này trở đi hiện số dư ở dòng Số dư đầu kỳ">Ngày chốt <b>{date(ngayChung)}</b> → dùng phần mềm từ <b>{date(ngaySau(ngayChung))}</b>{!laCuoiThang(ngayChung) && <span className="so-du-canh-bao"> · ngày chốt thường là cuối tháng</span>}</span>
-            : <span className="so-du-canh-bao"><AlertTriangle size={14} /> Các phiếu khác ngày chốt: {ngayChot.map((d) => date(d)).join(', ')} — nên cùng một ngày</span>}
-          {phieuSai.map((d) => (
-            <span key={d.id} className="so-du-loi" title="Trước đây được chọn tài khoản cân đối là tài khoản thật — phần lệch bị ghi sai bên">
-              <AlertTriangle size={14} /> Phiếu <a href="#" onClick={(e) => { e.preventDefault(); void open(d.id); }}>{d.docNo}</a> ghi phần lệch vào {d.payload.balancingAccount} (sai) — mở phiếu, bấm Sửa → Ghi lại để chuyển sang TK trung gian 999
-            </span>
-          ))}
-        </div>
-      )}
+      {/* [2026-11-27 12:50 PM Nguyễn Văn Thủy] SO-DU — ô Kiểm tra mặc định thu gọn (một dòng), bấm mới mở; chỉ liệt kê mục cần cảnh báo, ổn thì chỉ một dấu ✓ (đóng góp) */}
+      {hieuLuc.length > 0 && (() => {
+        const lechSo = tongNo - tongCo;
+        const canhBao: { key: string; loi?: boolean; el: React.ReactNode }[] = [];
+        if (Math.abs(lechSo) >= 0.005) canhBao.push({ key: 'lech', el: <span title="Nhập riêng từng chi nhánh thì phần lệch tự ghi vào TK trung gian 999; nhập đủ mọi chi nhánh thì về 0">Tổng Dư Nợ <Money value={tongNo} /> ≠ Dư Có <Money value={tongCo} />: lệch {money(Math.abs(lechSo))} đang ở TK 999 — còn thiếu số dư bên {lechSo > 0 ? 'Có' : 'Nợ'}</span> });
+        if (!ngayChung) canhBao.push({ key: 'ngay', el: <span>Các phiếu khác ngày chốt: {ngayChot.map((d) => date(d)).join(', ')} — nên cùng một ngày</span> });
+        else if (!laCuoiThang(ngayChung)) canhBao.push({ key: 'cuoi-thang', el: <span>Ngày chốt {date(ngayChung)} không phải cuối tháng</span> });
+        for (const d of phieuSai) canhBao.push({ key: d.id, loi: true, el: <span title="Trước đây được chọn tài khoản cân đối là tài khoản thật — phần lệch bị ghi sai bên">Phiếu <a href="#" onClick={(e) => { e.preventDefault(); void open(d.id); }}>{d.docNo}</a> ghi phần lệch vào {d.payload.balancingAccount} (sai) — mở phiếu, bấm Sửa → Ghi lại</span> });
+        return (
+          <div className="card so-du-kiem" style={{ display: 'block' }}>
+            {canhBao.length === 0
+              ? <span className="so-du-ok" title={`${hieuLuc.length} phiếu · ${new Set(hieuLuc.map((r) => r.branchCode)).size} chi nhánh · Dư Nợ = Dư Có ${money(tongNo)}${ngayChung ? ` · ngày chốt ${date(ngayChung)}` : ''}`}><CheckCircle2 size={14} /> Kiểm tra: ổn</span>
+              : <button type="button" className="btn btn-sm" onClick={() => setMoKiem((v) => !v)} aria-expanded={moKiem} title="Bấm để xem / ẩn các mục cần xem">
+                  <AlertTriangle size={14} className={phieuSai.length ? 'so-du-loi' : 'so-du-canh-bao'} /> Kiểm tra: {canhBao.length} mục cần xem {moKiem ? '▾' : '▸'}
+                </button>}
+            {moKiem && canhBao.length > 0 && (
+              <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                {canhBao.map((c) => <li key={c.key} className={c.loi ? 'so-du-loi' : 'so-du-canh-bao'}>{c.el}</li>)}
+              </ul>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="card">
         <div className="row" style={{ gap: 4, flexWrap: 'wrap', alignItems: 'center', padding: '6px 0' }}>
