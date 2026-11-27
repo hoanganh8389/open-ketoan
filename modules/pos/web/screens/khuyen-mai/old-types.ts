@@ -341,3 +341,12 @@ export function parsePaste(text: string): string[][] {
   if (out.length && out[0]![0] && /^(m[ãa]|sku|stt)/i.test(out[0]![0]) ) out.shift();
   return out.filter((c) => c[0]);
 }
+
+// [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: mã chương trình tự sinh khi Thêm — TGS_<MMYY>_<NN> như plugin cũ (VD TGS_1126_01), vẫn sửa được (đóng góp)
+/** Mã kế tiếp của tháng `today` (YYYY-MM-DD): TGS_<MMYY>_<NN>, NN = số lớn nhất đang có của tháng đó + 1 (2 chữ số, quá 99 thì dài hơn). */
+export function nextPolicyCode(keys: readonly string[], today: string): string {
+  const mmyy = `${today.slice(5, 7)}${today.slice(2, 4)}`;
+  const re = new RegExp(`^TGS_${mmyy}_([0-9]+)$`, 'i');
+  const max = keys.reduce((m, k) => { const x = re.exec(k.trim()); return x ? Math.max(m, Number(x[1])) : m; }, 0);
+  return `TGS_${mmyy}_${String(max + 1).padStart(2, '0')}`;
+}

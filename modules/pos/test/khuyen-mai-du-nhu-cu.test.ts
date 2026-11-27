@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { draftContentSchema, skusOf } from '../api/domain/promo.js';
 import { policyMainSkus } from '../api/domain/returns.js';
 import { emptyForm, emptyPriceLine, fromParams, parsePriceLines, toParams } from '../web/screens/khuyen-mai/model.js';
-import { OLD_TYPES, emptyOld, oldFromParams, oldToParams, parsePaste, reasonOf, splitReason, type OldForm } from '../web/screens/khuyen-mai/old-types.js';
+import { OLD_TYPES, emptyOld, nextPolicyCode, oldFromParams, oldToParams, parsePaste, reasonOf, splitReason, type OldForm } from '../web/screens/khuyen-mai/old-types.js';
 
 const D = '2026-11-27';
 
@@ -202,5 +202,14 @@ describe('NT-BH-049 — form kiểu plugin cũ', () => {
 describe('NT-BH-049 — nội dung rỗng không đoán loại', () => {
   it('price_lines không dòng (chương trình đã ngừng, không đọc được nội dung) → null', () => {
     expect(oldFromParams('sale.promo.price_lines@2', {}, { key: 'K', today: '2026-11-27' })).toBeNull();
+  });
+});
+
+describe('NT-BH-049 — mã chương trình tự sinh TGS_<MMYY>_<NN>', () => {
+  it('số kế tiếp trong tháng, bỏ mã tháng khác / mã tự đặt', () => {
+    expect(nextPolicyCode([], '2026-11-28')).toBe('TGS_1126_01');
+    expect(nextPolicyCode(['TGS_1126_01', 'TGS_1126_07', 'TGS_1026_15', 'KM-TET', 'tgs_1126_03'], '2026-11-28')).toBe('TGS_1126_08');
+    expect(nextPolicyCode(['TGS_1126_99'], '2026-11-28')).toBe('TGS_1126_100');
+    expect(nextPolicyCode(['TGS_1126_05'], '2026-12-01')).toBe('TGS_1226_01');
   });
 });

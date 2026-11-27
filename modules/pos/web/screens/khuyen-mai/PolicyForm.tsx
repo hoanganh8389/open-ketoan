@@ -5,9 +5,9 @@
  */
 // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-15…17): form chính sách như plugin cũ (đóng góp)
 import { useMemo, useState, type ReactNode } from 'react';
-import { Modal, errorText, useApi, useMutation, useQuery } from '@bizcity/ui-kit';
+import { Modal, errorText, useApi, useCan, useMutation, useQuery } from '@bizcity/ui-kit';
 import { M } from '../../lib';
-import { OverlapList, type Overlap } from './Drafts';
+import { OverlapList, approveAndPublish, type Draft, type Overlap } from './Drafts';
 import {
   OLD_TYPES, OLD_TYPE, PASTE_COLS, emptyCk, emptyFixed, emptyOld, emptyQty, emptyUnit, oldToParams, parsePaste, reasonOf,
   type CkRow, type FixedRow, type OldForm, type OldType, type QtyRow, type UnitRow,
@@ -36,6 +36,7 @@ const Lbl = ({ label, children, hint }: { label: string; children: ReactNode; hi
 
 export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { initial: OldForm; editing: boolean; draftId?: string; onClose: () => void; onDone: (msg: string) => void }) {
   const api = useApi();
+  const can = useCan();
   const [f, setF] = useState<OldForm>(initial);
   const [tab, setTab] = useState<'info' | 'items'>('info');
   const [stop, setStop] = useState(false);
@@ -66,14 +67,21 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   const prodOf = (s: string) => (prods.data ?? []).find((p) => p.sku === s.trim());
   const under24 = (prods.data ?? []).filter((p) => p.isUnder24m);
 
+  // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: chân form như phiếu BH10 / phiếu mua — Ghi · Gửi duyệt · Duyệt (phát hành) · Thoát; người có quyền
+  // Duyệt khuyến mại duyệt ngay chương trình mình lập (bỏ luật hai người, Hoàng chốt 28/11) (đóng góp)
+  const approver = can('pos:promo-approve');
+  type Act = 'draft' | 'submit' | 'approve';
   const save = useMutation({
-    mutationFn: (submit: boolean) => {
+    mutationFn: async (act: Act) => {
       const body = { key: f.key.trim(), ruleContract: out.contract, params: out.params, effectiveFrom: f.effectiveFrom, branchCodes: f.branchCodes,
-        reason: reasonOf(f) || undefined, quota: out.quota, submit };
-      return draftId ? api.put<{ overlaps: Overlap[] }>(`${M}/promo/drafts/${draftId}`, body) : api.post<{ overlaps: Overlap[] }>(`${M}/promo/drafts`, body);
+        reason: reasonOf(f) || undefined, quota: out.quota, submit: act !== 'draft' };
+      const r = draftId ? await api.put<{ draft: Draft; overlaps: Overlap[] }>(`${M}/promo/drafts/${draftId}`, body) : await api.post<{ draft: Draft; overlaps: Overlap[] }>(`${M}/promo/drafts`, body);
+      const version = act === 'approve' ? await approveAndPublish(api, r.draft) : null;
+      return { ...r, version };
     },
-    onSuccess: (r, submit) => {
-      const msg = `Đã lưu ${f.key.trim()}${submit ? ', đã gửi duyệt' : ' (nháp)'} — máy bán áp sau khi được duyệt.`;
+    onSuccess: (r, act) => {
+      const msg = act === 'approve' ? `Đã duyệt và phát hành ${f.key.trim()} (bản ${r.version}) — máy bán áp từ ${f.effectiveFrom}.`
+        : `Đã lưu ${f.key.trim()}${act === 'submit' ? ', đã gửi duyệt' : ' (nháp)'} — máy bán áp sau khi được duyệt.`;
       if (r.overlaps.length) setWarn({ msg, overlaps: r.overlaps }); else onDone(msg);
     },
   });
@@ -160,10 +168,12 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   return (
     <Modal wide title={<span>{editing ? 'Sửa chương trình' : 'Tạo chương trình mới'}{f.key.trim() ? ` ${f.key.trim()}` : ''} <span className="badge badge-info">{typeInfo.label}</span></span>} onClose={close}
       footer={<div className="row" style={{ gap: 8, width: '100%', alignItems: 'center' }}>
-        <span className="muted" style={{ flex: 1, fontSize: 12.5 }}>{save.error ? <span className="mh-bad">{errorText(save.error)}</span> : out.problems.length ? `Chưa lưu được: ${out.problems.slice(0, 3).join(' · ')}${out.problems.length > 3 ? ` (+${out.problems.length - 3})` : ''}` : 'Lưu là bản nháp — máy bán áp sau khi người có quyền duyệt.'}</span>
-        <button type="button" className="btn" onClick={close}>Đóng</button>
-        <button type="button" className="btn" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ')} onClick={() => save.mutate(false)}>Lưu nháp</button>
-        <button type="button" className="btn btn-primary" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ') || 'Lưu và gửi người có quyền duyệt'} onClick={() => save.mutate(true)}>Lưu chương trình</button>
+        <span className="muted" style={{ flex: 1, fontSize: 12.5 }}>{save.error ? <span className="mh-bad">{errorText(save.error)}</span> : out.problems.length ? `Chưa lưu được: ${out.problems.slice(0, 3).join(' · ')}${out.problems.length > 3 ? ` (+${out.problems.length - 3})` : ''}` : (approver ? 'Ghi = nháp · Gửi duyệt = chờ người duyệt · Duyệt = phát hành ngay.' : 'Ghi = nháp · Gửi duyệt = chờ người có quyền Duyệt khuyến mại.')}</span>
+        <button type="button" className="btn" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ') || 'Ghi bản nháp — chưa áp ở máy bán'} onClick={() => save.mutate('draft')}>Ghi</button>
+        <button type="button" className="btn" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ') || 'Ghi và gửi người có quyền Duyệt khuyến mại'} onClick={() => save.mutate('submit')}>Gửi duyệt</button>
+        {approver && <button type="button" className="btn btn-primary" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ') || 'Ghi, duyệt và phát hành ngay — máy bán áp từ ngày áp dụng'}
+          onClick={() => save.mutate('approve')}>Duyệt (phát hành)</button>}
+        <button type="button" className="btn" onClick={close}>Thoát</button>
       </div>}>
       <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 12 }}>
         <div className="tabs" role="tablist">

@@ -21,7 +21,7 @@ import { KIND_BY_CONTRACT, KIND_INFO, STATUS_LABEL, STOP_REASON, emptyForm, from
 // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-14, S-CD-15, S-CD-18): Thêm mở form kiểu plugin cũ (loại chọn trong form, chỉ 7 loại cũ);
 // loại mới của màn (bậc, combo món, flash sale, hạn mức…) ẩn khỏi Thêm — chương trình đã có vẫn mở bằng form cũ; thanh nút như màn danh mục (đóng góp)
 import { PolicyForm } from './khuyen-mai/PolicyForm';
-import { OLD_TYPE, emptyOld, oldFromParams, type OldForm } from './khuyen-mai/old-types';
+import { OLD_TYPE, emptyOld, nextPolicyCode, oldFromParams, type OldForm } from './khuyen-mai/old-types';
 import type { Draft } from './khuyen-mai/Drafts';
 
 type Version = { version: number; effectiveFrom: string | null; effectiveTo: string | null; status: string; scope: { branchCodes?: string[] }; reason: string | null; applied: number; publishedBy: string; publishedAt: string };
@@ -122,6 +122,12 @@ export function KhuyenMaiPage() {
     const x = await api.get<{ items?: Draft[] } | Draft[]>(`${M}/promo/drafts`, { status: 'published', q: key });
     return (Array.isArray(x) ? x : x.items ?? []).filter((d) => d.key === key)[0];
   };
+  // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-049: Thêm điền sẵn mã TGS_<MMYY>_<NN> kế tiếp (chương trình + nháp đang có), sửa được (đóng góp)
+  const addNew = async () => {
+    const drafts = await api.get<Draft[] | { items?: Draft[] }>(`${M}/promo/drafts`, { q: 'TGS_' }).then((x) => (Array.isArray(x) ? x : x.items ?? [])).catch(() => [] as Draft[]);
+    const key = nextPolicyCode([...rows.map((r) => r.key), ...drafts.map((d) => d.key)], d0);
+    setOldForm({ f: { ...emptyOld('ck', d0), key }, editing: false });
+  };
   const edit = useMutation({
     mutationFn: async (r: Row): Promise<{ old?: OldForm; f?: Form }> => {
       const p = await loadParams(r);
@@ -169,7 +175,7 @@ export function KhuyenMaiPage() {
       </div>
       <div className="catalog-toolbar canh-phai" style={{ border: '1px solid var(--line-soft, #e3e8ee)', borderRadius: 6 }}>
         {canAdd && <button type="button" className="btn btn-sm btn-primary" title={tab === 'han-muc' ? 'Thêm chương trình có hạn mức cửa hàng' : 'Thêm chương trình khuyến mại (loại chọn trong form, như plugin cũ)'}
-          onClick={() => (tab === 'han-muc' ? setChooseKind(true) : setOldForm({ f: emptyOld('ck', d0), editing: false }))}>+ Thêm</button>}
+          onClick={() => (tab === 'han-muc' ? setChooseKind(true) : void addNew())}>+ Thêm</button>}
         {tab === 'km' && writable && <button type="button" className="btn btn-sm" disabled={!pick || edit.isPending} title={pick ? '' : 'Chọn một khuyến mại ở bảng'} onClick={() => pick && edit.mutate(pick)}>Sửa</button>}
         {tab === 'km' && writable && <button type="button" className="btn btn-sm" disabled={!pick || copy.isPending} title={pick ? 'Thêm khuyến mại mới chép nội dung khuyến mại đang chọn (mã để trống)' : 'Chọn một khuyến mại ở bảng'} onClick={() => pick && copy.mutate(pick)}>Nhân bản</button>}
         {tab === 'km' && writable && <button type="button" className="btn btn-sm" disabled={!pick || pick.status === 'stopped' || pick.status === 'ended'} title={!pick ? 'Chọn một khuyến mại ở bảng' : pick.status === 'stopped' || pick.status === 'ended' ? 'Khuyến mại đã ngừng / đã hết' : ''} onClick={() => setStopOf(pick)}>Ngừng</button>}
