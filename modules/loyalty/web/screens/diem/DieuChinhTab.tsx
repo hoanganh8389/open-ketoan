@@ -28,18 +28,22 @@ export function DieuChinhTab() {
   const pending = items.filter((a) => a.status === 'pending');
   const done = (m: string) => { setDialog(''); setMsg(m); void qc.invalidateQueries({ queryKey: ['loyalty'] }); };
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 8, margin: '8px 0' }}>
-        {can(PERM.dcLap) && <button type="button" className="btn btn-primary" onClick={() => setDialog('lap')}>Lập điều chỉnh</button>}
-        {can(PERM.dcDuyet) && <button type="button" className="btn" disabled={!pending.length} onClick={() => setDialog('duyet')}>Duyệt / từ chối ({pending.length})</button>}
+    <section className="card">
+      {/* [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-051: thanh nút catalog-toolbar trong card như màn Core (đóng góp) */}
+      <div className="catalog-toolbar">
+        {can(PERM.dcLap) && <button type="button" className="btn btn-sm btn-primary" title="Lập yêu cầu cộng / trừ điểm (bắt buộc lý do)" onClick={() => setDialog('lap')}>+ Lập điều chỉnh</button>}
+        {can(PERM.dcDuyet) && <button type="button" className="btn btn-sm" title="Yêu cầu đang chờ duyệt" disabled={!pending.length} onClick={() => setDialog('duyet')}>Duyệt / từ chối ({pending.length})</button>}
+        <button type="button" className="btn btn-sm btn-nap" disabled={q.isFetching} title="Nạp lại danh sách" onClick={() => void q.refetch()}>{q.isFetching ? 'Đang nạp…' : '⟳ Nạp'}</button>
       </div>
-      <p className="muted">Điều chỉnh tay cộng / trừ điểm của khách, bắt buộc lý do; người khác có quyền duyệt mới ghi vào sổ điểm (dòng "điều chỉnh"). Không trừ quá số điểm khách đang có.</p>
-      {msg && <div className="badge badge-ok" style={{ marginBottom: 6 }}>{msg}</div>}
+      <div className="card-body" style={{ paddingTop: 8, paddingBottom: 0 }}>
+        <p className="muted" style={{ margin: 0 }}>Điều chỉnh tay cộng / trừ điểm của khách, bắt buộc lý do; người khác có quyền duyệt mới ghi vào sổ điểm (dòng "điều chỉnh"). Không trừ quá số điểm khách đang có.</p>
+        {msg && <div className="alert alert-ok" role="status" style={{ marginTop: 8 }}>{msg}</div>}
+      </div>
       {q.isLoading ? <Loading /> : q.error ? <ErrorBox error={errorText(q.error)} /> : (
         <DataGrid rows={items} columns={cols} rowKey={(a) => a.id} storageKey="loyalty.dieu-chinh" exportName="dieu-chinh-diem" emptyText="Chưa có yêu cầu điều chỉnh" />
       )}
       {dialog === 'lap' && <DieuChinhForm onClose={() => setDialog('')} onDone={done} />}
       {dialog === 'duyet' && <DuyetModal kind="adjustment" items={pending} onClose={() => setDialog('')} onDone={done} />}
-    </div>
+    </section>
   );
 }

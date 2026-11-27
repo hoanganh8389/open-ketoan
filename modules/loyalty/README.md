@@ -40,6 +40,8 @@ bán của module `pos`, định khoản do kế toán đặt).
 | `GET /vouchers/:code` | `loyalty:read` | tra voucher đổi điểm (khuôn `LoyaltyVoucher`); đã dùng / hết hạn vẫn trả kèm trạng thái |
 | `POST /opening` | `catalog:write` | website nạp số dư điểm cũ một lần theo khách `{ customerCode, totalEarned, balance }`: lô tích = tổng đã tích + dòng đổi = phần đã dùng (giữ số dư và hạng); khách đã nạp bỏ qua |
 | `GET /report?from=&to=` | `loyalty:read` | báo cáo kỳ: phát sinh theo cửa hàng × loại, số dư theo hạng, 500 khách điểm còn nhiều nhất — màn BH19 |
+| `GET /members?q=&tier=&page=&pageSize=` | `loyalty:read` | thẻ Thành viên (NT-BH-051): mỗi khách có sổ điểm — tên / SĐT (danh mục đối tượng), hạng, điểm hiện tại, tổng tích, tổng đổi; tìm không dấu, lọc hạng, chia trang |
+| `GET /members/:id/history` | `loyalty:read` | lịch sử điểm của khách, mỗi dòng có điểm trước / sau |
 | action `loyalty.redeem.quote` (không HTTP) | `loyalty:read` | module `pos` gọi chéo lúc nhận đơn có khách / voucher: phần thưởng đổi được không, quà gì, mã voucher sẽ phát (định theo đơn), tiền giảm voucher, điểm đơn này |
 
 ## Đổi điểm, voucher (bước 2)
@@ -61,4 +63,4 @@ bán của module `pos`, định khoản do kế toán đặt).
 
 ## Chưa làm
 
-Hoàn điểm đã đổi khi khách trả quà đổi điểm; dùng điểm để thanh toán (L5).
+Hoàn điểm đã đổi khi khách trả quà đổi điểm — plugin cũ cũng không hoàn (NT-BH-051 M3). "Dùng điểm thanh toán" của plugin cũ = đổi quà / voucher (giá trị đổi đ/điểm chỉ lưu, NT-BH-051 M2).

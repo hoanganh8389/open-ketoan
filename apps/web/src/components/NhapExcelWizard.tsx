@@ -66,7 +66,8 @@ export function NhapExcelWizard({ loai, onClose }: { loai: NhapLoai; onClose: ()
   const [book, setBook] = useState<Book | null>(null);
   const [sheet, setSheet] = useState('');
   const [headRow, setHeadRow] = useState(0);
-  const [mode, setMode] = useState<NhapCheDo>(mem.mode ?? 'both');
+  // Loại có chế độ mặc định an toàn (vd ĐVT: chỉ thêm mới) luôn mở ở chế độ đó, không lấy lựa chọn nhớ từ lần trước.
+  const [mode, setMode] = useState<NhapCheDo>(loai.cheDoMacDinh ?? mem.mode ?? 'both');
   const [map, setMap] = useState<Record<string, number | null>>({});
   const [defaults, setDefaults] = useState<Record<string, string>>(() => ({ ...Object.fromEntries(loai.fields.filter((f) => f.defaultValue).map((f) => [f.key, f.defaultValue!])), ...mem.defaults }));
   const [loc, setLoc] = useState<'all' | 'ghep' | 'chua'>('all');

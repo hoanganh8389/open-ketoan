@@ -41,6 +41,8 @@ export interface NhapLoai {
   fields: NhapTruong[];
   /** Cho chọn Thêm mới / Cập nhật / Cả hai (mặc định có). */
   modes?: boolean;
+  /** Chế độ mặc định khi chưa chọn lần nào (mặc định chung: thêm mới + cập nhật). */
+  cheDoMacDinh?: NhapCheDo;
   // [2026-11-18 02:00 PM kiennt] NT-DM-007 — tệp nhiều sheet: tự chọn sheet trùng tên này (đóng góp)
   /** Tên sheet tự chọn khi tệp có sheet trùng tên (không phân biệt hoa thường, dấu). */
   sheet?: string;
@@ -456,6 +458,8 @@ const gonTen = (s: string | undefined) => (s ?? '').replace(/\s+/g, ' ').trim();
 const DON_VI_TINH: NhapLoai = {
   id: 'don-vi-tinh', nhom: 'Danh mục', title: 'Đơn vị tính', desc: 'Tên đơn vị tính (Hộp, Lốc_4, Thùng…), đang dùng, ghi chú — tỉ lệ quy đổi khai ở từng mặt hàng', keyField: 'name',
   listPath: '/danh-muc/don-vi-tinh', invalidate: ['unit-names'],
+  // [2026-11-27 09:30 AM Nguyễn Văn Thủy] #66 tab Test: ĐVT mặc định CHỈ THÊM MỚI — tên đã có thì báo lỗi, không ghi đè; muốn sửa thì chọn Cập nhật (đóng góp)
+  cheDoMacDinh: 'create',
   fields: [
     { key: 'name', header: 'Đơn vị tính', required: true, aliases: ['dvt', 'don vi', 'ten dvt', 'ten don vi tinh'], example: 'Lốc_4', note: 'Đã có (không phân biệt hoa thường) → cập nhật Đang dùng, Ghi chú; chưa có → thêm mới. Không đổi tên qua Excel. Tối đa 32 ký tự: chữ, số, khoảng trắng và _ - . / ( ) + ×' },
     { key: 'isActive', header: 'Đang dùng', aliases: ['trang thai', 'dang su dung', 'hoat dong'], example: 'Có', note: 'Có / Không (hoặc x, 1, 0, Đang dùng, Ngừng dùng). Như tệp Xuất: cột có ô nào được điền thì ô trống = Không. Cả cột trống: mới = Có; đã có = giữ nguyên.' },
