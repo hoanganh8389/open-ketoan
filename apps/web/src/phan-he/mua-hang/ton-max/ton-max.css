@@ -106,26 +106,33 @@
 .tm-prov-head .muted { font-size: 11.5px; }
 /* [2026-11-25 kiennt] NT-MH-006 — dải hai cách đặt tồn max (của Nguyễn Văn Thủy, 15/11) đã bỏ khỏi MH16, MH17 (đóng góp) */
 
-/* [2026-11-26 kiennt] NT-MH-023 — MH19: thanh công cụ gọn + mỗi NCC một tab kiểu sheet Excel (đóng góp) */
-.mh19-bar { padding-top: 0; flex-wrap: wrap; gap: 10px; }
-.mh19-sep { width: 1px; align-self: stretch; background: var(--line); }
-.mh19-shops { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.mh19-shops > .muted { margin-right: 2px; }
-.mh19-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 999px; background: #fff; cursor: pointer; font-size: 13px; white-space: nowrap; }
-.mh19-chip b { display: inline-grid; place-items: center; min-width: 16px; height: 16px; border-radius: 8px; background: rgba(255,255,255,.25); font-size: 11px; }
-.mh19-chip.on { background: #1e3a8a; border-color: #1e3a8a; color: #fff; }
-.mh19-chip.on.warn { background: #fff7ed; border-color: #f59e0b; color: #b45309; }
-.mh19-chip input { margin: 0; }
+/* [2026-11-26 kiennt] NT-MH-023 — MH19: thanh công cụ gọn (đóng góp) */
+/* [2026-11-26 kiennt] NT-MH-024 — MH19 gọn 2 hàng: ô bật ra chọn shop / cách chia; bỏ tab NCC (đóng góp) */
+.mh19-bar { flex-wrap: wrap; gap: 8px; }
+.mh19-card .tm-bar.mh19-bar { padding-top: 8px; }
 .mh19-pop { position: relative; }
-.mh19-pop-panel { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; width: 340px; padding: 12px; display: grid; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.15); }
+.mh19-pop > .btn.on { border-color: #1e3a8a; }
+.mh19-badge { margin-left: 4px; padding: 0 6px; border-radius: 8px; background: #1e3a8a; color: #fff; font-size: 11px; }
+.mh19-pop-sec { display: grid; gap: 6px; font-size: 13px; }
+.mh19-pop-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; font-size: 12px; }
+.mh19-shop-list { display: grid; max-height: 220px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
+.mh19-shop-list button { display: grid; grid-template-columns: 22px auto 1fr; gap: 8px; align-items: center; text-align: left; padding: 6px 8px; border: 0; border-bottom: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 13px; }
+.mh19-shop-list button:last-child { border-bottom: 0; }
+.mh19-shop-list button:hover { background: #f1f5f9; }
+.mh19-shop-list button.on { background: #eef2ff; }
+.mh19-no { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 10px; border: 1px solid var(--line); font-size: 11px; font-weight: 700; }
+.mh19-shop-list button.on .mh19-no { background: #1e3a8a; border-color: #1e3a8a; color: #fff; }
+.mh19-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted, #64748b); }
+.mh19-pop-panel { position: absolute; left: 0; top: calc(100% + 4px); z-index: 30; width: 340px; padding: 12px; display: grid; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.15); }
 .mh19-pop-panel label { display: grid; gap: 4px; font-size: 13px; }
 .mh19-pop-panel label > span { font-weight: 700; }
 .mh19-pop-panel small { color: var(--muted, #64748b); line-height: 1.35; }
-.mh19-tabrow { display: flex; align-items: flex-end; gap: 10px; padding: 0 12px; border-bottom: 2px solid #1e3a8a; margin-bottom: 6px; }
-.mh19-act { flex: none; display: flex; align-items: center; gap: 6px; padding-bottom: 5px; }
-.mh19-cnt { margin-left: 6px; padding-left: 6px; border-left: 1px solid rgba(255,255,255,.4); font-weight: 400; font-size: 12px; }
-.tm-ncc-tabs { flex: 1; min-width: 0; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: thin; }
-.tm-ncc-tabs button { flex: none; border: 1px solid var(--line); border-bottom: 0; border-radius: 6px 6px 0 0; padding: 5px 12px; background: #f1f5f9; cursor: pointer; font-weight: 600; white-space: nowrap; }
-.tm-ncc-tabs button span { margin-left: 4px; font-weight: 400; opacity: .7; font-size: 11.5px; }
-.tm-ncc-tabs button.on { background: #1e3a8a; border-color: #1e3a8a; color: #fff; }
-.tm-ncc-tabs button.none:not(.on) { color: #b45309; }
+/* [2026-11-26 kiennt] NT-MH-024 — MH19: mỗi kho nhận (shop) một tab kiểu sheet Excel, gọn (cao 26px, tab đang mở nền trắng nối với bảng) (đóng góp) */
+.mh19-tabs { display: flex; overflow-x: auto; scrollbar-width: thin; padding: 0 12px; box-shadow: inset 0 -1px 0 #1e3a8a; margin-bottom: 4px; }
+.mh19-tabs button { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 26px; max-width: 220px; padding: 0 10px; margin: 0 -1px 0 0; border: 1px solid var(--line); border-bottom-color: #1e3a8a; border-radius: 4px 4px 0 0; background: #f8fafc; color: #475569; font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.mh19-tabs button:hover { background: #eef2f7; }
+.mh19-tabs button em { font-style: normal; font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+.mh19-tabs button span { flex: none; min-width: 18px; padding: 0 5px; border-radius: 8px; background: rgba(15,23,42,.07); font-size: 11px; font-weight: 600; text-align: center; }
+.mh19-tabs button.on { position: relative; z-index: 1; background: #fff; color: #1e3a8a; border-color: #1e3a8a; border-bottom-color: #fff; box-shadow: inset 0 2px 0 #1e3a8a; }
+.mh19-tabs button.on span { background: #1e3a8a; color: #fff; }
+.mh19-tabs button.none:not(.on) { color: #b45309; }
