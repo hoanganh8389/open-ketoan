@@ -5,7 +5,7 @@
 **Biên bản kiểm kê → Biên bản xác minh → Quyết định xử lý**. Phiếu nghiệm thu: NT-KHO-002.
 
 ## Trước khi kiểm
-- Khai **kho cách ly** cho chi nhánh ở Danh mục kho (DM12) nếu có hàng kém / mất phẩm chất.
+- Khai **kho cách ly** cho chi nhánh ở Danh mục kho (DM12) nếu có hàng không đủ chất lượng (kém / mất phẩm chất).
 - Khai các **lý do phiếu kế toán** (loại journal, Danh mục lý do ACC18) cho quyết định xử lý, ví dụ:
   `KKBT` Nợ 1388 / Có 1381 (bồi thường) · `KKCP` Nợ 632 / Có 1381 (tính vào chi phí) · `KKTN` Nợ 3381 / Có 711 (thừa thuộc doanh nghiệp).
   Đơn vị đặt mã khác cũng được — chọn ở bước quyết định.
@@ -13,12 +13,12 @@
 ## Bước 1 — Biên bản kiểm kê
 1. Bấm **+ Thêm**: chọn chi nhánh, kho kiểm, ngày kiểm kê, kho cách ly, mục đích.
 2. **Lấy số tồn**: điền mọi mặt hàng × lô có tồn hoặc có phát sinh trong tháng, cột *Theo sổ* tính đến hết ngày kiểm kê.
-3. Nhập *Theo kiểm kê*, *Kém PC*, *Mất PC*, *HSD thực tế* — gõ tay hoặc **Nhập kết quả từ Excel**
-   (cột: Mã hàng · Số lô · Số kiểm kê · Kém PC · Mất PC · HSD thực tế). Lô chưa có của mã đã có → thêm dòng *lô mới*.
+3. Nhập *Theo kiểm kê*, *Không đủ chất lượng* (hàng kém hoặc mất phẩm chất: hỏng, móp, hết hạn…), *HSD thực tế* — gõ tay hoặc **Nhập kết quả từ Excel** <!-- [2026-11-27 kiennt] NT-KHO-007 -->
+   (cột: Mã hàng · Số lô · Số kiểm kê · Không đủ chất lượng · HSD thực tế; tệp mẫu cũ có hai cột Kém PC · Mất PC vẫn nhận, cộng lại). Lô chưa có của mã đã có → thêm dòng *lô mới*.
 4. Thêm thành viên, kết luận; đính kèm ảnh biên bản ký tay. **Ghi** = lưu nháp, chưa đụng sổ.
 5. **Ghi nhận chênh lệch**: phần mềm sinh
    - chứng từ điều chỉnh tồn: thiếu ghi **Nợ 1381**, thừa ghi **Có 3381** (lý do kiểm kê thiếu / thừa của đơn vị) — **chưa vào chi phí**;
-   - chứng từ chuyển hàng kém / mất phẩm chất sang **kho cách ly** (không ghi giảm 156).
+   - chứng từ chuyển hàng không đủ chất lượng sang **kho cách ly** (không ghi giảm 156).
    Giá trị chênh lệch theo giá vốn bình quân tháng, ghi khi **tính giá vốn** tháng đó.
 
 ## Bước 2 — Xác minh

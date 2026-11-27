@@ -56,7 +56,8 @@ describe('NT-DM-014 L1 — nhóm hàng theo ngành / nhãn', () => {
   it('ghi tên ngành / nhãn / nhóm (như tệp Xuất DM11) → đúng nhóm; nhãn không có dưới ngành → lỗi', async () => {
     const ok = await nhap([dong({ sku: '981111002', industryCode: 'Sữa bột thử 14', brandCode: 'Nhãn A thử 14', groupCode: 'Nhóm A1 thử 14' })]);
     expect(ok.errors).toEqual([]);
-    expect(ok.values.groupCode).toContain('N14A1');
+    // NT-DM-019: màn kiểm tra hiện mã như DM11 (sku_code) + tên, không hiện mã nội bộ N14A1
+    expect(ok.values.groupCode).toBe('1 — Nhóm A1 thử 14');
     const sai = await nhap([dong({ sku: '981111003', industryCode: 'Sữa bột thử 14', brandCode: 'Nhãn không có', groupCode: 'Nhóm A1 thử 14' })]);
     expect(sai.errors.join(' ')).toContain('Nhãn hàng "Nhãn không có" không có dưới ngành Sữa bột thử 14');
   });
@@ -64,7 +65,8 @@ describe('NT-DM-014 L1 — nhóm hàng theo ngành / nhãn', () => {
   it('mã hoá từng cấp (Mã ngành 98 · Mã nhãn 222 · Mã nhóm 6) → nhóm "26" dưới nhãn B; Mã nhóm 1 dưới nhãn B → lỗi', async () => {
     const ok = await nhap([dong({ sku: '982226002', industrySku: '98', brandSku: '222', groupSku: '6' })]);
     expect(ok.errors).toEqual([]);
-    expect(ok.values.groupCode).toContain('26');
+    // NT-DM-019: nhóm nội bộ "26" (dưới nhãn B) hiện theo mã DM11 6 + tên
+    expect(ok.values.groupCode).toBe('6 — Sữa bà bầu thử 14');
     const sai = await nhap([dong({ sku: '982226003', industrySku: '98', brandSku: '222', groupSku: '1' })]);
     expect(sai.errors.join(' ')).toContain('không có dưới nhãn Nhãn B thử 14');
   });

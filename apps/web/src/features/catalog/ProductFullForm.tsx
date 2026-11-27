@@ -87,7 +87,10 @@ const MA_FORM: [RegExp, string][] = [
 ];
 const maLoiForm = (msg: string) => MA_FORM.find(([re]) => re.test(msg))?.[1] ?? 'ITEM-FORM';
 
-export function ProductFullForm({ sku, initial, classes, groupPath, onClose, startTab, startEditing, onSaved }: {
+// [2026-11-27 03:55 PM Nguyễn Văn Thủy] MH22 — thêm nhanh mặt hàng từ dòng hoá đơn NCC: điền sẵn tên, ĐVT, thuế suất, giá mua theo NCC (đóng góp)
+/** Gợi ý khi thêm mới từ chứng từ (vd dòng hoá đơn NCC): thuế suất % (tìm loại thuế cùng mức) và dòng giá mua theo NCC. */
+export interface GoiYThemHang { taxRate?: number | null; ncc?: NccTam[] }
+export function ProductFullForm({ sku, initial, classes, groupPath, onClose, startTab, startEditing, onSaved, goiY }: {
   sku: string | null; // null = thêm mới
   initial?: Partial<FullProduct>;
   classes: Record<ClassKind, ItemClassLite[]>;
@@ -97,6 +100,7 @@ export function ProductFullForm({ sku, initial, classes, groupPath, onClose, sta
   startEditing?: boolean;
   /** Thêm mới xong: báo mã vừa ghi (ô chọn mặt hàng trên chứng từ tự điền). */
   onSaved?: (sku: string) => void;
+  goiY?: GoiYThemHang;
 }) {
   const qc = useQueryClient();
   const isNew = sku === null;
@@ -106,7 +110,7 @@ export function ProductFullForm({ sku, initial, classes, groupPath, onClose, sta
   const [kind, setKind] = useState<'' | 'new' | 'variant'>(isNew && !initial?.groupCode ? '' : 'new');
   const [parentErr, setParentErr] = useState('');
   // [2026-11-12 Nguyễn Văn Thủy] thêm mới: giá mua theo NCC khai trước khi ghi, ghi cùng mặt hàng (đóng góp)
-  const [nccRows, setNccRows] = useState<NccTam[]>([]);
+  const [nccRows, setNccRows] = useState<NccTam[]>(() => (isNew ? goiY?.ncc ?? [] : []));
   const enabled = useEnabledModules();
   const extraTabs = PRODUCT_TABS.filter((t) => !enabled || enabled.has(t.module));
   const buyTab = extraTabs.find((t) => t.key === 'gia-mua');
@@ -311,6 +315,13 @@ export function ProductFullForm({ sku, initial, classes, groupPath, onClose, sta
 
   // [2026-11-19 kiennt] NT-DM-012 — loại thuế cố định dùng chung mua / bán: mặt hàng một loại thuế (VAT ra = VAT vào) (đóng góp)
   const pickTax = (code: string) => set({ taxOutCode: code || null, taxInCode: code || null });
+  // Gợi ý thuế suất từ chứng từ: chọn loại thuế đang dùng cùng mức % (chưa chọn thuế mới điền; KCT / không rõ thì để người dùng chọn).
+  const gyRate = goiY?.taxRate;
+  useEffect(() => {
+    if (!isNew || v.taxOutCode || gyRate === undefined || gyRate === null || !taxes.length) return;
+    const t = taxes.find((x) => x.isActive && !x.isLegacy && x.direction !== 'input' && Number(x.rate ?? -1) === gyRate) ?? taxes.find((x) => x.isActive && !x.isLegacy && Number(x.rate ?? -1) === gyRate);
+    if (t) pickTax(t.code);
+  }, [taxes.length, gyRate]); // eslint-disable-line react-hooks/exhaustive-deps
   const taxLabel = (t: TaxCode) => (t.isLegacy ? `${t.code} — ${t.name} (mã cũ)` : nhanLoai(t));
   const vatRate = (() => { const t = taxes.find((x) => x.code === v.taxOutCode); return t ? { label: taxLabel(t), rate: Number(t.rate ?? 0) || 0 } : v.taxOutCode ? { label: v.taxOutCode, rate: 0 } : undefined; })();
   // [2026-11-12 Nguyễn Văn Thủy] Thêm mặt hàng theo từng bước, kiểm bắt buộc ở mỗi bước (đóng góp)
@@ -627,7 +638,7 @@ function XemLai({ v, groupLabel, vatLabel, baseUnit, companyPrice, companyName, 
 
 // [2026-11-12 Nguyễn Văn Thủy] bước Mua hàng khi thêm mặt hàng: nhà cung cấp + giá mua khai trước, ghi cùng mặt hàng (đóng góp)
 // [2026-11-15 Nguyễn Văn Thủy] giá mua nhập theo chưa thuế HOẶC gồm thuế (NCC báo giá kiểu nào nhập kiểu đó); lưu đúng ô đã nhập (đóng góp)
-interface NccTam { partnerCode: string; unit: string; price: number | null; incVat: boolean; validFrom: string; nccSku: string }
+export interface NccTam { partnerCode: string; unit: string; price: number | null; incVat: boolean; validFrom: string; nccSku: string }
 function NccTamBang({ rows, setRows, units, mainUnit, vatLabel, vatPct }: { rows: NccTam[]; setRows: (f: (r: NccTam[]) => NccTam[]) => void; units: string[]; mainUnit: string; vatLabel: string; vatPct: number }) {
   const k = 1 + (vatPct || 0) / 100;
   const r2 = (n: number) => Math.round(n * 100) / 100;

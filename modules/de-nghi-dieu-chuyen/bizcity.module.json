@@ -1,0 +1,44 @@
+{
+  "contract": "bizcity_module@1",
+  "id": "bizcity.de-nghi-dieu-chuyen",
+  "key": "de-nghi-dieu-chuyen",
+  "kind": "module",
+  "version": "0.1.0",
+  "label": "Đề nghị điều chuyển",
+  "description": "KHO04 Đề nghị điều chuyển (NT-BH-056): cửa hàng / máy bán lập đề nghị chuyển hàng của mình sang chi nhánh khác; người duyệt Duyệt → lập phiếu chuyển kho KHO01 (xuất luôn, chờ nhận) hoặc Từ chối; người lập huỷ khi còn chờ.",
+  "owners": ["@hoanganh8389"],
+  "standard": "^1.0",
+  "requires": {
+    "capabilities": ["data.tenant-tx", "data.read-views", "data.migrations.module", "actions.runtime", "actions.idempotency", "evidence.receipt"]
+  },
+  "permissions": [
+    { "key": "de-nghi-dieu-chuyen:xem", "label": "Đề nghị điều chuyển — xem, in", "roles": ["owner", "chief_accountant", "accountant", "staff"], "risk": "low" },
+    { "key": "de-nghi-dieu-chuyen:lap", "label": "Đề nghị điều chuyển — lập, sửa, huỷ đề nghị đang chờ", "roles": ["owner", "chief_accountant", "accountant", "staff"], "risk": "low" },
+    { "key": "de-nghi-dieu-chuyen:duyet", "label": "Đề nghị điều chuyển — duyệt (lập phiếu chuyển kho KHO01), từ chối", "roles": ["owner", "chief_accountant", "accountant"], "risk": "low" }
+  ],
+  "data": {
+    "schema": "mod_de_nghi_dieu_chuyen",
+    "tables": ["phieu", "code_counters"],
+    "reads": ["bizcity_read.branches", "bizcity_read.warehouses", "bizcity_read.products", "bizcity_read.stock_on_hand", "bizcity_read.partners"]
+  },
+  "actions": [
+    "de-nghi-dieu-chuyen.phieu.list",
+    "de-nghi-dieu-chuyen.phieu.get",
+    "de-nghi-dieu-chuyen.phieu.save",
+    "de-nghi-dieu-chuyen.phieu.cancel",
+    "de-nghi-dieu-chuyen.phieu.reject",
+    "de-nghi-dieu-chuyen.phieu.approve",
+    "de-nghi-dieu-chuyen.danh-muc.get",
+    "de-nghi-dieu-chuyen.hang.get"
+  ],
+  "extensions": {
+    "screens": [
+      { "key": "de-nghi-dieu-chuyen.phieu", "code": "KHO04", "group": "Kho", "label": "Đề nghị điều chuyển", "path": "/app/de-nghi-dieu-chuyen",
+        "operations": {
+          "xem": { "permission": "de-nghi-dieu-chuyen:xem", "label": "Xem, in", "kind": "xem" },
+          "them": { "permission": "de-nghi-dieu-chuyen:lap", "label": "Lập, sửa, huỷ đề nghị đang chờ", "kind": "ghi" },
+          "duyet": { "permission": "de-nghi-dieu-chuyen:duyet", "label": "Duyệt (lập phiếu chuyển kho KHO01), từ chối", "kind": "ghi" } } }
+    ]
+  },
+  "ui": { "icon": "ArrowLeftRight", "color": "#7b1fa2", "order": 33 }
+}
