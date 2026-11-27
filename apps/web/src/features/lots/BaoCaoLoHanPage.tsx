@@ -43,7 +43,8 @@ export function BaoCaoLoHanPage() {
   };
   const q = useQuery({ queryKey: ['lots', 'bao-cao-han', params], queryFn: () => api.get<LotRow[]>('/api/v1/lots', params) });
   const all = (q.data ?? []).filter((l) => l.stock > 0);
-  const rows = (f.muc ? all.filter((l) => mucOf(l.daysLeft) === f.muc) : all)
+  // Mặc định không liệt kê lô không ghi hạn dùng (báo cáo về hạn dùng); chọn "Không hạn dùng" ở Tình trạng hạn để xem.
+  const rows = (f.muc ? all.filter((l) => mucOf(l.daysLeft) === f.muc) : all.filter((l) => l.daysLeft !== null))
     .slice().sort((a, b) => (a.daysLeft ?? 1e9) - (b.daysLeft ?? 1e9));
   const dem = (m: Muc) => all.filter((l) => mucOf(l.daysLeft) === m);
   return (
@@ -58,7 +59,7 @@ export function BaoCaoLoHanPage() {
             <BranchSelect value={f.branchCodes} onChange={(branchCodes) => set({ branchCodes })} warehouses={{ value: f.warehouses, onChange: (warehouses) => set({ warehouses }) }} />
             <div className="field"><label>Tình trạng hạn</label>
               <select className="select input" value={f.muc} onChange={(e) => set({ muc: e.target.value as '' | Muc })}>
-                <option value="">Tất cả</option>{(Object.keys(MUC) as Muc[]).map((m) => <option key={m} value={m}>{MUC[m].label}</option>)}
+                <option value="">Có hạn dùng</option>{(Object.keys(MUC) as Muc[]).map((m) => <option key={m} value={m}>{MUC[m].label}</option>)}
               </select>
             </div>
           </form>
