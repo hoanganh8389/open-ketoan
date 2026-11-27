@@ -1,13 +1,12 @@
 // [2026-11-27 12:40 PM Nguyễn Văn Thủy] KHO08 — #70 tab Test: báo cáo lô và hạn dùng ở Kho (và Mua hàng): tồn từng lô theo chi nhánh · kho,
 // nhóm theo mức hạn (đã hết hạn / ≤ 7 / ≤ 15 / ≤ 30 ngày / còn hạn), lọc chung cây chi nhánh + kho (đóng góp)
 /**
- * BÁO CÁO LÔ VÀ HẠN DÙNG (KHO08) — đọc cùng dữ liệu Tồn theo lô (KHO05): lô sinh từ phiếu nhập có số lô / hạn dùng (kể cả chỉ ghi hạn dùng).
+ * THẺ HẠN DÙNG của Tồn theo lô (KHO05; trước là màn riêng KHO08) — đọc cùng dữ liệu Tồn theo lô (KHO05): lô sinh từ phiếu nhập có số lô / hạn dùng (kể cả chỉ ghi hạn dùng).
  * Mỗi dòng: một lô còn tồn ở một chi nhánh · kho. Thẻ trên cùng bấm được để lọc nhanh theo mức hạn.
  */
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api, errorText } from '@/lib/api';
-import { PageHeader } from '@/components/PageHeader';
 import { FilterLayout } from '@/components/ReportPanel';
 import { BranchSelect } from '@/components/filters';
 import { DataGrid } from '@/components/DataGrid';
@@ -31,7 +30,8 @@ const mucOf = (d: number | null): Muc => (d === null ? 'none' : d < 0 ? 'expired
 const viDate = (d: string | null) => (d ? d.split('-').reverse().join('/') : '');
 const num = (n: number) => n.toLocaleString('vi-VN', { maximumFractionDigits: 4 });
 
-export function BaoCaoLoHanPage() {
+/** Thẻ "Hạn dùng" của màn Tồn theo lô (KHO05) — gộp vào KHO05 để không có hai màn lô. */
+export function HanDungLo() {
   const [f, setF] = useState({ branchCodes: '', warehouses: '', search: '', muc: '' as '' | Muc });
   const set = (p: Partial<typeof f>) => setF((o) => ({ ...o, ...p }));
   const [search, setSearch] = useState('');
@@ -48,9 +48,6 @@ export function BaoCaoLoHanPage() {
     .slice().sort((a, b) => (a.daysLeft ?? 1e9) - (b.daysLeft ?? 1e9));
   const dem = (m: Muc) => all.filter((l) => mucOf(l.daysLeft) === m);
   return (
-    <div className="page">
-      <PageHeader title="Báo cáo lô và hạn dùng" code="KHO08" helpKey="kho-bao-cao-lo-han"
-        subtitle="Tồn từng lô theo chi nhánh · kho, xếp hạn dùng gần trước; nhóm hết hạn / cận date 7 – 15 – 30 ngày" />
       <FilterLayout
         onSearch={() => set({ search: search.trim() })}
         filters={
@@ -99,6 +96,5 @@ export function BaoCaoLoHanPage() {
           )}
         </div>
       </FilterLayout>
-    </div>
   );
 }
