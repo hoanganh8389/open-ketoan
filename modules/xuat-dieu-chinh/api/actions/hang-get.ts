@@ -5,7 +5,7 @@
  */
 // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: dòng hàng form BH06 (đóng góp)
 import { defineAction, z } from '@bizcity/module-sdk';
-import { todayVN } from '../service.js';
+import { isAccountant, todayVN } from '../service.js';
 import { catalogFor, stockOf, taxRates, unitCosts } from '../store.js';
 
 export default defineAction({
@@ -24,7 +24,8 @@ export default defineAction({
     const cat = await catalogFor(tx, i.branchCode, skus);
     const rates = await taxRates(tx);
     const stock = i.warehouseCode ? await stockOf(tx, i.branchCode, i.warehouseCode, skus) : new Map<string, number>();
-    const costs = await unitCosts(tx, i.branchCode, todayVN(), skus);
+    // [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-054: người không có documents:write (thu ngân máy bán) không nhận giá vốn (đóng góp)
+    const costs = isAccountant(ctx) ? await unitCosts(tx, i.branchCode, todayVN(), skus) : new Map<string, number>();
     return { items: [...cat.values()].map((c) => ({
       sku: c.sku, name: c.name, active: c.active, baseUnit: c.baseUnit, taxCode: c.taxCode, taxRate: c.taxCode ? rates.get(c.taxCode) ?? null : null,
       units: [{ unit: c.baseUnit, ratio: 1, price: c.units.get(c.baseUnit)?.price ?? null },

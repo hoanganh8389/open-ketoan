@@ -18,6 +18,8 @@ import { authOf, requirePermission } from '../../core/auth.js';
 import { ok, pageMeta, pageQuerySchema } from '../../core/http.js';
 import { SALES_GROUPS } from './sales-report.repository.js';
 import { salesReportService } from './sales-report.service.js';
+// [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-052: tiền từ chứng từ bán / trả cho ACC51 / ACC54 (GET /api/v1/cash-movements) (đóng góp)
+import { cashMovementRoutes } from './cash-movements.js';
 
 const tags = ['Báo cáo bán hàng'];
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày dạng YYYY-MM-DD');
@@ -42,6 +44,7 @@ export const salesSummaryQuerySchema = salesQuerySchema.extend({ groupBy: z.enum
 export const salesPaymentsQuerySchema = z.object({ from: date, to: date, branchCodes, groupBy: z.enum(['day', 'branch']).default('day') });
 
 export async function salesReportRoutes(app: FastifyInstance): Promise<void> {
+  await cashMovementRoutes(app);
   const r = app.withTypeProvider<ZodTypeProvider>();
   const pre = requirePermission('reports:read');
 

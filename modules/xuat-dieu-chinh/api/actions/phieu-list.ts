@@ -1,7 +1,8 @@
 /** GET /api/v1/m/xuat-dieu-chinh/phieu — danh sách phiếu xuất điều chỉnh của module (nháp, đã ghi sổ, đã huỷ; 0 đ và có giá), lọc theo phạm vi chi nhánh. */
 // [2026-11-26 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-044: danh sách BH06 (đóng góp)
 import { defineAction, sumMoney, z } from '@bizcity/module-sdk';
-import { listPhieu, toPhieu } from '../store.js';
+import { isAccountant } from '../service.js';
+import { hideCost, listPhieu, toPhieu } from '../store.js';
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -19,7 +20,7 @@ export default defineAction({
     const asked = i.branchCodes ? i.branchCodes.split(',').map((s) => s.trim()).filter(Boolean) : null;
     const scope = ctx.branchScope;
     const branches = scope ? (asked ? asked.filter((b) => scope.includes(b)) : [...scope]) : asked;
-    const items = (await listPhieu(tx, { from: i.from, to: i.to, branches, status: i.status, kind: i.kind, search: i.search })).map(toPhieu);
+    const items = (await listPhieu(tx, { from: i.from, to: i.to, branches, status: i.status, kind: i.kind, search: i.search })).map((r) => hideCost(toPhieu(r), isAccountant(ctx)));
     return { items, total: sumMoney(items.filter((x) => x.status !== 'cancelled').map((x) => x.total)), count: items.length };
   }),
 });
