@@ -656,6 +656,34 @@
       "audit": "settings.set",
       "affectsPosting": false,
       "note": "NT-HT-003: on = người có lần gán vai trò tại chi nhánh / kho chỉ làm việc ở các chi nhánh đó, vai trò gán tại chi nhánh chỉ có hiệu lực ở đó, Hạn chế tại chi nhánh Cấm ở đó; off (mặc định) = như cũ (lần gán tại chi nhánh chỉ cộng quyền ở cửa nạp). Trước khi bật xem bảng rà GET /api/v1/quyen-chi-nhanh/ra-soat (HT12)."
+    },
+    {
+      "key": "bizcity.kho.negative_stock",
+      "class": "B",
+      "owner": "kho",
+      "scopes": [
+        "tenant"
+      ],
+      "storage": "setting_values",
+      "schema": "xuất quá số tồn ở màn lập tay trong kế toán (KHO01 Phiếu chuyển kho): block = máy chủ từ chối ghi / duyệt xuất vượt tồn của kho xuất tại ngày phiếu (cộng theo mã, ĐVT nhỏ nhất, không tính chính phiếu đang sửa); allow_warn = chỉ hỏi lại như cũ",
+      "valueType": "enum(allow_warn|block)",
+      "default": "\"allow_warn\"",
+      "readBy": "chanXuatAm (apps/api/src/phan-he/kho/phieu-chuyen-kho.ts) — trước khi ghi sổ đầu xuất (Ghi và duyệt xuất, Duyệt xuất phiếu nháp, Duyệt điều chỉnh); màn KHO01 đọc để báo trước",
+      "writeBy": "core.settings.set (PUT /api/v1/settings/values/:key) — HT13 Cấu hình hệ thống",
+      "permission": "settings:write",
+      "audit": "settings.set (có lý do)",
+      "affectsPosting": false,
+      "usedBy": [
+        {
+          "kind": "gate",
+          "ref": "KHO01 Phiếu chuyển kho — chặn ghi / duyệt xuất vượt tồn kho xuất (KHO_STOCK_SHORT)"
+        },
+        {
+          "kind": "form",
+          "ref": "KHO01 — nút Ghi và duyệt xuất khoá khi vượt tồn, báo mã · cần · tồn"
+        }
+      ],
+      "note": "NT-KHO-003 (2026-11-27): mặc định allow_warn (R-GATE-9 — cho phép + nhắc); đơn vị muốn chặn đổi sang block ở HT13 Cấu hình hệ thống (có lý do, nhật ký, ngày hiệu lực). Chứng từ từ POS / website vẫn vào sổ (hàng đã bán thật), kiểm chuẩn vẫn báo INVENTORY_NEGATIVE. Ghi nháp không trừ tồn nên không kiểm."
     }
   ],
   "$comment": "[2026-11-06 12:40 AM Johnny Chu - Chu Hoàng Anh] PHASE-029 — E2 đợt 1: valueType (khuôn máy đọc), phạm vi user, khoá mới lưu setting_values; khoá có valueType ghi qua core.settings.set (bizcity_settings@1 1.1.0-draft §2)"

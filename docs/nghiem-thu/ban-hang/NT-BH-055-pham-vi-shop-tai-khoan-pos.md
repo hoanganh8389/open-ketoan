@@ -28,7 +28,7 @@ chi nhánh của ca **gần nhất** người đó mở là chi nhánh của má
 4. Quản trị (pos:report) xem CN01, CN02, CN03 không cần ca.
 
 ## 4. Số liệu đầu vào
-Đơn vị có CN01, CN02, CN03; vé SSO thử (`apps/api/test/nt-bh-055-pham-vi-shop-pos.test.ts`).
+Đơn vị có CN01, CN02, CN03; vé SSO thử (`apps/api/test/nt-bh-055-pham-vi-shop-pos.test.ts`). (đề xuất — tệp test ở nhánh code)
 
 ## 5. Kết quả mong đợi
 | Bước | Mong đợi |
@@ -46,7 +46,7 @@ Không chứng từ, không bút toán (chỉ đọc).
 - M3 — Quản trị = quản trị mạng WordPress (super admin).
 
 ## 7. Kết quả chạy
-- `apps/api/test/nt-bh-055-pham-vi-shop-pos.test.ts` 4/4; `apps/api/test/nt-bh-043-bao-cao-pos.test.ts` 11/11 (hồi quy); test hàm module pos 161/161.
+- `apps/api/test/nt-bh-055-pham-vi-shop-pos.test.ts` 4/4; `apps/api/test/nt-bh-043-bao-cao-pos.test.ts` 11/11 (hồi quy); test hàm module pos 161/161. (đề xuất — tệp test ở nhánh code)
 
 ## 8. Biên bản
 Hoàng chốt 28/11 (chat).
