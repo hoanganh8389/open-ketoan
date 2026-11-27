@@ -112,3 +112,17 @@ Thẻ **Báo cáo khuyến mại** (quyền xem quản trị bán lẻ): chọn 
 ## Chuyển chương trình cũ của website
 
 Quản trị website chạy một lần: `wp tgs-pos promo-migrate --dry-run` (xem trước) rồi `wp tgs-pos promo-migrate`. Chương trình còn hiệu lực của plugin bán hàng cũ thành **bản nháp** ở thẻ *Nháp / chờ duyệt* (nguồn *Chuyển từ website*); loại không chuyển được được liệt kê ở cuối lệnh. Người có quyền duyệt rồi mới áp. Chạy lại không tạo trùng.
+
+## Cài đặt đủ như phần mềm cũ (từ 27/11/2026, phiếu NT-BH-049)
+
+- **Giá riêng từng mã (nhiều mã)**: mỗi dòng một mã, một mức giảm (% / giá chương trình / giảm tiền mỗi cái) hoặc bảng bậc riêng; ô **ĐVT** + **tỉ lệ** để khai theo thùng / lốc (vd Thùng = 24: "từ 2 thùng giá 2.000.000 / thùng"). Nút **Dán từ Excel…**: chép các cột *Mã ⇥ Cách (% / giá / tiền) ⇥ Mức ⇥ Tối đa / phiếu ⇥ ĐVT ⇥ Tỉ lệ* rồi dán.
+- **Mua nhiều mã tặng quà (quà lựa chọn)**: khách chọn quà ở máy bán — khung Khuyến mãi hiện "khách chọn N quà" và các nút quà; chọn đủ thì dòng quà tự thêm.
+- **Khung giờ qua đêm**: giờ bắt đầu sau giờ kết thúc (22:00 – 02:00) là qua nửa đêm.
+- **Sinh nhật**: đúng ngày sinh / trong tuần sinh nhật / trong tháng sinh nhật.
+- **Loại đơn**: bán lẻ (máy bán), bán sỉ, đơn đặt hàng — không chọn = mọi loại.
+- **Mã giảm giá**: có khai mã = chỉ áp khi khách đọc mã; không khai = tự áp khi đủ điều kiện.
+- **Mỗi khách tối đa N lần** (ở khung Hạn mức lượt): tính theo mã khách của đơn, mọi cửa hàng; khách lẻ không giới hạn. Hết lượt → máy bán báo, bỏ khuyến mại đó rồi thanh toán.
+- **Hàng dưới 24 tháng**: form cảnh báo khi chương trình có mã hàng dưới 24 tháng (NĐ100/2014 không cho khuyến mại sản phẩm dinh dưỡng cho trẻ dưới 24 tháng).
+- **Mẫu dựng sẵn** khi Thêm: Flash sale (giá riêng theo khung giờ, hạn mức lượt), Khai trương, Sinh nhật khách hàng.
+- **Nhân bản**: chọn một khuyến mại → Nhân bản → form Thêm điền sẵn, gõ mã mới.
+- Chưa có: lọc theo lô / hạn sử dụng, nhóm (bộ) chương trình, nhập cả chương trình từ Excel.

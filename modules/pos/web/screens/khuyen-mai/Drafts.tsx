@@ -40,7 +40,7 @@ export function draftToForm(d: Draft, today: string): Form | null {
 
 const quotaText = (q: Quota | null) => {
   if (!q) return '';
-  const parts = [...(q.perBranch !== undefined ? [`${q.perBranch} / cửa hàng`] : []), ...Object.entries(q.branches ?? {}).map(([b, n]) => `${b}: ${n}`)];
+  const parts = [...(q.perBranch !== undefined ? [`${q.perBranch} / cửa hàng`] : []), ...Object.entries(q.branches ?? {}).map(([b, n]) => `${b}: ${n}`), ...(q.perCustomer !== undefined ? [`${q.perCustomer} / khách`] : [])];
   return parts.join(' · ');
 };
 
@@ -87,7 +87,7 @@ export function DraftsTab({ today, onEdit, onMsg }: { today: string; onEdit: (d:
         </select>
         {writable && <button type="button" className="btn" disabled={!editable} onClick={() => pick && onEdit(pick)}>Sửa nháp</button>}
         {writable && <button type="button" className="btn" disabled={!pick || !['draft', 'rejected'].includes(pick.status) || submit.isPending} onClick={() => pick && submit.mutate(pick)}>Gửi duyệt</button>}
-        {approver && <button type="button" className="btn btn-primary" disabled={!pick || !['draft', 'pending', 'approved', 'rejected'].includes(pick.status)} title="Người lập không tự duyệt"
+        {approver && <button type="button" className="btn btn-primary" disabled={!pick || !['draft', 'pending', 'approved', 'rejected'].includes(pick.status)} title="Duyệt và phát hành bản nháp đang chọn (người có quyền Duyệt khuyến mại, kể cả người lập)"
           onClick={() => setDialog('approve')}>{pick?.status === 'approved' ? 'Phát hành lại' : 'Duyệt'}</button>}
         {approver && <button type="button" className="btn" disabled={!pick || !['draft', 'pending', 'approved'].includes(pick.status)} onClick={() => setDialog('reject')}>Từ chối</button>}
         <button type="button" className="btn" disabled={!pick} onClick={() => setDialog('log')}>Nhật ký</button>
@@ -106,21 +106,28 @@ export function DraftsTab({ today, onEdit, onMsg }: { today: string; onEdit: (d:
   );
 }
 
+/**
+ * Duyệt + phát hành một bản nháp (dùng chung hộp Duyệt và nút "Duyệt (phát hành)" trong form chương trình): module ghi "đã duyệt" + hạn mức →
+ * phát hành vào sổ chính sách (quyền người duyệt) → ghi bản đã phát hành. Trả số bản.
+ */
+// [2026-11-28 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: tách hàm để form chương trình duyệt tại chỗ (đóng góp)
+export async function approveAndPublish(api: ReturnType<typeof useApi>, draft: Draft, note?: string): Promise<number> {
+  const d = draft.status === 'approved' ? draft : await api.post<Draft>(`${M}/promo/drafts/${draft.id}/approve`, note?.trim() ? { note: note.trim() } : {});
+  const pub = await api.post<{ version: number }>('/api/v1/policies', {
+    key: d.key, ruleContract: d.ruleContract, params: d.params, effectiveFrom: d.effectiveFrom,
+    ...(d.branchCodes.length ? { scope: { branchCodes: d.branchCodes } } : {}), ...(d.reason ? { reason: d.reason } : {}),
+  });
+  await api.post(`${M}/promo/drafts/${draft.id}/published`, { version: pub.version });
+  return pub.version;
+}
+
 /** Duyệt: hiện cảnh báo trùng → module ghi "đã duyệt" + hạn mức → màn phát hành vào sổ chính sách (quyền người duyệt) → ghi bản đã phát hành. */
 function ApproveDialog({ draft, today, onClose, onDone }: { draft: Draft; today: string; onClose: () => void; onDone: (m: string) => void }) {
   const api = useApi();
   const [note, setNote] = useState('');
   const ov = useQuery({ queryKey: ['km', 'overlaps', draft.id], queryFn: () => api.get<Overlap[]>(`${M}/promo/drafts/${draft.id}/overlaps`) });
   const go = useMutation({
-    mutationFn: async () => {
-      const d = draft.status === 'approved' ? draft : await api.post<Draft>(`${M}/promo/drafts/${draft.id}/approve`, note.trim() ? { note: note.trim() } : {});
-      const pub = await api.post<{ version: number }>('/api/v1/policies', {
-        key: d.key, ruleContract: d.ruleContract, params: d.params, effectiveFrom: d.effectiveFrom,
-        ...(d.branchCodes.length ? { scope: { branchCodes: d.branchCodes } } : {}), ...(d.reason ? { reason: d.reason } : {}),
-      });
-      await api.post(`${M}/promo/drafts/${draft.id}/published`, { version: pub.version });
-      return pub.version;
-    },
+    mutationFn: () => approveAndPublish(api, draft, note),
     onSuccess: (v) => onDone(`Đã duyệt và phát hành ${draft.key} (bản ${v}) — máy bán áp từ ${draft.effectiveFrom}.`),
   });
   return (

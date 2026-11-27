@@ -150,7 +150,8 @@ export function DatHangPage() {
     { key: 'buy', header: 'SL đặt', type: 'qty', width: 150, value: (r) => qtyOf(r), title: 'SL đặt (gợi ý làm tròn theo thùng — bấm số để chọn)',
       render: (r) => (r.need > 0 || buy[r.sku] ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, whiteSpace: 'nowrap' }}>
         <input className={`tm-input${buy[r.sku] !== undefined ? ' dirty' : ''}`} style={{ width: 62 }} value={qtyOf(r) || ''} onChange={(e) => { setBuy({ ...buy, [r.sku]: num(e.target.value) }); setSel({ ...sel, [r.sku]: true }); }} />
-        {r.options.map((o) => <button key={o} className={`tm-opt${qtyOf(r) === o ? ' on' : ''}`} title={r.pack ? `${o / r.pack} ${r.packUnit}` : ''} onClick={() => { setBuy({ ...buy, [r.sku]: o }); setSel({ ...sel, [r.sku]: true }); }}>{qtyFmt(o)}</button>)}
+        {/* [2026-11-27 kiennt] NT-MH-029 — chỉ một gợi ý và đang đúng bằng số nhập (mã không có thùng) thì không hiện nút trùng — cột hẹp hơn (đóng góp) */}
+        {!(r.options.length === 1 && r.options[0] === qtyOf(r)) && r.options.map((o) => <button key={o} className={`tm-opt${qtyOf(r) === o ? ' on' : ''}`} title={r.pack ? `${o / r.pack} ${r.packUnit}` : ''} onClick={() => { setBuy({ ...buy, [r.sku]: o }); setSel({ ...sel, [r.sku]: true }); }}>{qtyFmt(o)}</button>)}
       </span> : '') },
     // Gộp 3 số vòng quay vào một cột nhiều dòng (đỡ nhiều cột): tốc độ bán, đủ bán với hàng hiện có, đủ bán nếu đặt đúng số ở cột SL đặt.
     { key: 'turn', header: 'Tốc độ & vòng quay', width: 150,
@@ -218,14 +219,14 @@ export function DatHangPage() {
       <div className="card">
         <ChuaPhanCap branches={h.data?.branches} />
         <div className="tm-bar">
-          <label className="tm-parent" title="Lọc nhanh theo SL cần nhập (công thức MH18)"><span>Hiện</span><select className="select input" value={quick} onChange={(e) => setQuick(e.target.value as Quick)}>
+          <label className="tm-parent" title="Lọc nhanh theo SL cần nhập (công thức MH18)"><span>Hiện</span><select className="select input" style={{ width: 200, minWidth: 0, flex: "none" }} value={quick} onChange={(e) => setQuick(e.target.value as Quick)}>
             <option value="need">Mã cần nhập ({stats.need.toLocaleString('vi-VN')})</option>
             <option value="over">Mã đang dư ({stats.over.toLocaleString('vi-VN')})</option>
             <option value="pending">Đang có đơn chưa về ({stats.pending.toLocaleString('vi-VN')})</option>
             <option value="nopartner">Chưa rõ NCC ({stats.nopartner.toLocaleString('vi-VN')})</option>
             <option value="">Tất cả mã ({stats.all.toLocaleString('vi-VN')})</option>
           </select></label>
-          <input className="input" type="search" placeholder="Tìm mã, tên, mã vạch, NCC…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 1, minWidth: 260 }} />
+          <input className="input" type="search" placeholder="Tìm mã, tên, mã vạch, NCC…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ flex: 1, minWidth: 140 }} />
           <Link className="btn btn-sm" to="/mua-hang/cong-thuc">Công thức (MH18)</Link>
           <button className="btn btn-sm" onClick={() => exportRef.current?.()}><FileSpreadsheet size={14} /> Xuất Excel</button>
           <button className="btn btn-primary" disabled={!chosen.length || busy || parent.includes(',')} title={parent.includes(',') ? 'Đang xem gộp nhiều chi nhánh — chọn một chi nhánh để lập đơn đặt (hàng về kho của chi nhánh đó)' : undefined} onClick={() => void makeOrders()}><ShoppingCart size={15} /> Lập đơn đặt ({chosen.length} mã{money ? ` · ${Math.round(money).toLocaleString('vi-VN')}đ` : ''})</button>

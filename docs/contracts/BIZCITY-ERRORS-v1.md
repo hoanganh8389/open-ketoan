@@ -233,6 +233,7 @@ Module thêm mã chi tiết của mình ở mục này (tiền tố = key module
 | **Chặn bán quá tồn** (1.12.0-draft) <!-- [2026-11-16 06:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-021 chặn bán quá tồn (đóng góp) --> | | | |
 | `POS_STOCK_SHORT` | `VALIDATION_ERROR` | Máy bán bán quá tồn của cửa hàng (chặn cứng; cộng theo mã, quy ĐVT nhỏ nhất, gồm quà / bill Z); kèm `items: [{ sku, need, have }]` | module `pos` (đề xuất, chưa gộp) |
 | `PHIEU_BAN_STOCK_SHORT` | `VALIDATION_ERROR` | Phiếu bán nhập tay (BH10) xuất quá tồn của kho trên phiếu khi bật công tắc `bizcity.phieu_ban.block_negative_stock`; kèm `items: [{ sku, need, have }]` | module `phieu-ban` (đề xuất, chưa gộp) |
+| `KHO_STOCK_SHORT` | `VALIDATION_ERROR` | Phiếu chuyển kho lập trong kế toán (KHO01) xuất quá tồn của kho xuất tại ngày phiếu khi công tắc `bizcity.kho.negative_stock` = `block` (cộng theo mã, không tính chính phiếu đang sửa; ghi nháp không kiểm); kèm `items: [{ sku, need, have }]` <!-- [2026-11-27 kiennt] NGHIEM-THU — NT-KHO-003 (đóng góp) --> | phân hệ `kho` (đề xuất, chưa gộp) |
 | **Đơn đặt hàng** (1.14.0-draft) <!-- [2026-11-17 01:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-023 đơn đặt hàng (đóng góp) --> | | | |
 | `PHIEU_BAN_ORDER_EXPIRED` | `VALIDATION_ERROR` | Gửi đơn đặt hàng nháp (báo giá) đã quá hạn hiệu lực — gia hạn hoặc lập đơn mới; kèm `validUntil` | module `phieu-ban` (đề xuất, chưa gộp) |
 | `PHIEU_BAN_NO_HOLD_WAREHOUSE` | `VALIDATION_ERROR` | Cửa hàng chưa khai kho KCB (hàng chờ bán) giữ hàng cho đơn đặt hàng (`bizcity.phieu_ban.hold_warehouses`); kèm `branchCode` | module `phieu-ban` (đề xuất, chưa gộp) |
@@ -347,6 +348,7 @@ Quy tắc đọc bảng §5 (chữ chốt S029-33, 1.3.0-draft):
 - **1.13.0-draft (2026-11-17, máy bán bán đúng bảng giá):** §4c thêm `POS_MANUAL_DISCOUNT`, `POS_NO_PRICE` (phiếu NT-BH-022); `POS_PRICE_CHANGED` nay cũng dùng khi giá dòng khác bảng giá cửa hàng (`items: [{ sku, unit, price, ratio, clientPrice, clientRatio }]`). Không thêm `code`, không đổi HTTP.
 <!-- [2026-11-16 06:00 PM Võ Hoàng] NGHIEM-THU — 1.12.0-draft (đóng góp, chờ chủ dự án duyệt) -->
 - **1.12.0-draft (2026-11-16, chặn bán quá tồn):** §4c thêm `POS_STOCK_SHORT` (module pos), `PHIEU_BAN_STOCK_SHORT` (module phieu-ban) (phiếu NT-BH-021). Không thêm `code`, không đổi HTTP.
+- **1.12.0-draft bổ sung (2026-11-27, chặn xuất âm phiếu chuyển kho):** §4c thêm `KHO_STOCK_SHORT` (phân hệ kho, phiếu NT-KHO-003). Không thêm `code`, không đổi HTTP.
 <!-- [2026-11-12 08:50 PM Võ Hoàng] POS-KM — 1.11.0-draft (đóng góp, chờ chủ dự án duyệt) -->
 - **1.11.0-draft (2026-11-12, module pos — khuyến mại):** §4c thêm `POS_GIFT_WITHOUT_POLICY` (phiếu NT-BH-003). Không thêm `code`, không đổi HTTP.
 <!-- [2026-11-12 11:55 PM Võ Hoàng] POS-QR — 1.10.0-draft (đóng góp, chờ chủ dự án duyệt) -->

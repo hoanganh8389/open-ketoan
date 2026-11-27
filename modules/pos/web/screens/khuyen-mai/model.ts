@@ -6,7 +6,7 @@
 // [2026-11-14 01:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: mô hình form khuyến mại 6 loại (đóng góp)
 // [2026-11-25 10:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: thêm ba loại khuôn @2 — giá riêng từng mã (K1), mua nhiều mã / quà lựa chọn (K2), quà nhân bội số (K4), phạm vi nhóm / nhãn (K3) (đóng góp)
 
-export type PromoKind = 'tiered' | 'order_discount' | 'order_gift' | 'combo' | 'cheapest_free' | 'buy_x_get_y' | 'price_lines' | 'buy_x_get_y2' | 'order_gift2';
+export type PromoKind = 'tiered' | 'order_discount' | 'order_gift' | 'combo' | 'cheapest_free' | 'buy_x_get_y' | 'price_lines' | 'buy_x_get_y2' | 'order_gift2' | 'pool_combo';
 /** Ba loại khuôn @2 (NT-BH-040): có phạm vi nhóm / nhãn. */
 export const V2_KINDS: readonly PromoKind[] = ['price_lines', 'buy_x_get_y2', 'order_gift2'];
 
@@ -20,6 +20,8 @@ export const KIND_INFO: Record<PromoKind, { contract: string; label: string; hin
   price_lines: { contract: 'sale.promo.price_lines@2', label: 'Giá riêng từng mã (nhiều mã)', hint: 'Một chương trình nhiều mã, mỗi mã một giá / một mức giảm / một bảng bậc riêng' },
   buy_x_get_y2: { contract: 'sale.promo.buy_x_get_y@2', label: 'Mua nhiều mã tặng quà (quà lựa chọn)', hint: 'Mua A hoặc B (gộp số lượng) / mua đủ A và B; khách chọn 1 (hoặc N) trong nhiều quà' },
   order_gift2: { contract: 'sale.promo.order_gift@2', label: 'Quà theo tổng đơn (nhân bội số)', hint: 'Đơn từ … tặng quà; bật nhân bội số: đủ 2 lần ngưỡng tặng 2 lần quà' },
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: combo bộ sản phẩm (pool, loại 13 cũ) — chỉ khai bằng form kiểu cũ; có ở đây để danh sách nhận ra khuôn (đóng góp)
+  pool_combo: { contract: 'sale.promo.pool_combo@2', label: 'Combo bộ sản phẩm', hint: 'Mua đủ N mã khác nhau trong pool giảm % cả pool; chưa đủ thì giảm theo số lượng từng mã' },
 };
 export const KIND_BY_CONTRACT: Record<string, PromoKind> = Object.fromEntries(Object.entries(KIND_INFO).map(([k, v]) => [v.contract, k as PromoKind]));
 
@@ -31,6 +33,11 @@ export type Form = {
   /** Trần NĐ81 (% tiền dòng); trống = mặc định 50; `noCap` = miễn trần (người khai chịu trách nhiệm). */
   legalCapPct: string; noCap: boolean;
   weekdays: number[]; timeFrom: string; timeTo: string; minOrderAmount: string; couponCodes: string; birthdayMonth: boolean; memberLevels: string;
+  // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K9): sinh nhật theo ngày / tuần / tháng, loại đơn (đóng góp)
+  /** '' = không theo sinh nhật; month = tháng sinh (ô birthdayMonth cũ); week / day = tuần / đúng ngày sinh. */
+  birthdayScope: '' | 'day' | 'week' | 'month';
+  /** Loại đơn được áp; rỗng = mọi loại. */
+  orderTypes: ('retail' | 'wholesale' | 'so')[];
   /** Danh sách mã hàng, cách nhau dấu phẩy / xuống dòng. */
   skus: string;
   basis: 'qty' | 'amount';
@@ -47,6 +54,8 @@ export type Form = {
   quotaPerBranch: string;
   /** Lượt riêng từng cửa hàng: "CN01=2, CN02=5". */
   quotaBranches: string;
+  /** NT-BH-049 (K6): số lượt tối đa mỗi khách; trống = không giới hạn. */
+  quotaPerCustomer: string;
   // [2026-11-25 10:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-040: ô của ba loại @2 (đóng góp)
   /** Phạm vi nhóm hàng / nhãn hàng (mã phân loại đang dùng); `skus` là các mã lẻ của phạm vi. */
   groupCodes: string[]; brandCodes: string[];
@@ -58,17 +67,43 @@ export type Form = {
   /** K4: nhân bội số ngưỡng, trần số lần. */
   multiply: boolean; maxTimes: string;
 };
-export type PriceLineForm = { sku: string; useTiers: boolean; mode: TierMode; value: string; tiers: { min: string; mode: TierMode; value: string }[]; maxQty: string };
-export const emptyPriceLine = (): PriceLineForm => ({ sku: '', useTiers: false, mode: 'pct', value: '', tiers: [{ min: '', mode: 'pct', value: '' }], maxQty: '' });
+/** NT-BH-049 (K7): `unitName` + `unitRatio` = khai theo đơn vị quy đổi (vd Thùng = 48); trống = đơn vị nhỏ nhất. */
+export type PriceLineForm = { sku: string; useTiers: boolean; mode: TierMode; value: string; tiers: { min: string; mode: TierMode; value: string }[]; maxQty: string; unitName: string; unitRatio: string };
+export const emptyPriceLine = (): PriceLineForm => ({ sku: '', useTiers: false, mode: 'pct', value: '', tiers: [{ min: '', mode: 'pct', value: '' }], maxQty: '', unitName: '', unitRatio: '' });
+
+/**
+ * NT-BH-049 (K11): dán bảng từ Excel vào danh sách mã của "Giá riêng từng mã". Mỗi dòng: Mã | Cách | Mức | Tối đa / phiếu | ĐVT | Tỉ lệ
+ * (cách nhau Tab hoặc dấu chấm phẩy). Cách: "%", "giá" (giá chương trình / cái), "tiền" (giảm tiền / cái); trống = %. Dòng tiêu đề tự bỏ.
+ */
+export function parsePriceLines(text: string): { lines: PriceLineForm[]; problems: string[] } {
+  const lines: PriceLineForm[] = []; const problems: string[] = [];
+  const modeOf = (x: string): TierMode | null => {
+    const t = x.trim().toLowerCase();
+    if (!t || t === '%' || t.startsWith('giảm %') || t === 'pct') return 'pct';
+    if (t.startsWith('giá') || t === 'unitprice') return 'unitPrice';
+    if (t.startsWith('tiền') || t.startsWith('giảm tiền') || t === 'amountperunit') return 'amountPerUnit';
+    return null;
+  };
+  String(text ?? '').split(/\r?\n/).map((r) => r.trim()).filter(Boolean).forEach((r, i) => {
+    const c = r.split(/\t|;/).map((x) => x.trim());
+    if (i === 0 && /^m[ãa]/i.test(c[0] ?? '') && !/\d/.test(c[2] ?? '')) return;
+    const mode = modeOf(c[1] ?? '');
+    if (!c[0]) { problems.push(`Dòng ${i + 1}: thiếu mã`); return; }
+    if (!mode) { problems.push(`Dòng ${i + 1}: cách "${c[1]}" — ghi %, giá hoặc tiền`); return; }
+    if (!c[2]) { problems.push(`Dòng ${i + 1}: thiếu mức giảm`); return; }
+    lines.push({ ...emptyPriceLine(), sku: c[0], mode, value: c[2], maxQty: c[3] ?? '', unitName: c[4] ?? '', unitRatio: c[5] ?? '' });
+  });
+  return { lines, problems };
+}
 
 export function emptyForm(kind: PromoKind, today: string): Form {
   return {
     kind, key: '', reason: '', effectiveFrom: today, branchCodes: [], validFrom: today, validTo: '', priority: 0, exclusive: false, legalCapPct: '', noCap: false,
-    weekdays: [], timeFrom: '', timeTo: '', minOrderAmount: '', couponCodes: '', birthdayMonth: false, memberLevels: '',
+    weekdays: [], timeFrom: '', timeTo: '', minOrderAmount: '', couponCodes: '', birthdayMonth: false, memberLevels: '', birthdayScope: '', orderTypes: [],
     skus: '', basis: 'qty', tiers: [{ min: '', mode: 'pct', value: '' }], orderTiers: [{ minOrder: '', mode: 'pct', value: '', maxDiscount: '' }],
     giftTiers: [{ minOrder: '', gifts: '' }], items: [{ sku: '', qty: '1' }], comboMode: 'comboPrice', comboValue: '', maxCombos: '',
     buyQty: '2', freeQty: '1', repeat: true, buy: { sku: '', qty: '1' }, get: { sku: '', qty: '1' }, maxGiftQty: '',
-    quotaPerBranch: '', quotaBranches: '',
+    quotaPerBranch: '', quotaBranches: '', quotaPerCustomer: '',
     groupCodes: [], brandCodes: [], priceLines: [emptyPriceLine()],
     buyItems: [{ sku: '', qty: '' }], buyMode: 'any', buyTotal: '', giftOptions: [{ sku: '', qty: '1' }], choose: '1', multiply: false, maxTimes: '',
   };
@@ -124,14 +159,18 @@ export function toParams(f: Form): { params: Params; problems: string[] } {
     if (f.timeTo) c.timeTo = f.timeTo;
     if (f.minOrderAmount.trim()) c.minOrderAmount = need(num(f.minOrderAmount), 'Đơn tối thiểu');
     if (list(f.couponCodes).length) c.couponCodes = list(f.couponCodes);
-    if (f.birthdayMonth) c.birthdayMonth = true;
+    // NT-BH-049: sinh nhật theo tháng giữ ô cũ birthdayMonth (khuôn @1 hiểu); ngày / tuần dùng birthdayScope.
+    if (f.birthdayMonth || f.birthdayScope === 'month') c.birthdayMonth = true;
+    if (f.birthdayScope === 'day' || f.birthdayScope === 'week') c.birthdayScope = f.birthdayScope;
+    if (f.orderTypes.length && f.orderTypes.length < 3) c.orderTypes = [...new Set(f.orderTypes)];
     if (list(f.memberLevels).length) c.memberLevels = list(f.memberLevels);
     if (Object.keys(c).length) common.conditions = c;
   }
   if (f.validFrom) common.validFrom = f.validFrom;
   if (f.validTo) common.validTo = f.validTo;
   if (f.validFrom && f.validTo && f.validTo < f.validFrom) problems.push('Đến ngày trước từ ngày');
-  if (f.timeFrom && f.timeTo && f.timeTo < f.timeFrom) problems.push('Giờ kết thúc trước giờ bắt đầu');
+  // NT-BH-049 (K9): giờ kết thúc trước giờ bắt đầu = khung qua đêm (hợp lệ); chỉ chặn hai giờ trùng nhau.
+  if (f.timeFrom && f.timeTo && f.timeTo === f.timeFrom) problems.push('Giờ kết thúc trùng giờ bắt đầu');
   const skus = list(f.skus);
   let own: Params = {};
   switch (f.kind) {
@@ -196,7 +235,12 @@ export function toParams(f: Form): { params: Params; problems: string[] } {
           const mins = x.tiers.map((t) => num(t.min) ?? 0);
           if (mins.some((m, j) => j > 0 && m <= mins[j - 1]!)) problems.push(`${s}: các bậc phải tăng dần`);
         }
-        return { sku: s, ...way, ...(x.maxQty.trim() ? { maxQty: need(num(x.maxQty), `${s}: số lượng tối đa được giảm`) } : {}) };
+        const ratio = x.unitRatio.trim() ? need(num(x.unitRatio), `${s}: tỉ lệ quy đổi ĐVT`) : undefined;
+        if (x.unitRatio.trim() && !x.unitName.trim()) problems.push(`${s}: có tỉ lệ quy đổi thì ghi tên ĐVT (vd Thùng)`);
+        return {
+          sku: s, ...way, ...(x.maxQty.trim() ? { maxQty: need(num(x.maxQty), `${s}: số lượng tối đa được giảm`) } : {}),
+          ...(x.unitName.trim() && ratio ? { unit: { name: x.unitName.trim(), ratio } } : {}),
+        };
       });
       own = { basis: f.basis, lines, ...scopeOf({ ...f, skus: '' }) };
       break;
@@ -250,7 +294,8 @@ export function fromParams(contract: string, p: Params, meta: { key: string; bra
     key: meta.key, branchCodes: meta.branchCodes ?? [], validFrom: s(p.validFrom), validTo: s(p.validTo), priority: Number(p.priority ?? 0), exclusive: Boolean(p.exclusive),
     noCap: p.legalCapPct === null, legalCapPct: p.legalCapPct === null || p.legalCapPct === undefined ? '' : s(p.legalCapPct),
     weekdays: (c.weekdays as number[] | undefined) ?? [], timeFrom: s(c.timeFrom), timeTo: s(c.timeTo), minOrderAmount: s(c.minOrderAmount),
-    couponCodes: ((c.couponCodes as string[] | undefined) ?? []).join(', '), birthdayMonth: Boolean(c.birthdayMonth), memberLevels: ((c.memberLevels as string[] | undefined) ?? []).join(', '),
+    couponCodes: ((c.couponCodes as string[] | undefined) ?? []).join(', '), birthdayMonth: false, memberLevels: ((c.memberLevels as string[] | undefined) ?? []).join(', '),
+    birthdayScope: (c.birthdayScope as Form['birthdayScope'] | undefined) ?? (c.birthdayMonth ? 'month' : ''), orderTypes: (c.orderTypes as Form['orderTypes'] | undefined) ?? [],
     skus: ((p.skus as string[] | undefined) ?? []).join(', '),
   });
   const tiers = (p.tiers ?? []) as Record<string, unknown>[];
@@ -283,6 +328,7 @@ export function fromParams(contract: string, p: Params, meta: { key: string; bra
       const mode = modeOf(x);
       return {
         sku: s(x.sku), useTiers: Boolean(ts?.length), mode, value: ts?.length ? '' : s(x[mode]), maxQty: s(x.maxQty),
+        unitName: s((x.unit as { name?: string } | undefined)?.name), unitRatio: s((x.unit as { ratio?: number } | undefined)?.ratio),
         tiers: ts?.length ? ts.map((t) => ({ min: s(t.min), mode: modeOf(t), value: s(t[modeOf(t)]) })) : [{ min: '', mode: 'pct' as TierMode, value: '' }],
       };
     });
@@ -334,10 +380,10 @@ export function statusOf(x: { validFrom?: string | null; validTo?: string | null
 }
 
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: hạn mức lượt theo cửa hàng ↔ ô của form (đóng góp)
-export type Quota = { perBranch?: number; branches?: Record<string, number> };
+export type Quota = { perBranch?: number; branches?: Record<string, number>; perCustomer?: number };
 
 /** Ô hạn mức → `quota` của bản nháp (null = không giới hạn). Lỗi rõ theo ô. */
-export function toQuota(f: Pick<Form, 'quotaPerBranch' | 'quotaBranches'>): { quota: Quota | null; problems: string[] } {
+export function toQuota(f: Pick<Form, 'quotaPerBranch' | 'quotaBranches'> & Partial<Pick<Form, 'quotaPerCustomer'>>): { quota: Quota | null; problems: string[] } {
   const problems: string[] = [];
   const q: Quota = {};
   if (f.quotaPerBranch.trim()) {
@@ -350,12 +396,18 @@ export function toQuota(f: Pick<Form, 'quotaPerBranch' | 'quotaBranches'>): { qu
     if (!m) { problems.push(`Hạn mức riêng "${part}": ghi dạng CN01=2`); continue; }
     (q.branches ??= {})[m[1]!] = Number(m[2]);
   }
-  return { quota: q.perBranch === undefined && !q.branches ? null : q, problems };
+  if ((f.quotaPerCustomer ?? '').trim()) {
+    const n = num(f.quotaPerCustomer!);
+    if (n === undefined || Number.isNaN(n) || n < 1 || !Number.isInteger(n)) problems.push('Lượt mỗi khách: số nguyên ≥ 1');
+    else q.perCustomer = n;
+  }
+  return { quota: q.perBranch === undefined && !q.branches && q.perCustomer === undefined ? null : q, problems };
 }
 
 /** `quota` của bản nháp → ô của form. */
-export function fromQuota(q: Quota | null | undefined): Pick<Form, 'quotaPerBranch' | 'quotaBranches'> {
+export function fromQuota(q: Quota | null | undefined): Pick<Form, 'quotaPerBranch' | 'quotaBranches' | 'quotaPerCustomer'> {
   return {
+    quotaPerCustomer: q?.perCustomer === undefined ? '' : String(q.perCustomer),
     quotaPerBranch: q?.perBranch === undefined ? '' : String(q.perBranch),
     quotaBranches: Object.entries(q?.branches ?? {}).map(([b, n]) => `${b}=${n}`).join(', '),
   };

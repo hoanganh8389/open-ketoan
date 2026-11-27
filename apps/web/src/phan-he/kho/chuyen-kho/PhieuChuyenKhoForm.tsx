@@ -68,6 +68,13 @@ export function PhieuChuyenKhoForm({ value, saving, error, onSave, onClose, onRe
   const stock = stockQ.data?.stock ?? {};
   const usedBySku = useMemo(() => { const m = new Map<string, number>(); for (const l of v.lines) m.set(l.sku, round4((m.get(l.sku) ?? 0) + (l.qty || 0))); return m; }, [v.lines]);
   const over = skus.filter((s) => stock[s] !== undefined && (usedBySku.get(s) ?? 0) > stock[s]!);
+  // [2026-11-27 kiennt] NT-KHO-003 — công tắc bizcity.kho.negative_stock (HT13): block = không duyệt xuất được khi vượt tồn (máy chủ cũng
+  // chặn — KHO_STOCK_SHORT); allow_warn (mặc định) = hỏi lại như cũ. Ghi nháp không trừ tồn nên vẫn ghi được (đóng góp)
+  const xuatAmQ = useQuery({ queryKey: ['setting', 'bizcity.kho.negative_stock', v.docDate], staleTime: 60_000,
+    queryFn: () => api.get<{ value: unknown }>('/api/v1/settings/values/bizcity.kho.negative_stock', { date: v.docDate || undefined }) });
+  const chanXuatAm = xuatAmQ.data?.value === 'block';
+  const vuotTon = over.map((s) => `${s} cần ${qtyText(usedBySku.get(s))}, tồn ${qtyText(stock[s])}`).join('; ');
+  const chanMsg = chanXuatAm && over.length ? `Xuất quá số tồn ở kho xuất (đơn vị đang chặn xuất âm): ${vuotTon}` : '';
 
   /**
    * Gợi ý lô cho các dòng chưa ghi lô tay (lô trống hoặc lô phần mềm gợi ý): gộp theo mã, hỏi tồn lô ở kho xuất (hạn sớm trước),
@@ -142,11 +149,12 @@ export function PhieuChuyenKhoForm({ value, saving, error, onSave, onClose, onRe
     sameBranch && fromWh === toWh && 'Cùng chi nhánh thì kho xuất và kho nhập phải khác nhau',
     !v.lines.length && 'Chưa có dòng hàng',
     v.lines.some((l) => !l.sku || !(l.qty > 0)) && 'Có dòng thiếu mã hàng hoặc số lượng',
-    // [2026-11-27 10:00 AM Nguyễn Văn Thủy] #68 tab Test: vượt tồn ở kho xuất (kể cả tồn = 0) không ghi được — trước chỉ hỏi rồi vẫn cho ghi (đóng góp)
-    over.length > 0 && `Không đủ tồn ở kho xuất: ${over.map((s) => `${s} cần ${qtyText(usedBySku.get(s))}, tồn ${qtyText(stock[s])}`).join('; ')}`,
   ].filter(Boolean) as string[];
 
   const save = (close: boolean, mode?: 'draft' | 'ship') => {
+    const duyetXuat = draftLike && (mode ?? 'ship') === 'ship';
+    if (chanMsg && duyetXuat) { window.alert(`${chanMsg}.\nSửa số lượng, hoặc Ghi nháp rồi nhập / chuyển hàng vào kho xuất trước.`); return; }
+    if (over.length && !chanXuatAm && !window.confirm(`Vượt tồn ở kho xuất: ${over.map((s) => `${s} (cần ${qtyText(usedBySku.get(s))}, tồn ${qtyText(stock[s])})`).join(', ')}.\nVẫn ghi phiếu?`)) return;
     onSave({
       docNo: v.docNo, docDate: v.docDate, fromBranchCode: v.fromBranchCode, fromWarehouse: v.fromWarehouse, toBranchCode: v.toBranchCode, toWarehouse: v.toWarehouse,
       reasonCode: v.reasonCode, note: v.note, lines: v.lines, receiveNow: draftLike ? receiving : undefined, mode: draftLike ? mode ?? 'ship' : undefined,
@@ -164,7 +172,7 @@ export function PhieuChuyenKhoForm({ value, saving, error, onSave, onClose, onRe
         {!isNew && <span data-view-ok style={{ marginRight: 'auto' }}><PrintButton screen="KHO01" templates={TRADE_TEMPLATES.transfer!} title="In phiếu theo nội dung đã ghi (sửa xong bấm Ghi rồi mới in)" getDocs={() => [toPrintDoc(value)]} /></span>}
         {draftLike && !readOnly && <>
           <button className="btn" disabled={saving || problems.length > 0} title={problems.join('; ') || 'Ghi nháp: chưa trừ tồn, chưa vào sổ, sửa thoải mái'} onClick={() => save(false, 'draft')}>Ghi nháp</button>
-          <button className="btn btn-primary" disabled={saving || problems.length > 0} title={problems.join('; ') || 'Ghi và duyệt xuất: trừ tồn bên chuyển, ghi sổ đầu xuất (Ctrl+S)'} onClick={() => save(false, 'ship')}>Ghi và duyệt xuất</button>
+          <button className="btn btn-primary" disabled={saving || problems.length > 0 || Boolean(chanMsg)} title={problems.join('; ') || chanMsg || 'Ghi và duyệt xuất: trừ tồn bên chuyển, ghi sổ đầu xuất (Ctrl+S)'} onClick={() => save(false, 'ship')}>Ghi và duyệt xuất</button>
         </>}
         {adj && <>
           <button className="btn" disabled={saving || problems.length > 0} title="Ghi nội dung điều chỉnh — sổ chưa đổi" onClick={() => save(false)}>Ghi</button>
@@ -297,6 +305,7 @@ export function PhieuChuyenKhoForm({ value, saving, error, onSave, onClose, onRe
         </tbody></table>
       </div>}
       {problems.length > 0 && !readOnly && <div className="full muted" style={{ fontSize: 12 }}>Chưa ghi được: {problems.join(' · ')}</div>}
+      {chanMsg && draftLike && !readOnly && <div className="full alert alert-bad" style={{ fontSize: 12.5, margin: 0 }}>Chưa duyệt xuất được — {chanMsg}. Sửa số lượng, hoặc <b>Ghi nháp</b> rồi nhập / chuyển hàng vào kho xuất trước.</div>}
       {Boolean(error) && <div className="alert alert-bad full">{errorText(error)}</div>}
       {paste !== null && <DanExcel onCancel={() => setPaste(null)} onOk={(t) => void onPaste(t)} />}
     </Modal>

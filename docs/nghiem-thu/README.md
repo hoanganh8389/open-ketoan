@@ -83,11 +83,14 @@ Mức: **đạt** (phần mềm tự giữ, có test / check) · **một phần*
 | [NT-MH-026](mua-hang/NT-MH-026-ton-dau-hien-0.md) | MH24, MH25, ACC83: số lượng tồn (tồn đầu, tồn cuối, tồn) không có thì ghi 0 | Chờ nghiệm thu |
 | [NT-MH-027](mua-hang/NT-MH-027-an-canh-bao-kho-tong.md) | MH02, MH16, MH17, MH18, MH19: ẩn khung cảnh báo vàng "Chưa nhận được kho tổng" | Chờ nghiệm thu |
 | [NT-MH-028](mua-hang/NT-MH-028-mh02-mo-nhieu-don.md) | MH02: lập nhiều đơn đặt thì mở tất cả, mỗi đơn một ô ở thanh dưới; tab tên dài không đè nhau | Chờ nghiệm thu |
+| [NT-MH-029](mua-hang/NT-MH-029-mh02-cuon-ngang.md) | MH02 / MH16 / MH19 màn nhỏ: tên nhóm không trôi khi cuộn ngang, bỏ nút gợi ý trùng, thanh công cụ gọn | Chờ nghiệm thu |
 | [NT-HT-001](he-thong/NT-HT-001-so-do-to-chuc.md) | Sơ đồ tổ chức làm gốc: cây 3 cấp, gắn chi nhánh, mua hàng theo cây, bộ lọc cây chi nhánh / kho | Chờ nghiệm thu |
 | [NT-KHO-001](kho/NT-KHO-001-ton-o-chon-hang-theo-kho-xuat.md) | Ô chọn mặt hàng ở phiếu chuyển kho hiện tồn theo kho xuất, ngày phiếu | Đã chốt |
 | [NT-KHO-002](kho/NT-KHO-002-kiem-ke-kho.md) | Kiểm kê kho theo lô / HSD: biên bản kiểm kê → xác minh → quyết định xử lý; chênh lệch vào 1381 / 3381, hàng kém phẩm chất sang kho cách ly, tất toán theo quyết định | Đã chốt |
-| [NT-KHO-003](kho/NT-KHO-003-chan-xuat-am.md) | Công tắc "Cho phép xuất quá số tồn" — chặn ở màn lập tay trong kế toán | Đã chốt |
+| [NT-KHO-003](kho/NT-KHO-003-chan-xuat-am.md) | Công tắc "Cho phép xuất quá số tồn" — chặn ở màn lập tay trong kế toán (đã làm KHO01; MH11 chưa) | Chờ nghiệm thu |
 | [NT-KHO-004](kho/NT-KHO-004-hang-giu-ho-chi-so-luong.md) | Hàng nhận giữ hộ (KNB) chỉ ghi số lượng: bỏ giá trị dòng kho giữ hộ, chặn chuyển giữ hộ ↔ của mình, giá vốn tính riêng | Đã chốt |
+| [NT-KHO-005](kho/NT-KHO-005-acc83-tach-chuyen-kho.md) | ACC83 Tổng hợp tồn kho: tách chuyển kho khỏi nhập / xuất, tổng cộng bỏ trùng chuyển kho nội bộ | Chờ nghiệm thu |
+| [NT-KHO-006](kho/NT-KHO-006-tong-so-luong-ben-phai.md) | KHO01 Phiếu chuyển kho: ô "Tổng số lượng" ở góc phải như các phiếu khác | Chờ nghiệm thu |
 | [NT-QUY-001](quy/NT-QUY-001-dinh-kem-chung-tu-goc.md) | Đính kèm chứng từ gốc trên phiếu tiền, phiếu chuyển tiền, phiếu kho | Đã chốt |
 | [NT-DM-001](danh-muc/NT-DM-001-bo-ten-tieng-anh-tai-khoan.md) | Bỏ tên tiếng Anh của tài khoản (ACC1, API, Excel, dữ liệu mẫu, CSDL — chép giá trị cũ sang bảng lưu) | Nháp |
 | [NT-DM-002](danh-muc/NT-DM-002-sua-loi-danh-muc.md) | Sửa lỗi danh mục mức cao, trung bình: thêm trùng mã ghi đè, xoá cha còn con / mục đang dùng, vòng nhóm cha, gợi ý NCC ngừng | Chờ nghiệm thu |

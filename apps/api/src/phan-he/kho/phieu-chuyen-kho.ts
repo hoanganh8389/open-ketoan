@@ -42,6 +42,7 @@ import { documentNumbers, documentService, documentStatusIn, postDocumentIn } fr
 import { documentLots } from '../../modules/lots/lots.service.js';
 import { quyenThaoTac } from '../../modules/access/man-hinh.js';
 import { writeAudit } from '../../core/audit.js';
+import { getSetting } from '@bizcity/platform/core/settings';
 import './man-hinh-kho.js'; // đăng ký màn KHO01 / KHO02 trước khi lệnh đọc quyền
 
 const tags = ['Kho — phiếu chuyển kho'];
@@ -231,21 +232,34 @@ async function ingest(trx: Db, auth: AuthContext, raw: Record<string, unknown>) 
 const head = (r: Row) => ({ docNo: r.doc_no, docDate: r.doc_date, reasonCode: r.reason_code ?? undefined, sourceSystem: 'erp', sourceRef: { type: 'stock_transfer', id: r.id, label: r.doc_no }, extra: { transferGroup: `erp:ck:${r.id}` } });
 
 /** Đầu XUẤT: chi nhánh + phân kho xuất, đúng số xuất; lô theo dòng (trống = lõi tự chọn hạn sớm trước). */
-// [2026-11-27 10:00 AM Nguyễn Văn Thủy] #68 tab Test: KHÔNG xuất chuyển kho vượt tồn (kể cả tồn = 0) — trước chỉ hỏi "vẫn ghi?" rồi cho âm kho.
-// Kiểm ở mọi lần ghi đầu xuất (lập, duyệt xuất nháp, duyệt điều chỉnh); không tính chính phiếu này (điều chỉnh) (đóng góp)
-async function chanVuotTon(trx: Db, tenantId: string, r: Row) {
-  const can = new Map<string, number>();
-  for (const l of r.lines) can.set(l.sku, (can.get(l.sku) ?? 0) + l.qty);
-  if (!can.size) return;
-  const res = await stockAt(trx, tenantId, { branchCode: r.from_branch_code, warehouse: r.from_warehouse || undefined, date: r.doc_date, skus: [...can.keys()], exceptId: r.id });
-  const ton: Record<string, number> = ('stock' in res && res.stock) || {};
-  const thieu = [...can].filter(([sku, q]) => q > (ton[sku] ?? 0) + 1e-9);
-  if (thieu.length) {
-    throw Errors.validation(`Không đủ tồn ở kho xuất ${r.from_branch_code}${r.from_warehouse ? ` · ${r.from_warehouse}` : ''} ngày ${r.doc_date}: ${thieu.map(([sku, q]) => `${sku} cần ${q}, tồn ${ton[sku] ?? 0}`).join('; ')} — giảm số lượng, chọn kho khác hoặc nhập hàng trước`);
-  }
+// [2026-11-27 kiennt] NT-KHO-003 — chặn xuất quá số tồn ở phiếu chuyển kho lập trong kế toán (KHO01), theo công tắc
+// bizcity.kho.negative_stock (mặc định allow_warn = chỉ nhắc như cũ; đơn vị chọn block ở HT13). Kiểm ngay trước khi ghi sổ đầu xuất — mọi đường xuất đều qua đây:
+// Ghi và duyệt xuất, Duyệt xuất phiếu nháp, Duyệt điều chỉnh. Ghi nháp không trừ tồn nên không kiểm (đóng góp)
+export const XUAT_AM_KEY = 'bizcity.kho.negative_stock';
+/** Mã cần vượt tồn kho xuất tại ngày phiếu (cộng theo mã, không tính chính phiếu này). Rỗng = đủ. */
+export async function thieuTonXuat(trx: Db, tenantId: string, r: Pick<Row, 'id' | 'from_branch_code' | 'from_warehouse' | 'doc_date' | 'lines'>) {
+  const need = new Map<string, number>();
+  for (const l of r.lines) if (l.sku && l.qty > 0) need.set(l.sku, (need.get(l.sku) ?? 0) + l.qty);
+  if (!need.size) return [];
+  const s = await stockAt(trx, tenantId, { branchCode: r.from_branch_code, warehouse: r.from_warehouse, date: r.doc_date, skus: [...need.keys()], exceptId: r.id });
+  const have: Record<string, number> = ('stock' in s ? s.stock : undefined) ?? {};
+  const wh = ('warehouse' in s ? s.warehouse : undefined) ?? '';
+  return [...need].map(([sku, q]) => ({ sku, need: Math.round(q * 1e4) / 1e4, have: Math.round((have[sku] ?? 0) * 1e4) / 1e4, warehouse: wh }))
+    .filter((x) => x.need > x.have + 1e-9);
 }
+async function chanXuatAm(trx: Db, tenantId: string, r: Row) {
+  if ((await getSetting(trx, tenantId, XUAT_AM_KEY, { date: r.doc_date })).value !== 'block') return;
+  const short = await thieuTonXuat(trx, tenantId, r);
+  if (!short.length) return;
+  const ngay = r.doc_date.split('-').reverse().join('/');
+  throw Errors.validation(
+    `Xuất quá số tồn: ${short.map((x) => `${x.sku} cần ${x.need}, tồn ${x.have} ở ${x.warehouse || r.from_branch_code} ngày ${ngay}`).join('; ')}`
+    + ' — sửa số lượng, hoặc nhập / chuyển hàng vào kho xuất trước. Muốn cho xuất quá tồn: HT13 Cấu hình hệ thống → bizcity.kho.negative_stock = allow_warn',
+    { reason: 'KHO_STOCK_SHORT', items: short.map(({ sku, need, have }) => ({ sku, need, have })) });
+}
+
 async function postOut(trx: Db, auth: AuthContext, r: Row) {
-  await chanVuotTon(trx, auth.tenantId, r);
+  await chanXuatAm(trx, auth.tenantId, r);
   await ingest(trx, auth, {
     ...head(r), docType: 'transfer', leg: 'out', docKey: r.out_doc_key, version: await nextVersion(trx, auth.tenantId, r.out_doc_key),
     branchCode: r.from_branch_code, toBranchCode: r.to_branch_code,

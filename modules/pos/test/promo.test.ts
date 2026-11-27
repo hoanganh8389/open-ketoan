@@ -57,7 +57,7 @@ describe('hạn mức lượt', () => {
     expect(toQuota({ quotaPerBranch: '10', quotaBranches: 'CN01=2, CN02: 5' })).toEqual({ quota: { perBranch: 10, branches: { CN01: 2, CN02: 5 } }, problems: [] });
     expect(toQuota({ quotaPerBranch: '', quotaBranches: '' }).quota).toBeNull();
     expect(toQuota({ quotaPerBranch: '1,5', quotaBranches: 'CN01' }).problems).toHaveLength(2);
-    expect(fromQuota({ perBranch: 10, branches: { CN01: 2 } })).toEqual({ quotaPerBranch: '10', quotaBranches: 'CN01=2' });
+    expect(fromQuota({ perBranch: 10, branches: { CN01: 2 } })).toEqual({ quotaPerBranch: '10', quotaBranches: 'CN01=2', quotaPerCustomer: '' }); // NT-BH-049: thêm ô lượt mỗi khách
   });
   it('khuôn nháp: chỉ 6 khuôn sale.promo.*, mã đúng khuôn', () => {
     const ok = draftContentSchema.safeParse({ key: 'KM-A', ruleContract: 'sale.promo.tiered@1', params: {}, effectiveFrom: '2026-11-20' });
