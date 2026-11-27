@@ -136,12 +136,43 @@ const sums = (from: string) => sql`
              SUM(mv.val) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind IN ('purchase', 'purchase_return')) AS pv,
              -SUM(mv.qty) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind IN ('sale', 'sale_return')) AS cq,
              -SUM(mv.val) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind IN ('sale', 'sale_return')) AS cv,
-             COUNT(*) FILTER (WHERE mv.uncosted) AS uncosted`;
-type SumRow = { oq: string | null; ov: string | null; iq: string | null; iv: string | null; xq: string | null; xv: string | null; pq: string | null; pv: string | null; cq: string | null; cv: string | null; uncosted: string };
-const figures = (r: SumRow) => {
-  const openingQty = num(r.oq), openingValue = num(r.ov), inQty = num(r.iq), inValue = num(r.iv), outQty = num(r.xq), outValue = num(r.xv);
+             COUNT(*) FILTER (WHERE mv.uncosted) AS uncosted,
+             SUM(mv.qty) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind = 'transfer_in') AS tiq,
+             SUM(mv.val) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind = 'transfer_in') AS tiv,
+             -SUM(mv.qty) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind = 'transfer_out') AS txq,
+             -SUM(mv.val) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind = 'transfer_out') AS txv,
+             SUM(mv.qty) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind = 'transfer_in' AND mv.noi_bo) AS niq,
+             SUM(mv.val) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind = 'transfer_in' AND mv.noi_bo) AS niv,
+             -SUM(mv.qty) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind = 'transfer_out' AND mv.noi_bo) AS nxq,
+             -SUM(mv.val) FILTER (WHERE mv.doc_date >= ${from}::date AND mv.kind = 'transfer_out' AND mv.noi_bo) AS nxv`;
+// [2026-11-27 kiennt] NT-KHO-005 — chuyển kho NỘI BỘ trong phạm vi đang xem: phiếu chuyển có CẢ dòng chuyển đi lẫn dòng chuyển đến cùng nằm
+// trong tập lọc (chi nhánh / kho đã chọn) → noi_bo. Xem gộp nhiều chi nhánh (tổng cộng, gom theo nhãn / nhóm hàng / NCC…) bỏ phần này
+// khỏi nhập / xuất, không thì hàng kho tổng chuyển xuống shop bị đếm hai lần (xuất ở kho tổng + nhập ở shop) (đóng góp)
+// Hai đầu một phiếu chuyển là hai sự kiện (chuyển đi / nhận) nối bằng payload.extra.transferGroup; nguồn ghi cả hai đầu trong một sự
+// kiện thì nối theo sự kiện. Chỉ tính nội bộ khi CẢ HAI đầu phát sinh trong kỳ đang xem (hàng đi đường qua kỳ vẫn là nhập / xuất thật).
+const noiBoCte = (from: string) => sql`, mvx AS (
+      SELECT mv.*, (mv.kind IN ('transfer_in', 'transfer_out') AND mv.doc_date >= ${from}::date
+             AND bool_or(mv.kind = 'transfer_in' AND mv.doc_date >= ${from}::date) OVER w
+             AND bool_or(mv.kind = 'transfer_out' AND mv.doc_date >= ${from}::date) OVER w) AS noi_bo
+        FROM (SELECT mv.*, COALESCE(e.payload->'extra'->>'transferGroup', 'ev:' || mv.event_id) AS ck_nhom
+                FROM mv LEFT JOIN accounting_events e ON e.id = mv.event_id AND mv.kind IN ('transfer_in', 'transfer_out')) mv
+      WINDOW w AS (PARTITION BY mv.ck_nhom, mv.ikey))`;
+type SumRow = { oq: string | null; ov: string | null; iq: string | null; iv: string | null; xq: string | null; xv: string | null; pq: string | null; pv: string | null; cq: string | null; cv: string | null; uncosted: string;
+  tiq: string | null; tiv: string | null; txq: string | null; txv: string | null; niq: string | null; niv: string | null; nxq: string | null; nxv: string | null };
+/**
+ * boNoiBo = dòng gộp nhiều chi nhánh (gom theo nhãn, nhóm hàng…): trừ chuyển kho nội bộ khỏi nhập / xuất / chuyển kho. Dòng theo
+ * một chi nhánh: giữ nguyên, trả thêm phần nội bộ (internal*) để màn trừ ra ở dòng Tổng cộng. Tồn cuối luôn = đầu + mọi nhập − mọi xuất.
+ */
+const figures = (r: SumRow, boNoiBo = false) => {
+  const openingQty = num(r.oq), openingValue = num(r.ov), allInQty = num(r.iq), allInValue = num(r.iv), allOutQty = num(r.xq), allOutValue = num(r.xv);
+  const ni = { q: num(r.niq), v: num(r.niv) }, nx = { q: num(r.nxq), v: num(r.nxv) };
+  const tru = boNoiBo ? 1 : 0;
   return {
-    openingQty, openingValue, inQty, inValue, outQty, outValue, closingQty: openingQty + inQty - outQty, closingValue: openingValue + inValue - outValue,
+    openingQty, openingValue,
+    inQty: allInQty - tru * ni.q, inValue: allInValue - tru * ni.v, outQty: allOutQty - tru * nx.q, outValue: allOutValue - tru * nx.v,
+    transferInQty: num(r.tiq) - tru * ni.q, transferInValue: num(r.tiv) - tru * ni.v, transferOutQty: num(r.txq) - tru * nx.q, transferOutValue: num(r.txv) - tru * nx.v,
+    internalInQty: (1 - tru) * ni.q, internalInValue: (1 - tru) * ni.v, internalOutQty: (1 - tru) * nx.q, internalOutValue: (1 - tru) * nx.v,
+    closingQty: openingQty + allInQty - allOutQty, closingValue: openingValue + allInValue - allOutValue,
     purchaseQty: num(r.pq), purchaseValue: num(r.pv), cogsQty: num(r.cq), cogsValue: num(r.cv), uncosted: Number(r.uncosted),
   };
 };
@@ -150,9 +181,9 @@ export const inventoryReportService = {
   async stockMovement(auth: AuthContext, q: { from: string; to: string; branchCodes?: string[]; warehouseCodes?: string[]; search?: string; groups?: string[] }) {
     const s = await scope(auth, q.branchCodes, q.warehouseCodes);
     const res = await sql<SumRow & { branch_code: string; branch_name: string; sku: string; name: string; unit: string }>`
-      WITH mv AS (${valuedMovements({ tenantId: auth.tenantId, to: q.to, branchIds: s.branchIds, wh: s.wh, search: q.search?.trim() || undefined })})
+      WITH mv AS (${valuedMovements({ tenantId: auth.tenantId, to: q.to, branchIds: s.branchIds, wh: s.wh, search: q.search?.trim() || undefined })})${noiBoCte(q.from)}
       SELECT b.code AS branch_code, b.name AS branch_name, MAX(mv.cur) AS sku, MAX(mv.name) AS name, MAX(mv.unit) AS unit, ${sums(q.from)}
-        FROM mv JOIN branches b ON b.id = mv.branch_id
+        FROM mvx mv JOIN branches b ON b.id = mv.branch_id
        WHERE TRUE ${groupFilter(auth.tenantId, q.groups)}
        GROUP BY b.code, b.name, mv.ikey
        ORDER BY b.code, 3`.execute(db);
@@ -162,7 +193,8 @@ export const inventoryReportService = {
     const sum = (k: keyof (typeof rows)[number]) => rows.reduce((s2, r) => s2 + (r[k] as number), 0);
     return {
       rows,
-      totals: { openingValue: sum('openingValue'), inValue: sum('inValue'), outValue: sum('outValue'), closingValue: sum('closingValue'), purchaseValue: sum('purchaseValue'), cogsValue: sum('cogsValue') },
+      // NT-KHO-005: tổng cả phạm vi bỏ chuyển kho nội bộ (đã tính ở chi nhánh chuyển đi và chi nhánh nhận)
+      totals: { openingValue: sum('openingValue'), inValue: sum('inValue') - sum('internalInValue'), outValue: sum('outValue') - sum('internalOutValue'), closingValue: sum('closingValue'), purchaseValue: sum('purchaseValue'), cogsValue: sum('cogsValue') },
       uncosted: sum('uncosted'),
     };
   },
@@ -172,21 +204,22 @@ export const inventoryReportService = {
     const s = await scope(auth, q.branchCodes, q.warehouseCodes);
     const g = STOCK_GROUP_SQL[q.groupBy];
     const res = await sql<SumRow & { key: string; label: string; skus: string }>`
-      WITH mv AS (${valuedMovements({ tenantId: auth.tenantId, to: q.to, branchIds: s.branchIds, wh: s.wh, search: q.search?.trim() || undefined })})${g.level ? groupLevelCte(auth.tenantId) : sql``}
+      WITH mv AS (${valuedMovements({ tenantId: auth.tenantId, to: q.to, branchIds: s.branchIds, wh: s.wh, search: q.search?.trim() || undefined })})${noiBoCte(q.from)}${g.level ? groupLevelCte(auth.tenantId) : sql``}
       SELECT ${g.key} AS key, ${g.label} AS label, COUNT(DISTINCT mv.ikey) AS skus, ${sums(q.from)}
-        FROM mv JOIN branches b ON b.id = mv.branch_id
+        FROM mvx mv JOIN branches b ON b.id = mv.branch_id
         ${g.join}
        WHERE TRUE ${groupFilter(auth.tenantId, q.groups)}
        ${g.purchaseOnly ? sql`AND mv.kind IN ('purchase', 'purchase_return') AND mv.doc_date >= ${q.from}::date` : sql``}
        GROUP BY 1
        ORDER BY 1`.execute(db);
     const rows = res.rows
-      .map((r) => ({ key: r.key, label: r.key ? r.label : g.purchaseOnly ? '(không có nhà cung cấp)' : q.groupBy === 'branch' ? r.label : g.level ? '(nhóm chưa tới cấp này)' : '(chưa phân loại)', skuCount: Number(r.skus), ...figures(r) }))
+      .map((r) => ({ key: r.key, label: r.key ? r.label : g.purchaseOnly ? '(không có nhà cung cấp)' : q.groupBy === 'branch' ? r.label : g.level ? '(nhóm chưa tới cấp này)' : '(chưa phân loại)', skuCount: Number(r.skus), ...figures(r, q.groupBy !== 'branch') }))
       .filter((r) => r.openingQty || r.inQty || r.outQty || r.openingValue || r.inValue);
     const sum = (k: keyof (typeof rows)[number]) => rows.reduce((s2, r) => s2 + (r[k] as number), 0);
     return {
       groupBy: q.groupBy, purchaseOnly: Boolean(g.purchaseOnly), rows,
-      totals: { openingValue: sum('openingValue'), inValue: sum('inValue'), outValue: sum('outValue'), closingValue: sum('closingValue'), purchaseValue: sum('purchaseValue'), cogsValue: sum('cogsValue') },
+      // NT-KHO-005: tổng cả phạm vi bỏ chuyển kho nội bộ (đã tính ở chi nhánh chuyển đi và chi nhánh nhận)
+      totals: { openingValue: sum('openingValue'), inValue: sum('inValue') - sum('internalInValue'), outValue: sum('outValue') - sum('internalOutValue'), closingValue: sum('closingValue'), purchaseValue: sum('purchaseValue'), cogsValue: sum('cogsValue') },
       uncosted: sum('uncosted'),
     };
   },
