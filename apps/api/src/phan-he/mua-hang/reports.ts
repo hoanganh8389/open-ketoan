@@ -117,10 +117,13 @@ export async function lotStock(trx: Db, tenantId: string, ctx: Ctx, asOf = today
   const lotUnits = await unitsOf(trx, tenantId, ctx.docs.filter((x) => x.status === 'approved' && ['receipt', 'return', 'exchange'].includes(x.kind)).flatMap((x) => x.lines.map((l) => l.sku)));
   for (const d of ctx.docs.filter((x) => x.status === 'approved' && ['receipt', 'return', 'exchange'].includes(x.kind))) {
     for (const l of computeDoc(d, [], { units: lotUnits }).lines) {
-      if (!l.lotNo || !l.expDate || !l.sku) continue;
+      // [2026-11-27 11:50 AM Nguyễn Văn Thủy] MH08 — dòng có hạn dùng mà bỏ trống số lô vẫn lên Lô & hạn dùng (gom theo hạn dùng);
+      // trước bỏ qua nên phiếu nhập có HSD mà màn trống (đóng góp)
+      if (!l.expDate || !l.sku) continue;
+      const lotNo = (l.lotNo ?? '').trim();
       const out = d.kind === 'return' || l.dir === 'out';
-      const k = `${d.branchCode}|${l.sku}|${l.lotNo}`;
-      const cur = lots.get(k) ?? { sku: l.sku, lotNo: l.lotNo, expDate: l.expDate, mfgDate: l.mfgDate, branchCode: d.branchCode, qty: 0, unitCost: l.realUnitCost, partnerCode: d.partnerCode, docNo: d.docNo, receivedAt: d.docDate };
+      const k = `${d.branchCode}|${l.sku}|${lotNo}|${lotNo ? '' : l.expDate}`;
+      const cur = lots.get(k) ?? { sku: l.sku, lotNo, expDate: l.expDate, mfgDate: l.mfgDate, branchCode: d.branchCode, qty: 0, unitCost: l.realUnitCost, partnerCode: d.partnerCode, docNo: d.docNo, receivedAt: d.docDate };
       // Nguồn của lô = phiếu NHẬN lô vào sớm nhất (phiếu trả đi đọc trước thì không được ghi làm nguồn).
       if (!out && (!fromIn.has(k) || d.docDate < cur.receivedAt)) { Object.assign(cur, { expDate: l.expDate, mfgDate: l.mfgDate, unitCost: l.realUnitCost, partnerCode: d.partnerCode, docNo: d.docNo, receivedAt: d.docDate }); fromIn.add(k); }
       cur.qty += out ? -l.qty : l.qty;
