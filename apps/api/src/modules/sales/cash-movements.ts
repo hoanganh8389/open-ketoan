@@ -17,6 +17,8 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import { toNumber } from '../../db/client.js';
 import { defineAction, mountActions, type AnyActionDef } from '../../core/actions.js';
+// [2026-11-28 Võ Hoàng] NGHIEM-THU — NT-BH-054: sổ quỹ két cửa hàng gắn cùng nhóm route (đóng góp)
+import { cashFundActions } from './cash-fund.js';
 
 const tags = ['Bán hàng'];
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -80,5 +82,5 @@ export const cashMovementActions: AnyActionDef[] = [
 
 /** Gắn từ salesReportRoutes (phân hệ Bán hàng) — không sửa tệp phân hệ Quỹ. */
 export async function cashMovementRoutes(app: FastifyInstance): Promise<void> {
-  mountActions(app, cashMovementActions);
+  mountActions(app, [...cashMovementActions, ...cashFundActions]);
 }
