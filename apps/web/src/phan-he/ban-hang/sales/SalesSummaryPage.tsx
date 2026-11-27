@@ -19,7 +19,7 @@ import { PrintButton } from '@/components/print';
 import { summaryTemplates } from './mauIn/baoCaoBanHang';
 import { MaThut, gopNhom, usePartnerFamilies, type GopRow } from '../../../features/catalog/nhomChaCon';
 
-type GroupBy = 'document' | 'day' | 'month' | 'branch' | 'warehouse' | 'product' | 'customer' | 'taxCode' | 'itemGroup1' | 'itemGroup2' | 'itemGroup3' | 'itemType' | 'customerGroup' | 'department' | 'employee';
+type GroupBy = 'document' | 'day' | 'month' | 'branch' | 'warehouse' | 'product' | 'customer' | 'taxCode' | 'industry' | 'brand' | 'itemGroup' | 'itemGroup1' | 'itemGroup2' | 'itemGroup3' | 'itemType' | 'customerGroup' | 'department' | 'employee';
 /** Mỗi cách nhóm: nhãn thẻ, tiêu đề cột mã / tên / thông tin thêm (để trống = không hiện cột). */
 const GROUPS: { key: GroupBy; tab: string; keyHead: string; labelHead?: string; extraHead?: string }[] = [
   { key: 'document', tab: 'Theo phiếu', keyHead: 'Số phiếu' },
@@ -31,6 +31,10 @@ const GROUPS: { key: GroupBy; tab: string; keyHead: string; labelHead?: string; 
   { key: 'product', tab: 'Theo mặt hàng', keyHead: 'Mã hàng', labelHead: 'Tên hàng', extraHead: 'ĐVT' },
   { key: 'customer', tab: 'Theo khách hàng', keyHead: 'Mã khách', labelHead: 'Tên khách hàng', extraHead: 'Mã số thuế' },
   { key: 'taxCode', tab: 'Theo loại thuế', keyHead: 'Loại thuế' },
+  // [2026-11-27 08:40 AM Nguyễn Văn Thủy] #65 tab Test: thêm lại tổng hợp theo ngành hàng / nhãn hàng / nhóm hàng (mã phân loại của mặt hàng) cạnh cây nhóm cấp 1–3 (đóng góp)
+  { key: 'industry', tab: 'Theo ngành hàng', keyHead: 'Mã ngành', labelHead: 'Ngành hàng' },
+  { key: 'brand', tab: 'Theo nhãn hàng', keyHead: 'Mã nhãn', labelHead: 'Nhãn hàng' },
+  { key: 'itemGroup', tab: 'Theo nhóm hàng', keyHead: 'Mã nhóm', labelHead: 'Nhóm hàng' },
   // [2026-11-03 04:30 PM Nguyễn Văn Thủy] NHOM — tổng hợp theo cây nhóm hàng cấp 1 / 2 / 3 (cộng dồn nhánh con), thay 3 thẻ ngành / nhãn / nhóm rời
   { key: 'itemGroup1', tab: 'Theo nhóm cấp 1', keyHead: 'Mã nhóm', labelHead: 'Nhóm hàng cấp 1' },
   { key: 'itemGroup2', tab: 'Theo nhóm cấp 2', keyHead: 'Mã nhóm', labelHead: 'Nhóm hàng cấp 2' },

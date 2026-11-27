@@ -33,7 +33,7 @@ Khai **một chỗ** (open-ketoan) thông tin xuất hoá đơn điện tử Vie
 | 4 | Action ghi `hoa-don-dien-tu.cai-dat.save-so`: người bán, tài khoản Viettel, mặc định (mẫu số, ký hiệu, phương thức thanh toán, tự động); mật khẩu / token: trống = giữ, `-` = xoá, chuỗi khác = đặt mới | Kiểm phiên bản (`version`) chống ghi đè |
 | 5 | Action ghi `hoa-don-dien-tu.cai-dat.save-chi-nhanh`: mẫu số, ký hiệu, portal (bật, tài khoản, supplier ID, mật khẩu theo chi nhánh), đang dùng | |
 | 6 | Action `hoa-don-dien-tu.ket-noi.thu`: máy chủ gọi `GET <API base URL>` (Basic / Bearer theo cài đặt, chờ tối đa 15 giây), trả mã HTTP + thời gian; **không** gọi lệnh phát hành nào | Như nút cũ ở website; ghi nhật ký |
-| 7 | Action đọc cho cầu nối `hoa-don-dien-tu.cai-dat.export`: cài đặt hiệu lực theo chi nhánh (chi nhánh trống ô thì lấy mặc định của sổ), kèm `configVersion`; **không** có bí mật — bí mật đọc riêng qua action tự sinh `hoa-don-dien-tu.secrets.read` (khoá app có `secrets:read:hoa-don-dien-tu`) | S-HD-4 dùng |
+| 7 | Action đọc cho cầu nối `hoa-don-dien-tu.cai-dat.export`: cài đặt hiệu lực theo chi nhánh (chi nhánh trống ô thì lấy mặc định của sổ), kèm `configVersion`; **không** có bí mật — bí mật đọc riêng qua action tự sinh `hoa-don-dien-tu.secrets.read` (khoá app có `secrets:read:hoa-don-dien-tu`); quyền `reports:read` (M9) | S-HD-4 dùng |
 | 8 | Nhật ký (`hoa-don-dien-tu.nhat-ky.list`): ai, lúc nào, sửa gì (tên ô), thử kết nối (mã HTTP); bí mật chỉ ghi "đã đổi mật khẩu …" | R-LOG-4 |
 | 9 | Hướng dẫn `docs/huong-dan/hoa-don-dien-tu.md` (sẽ tạo) | |
 
@@ -80,6 +80,7 @@ apps/web/src/layout/ten-man.ts                      (tên màn /app/hoa-don-dien
 | M6 | Một sổ một MST. Hai cụm website khác MST trỏ cùng một sổ → S-HD-5 báo xung đột, không gộp | P-0 (một sổ = một pháp nhân) |
 | M7 | Danh sách người dùng + mức quyền của cụm website **không** chuyển — thay bằng quyền open-ketoan | Quyết định 3 |
 | M8 | Kiểm khi lưu: MST 10 hoặc 14 số (`0123456789` / `0123456789-001`); API base URL phải `https://`; xác thực Basic thì cần username + mật khẩu đã đặt mới cho "Đang dùng" | Như `validate_cluster_data` ở website |
+| M9 | Cầu nối đọc `cai-dat/export` bằng khoá kt_ có `reports:read` (quyền Core — khoá API không mang được quyền module); mật khẩu / token Viettel **tạm lấy từ cụm website** (Hoàng chốt 26/11); đọc bí mật qua khoá (thêm phạm vi `secrets:read:hoa-don-dien-tu` cho khoá API, hoặc khoá app TGS-WP) làm sau | <!-- [2026-11-26 11:40 PM Võ Hoàng] NGHIEM-THU — NT-BH-048 M9 (đóng góp) --> S-HD-4 chạy được trên UAT ngay, không đụng lõi |
 
 ## 5. Ca nghiệm thu
 
