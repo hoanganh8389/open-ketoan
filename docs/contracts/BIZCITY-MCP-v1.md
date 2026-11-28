@@ -1,4 +1,6 @@
 # `bizcity_mcp@1` — Chuẩn công cụ MCP của Core kế toán (cho Cell, trợ lý AI, chatbot)
+<!-- [2026-11-28 03:44 PM Johnny Chu - Chu Hoàng Anh] FLOW — NC-004 D1 / D2 (chủ chốt Q-PIL-10 ngày 2026-11-28): bản chủ đã dời sang open-platform; tệp này là bản chép giữ cho bộ kiểm của repo (SC-CON-4 / SC-CON-5 / SC-DOC-4) tới khi bộ kiểm đọc bản chủ (C6). -->
+> **Bản chủ:** [open-platform — BIZCITY-MCP-v1.md](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-MCP-v1.md) (từ 2026-11-28). **Sửa văn bản này ⇒ PR vào bizcity-platform trước** (luật đổi chuẩn của bizcity-platform), rồi chép lại đây cùng nội dung; không sửa riêng ở đây.
 <!-- [2026-10-29 10:39 PM Johnny Chu - Chu Hoàng Anh] PHASE-001 — chuẩn MCP, gói định khoản theo ngành, kết nối Cell. -->
 <!-- [2026-10-30 11:45 AM Johnny Chu - Chu Hoàng Anh] PHASE-003 — MCP cho trợ lý AI: POST /mcp, công cụ sinh từ action, xác nhận trước khi ghi (PHASES 2.11, 2.12). -->
 <!-- [2026-10-30 12:50 PM Johnny Chu - Chu Hoàng Anh] CONG-BO — bản công bố kiến trúc: 4 lớp hợp đồng, luật hạ tầng, checklist nhận việc. -->

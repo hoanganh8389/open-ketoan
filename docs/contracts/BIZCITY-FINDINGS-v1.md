@@ -1,4 +1,6 @@
 # `bizcity_findings@1` — Thư viện phát hiện của hai cổng kiểm chuẩn
+<!-- [2026-11-28 03:44 PM Johnny Chu - Chu Hoàng Anh] FLOW — NC-004 D1 / D2 (chủ chốt Q-PIL-10 ngày 2026-11-28): bản chủ đã dời sang open-platform; tệp này là bản chép giữ cho bộ kiểm của repo (SC-CON-4 / SC-CON-5 / SC-DOC-4) tới khi bộ kiểm đọc bản chủ (C6). -->
+> **Bản chủ:** [open-platform — BIZCITY-FINDINGS-v1.md](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-FINDINGS-v1.md) (từ 2026-11-28). **Sửa văn bản này ⇒ PR vào bizcity-platform trước** (luật đổi chuẩn của bizcity-platform), rồi chép lại đây cùng nội dung; không sửa riêng ở đây.
 <!-- [2026-11-02 11:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-024 — S024-27 (ADR-0019, R-GATE-5): hợp đồng thư viện phát hiện — một khuôn cho mã Gate A (danh mục) và Gate B (trạm tiền kiểm) -->
 
 <!-- [2026-11-03 02:00 PM Johnny Chu - Chu Hoàng Anh] PHASE-024 — ADR-0020: 1.1.0-draft — basis (R-GATE-11), notifyFinding (R-GATE-10), status không còn là cổng chờ duyệt -->

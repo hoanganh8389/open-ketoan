@@ -1,4 +1,6 @@
 # `bizcity_document@1` — Document Contract
+<!-- [2026-11-28 03:44 PM Johnny Chu - Chu Hoàng Anh] FLOW — NC-004 D1 / D2 (chủ chốt Q-PIL-10 ngày 2026-11-28): bản chủ đã dời sang open-platform; tệp này là bản chép giữ cho bộ kiểm của repo (SC-CON-4 / SC-CON-5 / SC-DOC-4) tới khi bộ kiểm đọc bản chủ (C6). -->
+> **Bản chủ:** [open-platform — BIZCITY-DOCUMENT-v1.md](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-DOCUMENT-v1.md) (từ 2026-11-28). **Sửa văn bản này ⇒ PR vào bizcity-platform trước** (luật đổi chuẩn của bizcity-platform), rồi chép lại đây cùng nội dung; không sửa riêng ở đây.
 <!-- [2026-11-22 06:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-040 — bizcity_document 1.5.0-draft: sáu nhóm trạng thái (STD-DOC-4 khớp STATUS_GROUPS), §5.2 ba chiều trạng thái, STD-DOC-9 hợp đồng xuyên suốt — ADR-0038, R-DOC-CONT -->
 <!-- [2026-10-29 10:24 PM Johnny Chu - Chu Hoàng Anh] INIT — khởi tạo Bizcity Core Framework: sổ cái chỉ thêm, cửa nạp sự việc, CANON, hợp đồng, bộ kiểm chuẩn. -->
 <!-- [2026-10-31 03:36 PM Johnny Chu - Chu Hoàng Anh] PHASE-012 — bizcity_document 1.1.0-draft: §5.1 hiện trạng runtime documents.workflow (khoá YAML, levels, sod, owner, ledger), hai luồng đã chuyển. -->

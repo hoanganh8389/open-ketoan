@@ -1,4 +1,6 @@
 # BIZCITY-SECRETS-v1 · Lưu bí mật mã hoá theo đơn vị cho module (`platform.secrets`)
+<!-- [2026-11-28 03:44 PM Johnny Chu - Chu Hoàng Anh] FLOW — NC-004 D1 / D2 (chủ chốt Q-PIL-10 ngày 2026-11-28): bản chủ đã dời sang open-platform; tệp này là bản chép giữ cho bộ kiểm của repo (SC-CON-4 / SC-CON-5 / SC-DOC-4) tới khi bộ kiểm đọc bản chủ (C6). -->
+> **Bản chủ:** [open-platform — BIZCITY-SECRETS-v1.md](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-SECRETS-v1.md) (từ 2026-11-28). **Sửa văn bản này ⇒ PR vào bizcity-platform trước** (luật đổi chuẩn của bizcity-platform), rồi chép lại đây cùng nội dung; không sửa riêng ở đây.
 <!-- [2026-11-25 08:30 PM Võ Hoàng] FLOW — chữ chốt R-FLOW-2 cho năng lực platform.secrets (1.0.0-draft); Võ Hoàng làm, chủ dự án duyệt PR code (đóng góp) -->
 
 Trạng thái: **1.0.0 — đã có** (chữ chốt R-FLOW-2 ngày 25/11/2026; mã + test ở nhánh `feat/platform-secrets`, chủ dự án duyệt PR). API cuối ở §6.
