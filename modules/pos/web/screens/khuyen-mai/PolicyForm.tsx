@@ -8,6 +8,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Modal, errorText, useApi, useCan, useMutation, useQuery } from '@bizcity/ui-kit';
 import { M } from '../../lib';
 import { OverlapList, approveAndPublish, type Draft, type Overlap } from './Drafts';
+import { NutBuoc, ThanhBuoc } from './ThanhBuoc';
 import {
   OLD_TYPES, OLD_TYPE, PASTE_COLS, emptyCk, emptyFixed, emptyOld, emptyQty, emptyUnit, oldToParams, parsePaste, reasonOf,
   type CkRow, type FixedRow, type OldForm, type OldType, type QtyRow, type UnitRow,
@@ -38,7 +39,8 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   const api = useApi();
   const can = useCan();
   const [f, setF] = useState<OldForm>(initial);
-  const [tab, setTab] = useState<'info' | 'items'>('info');
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: 4 bước ngang thay 2 thẻ; ngày bắt đầu áp lấy từ "Từ ngày" (bỏ ô ngày phát hành) (đóng góp)
+  const [buoc, setBuoc] = useState(0);
   const [stop, setStop] = useState(false);
   const [paste, setPaste] = useState<{ target: string; text: string } | null>(null);
   const [warn, setWarn] = useState<{ msg: string; overlaps: Overlap[] } | null>(null);
@@ -49,12 +51,13 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   // "Tất cả cửa hàng" là một trạng thái riêng: bỏ tích thì chưa cửa hàng nào được chọn (sửa lỗi ô cũ: chưa chọn hiện tích hết, bấm một ô lại bỏ ô đó).
   const [allBr, setAllBr] = useState(initial.branchCodes.length === 0);
   const out0 = oldToParams(eff);
+  const apTu = f.dateOn && f.validFrom && f.validFrom > f.effectiveFrom ? f.validFrom : f.effectiveFrom;
   const out = !allBr && !f.branchCodes.length ? { ...out0, problems: [...out0.problems, 'Chọn ít nhất một cửa hàng áp dụng (hoặc tích Tất cả cửa hàng)'] } : out0;
   const dirty = JSON.stringify(f) !== JSON.stringify(initial) || stop;
   const close = () => { if (!dirty || window.confirm('Còn thay đổi chưa lưu — bỏ thay đổi và đóng?')) onClose(); };
 
   // Danh mục: tên + cờ dưới 24 tháng, đơn vị quy đổi, cửa hàng, nhóm hàng, hạng thành viên.
-  const allSkus = useMemo(() => [...new Set([...f.ckRows, ...f.fixedRows, ...f.buyRows, ...f.giftRows, ...f.poolRows, ...f.lowRows].map((r) => r.sku.trim()).filter(Boolean))].sort(), [f]);
+  const allSkus = useMemo(() => [...new Set([...f.ckRows, ...f.fixedRows, ...f.buyRows, ...f.giftRows, ...f.moreCombos.flatMap((c) => [...c.buyRows, ...c.giftRows]), ...f.poolRows, ...f.lowRows].map((r) => r.sku.trim()).filter(Boolean))].sort(), [f]);
   const prods = useQuery({ queryKey: ['km', 'sp', allSkus.join(',')], enabled: allSkus.length > 0, staleTime: 60_000,
     queryFn: () => api.get<{ sku: string; name: string; unit?: string; isUnder24m?: boolean }[]>('/api/v1/products', { skus: allSkus.join(','), pageSize: 1000 }) });
   const units = useQuery({ queryKey: ['km', 'dvt', allSkus.join(',')], enabled: allSkus.length > 0, staleTime: 60_000,
@@ -73,14 +76,14 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   type Act = 'draft' | 'submit' | 'approve';
   const save = useMutation({
     mutationFn: async (act: Act) => {
-      const body = { key: f.key.trim(), ruleContract: out.contract, params: out.params, effectiveFrom: f.effectiveFrom, branchCodes: f.branchCodes,
+      const body = { key: f.key.trim(), ruleContract: out.contract, params: out.params, effectiveFrom: apTu, branchCodes: f.branchCodes,
         reason: reasonOf(f) || undefined, quota: out.quota, submit: act !== 'draft' };
       const r = draftId ? await api.put<{ draft: Draft; overlaps: Overlap[] }>(`${M}/promo/drafts/${draftId}`, body) : await api.post<{ draft: Draft; overlaps: Overlap[] }>(`${M}/promo/drafts`, body);
       const version = act === 'approve' ? await approveAndPublish(api, r.draft) : null;
       return { ...r, version };
     },
     onSuccess: (r, act) => {
-      const msg = act === 'approve' ? `Đã duyệt và phát hành ${f.key.trim()} (bản ${r.version}) — máy bán áp từ ${f.effectiveFrom}.`
+      const msg = act === 'approve' ? `Đã duyệt và phát hành ${f.key.trim()} (bản ${r.version}) — máy bán áp từ ${apTu}.`
         : `Đã lưu ${f.key.trim()}${act === 'submit' ? ', đã gửi duyệt' : ' (nháp)'} — máy bán áp sau khi được duyệt.`;
       if (r.overlaps.length) setWarn({ msg, overlaps: r.overlaps }); else onDone(msg);
     },
@@ -177,12 +180,14 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
         <button type="button" className="btn" onClick={close}>Thoát</button>
       </div>}>
       <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 12 }}>
-        <div className="tabs" role="tablist">
-          <button type="button" role="tab" className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>Thông tin chương trình</button>
-          <button type="button" role="tab" className={`tab ${tab === 'items' ? 'active' : ''}`} onClick={() => setTab('items')}>Khuyến mãi theo mặt hàng{out.problems.some((p) => /SKU|mã|quà|Pool|giá|chiết khấu|Hàng mua/i.test(p)) ? ' ⚠' : ''}</button>
-        </div>
+        <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
+          { label: 'Thông tin chung', warn: out.problems.some((x) => /Mã chương trình|tên chương trình/i.test(x)) },
+          { label: 'Thời gian & điều kiện', warn: out.problems.some((x) => /ngày|giờ|Tổng giá trị|đơn hàng được áp/i.test(x)) },
+          { label: 'Đối tượng áp dụng', warn: out.problems.some((x) => /cửa hàng|mỗi khách|hạng/i.test(x)) },
+          { label: 'Hàng & quà', warn: out.problems.some((x) => /SKU|mã|quà|Pool|giá|chiết khấu|Hàng mua|Combo/i.test(x)) },
+        ]} />
 
-        {tab === 'info' && <>
+        {buoc === 0 && <>
           <div style={{ display: 'grid', gridTemplateColumns: '170px minmax(0, 420px)', gap: 8, alignItems: 'center' }}>
             <b>Loại chương trình <span className="mh-bad">*</span></b>
             <select className="input" value={f.type} disabled={editing} title={editing ? 'Không đổi loại khi sửa — lập chương trình mới' : typeInfo.hint}
@@ -209,29 +214,37 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
                 <span className="muted" style={{ fontSize: 12 }}>Gộp quyền lợi quà giữa các chương trình (mã nhóm quà) chưa có ở kế toán — mỗi chương trình tính riêng.</span>
               </div>
             </Panel>
+          </div>
+        </>}
+
+        {buoc === 1 && <>
+          <div style={{ display: 'grid', gap: 12 }}>
             <Panel title="Chọn thời gian khuyến mãi">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ display: 'grid', gap: 6 }}>
                   <Check label="Chỉ áp dụng trong khoảng thời gian" checked={f.dateOn} onChange={(v) => set({ dateOn: v })} />
-                  <Lbl label="Từ">{inp(f.validFrom, (v) => set({ validFrom: v }), { type: 'date' })}</Lbl>
-                  <Lbl label="Đến">{inp(f.validTo, (v) => set({ validTo: v }), { type: 'date' })}</Lbl>
+                  {f.dateOn ? <>
+                    <Lbl label="Từ ngày">{inp(f.validFrom, (v) => set({ validFrom: v }), { type: 'date' })}</Lbl>
+                    <Lbl label="Đến ngày">{inp(f.validTo, (v) => set({ validTo: v }), { type: 'date' })}</Lbl>
+                  </> : <span className="muted" style={{ fontSize: 12.5 }}>Không giới hạn ngày — áp từ ngày duyệt ({f.effectiveFrom}).</span>}
                 </div>
                 <div style={{ display: 'grid', gap: 6 }}>
                   <Check label="Chỉ áp dụng trong khung giờ" checked={f.timeOn} onChange={(v) => set({ timeOn: v })} />
-                  <Lbl label="Từ">{inp(f.timeFrom, (v) => set({ timeFrom: v }), { type: 'time' })}</Lbl>
-                  <Lbl label="Đến">{inp(f.timeTo, (v) => set({ timeTo: v }), { type: 'time' })}</Lbl>
+                  {f.timeOn ? <>
+                    <Lbl label="Từ giờ">{inp(f.timeFrom, (v) => set({ timeFrom: v }), { type: 'time' })}</Lbl>
+                    <Lbl label="Đến giờ">{inp(f.timeTo, (v) => set({ timeTo: v }), { type: 'time' })}</Lbl>
+                  </> : <span className="muted" style={{ fontSize: 12.5 }}>Cả ngày.</span>}
                   {f.timeOn && f.timeFrom && f.timeTo && f.timeTo < f.timeFrom && <span className="badge badge-info" title="Giờ kết thúc trước giờ bắt đầu = qua nửa đêm">qua đêm</span>}
                 </div>
               </div>
               <Check label="Chỉ áp dụng cho ngày trong tuần" checked={f.weekdaysOn} onChange={(v) => set({ weekdaysOn: v })} />
-              <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+              {f.weekdaysOn && <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
                 {THU.map((t, i) => {
                   const on = f.weekdays.includes(i + 1);
                   return <button key={t} type="button" className={`btn btn-sm ${on ? 'btn-primary' : ''}`} disabled={!f.weekdaysOn} aria-pressed={on}
                     onClick={() => set({ weekdays: on ? f.weekdays.filter((d) => d !== i + 1) : [...f.weekdays, i + 1] })}>{t}</button>;
                 })}
-              </div>
-              <Lbl label="Áp dụng từ ngày (bản phát hành)" hint="Ngày máy bán bắt đầu dùng bản này — sửa chương trình đang chạy thì từ ngày mai">{inp(f.effectiveFrom, (v) => set({ effectiveFrom: v }), { type: 'date', w: 180 })}</Lbl>
+              </div>}
             </Panel>
           </div>
 
@@ -246,6 +259,9 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
             </div>
           </Panel>
 
+        </>}
+
+        {buoc === 2 && <>
           <Panel title="Đối tượng được áp dụng khuyến mãi">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
               <div style={{ display: 'grid', gap: 4, alignContent: 'start' }}>
@@ -291,7 +307,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
           </details>
         </>}
 
-        {tab === 'items' && <>
+        {buoc === 3 && <>
           {under24.length > 0 && (
             <div className="alert alert-warn">⚠ NĐ100/2014: không khuyến mại sản phẩm dinh dưỡng cho trẻ dưới 24 tháng — kiểm lại: {under24.map((x) => `${x.sku} ${x.name}`).join('; ')}</div>
           )}
@@ -343,15 +359,45 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
             )}
             {f.type === 'bxgy' && (
               <div style={{ display: 'grid', gap: 10 }}>
+                {/* [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: nhiều combo mua – tặng như plugin cũ; mỗi combo tính riêng (đóng góp) */}
+                {f.moreCombos.length > 0 && <b style={{ fontSize: 14 }}>Combo 1</b>}
                 <b style={{ fontSize: 13 }}>Hàng mua — mỗi dòng: mua đủ số lượng của mã đó thì được một lần quà (mua gấp đôi được gấp đôi)</b>
                 {qtyRows('buyRows', 'SL mua', 'Thêm dòng mua')}
                 <b style={{ fontSize: 13 }}>Quà tặng mỗi lần — một quà thì tặng luôn, nhiều quà thì khách chọn 1 ở máy bán</b>
                 {qtyRows('giftRows', 'SL tặng', 'Thêm quà')}
+                {f.moreCombos.map((c, ci) => {
+                  const setC = (patch: Partial<typeof c>) => set({ moreCombos: f.moreCombos.map((x, j) => (j === ci ? { ...x, ...patch } : x)) });
+                  const rowsOf = (k: 'buyRows' | 'giftRows', qtyLabel: string, addLabel: string) => (
+                    <Grid<QtyRow> rows={c[k]} addLabel={addLabel} onAdd={() => setC({ [k]: [...c[k], emptyQty()] })} onDel={(i) => setC({ [k]: c[k].filter((_, j) => j !== i) })}
+                      cols={[
+                        { k: 'sku', h: 'Mã SKU', w: 130, cell: (r, i) => inp(r.sku, (v) => setC({ [k]: c[k].map((x, j) => (j === i ? { ...x, sku: v } : x)) }), { ph: 'Mã…' }) },
+                        nameCol(),
+                        { k: 'qty', h: qtyLabel, w: 100, cell: (r, i) => inp(r.qty, (v) => setC({ [k]: c[k].map((x, j) => (j === i ? { ...x, qty: v } : x)) }), { right: true }) },
+                        { k: 'unit', h: 'Đơn vị', w: 150, opt: true, cell: (r, i) => unitSel(r, (pp) => setC({ [k]: c[k].map((x, j) => (j === i ? { ...x, ...pp } : x)) })) },
+                      ]} />
+                  );
+                  return (
+                    <div key={ci} style={{ display: 'grid', gap: 10, borderTop: '1px dashed var(--line, #dde3ea)', paddingTop: 10 }}>
+                      <div className="row" style={{ alignItems: 'center', gap: 8 }}>
+                        <b style={{ fontSize: 14, flex: 1 }}>Combo {ci + 2}</b>
+                        <button type="button" className="btn btn-sm" onClick={() => set({ moreCombos: f.moreCombos.filter((_, j) => j !== ci) })}>Xoá combo</button>
+                      </div>
+                      <b style={{ fontSize: 13 }}>Hàng mua</b>
+                      {rowsOf('buyRows', 'SL mua', 'Thêm dòng mua')}
+                      <b style={{ fontSize: 13 }}>Quà tặng mỗi lần</b>
+                      {rowsOf('giftRows', 'SL tặng', 'Thêm quà')}
+                    </div>
+                  );
+                })}
+                <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                  <button type="button" className="btn btn-sm" disabled={f.moreCombos.length >= 19} onClick={() => set({ moreCombos: [...f.moreCombos, { buyRows: [emptyQty()], giftRows: [emptyQty()] }] })}>+ Thêm combo mua – tặng</button>
+                  <span className="muted" style={{ fontSize: 12 }}>Mỗi combo một bộ hàng mua và quà riêng; khách mua đủ combo nào được quà combo đó (cộng dồn).</span>
+                </div>
               </div>
             )}
             {f.type === 'order_gift' && (
               <div style={{ display: 'grid', gap: 8 }}>
-                <div className="alert alert-info" style={{ margin: 0 }}>Quà được áp dụng khi đơn đạt mức <b>Tổng giá trị đơn hàng</b> ở thẻ Thông tin chương trình ({f.minOrderTotal || '0'} đ); đủ mấy lần ngưỡng tặng mấy lần.</div>
+                <div className="alert alert-info" style={{ margin: 0 }}>Quà được áp dụng khi đơn đạt mức <b>Tổng giá trị đơn hàng</b> ở bước Thời gian & điều kiện ({f.minOrderTotal || '0'} đ); đủ mấy lần ngưỡng tặng mấy lần.</div>
                 {qtyRows('giftRows', 'Số lượng tặng', 'Thêm quà')}
               </div>
             )}
@@ -399,6 +445,8 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
             )}
           </Panel>
         </>}
+
+        <NutBuoc current={buoc} total={4} onPick={setBuoc} />
 
         {paste && (
           <div className="card card-body" style={{ display: 'grid', gap: 6 }}>

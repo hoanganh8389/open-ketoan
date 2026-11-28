@@ -152,6 +152,28 @@ describe('NT-BH-049 — form kiểu plugin cũ', () => {
     expect(back.giftRows).toHaveLength(2);
     expect(oldFromParams('sale.promo.buy_x_get_y@2', { buy: { items: [{ sku: 'A' }], mode: 'any', qty: 2 }, get: { options: [{ sku: 'Q', qty: 1 }] } }, { key: 'K', today: D0 })).toBeNull();
   });
+  // [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: nhiều combo mua – tặng (đóng góp)
+  it('NT-BH-063 — Mua X tặng Y 2 combo: combos[] + buy/get = combo 1; đọc lại; mã mua trùng giữa combo báo lỗi; combo trống bỏ qua', () => {
+    const r = oldToParams(base('bxgy', {
+      buyRows: [{ sku: 'A', ...U, qty: '2' }], giftRows: [{ sku: 'QA', ...U, qty: '1' }],
+      moreCombos: [{ buyRows: [{ sku: 'B', ...U, qty: '1' }], giftRows: [{ sku: 'QB', ...U, qty: '2' }] }, { buyRows: [{ sku: '', ...U, qty: '1' }], giftRows: [{ sku: '', ...U, qty: '1' }] }],
+    }));
+    expect(r.problems).toEqual([]);
+    expect(r.params.buy).toEqual({ items: [{ sku: 'A', qty: 2 }], mode: 'each' });
+    expect(r.params.combos).toEqual([
+      { buy: { items: [{ sku: 'A', qty: 2 }], mode: 'each' }, get: { options: [{ sku: 'QA', qty: 1 }], choose: 1 } },
+      { buy: { items: [{ sku: 'B', qty: 1 }], mode: 'each' }, get: { options: [{ sku: 'QB', qty: 2 }], choose: 1 } },
+    ]);
+    const back = oldFromParams(r.contract, r.params, { key: 'K', today: D0 })!;
+    expect(back.moreCombos.map((c) => [c.buyRows[0]!.sku, c.giftRows[0]!.qty])).toEqual([['B', '2']]);
+    expect(skusOf(r.contract, r.params)).toEqual(['A', 'B', 'QA', 'QB']);
+    const dup = oldToParams(base('bxgy', { buyRows: [{ sku: 'A', ...U, qty: '1' }], giftRows: [{ sku: 'Q', ...U, qty: '1' }],
+      moreCombos: [{ buyRows: [{ sku: 'A', ...U, qty: '3' }], giftRows: [{ sku: '', ...U, qty: '1' }] }] }));
+    expect(dup.problems.join(' ')).toContain('Mã mua A có ở cả combo 1 và combo 2');
+    expect(dup.problems.join(' ')).toContain('Combo 2 — Chưa nhập quà tặng');
+    const one = oldToParams(base('bxgy', { buyRows: [{ sku: 'A', ...U, qty: '1' }], giftRows: [{ sku: 'Q', ...U, qty: '1' }] }));
+    expect(one.params.combos).toBeUndefined();
+  });
   it('Voucher / mã giảm giá: mã khách đọc, % có trần, đơn tối thiểu, tối đa mỗi khách', () => {
     const r = oldToParams(base('voucher', { vcCodes: 'KM10, TET26', vcType: 'percent', vcValue: '10', vcMax: '50000', vcMinOrder: '200000', vcPerCustomer: '2' }));
     expect(r.problems).toEqual([]);

@@ -47,10 +47,12 @@ export function skusOf(contract: string, p: Record<string, unknown>): string[] |
     // NT-BH-049: khuôn @2 — mã của dòng / mã mua + quà / mã lẻ của phạm vi; phạm vi chỉ nhóm / nhãn (không mã lẻ) coi như cả đơn.
     case 'sale.promo.price_lines@2': return [...new Set((Array.isArray(p.lines) ? p.lines : []).flatMap(sku))];
     case 'sale.promo.buy_x_get_y@2': {
-      const b = (p.buy ?? {}) as { items?: unknown[] }, g = (p.get ?? {}) as { options?: unknown[] };
+      // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: nhiều combo — mã mua / quà của mọi combo (đóng góp)
+      type Combo = { buy?: { items?: unknown[] }; get?: { options?: unknown[] } };
+      const all: Combo[] = [{ buy: p.buy as Combo['buy'], get: p.get as Combo['get'] }, ...(Array.isArray(p.combos) ? (p.combos as Combo[]) : [])];
       const sc = list(((p.scope ?? {}) as { skus?: unknown }).skus);
-      const s = [...new Set([...(b.items ?? []).flatMap(sku), ...sc])];
-      return s.length ? [...new Set([...s, ...(g.options ?? []).flatMap(sku)])] : null;
+      const s = [...new Set([...all.flatMap((c) => (c.buy?.items ?? []).flatMap(sku)), ...sc])];
+      return s.length ? [...new Set([...s, ...all.flatMap((c) => (c.get?.options ?? []).flatMap(sku))])] : null;
     }
     case 'sale.promo.order_gift@2': { const s = list(((p.scope ?? {}) as { skus?: unknown }).skus); return s.length ? s : null; }
     case 'sale.promo.order_discount@1':
