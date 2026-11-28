@@ -236,3 +236,32 @@ describe('NT-BH-049 — mã chương trình tự sinh TGS_<MMYY>_<NN>', () => {
     expect(nextPolicyCode(['TGS_1126_05'], '2026-12-01')).toBe('TGS_1226_01');
   });
 });
+
+// [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: ô Kênh bán của BH18 ⇄ conditions.channelKinds / channels (đóng góp)
+describe('NT-BH-065 — kênh bán (online / offline)', () => {
+  const D0 = '2026-11-29';
+  const ck = (p: Partial<OldForm> = {}): OldForm => ({ ...emptyOld('ck', D0), key: 'TGS_1126_09', name: 'Thử kênh',
+    ckRows: [{ sku: 'A', unitName: '', unitRatio: '', fromQty: '1', pct: '10', amount: '', maxDiscount: '' }], ...p });
+  const cond = (f: OldForm) => (oldToParams(f).params.conditions ?? {}) as Record<string, unknown>;
+  it('Tất cả kênh (mặc định) → không điều kiện kênh; chương trình cũ không có điều kiện đọc ra Tất cả', () => {
+    expect(cond(ck()).channelKinds).toBeUndefined();
+    expect(cond(ck()).channels).toBeUndefined();
+    const r = oldToParams(ck());
+    expect(oldFromParams(r.contract, { ...r.params, conditions: undefined }, { key: 'X', today: D0 })!.channelMode).toBe('all');
+  });
+  it('Chỉ offline / Chỉ online → channelKinds; đọc lại đúng', () => {
+    for (const mode of ['offline', 'online'] as const) {
+      const r = oldToParams(ck({ channelMode: mode }));
+      expect(r.problems).toEqual([]);
+      expect((r.params.conditions as Record<string, unknown>).channelKinds).toEqual([mode]);
+      expect(oldFromParams(r.contract, r.params, { key: 'X', today: D0 })!.channelMode).toBe(mode);
+    }
+  });
+  it('Chọn kênh → channels (bỏ trùng); chưa tích kênh nào → báo lỗi', () => {
+    const r = oldToParams(ck({ channelMode: 'pick', channels: ['ZALO', 'FACEBOOK', 'ZALO'] }));
+    expect((r.params.conditions as Record<string, unknown>).channels).toEqual(['ZALO', 'FACEBOOK']);
+    const back = oldFromParams(r.contract, r.params, { key: 'X', today: D0 })!;
+    expect([back.channelMode, back.channels]).toEqual(['pick', ['ZALO', 'FACEBOOK']]);
+    expect(oldToParams(ck({ channelMode: 'pick', channels: [] })).problems.join(' ')).toContain('chưa tích kênh bán nào');
+  });
+});

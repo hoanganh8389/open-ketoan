@@ -63,6 +63,9 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   const units = useQuery({ queryKey: ['km', 'dvt', allSkus.join(',')], enabled: allSkus.length > 0, staleTime: 60_000,
     queryFn: () => api.get<Record<string, Unit[]>>('/api/v1/purchase/units', { skus: allSkus.join(',') }) });
   const branches = useQuery({ queryKey: ['km', 'branches'], queryFn: () => api.get<Branch[]>('/api/v1/branches'), staleTime: 300_000 });
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: danh sách kênh bán (Kênh bán hàng) cho ô "Chọn kênh" (đóng góp)
+  const channelList = useQuery({ queryKey: ['pos-kenh-ban'], staleTime: 300_000,
+    queryFn: () => api.get<{ items: { code: string; name: string; kind: 'online' | 'offline'; active: boolean }[] }>(`${M}/channels`) });
   const groups = useQuery({ queryKey: ['km', 'item-classes', 'group'], queryFn: () => api.get<ItemClass[]>('/api/v1/item-classes/group'), staleTime: 300_000 });
   const tiers = useQuery({ queryKey: ['km', 'hang'], retry: false, staleTime: 300_000,
     queryFn: () => api.get<{ tiers?: { key: string; name: string }[]; content?: { tiers?: { key: string; name: string }[] } }>('/api/v1/m/loyalty/program') });
@@ -199,7 +202,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
       <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 12 }}>
         <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
           { label: 'Thông tin chung', warn: out.problems.some((x) => /Mã chương trình|tên chương trình/i.test(x)) },
-          { label: 'Thời gian & điều kiện', warn: out.problems.some((x) => /ngày|giờ|Tổng giá trị|đơn hàng được áp/i.test(x)) },
+          { label: 'Thời gian & điều kiện', warn: out.problems.some((x) => /ngày|giờ|Tổng giá trị|đơn hàng được áp|kênh/i.test(x)) }, // NT-BH-065: ô Kênh bán ở bước 2
           { label: 'Đối tượng áp dụng', warn: out.problems.some((x) => /cửa hàng|mỗi khách|hạng/i.test(x)) },
           { label: 'Hàng & quà', warn: out.problems.some((x) => /SKU|mã|quà|Pool|giá|chiết khấu|Hàng mua|Combo/i.test(x)) },
         ]} />
@@ -266,11 +269,29 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
           </div>
 
           <Panel title="Chỉ áp dụng cho những đơn hàng thỏa mãn điều kiện">
+            {f.channelMode === 'pick' && (
+              <div className="row" role="group" aria-label="Chọn kênh bán" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+                <span className="muted">Kênh được áp:</span>
+                {(channelList.data?.items ?? []).filter((c) => c.active || f.channels.includes(c.code)).map((c) => (
+                  <Check key={c.code} label={`${c.name} (${c.kind === 'online' ? 'online' : 'offline'})`} checked={f.channels.includes(c.code)}
+                    onChange={(v) => set({ channels: v ? [...f.channels, c.code] : f.channels.filter((x) => x !== c.code) })} />
+                ))}
+                {channelList.isLoading && <span className="muted">Đang tải kênh bán…</span>}
+              </div>
+            )}
             <div className="row" style={{ gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
               <b>Áp dụng cho</b>
               <Check label="Hóa đơn bán lẻ" checked={f.retail} onChange={(v) => set({ retail: v })} title="Máy bán POS, phiếu bán lẻ" />
               <Check label="Hóa đơn bán buôn" checked={f.wholesale} onChange={(v) => set({ wholesale: v })} />
               <Check label="Đơn đặt hàng (SO)" checked={f.so} onChange={(v) => set({ so: v })} />
+              <b title="Loại kênh theo màn Kênh bán hàng (online / offline); đơn không xác định được kênh thì chương trình có điều kiện kênh không áp">Kênh bán</b>
+              <select className="input" style={{ width: 170 }} aria-label="Kênh bán" value={f.channelMode}
+                onChange={(e) => set({ channelMode: e.target.value as OldForm['channelMode'] })}>
+                <option value="all">Tất cả kênh</option>
+                <option value="offline">Chỉ offline (tại cửa hàng)</option>
+                <option value="online">Chỉ online</option>
+                <option value="pick">Chọn kênh…</option>
+              </select>
               <span>{f.type === 'order_gift' ? 'Tổng giá trị đơn hàng ≥ (ngưỡng tặng quà)' : 'Tổng giá trị đơn hàng ≥'}</span>{inp(f.minOrderTotal, (v) => set({ minOrderTotal: v }), { w: 150, right: true })}
               <span title="Mỗi cửa hàng tối đa bao nhiêu đơn được áp; 0 = không giới hạn">Số lượng đơn hàng được áp dụng</span>{inp(f.maxUsage, (v) => set({ maxUsage: v }), { w: 110, right: true, title: 'Mỗi cửa hàng; 0 = không giới hạn' })}
             </div>
@@ -490,7 +511,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
 /** Đổi loại giữ lại phần "Thông tin chương trình" đã nhập. */
 function pickInfo(f: OldForm): Partial<OldForm> {
   const { key, name, description, allowStack, dateOn, validFrom, validTo, timeOn, timeFrom, timeTo, weekdaysOn, weekdays, retail, wholesale, so, minOrderTotal, maxUsage,
-    memberLevels, birthday, branchCodes, effectiveFrom, priority, legalCapPct, noCap, perCustomer } = f;
+    memberLevels, birthday, branchCodes, effectiveFrom, priority, legalCapPct, noCap, perCustomer, channelMode, channels } = f;
   return { key, name, description, allowStack, dateOn, validFrom, validTo, timeOn, timeFrom, timeTo, weekdaysOn, weekdays, retail, wholesale, so, minOrderTotal, maxUsage,
-    memberLevels, birthday, branchCodes, effectiveFrom, priority, legalCapPct, noCap, perCustomer };
+    memberLevels, birthday, branchCodes, effectiveFrom, priority, legalCapPct, noCap, perCustomer, channelMode, channels };
 }

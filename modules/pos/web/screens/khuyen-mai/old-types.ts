@@ -50,6 +50,9 @@ export type OldForm = {
   timeOn: boolean; timeFrom: string; timeTo: string;
   weekdaysOn: boolean; weekdays: number[];
   retail: boolean; wholesale: boolean; so: boolean;
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: kênh bán — Tất cả / Chỉ offline / Chỉ online / Chọn kênh (đóng góp)
+  /** Kênh bán được áp: all = mọi kênh; offline / online = theo loại kênh (Kênh bán hàng); pick = các mã trong `channels`. */
+  channelMode: 'all' | 'offline' | 'online' | 'pick'; channels: string[];
   /** Tổng giá trị đơn hàng ≥ (loại quà theo giá trị đơn: ngưỡng tặng). */
   minOrderTotal: string;
   /** Số lượng đơn hàng được áp dụng — mỗi cửa hàng (0 / trống = không giới hạn). */
@@ -108,7 +111,7 @@ export function emptyOld(type: OldType, today: string): OldForm {
   return {
     type, key: '', name: '', description: '', allowStack: false,
     dateOn: false, validFrom: today, validTo: '', timeOn: false, timeFrom: '', timeTo: '', weekdaysOn: false, weekdays: [],
-    retail: true, wholesale: false, so: false, minOrderTotal: '0', maxUsage: '0', memberLevels: '', birthday: '', branchCodes: [],
+    retail: true, wholesale: false, so: false, channelMode: 'all', channels: [], minOrderTotal: '0', maxUsage: '0', memberLevels: '', birthday: '', branchCodes: [],
     scopeMode: 'all', groupCodes: [],
     ckRows: rows5(emptyCk), fixedRows: rows5(emptyFixed), buyRows: [emptyQty()], giftRows: [emptyQty()], moreCombos: [],
     vcCodes: '', vcType: 'percent', vcValue: '', vcMax: '', vcMinOrder: '', vcPerCustomer: '1',
@@ -144,6 +147,7 @@ export function oldToParams(f: OldForm): { contract: string; params: Params; quo
   const types = [f.retail && 'retail', f.wholesale && 'wholesale', f.so && 'so'].filter(Boolean) as string[];
   if (!types.length) problems.push('Chọn ít nhất một loại đơn được áp (bán lẻ / bán buôn / SO)');
   else if (types.length < 3) c.orderTypes = types;
+  Object.assign(c, channelParams(f, problems));
   const minOrder = opt(f.minOrderTotal);
   if (minOrder !== undefined && (Number.isNaN(minOrder) || minOrder < 0)) problems.push('Tổng giá trị đơn hàng: số ≥ 0');
   if (f.type !== 'order_gift' && minOrder && minOrder > 0) c.minOrderAmount = minOrder;
@@ -331,6 +335,7 @@ export function oldFromParams(contract: string, p: Params, meta: { key: string; 
     timeOn: Boolean(cond.timeFrom || cond.timeTo), timeFrom: s(cond.timeFrom), timeTo: s(cond.timeTo),
     weekdaysOn: Boolean((cond.weekdays as number[] | undefined)?.length), weekdays: (cond.weekdays as number[] | undefined) ?? [],
     retail: types.includes('retail'), wholesale: types.includes('wholesale'), so: types.includes('so'),
+    ...channelForm(cond),
     minOrderTotal: s(cond.minOrderAmount ?? 0), maxUsage: s(meta.quota?.perBranch ?? 0), perCustomer: s(meta.quota?.perCustomer ?? ''),
     memberLevels: ((cond.memberLevels as string[] | undefined) ?? []).join(', '),
     birthday: cond.birthdayMonth ? 'month' : ((cond.birthdayScope as OldForm['birthday'] | undefined) ?? ''),
@@ -412,4 +417,25 @@ export function nextPolicyCode(keys: readonly string[], today: string): string {
   const re = new RegExp(`^TGS_${mmyy}_([0-9]+)$`, 'i');
   const max = keys.reduce((m, k) => { const x = re.exec(k.trim()); return x ? Math.max(m, Number(x[1])) : m; }, 0);
   return `TGS_${mmyy}_${String(max + 1).padStart(2, '0')}`;
+}
+
+// [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: điều kiện kênh bán ⇄ form (chương trình cũ không có điều kiện = Tất cả) (đóng góp)
+/** Form → `conditions.channelKinds` / `conditions.channels`. Chọn kênh mà không chọn mã nào → báo lỗi. */
+export function channelParams(f: Pick<OldForm, 'channelMode' | 'channels'>, problems: string[]): { channelKinds?: string[]; channels?: string[] } {
+  if (f.channelMode === 'offline' || f.channelMode === 'online') return { channelKinds: [f.channelMode] };
+  if (f.channelMode === 'pick') {
+    const codes = [...new Set(f.channels.map((x) => x.trim()).filter(Boolean))];
+    if (!codes.length) { problems.push('Đã chọn "Chọn kênh" nhưng chưa tích kênh bán nào'); return {}; }
+    return { channels: codes };
+  }
+  return {};
+}
+
+/** `conditions` → ô kênh bán của form. */
+export function channelForm(cond: Record<string, unknown>): Pick<OldForm, 'channelMode' | 'channels'> {
+  const codes = (cond.channels as string[] | undefined) ?? [];
+  if (codes.length) return { channelMode: 'pick', channels: codes };
+  const kinds = (cond.channelKinds as string[] | undefined) ?? [];
+  if (kinds.length === 1 && (kinds[0] === 'online' || kinds[0] === 'offline')) return { channelMode: kinds[0], channels: [] };
+  return { channelMode: 'all', channels: [] };
 }
