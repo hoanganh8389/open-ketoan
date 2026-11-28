@@ -8,9 +8,8 @@
  * Máy chủ trả mọi lỗi một lần, tô đỏ đúng ô (đường dẫn policies.0.…, target).
  */
 import { useMemo, useState, type ReactNode } from 'react';
-import { Modal, errorText, useApi, useCan, useMutation, useQuery } from '@bizcity/ui-kit';
+import { FormPage, errorText, useApi, useCan, useMutation, useQuery } from '@bizcity/ui-kit';
 import { ApDungCho } from './ApDungCho';
-import { NutBuoc, ThanhBuoc } from './ThanhBuoc';
 import { Err } from './parts';
 import {
   EARN_TYPES, M, PERM, REDEEM_TYPES, TYPE_HINT, TYPE_LABEL, arr, dayToStart, endToStopDay, fieldErrorsOf, newPolicy, rec, startToDay, stopDayToEnd,
@@ -204,24 +203,23 @@ export function ChuongTrinhModal({ initial, target, isNew, published, group, bra
   const word = group === 'earn' ? 'chương trình tích điểm' : 'danh mục đổi điểm';
 
   return (
-    <Modal wide title={<span>{isNew ? `Thêm ${word}` : `Sửa ${word}`}{p.code.trim() ? ` ${p.code.trim()}` : ''} <span className="badge badge-info">{TYPE_LABEL[p.type]}</span></span>} onClose={close}
-      footer={<div className="row" style={{ gap: 8, width: '100%', alignItems: 'center' }}>
-        <span className="muted" style={{ flex: 1, fontSize: 12.5 }}>
+    // [2026-11-29 05:20 PM Võ Hoàng] NGHIEM-THU — NT-BH-066: form trong trang (FormPage dùng chung — như MH29), bỏ hộp thoại; nút ở đầu trang (đóng góp)
+    <FormPage title={<span>{isNew ? `Thêm ${word}` : `Sửa ${word}`}{p.code.trim() ? ` ${p.code.trim()}` : ''} <span className="badge badge-info">{TYPE_LABEL[p.type]}</span></span>} onBack={close}
+      actions={<><button type="button" className="btn" disabled={problems.length > 0 || save.isPending} title={problems.join('; ') || 'Ghi bản nháp — chưa áp ở máy bán'} onClick={() => save.mutate('draft')}>Ghi</button>
+        <button type="button" className="btn" disabled={problems.length > 0 || save.isPending} title={problems.join('; ') || 'Ghi và gửi người có quyền duyệt'} onClick={() => save.mutate('submit')}>Gửi duyệt</button>
+        {approver && <button type="button" className="btn btn-primary" disabled={problems.length > 0 || save.isPending} title={problems.join('; ') || 'Ghi, duyệt và phát hành ngay — máy bán tính từ đơn kế tiếp'} onClick={() => save.mutate('approve')}>Duyệt (phát hành)</button>}
+        <button type="button" className="btn" onClick={close}>Thoát</button></>}
+      note={<span className="muted" style={{ fontSize: 12.5 }}>
           {save.error ? <span style={{ color: 'var(--bad, #dc2626)' }}>{errorText(save.error)}</span>
             : problems.length ? `Chưa lưu được: ${problems.slice(0, 3).join(' · ')}${problems.length > 3 ? ` (+${problems.length - 3})` : ''}`
               : approver ? 'Ghi = nháp · Gửi duyệt = chờ người duyệt · Duyệt = phát hành ngay cho các cửa hàng đã chọn.' : 'Ghi = nháp · Gửi duyệt = chờ người có quyền Duyệt chính sách tích điểm.'}
-        </span>
-        <button type="button" className="btn" disabled={problems.length > 0 || save.isPending} title={problems.join('; ') || 'Ghi bản nháp — chưa áp ở máy bán'} onClick={() => save.mutate('draft')}>Ghi</button>
-        <button type="button" className="btn" disabled={problems.length > 0 || save.isPending} title={problems.join('; ') || 'Ghi và gửi người có quyền duyệt'} onClick={() => save.mutate('submit')}>Gửi duyệt</button>
-        {approver && <button type="button" className="btn btn-primary" disabled={problems.length > 0 || save.isPending} title={problems.join('; ') || 'Ghi, duyệt và phát hành ngay — máy bán tính từ đơn kế tiếp'} onClick={() => save.mutate('approve')}>Duyệt (phát hành)</button>}
-        <button type="button" className="btn" onClick={close}>Thoát</button>
-      </div>}>
-      <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 12 }}>
-        <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
+        </span>}
+      current={buoc} onStep={setBuoc} steps={[
           { label: 'Loại & thông tin chung', warn: Object.keys(errs).some((k) => /\.(code|title)$/.test(k)) || problems.some((x) => /tên chương trình|mã chương trình/i.test(x)) },
           { label: 'Thời gian & áp dụng cho', warn: infoBad && !Object.keys(errs).some((k) => /\.(code|title)$/.test(k)) },
           { label: group === 'earn' ? 'Cách tính điểm' : 'Phần thưởng đổi điểm', warn: rulesBad },
-        ]} />
+        ]}>
+      <div style={{ display: 'grid', gap: 12 }}>
 
         {buoc === 0 && <>
           <div style={{ display: 'grid', gap: 6 }}>
@@ -323,8 +321,7 @@ export function ChuongTrinhModal({ initial, target, isNew, published, group, bra
           )}
         </>}
 
-        <NutBuoc current={buoc} total={3} onPick={setBuoc} />
       </div>
-    </Modal>
+    </FormPage>
   );
 }

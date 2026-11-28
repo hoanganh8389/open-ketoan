@@ -4,8 +4,8 @@
  * Trạng thái (Nháp / Chờ duyệt / Đang áp / Ngừng). Thanh nút: + Thêm (mã tự sinh) · Sửa · Nhân bản · Duyệt chờ (n). Bấm đúp một dòng = Sửa.
  * Nút ẩn theo quyền (useCan), máy chủ vẫn chặn (Q-CHUNG-01).
  */
-import { useState } from 'react';
-import { DataGrid, ErrorBox, Loading, errorText, useApi, useCan, useQuery, useQueryClient, type GridColumn } from '@bizcity/ui-kit';
+import { useEffect, useRef, useState } from 'react';
+import { DataGrid, ErrorBox, Loading, errorText, useApi, useCan, useFormParam, useQuery, useQueryClient, type GridColumn } from '@bizcity/ui-kit';
 import { ChuongTrinhModal } from './ChuongTrinhModal';
 import { DuyetModal } from './DuyetModal';
 import {
@@ -21,7 +21,10 @@ export function ChuongTrinhTab({ group, ov, onNext }: { group: 'earn' | 'redeem'
   const can = useCan();
   const qc = useQueryClient();
   const [pick, setPick] = useState<OvPolicy | null>(null);
-  const [open, setOpen] = useState<Open | null>(null);
+  const [open, setOpenState] = useState<Open | null>(null);
+  // [2026-11-29 05:20 PM Võ Hoàng] NGHIEM-THU — NT-BH-066: Thêm / Sửa mở form ngay trên màn (như MH29); ?ct=<mã> | ?ct=moi để tải lại / Back của trình duyệt (đóng góp)
+  const [ct, setCt] = useFormParam('ct');
+  const setOpen = (x: Open | null) => { setOpenState(x); setCt(x ? (x.isNew ? 'moi' : x.initial.code) : null); };
   const [duyet, setDuyet] = useState(false);
   const [msg, setMsg] = useState('');
   const types: readonly number[] = group === 'earn' ? EARN_TYPES : REDEEM_TYPES;
@@ -67,9 +70,27 @@ export function ChuongTrinhTab({ group, ov, onNext }: { group: 'earn' | 'redeem'
       render: (p) => <span className={STATE_BADGE[p.state].cls} title={`${STATE_BADGE[p.state].tip}\n${p.uses.map((u) => `${u.branchCode}: ${STATE_BADGE[u.state].label}`).join('\n')}`}>{STATE_BADGE[p.state].label}</span>,
     },
   ];
+  // Back (URL hết ?ct) → về danh sách; tải lại khi đang mở form → mở lại đúng chương trình.
+  const reopened = useRef(false);
+  useEffect(() => {
+    if (!ct) { if (open) setOpenState(null); return; }
+    if (open || reopened.current) return;
+    reopened.current = true;
+    if (!canAdd) return setCt(null);
+    if (ct === 'moi') return add();
+    const p = rows.find((x) => x.code === ct);
+    if (p) edit(p); else setCt(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi URL đổi
+  }, [ct]);
   const word = group === 'earn' ? 'chương trình tích điểm' : 'danh mục đổi điểm';
   const pendingN = pending.data?.items.length ?? ov.pending;
 
+  if (open) {
+    return (
+      <ChuongTrinhModal {...open} group={group} branches={ov.branches} tiers={tiers} tierOn={Boolean(cfg?.settings?.enableTierMultiplier)}
+        onClose={() => setOpen(null)} onDone={(m) => { setOpen(null); setPick(null); setMsg(m); refresh(); }} />
+    );
+  }
   return (
     <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'minmax(0, 1fr)' }}>
       <section className="card">
@@ -98,10 +119,6 @@ export function ChuongTrinhTab({ group, ov, onNext }: { group: 'earn' | 'redeem'
           <DataGrid rows={rows} columns={cols} rowKey={(p) => p.code} storageKey={`loyalty.ct.${group}`} exportName={group === 'earn' ? 'chuong-trinh-tich-diem' : 'danh-muc-doi-diem'}
             onRowClick={setPick} onRowDoubleClick={(p) => { setPick(p); if (canAdd) edit(p); }} rowClassName={(p) => (pick?.code === p.code ? 'selected' : p.state === 'stopped' ? 'muted' : '')} footerLabel={false} />
         </section>
-      )}
-      {open && (
-        <ChuongTrinhModal {...open} group={group} branches={ov.branches} tiers={tiers} tierOn={Boolean(cfg?.settings?.enableTierMultiplier)}
-          onClose={() => setOpen(null)} onDone={(m) => { setOpen(null); setPick(null); setMsg(m); refresh(); }} />
       )}
       {duyet && <DuyetModal kind="program" items={pending.data?.items ?? []} onClose={() => setDuyet(false)} onDone={(m) => { setDuyet(false); setMsg(m); refresh(); }} />}
     </div>
