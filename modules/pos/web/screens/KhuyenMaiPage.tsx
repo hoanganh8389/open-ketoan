@@ -9,8 +9,8 @@
 // [2026-11-14 01:20 AM Võ Hoàng] NGHIEM-THU — NT-BH-016: màn Khuyến mại BH18 (đóng góp)
 // [2026-11-15 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-018: gộp BH12 vào BH18 thành một màn Chương trình khuyến mại (đóng góp)
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: Thêm / Sửa lưu nháp → duyệt → phát hành; thẻ Nháp / chờ duyệt, Báo cáo khuyến mại; ngừng ghi nhật ký (đóng góp)
-import { useMemo, useState } from 'react';
-import { BranchPicker, DataGrid, ErrorBox, Field, Loading, Modal, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient, type GridColumn } from '@bizcity/ui-kit';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { BranchPicker, DataGrid, ErrorBox, Field, Loading, Modal, PageHeader, errorText, useApi, useCan, useFormParam, useMutation, useQuery, useQueryClient, type GridColumn } from '@bizcity/ui-kit';
 import { Badge, M, vnd } from '../lib';
 import { DraftsTab, PromoReportTab, draftToForm } from './khuyen-mai/Drafts';
 import { HanMucForm } from './khuyen-mai/HanMucForm';
@@ -84,7 +84,11 @@ export function KhuyenMaiPage() {
   const cur = useQuery({ queryKey: ['km', 'current'], queryFn: () => api.get<{ items: PolicyView[] }>('/api/v1/policies', { domain: 'sale' }) });
   const [pick, setPick] = useState<Row | null>(null);
   const [form, setForm] = useState<{ f: Form; editing: boolean; draftId?: string } | null>(null);
-  const [oldForm, setOldForm] = useState<{ f: OldForm; editing: boolean; draftId?: string } | null>(null);
+  const [oldForm, setOldFormState] = useState<{ f: OldForm; editing: boolean; draftId?: string } | null>(null);
+  // [2026-11-29 04:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-066: Thêm / mở chương trình → form ngay trên màn (như MH29), URL ?ct=<mã> | ?ct=moi để tải lại /
+  // Back của trình duyệt về danh sách (đóng góp)
+  const [ct, setCt] = useFormParam('ct');
+  const setOldForm = (x: { f: OldForm; editing: boolean; draftId?: string } | null) => { setOldFormState(x); setCt(x ? x.f.key.trim() || 'moi' : null); };
   const [chooseKind, setChooseKind] = useState(false);
   const [trial, setTrial] = useState<string[] | null>(null);
   const [stopOf, setStopOf] = useState<Row | null>(null);
@@ -154,6 +158,17 @@ export function KhuyenMaiPage() {
     },
     onSuccess: (x) => (x.old ? setOldForm({ f: x.old, editing: false }) : setForm({ f: x.f!, editing: false })),
   });
+  // Back của trình duyệt (URL hết ?ct) → về danh sách; tải lại trang đang mở form → mở lại đúng chương trình.
+  const reopened = useRef(false);
+  useEffect(() => {
+    if (!ct) { if (oldForm) setOldFormState(null); return; }
+    if (oldForm || reopened.current || !reg.data || !cur.data) return;
+    reopened.current = true;
+    if (ct === 'moi') { if (writable) void addNew(); else setCt(null); return; }
+    const r = rows.find((x) => x.key === ct);
+    if (r && writable) edit.mutate(r); else setCt(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi URL / dữ liệu đổi
+  }, [ct, reg.data, cur.data]);
   const stop = useMutation({
     mutationFn: async ({ r, from }: { r: Row; from: string }) => {
       const p = await loadParams(r);
@@ -168,6 +183,15 @@ export function KhuyenMaiPage() {
   if (reg.isLoading || cur.isLoading) return <Loading />;
   if (reg.error || cur.error) return <ErrorBox error={errorText(reg.error ?? cur.error)} />;
   const canAdd = writable || quotaWritable;
+  if (oldForm) {
+    return (
+      <div>
+        <PageHeader title="Chương trình khuyến mại" code="BH18" />
+        <PolicyForm initial={oldForm.f} editing={oldForm.editing} {...(oldForm.draftId ? { draftId: oldForm.draftId } : {})} onClose={() => setOldForm(null)}
+          onDone={(m) => { setOldForm(null); setMsg(m); setTab('nhap'); void refresh(); }} />
+      </div>
+    );
+  }
   return (
     <div>
       <PageHeader title="Chương trình khuyến mại" code="BH18" subtitle="Mọi ưu đãi bán hàng ở một chỗ — máy bán và phiếu bán áp tự động, Core tính chung. Khuyến mại theo đơn / nhóm hàng (6 loại) và chương trình tặng hàng / giảm giá có hạn mức từng cửa hàng." />
@@ -232,8 +256,6 @@ export function KhuyenMaiPage() {
         <HanMucForm key={quotaForm.program?.id ?? `new-${quotaForm.mode}`} program={quotaForm.program} mode={quotaForm.mode} today={d0} writable={quotaWritable}
           onClose={() => setQuotaForm(null)} onDone={(code) => { setQuotaForm(null); setMsg(`Đã lưu chương trình ${code}.`); void refresh(); }} />
       )}
-      {oldForm && <PolicyForm initial={oldForm.f} editing={oldForm.editing} {...(oldForm.draftId ? { draftId: oldForm.draftId } : {})} onClose={() => setOldForm(null)}
-        onDone={(m) => { setOldForm(null); setMsg(m); setTab('nhap'); void refresh(); }} />}
       {form && <KmForm initial={form.f} editing={form.editing} {...(form.draftId ? { draftId: form.draftId } : {})} onClose={() => setForm(null)}
         onDone={(m) => { setForm(null); setMsg(m); setTab('nhap'); void refresh(); }} />}
       {stopOf && <StopDialog row={stopOf} pending={stop.isPending} error={stop.error ? errorText(stop.error) : ''} onClose={() => setStopOf(null)} onStop={(from) => stop.mutate({ r: stopOf, from })} />}
