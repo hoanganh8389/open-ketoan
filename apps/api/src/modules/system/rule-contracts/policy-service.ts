@@ -85,6 +85,8 @@ export interface EvaluateRequest {
   giftChoice?: Record<string, string[]>;
   /** Loại đơn: retail (bán lẻ, mặc định máy bán), wholesale (bán sỉ), so (đơn đặt hàng). */
   orderType?: string;
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: loại của kênh bán (`channel`) do nguồn bán tra ở danh mục kênh — online / offline (đóng góp)
+  channelKind?: 'online' | 'offline';
 }
 
 /**
@@ -126,7 +128,7 @@ export async function evaluatePolicies(trx: Db, tenantId: string, req: EvaluateR
     }
   }
   // [2026-11-13 10:20 AM Võ Hoàng] POS-KM2 — 00 §18 mục 3: thứ tự theo ưu tiên (lớn trước) rồi mã; chương trình áp riêng giữ các dòng nó đã dùng.
-  const context = { docDate: req.docDate, ...(req.at ? { at: req.at } : {}), ...(req.customer ? { customer: req.customer } : {}), ...(req.coupons ? { coupons: req.coupons } : {}), ...(req.orderType ? { orderType: req.orderType } : {}) };
+  const context = { docDate: req.docDate, ...(req.at ? { at: req.at } : {}), ...(req.customer ? { customer: req.customer } : {}), ...(req.coupons ? { coupons: req.coupons } : {}), ...(req.orderType ? { orderType: req.orderType } : {}), ...(req.channel ? { channel: req.channel } : {}), ...(req.channelKind ? { channelKind: req.channelKind } : {}) };
   // NT-BH-049: chương trình @2 có phạm vi nhóm / nhãn → điền nhóm / nhãn của dòng trước khi tính.
   const needClasses = items.some((i) => i.ruleContract.endsWith('@2') && i.params && typeof i.params === 'object'
     && (((i.params as { scope?: { groupCodes?: unknown[]; brandCodes?: unknown[] } }).scope?.groupCodes?.length ?? 0) + ((i.params as { scope?: { brandCodes?: unknown[] } }).scope?.brandCodes?.length ?? 0)) > 0);
