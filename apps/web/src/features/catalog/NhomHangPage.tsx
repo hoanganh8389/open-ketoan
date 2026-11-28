@@ -284,7 +284,9 @@ export function NhomForm({ ix, list, form, onClose, onSaved }: { ix: NhomIndex; 
     const con = old ? (ix.kids.get(old.code) ?? []).find((x) => nn(x.name) === nn(ten)) : undefined;
     return con ? { x: con, la: 'nhóm con' } : undefined;
   })();
-  const loiTen = trungTen ? `Tên ngành trùng ${trungTen.la} "${ix.path(trungTen.x.code)}" — đặt tên khác` : '';
+  // [2026-11-28 08:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-062: tên ô theo cấp đang thêm / sửa: Tên ngành (cấp 1), Tên nhãn (cấp 2), Tên nhóm (cấp 3 trở xuống) (đóng góp)
+  const tenO = lv === 1 ? 'Tên ngành' : lv === 2 ? 'Tên nhãn' : 'Tên nhóm';
+  const loiTen = trungTen ? `${tenO} trùng ${trungTen.la} "${ix.path(trungTen.x.code)}" — đặt tên khác` : '';
   const ghi = () => { const e = !ten.trim() ? 'Nhập tên ngành' : loiTen || loiMa; setErr(e); if (!e) save.mutate(); };
 
   return (
@@ -297,7 +299,7 @@ export function NhomForm({ ix, list, form, onClose, onSaved }: { ix: NhomIndex; 
             <span className="badge">Cấp {lv}</span>
           </div>
         </Field>
-        <Field label="Tên ngành (*)" tip="Tên hiện trên cây, vd Bỉm/ Tã quần trẻ em — không trùng nhóm cùng cấp, nhóm cha">
+        <Field label={`${tenO} (*)`} tip="Tên hiện trên cây, vd Bỉm/ Tã quần trẻ em — không trùng nhóm cùng cấp, nhóm cha">
           <input className="input" value={ten} autoFocus onFocus={(e) => e.target.select()} onChange={(e) => { setTen(e.target.value); setErr(''); }} />
           {loiTen && <div className="neg" style={{ fontSize: 12.5, marginTop: 3, fontWeight: 600 }}>{loiTen}</div>}
         </Field>
