@@ -5,7 +5,7 @@
   "kind": "app",
   "version": "0.2.0",
   "label": "Website bán hàng TGS (WordPress)",
-  "description": "Nhận sự kiện của máy bán POS (module pos) và phiếu bán / trả kế toán lập (module phieu-ban, NT-BH-017) để ghi BẢN SAO chứng từ vào local_ledger của từng shop WordPress (báo cáo shop, tồn, hoá đơn điện tử, báo cáo thuế vẫn đọc như cũ). Kế toán là nơi ghi duy nhất; WP chỉ nhận bản sao một chiều (D17). Nhận thêm sự kiện danh mục hàng đổi để website kéo danh mục về ngay (NT-BH-062).",
+  "description": "Nhận sự kiện của máy bán POS, phiếu bán / trả kế toán lập và đổi danh mục hàng để website TGS ghi bản sao chứng từ vào local_ledger từng shop và kéo danh mục về ngay. Kế toán là nơi ghi duy nhất; website chỉ nhận một chiều (D17).",
   "owners": ["@hoanganh8389"],
   "standard": "^1.0",
   "requires": { "capabilities": [] },

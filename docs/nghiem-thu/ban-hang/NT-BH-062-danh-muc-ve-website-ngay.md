@@ -20,7 +20,7 @@ chờ ở ACC14. Website TGS nối với kế toán qua app `tgs-wp` (webhook) �
 
 ## 2. Khai báo trước
 - Đơn vị đã kết nối app "Website bán hàng TGS (WordPress)" (`tgs-wp`), webhook trỏ tới website (`APP_WEBHOOK_URL_TGS_WP`).
-- Kết nối có từ trước bản này (app 0.1.0): chủ đơn vị bấm **Đồng ý lại** ở màn Ứng dụng (POST /api/v1/apps/tgs-wp/scope) để kết
+- Kết nối có từ trước bản này (app 0.1.0): chủ đơn vị bấm **Đồng ý lại** ở màn Ứng dụng (POST /api/v1/apps/:key/scope, key = tgs-wp) để kết
   nối nhận thêm loại sự kiện mới. Chưa đồng ý lại thì vẫn chạy như cũ (chờ lịch 5 phút), không lỗi.
 - Website: cầu nối open-ketoan-bridge bản có xử lý sự kiện danh mục đổi (`TGS_Acc_Ketoan_Events`).
 
@@ -36,8 +36,8 @@ chờ ở ACC14. Website TGS nối với kế toán qua app `tgs-wp` (webhook) �
 | Ca | Điều kiện | Thao tác |
 |---|---|---|
 | 1 | — | đọc manifest app `tgs-wp` |
-| 2 | đơn vị chưa kết nối app | PUT /api/v1/products/NT062-… |
-| 3 | đã kết nối app (0.2.0) | PUT /api/v1/products/NT062-… |
+| 2 | đơn vị chưa kết nối app | PUT /api/v1/products/:sku (mã NT062-…) |
+| 3 | đã kết nối app (0.2.0) | PUT /api/v1/products/:sku (mã NT062-…) |
 | 4 | kết nối cũ chưa có loại sự kiện này | đổi danh mục; rồi đồng ý lại; đổi danh mục lần nữa |
 
 ## 5. Kết quả mong đợi
