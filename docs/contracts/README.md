@@ -11,6 +11,9 @@ Hợp đồng = thoả thuận có phiên bản giữa lõi và bên dùng (phâ
 
 ### Standard v1: hợp đồng module phải tuân ([../standard/README.md](../standard/README.md))
 
+<!-- [2026-11-28 03:44 PM Johnny Chu - Chu Hoàng Anh] FLOW — NC-004 D1 / D2 -->
+> **Bản chủ ở open-platform (2026-11-28):** DOCUMENT, LINEAGE, MCP, SECRETS, SITE-PROVISIONING, API, EVENT, EVIDENCE, AUTHORIZATION, SETTINGS-MATRIX, MASTER-DATA, ITEM-MASTER, FINDINGS, REMEDY, POLICY — xem [bản đồ chuẩn của bizcity-platform](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/README.md). Tệp ở đây là bản chép cho bộ kiểm; sửa ở bizcity-platform trước. ACTION, ERRORS, MODULE, EXTENSION, DATA dời sau khi dòng giữ chỗ đang sửa chúng trả chỗ. Văn bản nghiệp vụ kế toán (LEDGER-INTAKE, POSTING-*, PRESET, INVENTORY, INTAKE-FINDINGS, COMPLIANCE, COMBO) ở lại đây.
+
 | # | Mã | Tệp | Trạng thái |
 |---|---|---|---|
 | 1 | `bizcity_module@1` | [BIZCITY-MODULE-v1.md](BIZCITY-MODULE-v1.md) · [schema](BIZCITY-MODULE-v1.schema.json) | Đề xuất |
