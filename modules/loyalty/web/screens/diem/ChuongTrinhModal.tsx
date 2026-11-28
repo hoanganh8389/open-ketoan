@@ -10,6 +10,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Modal, errorText, useApi, useCan, useMutation, useQuery } from '@bizcity/ui-kit';
 import { ApDungCho } from './ApDungCho';
+import { NutBuoc, ThanhBuoc } from './ThanhBuoc';
 import { Err } from './parts';
 import {
   EARN_TYPES, M, PERM, REDEEM_TYPES, TYPE_HINT, TYPE_LABEL, arr, dayToStart, endToStopDay, fieldErrorsOf, newPolicy, rec, startToDay, stopDayToEnd,
@@ -43,7 +44,8 @@ export function ChuongTrinhModal({ initial, target, isNew, published, group, bra
   const can = useCan();
   const [p, setP] = useState<Policy>(initial);
   const [tgt, setTgt] = useState<Target>(target);
-  const [tab, setTab] = useState<'info' | 'rules'>('info');
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: 3 bước ngang (thông tin · thời gian & áp dụng · cách tính) thay 2 thẻ (đóng góp)
+  const [buoc, setBuoc] = useState(0);
   const [errs, setErrs] = useState<FieldErrors>({});
   const [paste, setPaste] = useState<string | null>(null);
   const dirty = JSON.stringify(p) !== JSON.stringify(initial) || JSON.stringify(tgt) !== JSON.stringify(target);
@@ -87,7 +89,7 @@ export function ChuongTrinhModal({ initial, target, isNew, published, group, bra
         : mode === 'submit' ? `Đã gửi duyệt ${p.code.trim()} cho ${n} — máy bán áp sau khi được duyệt.${stop}`
           : `Đã ghi nháp ${p.code.trim()} cho ${n} — chưa áp ở máy bán.${stop}`);
     },
-    onError: (e) => { const f = fieldErrorsOf(e); setErrs(f); const ks = Object.keys(f); if (ks.length && ks.every((k) => !INFO_FIELDS.test(k))) setTab('rules'); else if (ks.length) setTab('info'); },
+    onError: (e) => { const f = fieldErrorsOf(e); setErrs(f); const ks = Object.keys(f); if (ks.length && ks.every((k) => !INFO_FIELDS.test(k))) setBuoc(2); else if (ks.length) setBuoc(ks.some((k) => /\.(code|title)$/.test(k)) ? 0 : 1); },
   });
 
   const inp = (v: unknown, on: (s: string) => void, o: { w?: number | string; path?: string; ph?: string; dis?: boolean; title?: string } = {}) => (
@@ -215,12 +217,13 @@ export function ChuongTrinhModal({ initial, target, isNew, published, group, bra
         <button type="button" className="btn" onClick={close}>Thoát</button>
       </div>}>
       <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 12 }}>
-        <div className="tabs" role="tablist">
-          <button type="button" role="tab" className={`tab ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>Thông tin chương trình{infoBad ? ' ⚠' : ''}</button>
-          <button type="button" role="tab" className={`tab ${tab === 'rules' ? 'active' : ''}`} onClick={() => setTab('rules')}>{group === 'earn' ? 'Cách tính điểm' : 'Phần thưởng đổi điểm'}{rulesBad ? ' ⚠' : ''}</button>
-        </div>
+        <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
+          { label: 'Loại & thông tin chung', warn: Object.keys(errs).some((k) => /\.(code|title)$/.test(k)) || problems.some((x) => /tên chương trình|mã chương trình/i.test(x)) },
+          { label: 'Thời gian & áp dụng cho', warn: infoBad && !Object.keys(errs).some((k) => /\.(code|title)$/.test(k)) },
+          { label: group === 'earn' ? 'Cách tính điểm' : 'Phần thưởng đổi điểm', warn: rulesBad },
+        ]} />
 
-        {tab === 'info' && <>
+        {buoc === 0 && <>
           <div style={{ display: 'grid', gap: 6 }}>
             <b>Loại chương trình <span style={{ color: 'var(--bad, #dc2626)' }}>*</span></b>
             <div role="radiogroup" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 6 }}>
@@ -250,6 +253,11 @@ export function ChuongTrinhModal({ initial, target, isNew, published, group, bra
                 <textarea className="input" rows={2} name={`${AT}.notes`} value={String(p.notes ?? '')} onChange={(e) => set({ notes: e.target.value })} />
               </Lbl>
             </Panel>
+          </div>
+        </>}
+
+        {buoc === 1 && <>
+          <div style={{ display: 'grid', gap: 12 }}>
             <Panel title="Thời gian và cách chạy">
               <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
                 <Lbl label="Từ ngày" hint="Trống = áp ngay khi duyệt"><input className="input" type="date" name={`${AT}.startDate`} value={startToDay(p.startDate)} onChange={(e) => set({ startDate: dayToStart(e.target.value) })} /></Lbl>
@@ -274,7 +282,7 @@ export function ChuongTrinhModal({ initial, target, isNew, published, group, bra
           </Panel>
         </>}
 
-        {tab === 'rules' && <>
+        {buoc === 2 && <>
           <span className="muted">{TYPE_HINT[p.type]}</span>
           {(p.type === 1 || p.type === 3) && (
             <Panel title="Điểm theo tiền">
@@ -314,6 +322,8 @@ export function ChuongTrinhModal({ initial, target, isNew, published, group, bra
             </Panel>
           )}
         </>}
+
+        <NutBuoc current={buoc} total={3} onPick={setBuoc} />
       </div>
     </Modal>
   );

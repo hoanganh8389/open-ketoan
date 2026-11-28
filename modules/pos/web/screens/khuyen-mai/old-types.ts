@@ -50,6 +50,9 @@ export type OldForm = {
   scopeMode: 'all' | 'group'; groupCodes: string[];
   ckRows: CkRow[]; fixedRows: FixedRow[];
   buyRows: QtyRow[]; giftRows: QtyRow[];
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: Mua X tặng Y nhiều combo — combo 1 là buyRows / giftRows, combo 2.. ở đây (đóng góp)
+  /** Combo thứ 2 trở đi (plugin cũ: nhiều rule mua – tặng trong một chương trình). */
+  moreCombos: { buyRows: QtyRow[]; giftRows: QtyRow[] }[];
   vcCodes: string; vcType: 'percent' | 'fixed'; vcValue: string; vcMax: string; vcMinOrder: string; vcPerCustomer: string;
   poolRows: UnitRow[]; poolTiers: PoolTier[]; poolMinDistinct: string; poolPct: string;
   lowRequired: string; lowGift: string; lowRows: UnitRow[];
@@ -71,7 +74,7 @@ export function emptyOld(type: OldType, today: string): OldForm {
     dateOn: false, validFrom: today, validTo: '', timeOn: false, timeFrom: '', timeTo: '', weekdaysOn: false, weekdays: [],
     retail: true, wholesale: false, so: false, minOrderTotal: '0', maxUsage: '0', memberLevels: '', birthday: '', branchCodes: [],
     scopeMode: 'all', groupCodes: [],
-    ckRows: rows5(emptyCk), fixedRows: rows5(emptyFixed), buyRows: [emptyQty()], giftRows: [emptyQty()],
+    ckRows: rows5(emptyCk), fixedRows: rows5(emptyFixed), buyRows: [emptyQty()], giftRows: [emptyQty()], moreCombos: [],
     vcCodes: '', vcType: 'percent', vcValue: '', vcMax: '', vcMinOrder: '', vcPerCustomer: '1',
     poolRows: [emptyUnit()], poolTiers: [{ minQty: '2', pct: '' }], poolMinDistinct: '2', poolPct: '',
     lowRequired: '4', lowGift: '1', lowRows: [emptyUnit()],
@@ -162,15 +165,24 @@ export function oldToParams(f: OldForm): { contract: string; params: Params; quo
       break;
     }
     case 'bxgy': {
-      const buy = used(f.buyRows), gift = used(f.giftRows);
-      if (!buy.length) problems.push('Chưa nhập hàng mua');
-      if (!gift.length) problems.push('Chưa nhập quà tặng');
-      dupSku(buy, 'Hàng mua'); dupSku(gift, 'Quà tặng');
-      own = {
-        buy: { items: buy.map((r, i) => ({ sku: r.sku.trim(), qty: (need(num(r.qty), `Hàng mua dòng ${i + 1}: số lượng`, { gt0: true }) ?? 1) * ratioOf(r) })), mode: 'each' },
-        get: { options: gift.map((r, i) => ({ sku: r.sku.trim(), qty: (need(num(r.qty), `Quà dòng ${i + 1}: số lượng`, { gt0: true }) ?? 1) * ratioOf(r) })), choose: 1 },
-        repeat: true, ...scope,
-      };
+      // NT-BH-063: mỗi combo một bộ hàng mua + quà; combo không có dòng nào thì bỏ (combo 1 bắt buộc).
+      const all = [{ buyRows: f.buyRows, giftRows: f.giftRows }, ...f.moreCombos];
+      const filled = all.map((c, k) => ({ k, buy: used(c.buyRows), gift: used(c.giftRows) })).filter((c, i) => i === 0 || c.buy.length || c.gift.length);
+      const tag = (k: number) => (filled.length > 1 ? `Combo ${k + 1} — ` : '');
+      const built = filled.map(({ k, buy, gift }) => {
+        if (!buy.length) problems.push(`${tag(k)}Chưa nhập hàng mua`);
+        if (!gift.length) problems.push(`${tag(k)}Chưa nhập quà tặng`);
+        dupSku(buy, `${tag(k)}Hàng mua`); dupSku(gift, `${tag(k)}Quà tặng`);
+        return {
+          buy: { items: buy.map((r, i) => ({ sku: r.sku.trim(), qty: (need(num(r.qty), `${tag(k)}Hàng mua dòng ${i + 1}: số lượng`, { gt0: true }) ?? 1) * ratioOf(r) })), mode: 'each' as const },
+          get: { options: gift.map((r, i) => ({ sku: r.sku.trim(), qty: (need(num(r.qty), `${tag(k)}Quà dòng ${i + 1}: số lượng`, { gt0: true }) ?? 1) * ratioOf(r) })), choose: 1 },
+        };
+      });
+      if (built.length > 1) {
+        const seen = new Map<string, number>();
+        built.forEach((c, k) => c.buy.items.forEach((x) => { const was = seen.get(x.sku); if (was !== undefined && was !== k) problems.push(`Mã mua ${x.sku} có ở cả combo ${was + 1} và combo ${k + 1}`); seen.set(x.sku, k); }));
+      }
+      own = { ...built[0]!, ...(built.length > 1 ? { combos: built } : {}), repeat: true, ...scope };
       break;
     }
     case 'voucher': {
@@ -300,6 +312,12 @@ export function oldFromParams(contract: string, p: Params, meta: { key: string; 
     const b = (p.buy ?? {}) as { items?: { sku: string; qty?: number }[] }, g = (p.get ?? {}) as { options?: { sku: string; qty: number }[] };
     f.buyRows = pad((b.items ?? []).map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty ?? 1) })), emptyQty);
     f.giftRows = pad((g.options ?? []).map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty) })), emptyQty);
+    // NT-BH-063: combo 2.. (combos[0] trùng buy / get)
+    const combos = (Array.isArray(p.combos) ? p.combos : []) as { buy?: { items?: { sku: string; qty?: number }[] }; get?: { options?: { sku: string; qty: number }[] } }[];
+    f.moreCombos = combos.slice(1).map((c) => ({
+      buyRows: pad((c.buy?.items ?? []).map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty ?? 1) })), emptyQty),
+      giftRows: pad((c.get?.options ?? []).map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty) })), emptyQty),
+    }));
   }
   if (type === 'voucher') {
     const t = ((p.tiers ?? []) as Record<string, unknown>[])[0] ?? {};
