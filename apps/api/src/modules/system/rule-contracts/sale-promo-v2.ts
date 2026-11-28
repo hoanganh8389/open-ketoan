@@ -241,7 +241,9 @@ export function evaluatePriceLines(p: PriceLinesParams, input: PromoInputV2): Pr
 }
 
 // ── b) Mua nhiều mã, quà lựa chọn (K2a, K2b) ──────────────────────────────────────────────────────────────────────────
-const target = z.object({ sku, itemId: itemId.optional(), qty: pos.optional() }).strict();
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (K1): mã hàng mua của Mua X tặng Y có lọc lô / HSD (plugin cũ: hsd_filter ở dòng mua) — chỉ
+// phần số lượng thuộc lô khớp được đếm vào điều kiện mua; quà Y không lọc lô (chọn tạm T1, chờ Hoàng chốt) (đóng góp)
+const target = z.object({ sku, itemId: itemId.optional(), qty: pos.optional(), lotFilter: lotFilter.optional() }).strict();
 const bxgyBuy = z.object({
   /** Mã phải mua. Trống = mọi dòng trong phạm vi (cần `scope`). */
   items: z.array(target).max(50).default([]),
@@ -300,8 +302,23 @@ export function evaluateBuyXGetYV2(p: BuyXGetYV2Params, input: PromoInputV2): Pr
   const sc = scopeLines(p.scope, input.lines);
   if (sc.unknown.length) return unknownOut(ctx, sc.unknown);
   const buyLines = p.buy.items.length ? sc.lines.filter((l) => p.buy.items.some((t) => matches(t, l))) : sc.lines;
-  const qtyOf = (t: { sku: string; itemId?: string }) => r4(buyLines.filter((l) => matches(t, l)).reduce((s, l) => s + l.qty, 0));
-  const bought = r4(buyLines.reduce((s, l) => s + l.qty, 0));
+  // NT-BH-067 (K1): mã mua có lọc lô → chỉ đếm phần số lượng thuộc lô khớp (lô dự kiến của dòng do bộ tính điền); chưa biết lô thì không đoán.
+  const lotOf = (l: PromoLineV2) => p.buy.items.find((t) => matches(t, l))?.lotFilter;
+  const lotUnknown = buyLines.filter((l) => lotOf(l) && !l.lots).map((l) => l.lineKey);
+  if (lotUnknown.length) {
+    return ctx?.lenient ? empty({ indeterminate: true }) : empty({ blocked: `chương trình theo lô / hạn dùng — chưa biết lô của ${lotUnknown.length} dòng hàng mua (bộ tính dự phân lô theo chi nhánh)`, detail: { lotUnknown } });
+  }
+  const buyLots: { lineKey: string; lots: LotPart[] }[] = [];
+  const eff = new Map(buyLines.map((l) => {
+    const f = lotOf(l);
+    if (!f) return [l.lineKey, l.qty] as const;
+    const sh = lotShare(l, f, ctx?.docDate)!;
+    if (sh.qty > EPS) buyLots.push({ lineKey: l.lineKey, lots: sh.lots });
+    return [l.lineKey, sh.qty] as const;
+  }));
+  const byLot = buyLines.some((l) => lotOf(l));
+  const qtyOf = (t: { sku: string; itemId?: string }) => r4(buyLines.filter((l) => matches(t, l)).reduce((s, l) => s + eff.get(l.lineKey)!, 0));
+  const bought = r4(buyLines.reduce((s, l) => s + eff.get(l.lineKey)!, 0));
   let times: number;
   if (p.buy.mode === 'all') times = Math.min(...p.buy.items.map((t) => Math.floor(qtyOf(t) / (t.qty ?? 1) + EPS)));
   else if (p.buy.mode === 'each') times = p.buy.items.reduce((s, t) => s + Math.floor(qtyOf(t) / (t.qty ?? 1) + EPS), 0);
@@ -311,9 +328,9 @@ export function evaluateBuyXGetYV2(p: BuyXGetYV2Params, input: PromoInputV2): Pr
     const need = p.buy.mode === 'all' || p.buy.mode === 'each'
       ? p.buy.items.map((t) => `${t.qty ?? 1} ${t.sku}`).join(p.buy.mode === 'all' ? ' và ' : ' hoặc ')
       : `${p.buy.qty ?? 1} trong ${p.buy.items.length ? p.buy.items.map((t) => t.sku).join(', ') : 'phạm vi'}`;
-    return empty({ blocked: `chưa đủ điều kiện mua (${need}); mới mua ${bought}`, detail: { bought, times: 0 } });
+    return empty({ blocked: `chưa đủ điều kiện mua (${need}); mới mua ${bought}${byLot ? ' (chỉ tính hàng thuộc lô / HSD của chương trình)' : ''}`, detail: { bought, times: 0 } });
   }
-  const touched = buyLines.map((l) => l.lineKey);
+  const touched = buyLines.filter((l) => eff.get(l.lineKey)! > EPS).map((l) => l.lineKey);
   const cap = (list: GiftOut[]) => {
     let room = p.maxGiftQty ?? Infinity;
     const out: GiftOut[] = [];
@@ -322,7 +339,7 @@ export function evaluateBuyXGetYV2(p: BuyXGetYV2Params, input: PromoInputV2): Pr
   };
   const per = (o: { sku: string; itemId?: string; qty: number }): GiftOut => ({ sku: o.sku, ...(o.itemId ? { itemId: o.itemId } : {}), qty: r4(times * o.qty) });
   const opts = p.get.options;
-  const detail = { bought, times };
+  const detail = { bought, times, ...(buyLots.length ? { buyLots } : {}) };
   if (opts.length <= p.get.choose) return { discounts: [], gifts: cap(opts.map(per)), total: 0, touched, noPrice: [], detail };
   const chosen = [...new Set((ctx?.giftChoice ?? []).map((x) => x.trim()).filter(Boolean))];
   const pending = (problem?: string): PromoOutputV2 => (ctx?.lenient
@@ -346,6 +363,10 @@ export const orderGiftV2Params = z.object({
   // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-16): quà theo giá trị đơn của plugin cũ — nhiều quà thì khách chọn (mặc định tặng hết) (đóng góp)
   /** Số món khách chọn trong quà của bậc; vắng = tặng hết các quà của bậc. */
   choose: z.number().int().min(1).max(20).optional(),
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (K2): lọc lô / HSD hàng tính tổng đơn — chỉ tiền phần hàng thuộc lô khớp được cộng vào tổng
+  // xét quà; quà không lọc lô (chọn tạm T1, T3 — chờ Hoàng chốt) (đóng góp)
+  /** Lọc lô / HSD của hàng tính tổng đơn (trong phạm vi); vắng = mọi lô. */
+  lotFilter: lotFilter.optional(),
 }).strict();
 export type OrderGiftV2Params = z.infer<typeof orderGiftV2Params>;
 
@@ -353,16 +374,26 @@ export function evaluateOrderGiftV2(p: OrderGiftV2Params, input: PromoInputV2): 
   const ctx = input.context;
   const sc = scopeLines(p.scope, input.lines);
   if (sc.unknown.length) return unknownOut(ctx, sc.unknown);
-  const amount = orderAmountOf(sc.lines);
-  if (amount === null) return ctx?.lenient ? empty({ indeterminate: true }) : empty({ blocked: 'cần đơn giá các dòng để tính tổng đơn', noPrice: sc.lines.filter((l) => !hasPrice(l)).map((l) => l.lineKey) });
+  const amount0 = orderAmountOf(sc.lines);
+  if (amount0 === null) return ctx?.lenient ? empty({ indeterminate: true }) : empty({ blocked: 'cần đơn giá các dòng để tính tổng đơn', noPrice: sc.lines.filter((l) => !hasPrice(l)).map((l) => l.lineKey) });
   const blocked = conditionsBlock(p.conditions, ctx, orderAmountOf(input.lines.filter((l) => okQty(l.qty))));
   if (blocked) return empty({ blocked });
+  // NT-BH-067 (K2): lọc lô của hàng tính tổng đơn — chưa biết lô thì không đoán; chỉ phần thuộc lô khớp được cộng.
+  let counted = sc.lines;
+  if (p.lotFilter) {
+    const lotUnknown = sc.lines.filter((l) => !l.lots).map((l) => l.lineKey);
+    if (lotUnknown.length) {
+      return ctx?.lenient ? empty({ indeterminate: true }) : empty({ blocked: `chương trình theo lô / hạn dùng — chưa biết lô của ${lotUnknown.length} dòng (bộ tính dự phân lô theo chi nhánh)`, detail: { lotUnknown } });
+    }
+    counted = sc.lines.flatMap((l) => { const sh = lotShare(l, p.lotFilter!, ctx?.docDate)!; return sh.qty > EPS ? [{ ...l, qty: sh.qty }] : []; });
+  }
+  const amount = p.lotFilter ? orderAmountOf(counted)! : amount0;
   const tier = [...p.tiers].reverse().find((t) => amount >= t.minOrder);
   if (!tier) return empty({ blocked: `tổng đơn ${vnd(amount)} chưa đủ ${vnd(p.tiers[0]!.minOrder)}`, detail: { orderAmount: amount } });
   let times = p.multiply && tier.minOrder > 0 ? Math.floor(amount / tier.minOrder) : 1;
   if (p.multiply && p.maxTimes !== undefined) times = Math.min(times, p.maxTimes);
   const per = (g: { sku: string; itemId?: string; qty: number }): GiftOut => ({ sku: g.sku, ...(g.itemId ? { itemId: g.itemId } : {}), qty: r4(g.qty * times) });
-  const touched = sc.lines.map((l) => l.lineKey);
+  const touched = counted.map((l) => l.lineKey);
   const detail = { orderAmount: amount, tierMin: tier.minOrder, times };
   if (p.choose !== undefined && tier.gifts.length > p.choose) {
     const chosen = [...new Set((ctx?.giftChoice ?? []).map((x) => x.trim()).filter(Boolean))];
@@ -521,6 +552,19 @@ export const buyXGetYV2Vectors: V<BuyXGetYV2Params>[] = [
     output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'phạm vi theo nhóm / nhãn — chưa biết nhóm / nhãn của 1 dòng (bộ tính tra danh mục)', detail: { unknown: ['a'] } } },
   { name: 'cửa nạp (lenient) chưa biết quà đã chọn → không xác định', params: any3, input: { lines: AB, context: { lenient: true } },
     output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], indeterminate: true } },
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: ca lọc lô ở hàng mua của Mua X tặng Y (đóng góp)
+  { name: 'NT-BH-067: mua 2 A HSD còn ≤ 30 ngày tặng 1 Q — 2 lon thuộc lô L1 (còn 6 ngày) → tặng 1 Q, ghi lô đã đếm',
+    params: { ...base, buy: { items: [{ sku: 'A', qty: 2, lotFilter: { expWithinDays: 30 } }], mode: 'each' }, get: { options: [{ sku: 'Q', qty: 1 }], choose: 1 }, repeat: true },
+    input: { lines: [L('a', 'A', 2, undefined, { lots: [{ lotNo: 'L1', expDate: '2026-12-05', qty: 2 }] })], context: { docDate: '2026-11-29' } },
+    output: { discounts: [], gifts: [{ sku: 'Q', qty: 1 }], total: 0, touched: ['a'], noPrice: [], detail: { bought: 2, times: 1, buyLots: [{ lineKey: 'a', lots: [{ lotNo: 'L1', expDate: '2026-12-05', qty: 2 }] }] } } },
+  { name: 'NT-BH-067: như trên, 4 lon A — L1 1 lon + L2 (HSD xa) 3 lon → chỉ đếm 1 lon, không tặng',
+    params: { ...base, buy: { items: [{ sku: 'A', qty: 2, lotFilter: { expWithinDays: 30 } }], mode: 'each' }, get: { options: [{ sku: 'Q', qty: 1 }], choose: 1 }, repeat: true },
+    input: { lines: [L('a', 'A', 4, undefined, { lots: [{ lotNo: 'L1', expDate: '2026-12-05', qty: 1 }, { lotNo: 'L2', expDate: '2027-06-01', qty: 3 }] })], context: { docDate: '2026-11-29' } },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chưa đủ điều kiện mua (2 A); mới mua 1 (chỉ tính hàng thuộc lô / HSD của chương trình)', detail: { bought: 1, times: 0 } } },
+  { name: 'NT-BH-067: hàng mua lọc lô nhưng dòng chưa biết lô → chặn, không đoán',
+    params: { ...base, buy: { items: [{ sku: 'A', qty: 2, lotFilter: { lotNos: ['L1'] } }], mode: 'each' }, get: { options: [{ sku: 'Q', qty: 1 }], choose: 1 }, repeat: true },
+    input: { lines: [L('a', 'A', 2)], context: { docDate: '2026-11-29' } },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chương trình theo lô / hạn dùng — chưa biết lô của 1 dòng hàng mua (bộ tính dự phân lô theo chi nhánh)', detail: { lotUnknown: ['a'] } } },
 ];
 
 const og = (over: Partial<OrderGiftV2Params> = {}): OrderGiftV2Params => ({ ...base, multiply: true, tiers: [{ minOrder: 1_000_000, gifts: [{ sku: 'Q', qty: 1 }] }], ...over });
@@ -538,6 +582,15 @@ export const orderGiftV2Vectors: V<OrderGiftV2Params>[] = [
     output: { discounts: [], gifts: [{ sku: 'Q', qty: 1 }], total: 0, touched: ['a'], noPrice: [], detail: { orderAmount: 1_200_000, tierMin: 1_000_000, times: 1 } } },
   { name: 'cửa nạp không có giá → không xác định', params: og(), input: { lines: [L('a', 'A', 5)], context: { lenient: true } },
     output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], indeterminate: true } },
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: quà theo tổng đơn chỉ tính hàng thuộc lô khớp (đóng góp)
+  { name: 'NT-BH-067: tổng đơn ≥ 300.000 chỉ tính hàng lô L1 — 3 lon × 100.000, L1 1 lon → tổng xét quà 100.000, không tặng',
+    params: og({ multiply: false, tiers: [{ minOrder: 300_000, gifts: [{ sku: 'Q', qty: 1 }] }], lotFilter: { lotNos: ['L1'] } }),
+    input: { lines: [L('a', 'A', 3, 100_000, { lots: [{ lotNo: 'L1', expDate: '2026-12-05', qty: 1 }, { lotNo: 'L2', expDate: '2027-06-01', qty: 2 }] })], context: { docDate: '2026-11-29' } },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'tổng đơn 100.000 chưa đủ 300.000', detail: { orderAmount: 100_000 } } },
+  { name: 'NT-BH-067: như trên, 3 lon đều lô L1 → tặng 1 Q',
+    params: og({ multiply: false, tiers: [{ minOrder: 300_000, gifts: [{ sku: 'Q', qty: 1 }] }], lotFilter: { lotNos: ['L1'] } }),
+    input: { lines: [L('a', 'A', 3, 100_000, { lots: [{ lotNo: 'L1', expDate: '2026-12-05', qty: 3 }] })], context: { docDate: '2026-11-29' } },
+    output: { discounts: [], gifts: [{ sku: 'Q', qty: 1 }], total: 0, touched: ['a'], noPrice: [], detail: { orderAmount: 300_000, tierMin: 300_000, times: 1 } } },
 ];
 
 // ── Khuôn ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -614,7 +667,8 @@ export const saleBuyXGetYV2: RuleContract<BuyXGetYV2Params, PromoInputV2, PromoO
   window: promoWindow, evaluate: evaluateBuyXGetYV2, explain: explainOf('Mua tặng quà'), treatment: treat,
   describe: () => ({
     params: [...commonDocs,
-      { name: 'buy.items', type: '[{ sku, itemId?, qty? }]', required: false, doc: '0–50 mã phải mua; trống = mọi dòng trong phạm vi' },
+      // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: tài liệu khuôn — lọc lô của mã mua, lọc lô hàng tính tổng đơn (đóng góp)
+      { name: 'buy.items', type: '[{ sku, itemId?, qty?, lotFilter? }]', required: false, doc: '0–50 mã phải mua; trống = mọi dòng trong phạm vi. lotFilter (như price_lines@2): chỉ đếm phần số lượng thuộc lô khớp; dòng chưa biết lô → chặn (cửa nạp: không xác định)' },
       { name: 'buy.mode', type: "'any' | 'all' | 'each'", required: false, doc: 'any (mặc định): Σ số lượng các mã ≥ buy.qty; all: đủ items[].qty từng mã; each: mỗi mã tính riêng (plugin cũ), số lần = Σ floor(SL mã / items[].qty)' },
       { name: 'buy.qty', type: 'number > 0', required: false, doc: 'Tổng số lượng một lần (kiểu any)' },
       { name: 'get.options', type: '[{ sku, itemId?, qty }]', required: true, doc: '1–20 món quà, số lượng một lần' },
@@ -647,7 +701,8 @@ export const saleOrderGiftV2: RuleContract<OrderGiftV2Params, PromoInputV2, Prom
       { name: 'tiers', type: '[{ minOrder, gifts[{ sku, itemId?, qty }] }]', required: true, doc: 'Quà của bậc cao nhất đạt được' },
       { name: 'multiply', type: 'boolean', required: false, doc: 'Bật: tặng floor(tổng đơn / ngưỡng bậc) lần quà' },
       { name: 'maxTimes', type: 'số nguyên > 0', required: false, doc: 'Trần số lần khi nhân bội số' },
-      { name: 'choose', type: 'số nguyên 1..20', required: false, doc: 'Bậc có nhiều quà hơn choose → khách chọn choose món (context.giftChoice); vắng = tặng hết' }],
+      { name: 'choose', type: 'số nguyên 1..20', required: false, doc: 'Bậc có nhiều quà hơn choose → khách chọn choose món (context.giftChoice); vắng = tặng hết' },
+      { name: 'lotFilter', type: '{ expWithinDays? | expMonth? | expYear? | lotNos? }', required: false, doc: 'Chỉ tiền phần hàng (trong phạm vi) thuộc lô khớp được cộng vào tổng đơn xét quà; dòng chưa biết lô → chặn (cửa nạp: không xác định)' }],
     spec: {
       input: lineInput,
       steps: [scopeStep, 'tổng đơn = Σ tiền trọn các dòng trong phạm vi (thiếu giá ở cửa nạp → không xác định)', 'kiểm điều kiện chung',

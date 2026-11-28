@@ -11,8 +11,34 @@ import {
   type DraftContent, type DraftStatus, type Overlap, type PromoShape, type PromoUse, type Quota, type QuotaShort,
 } from './domain/promo.js';
 import { todayVn } from './read.js';
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: điều kiện kênh của khuyến mại — kiểm lại khi nhận đơn, kiểm trùng theo kênh (đóng góp)
+import { channelCondOf, channelMismatch, type ChannelCond, type PromoChannelIssue } from './domain/promo.js';
+import { listChannels } from './channels.js';
 
 export type Tx = Parameters<Parameters<ActionContext['data']['module']>[0]>[0];
+
+/** Loại kênh theo mã (danh mục Kênh bán hàng, gồm kênh đã ngừng). */
+async function channelKinds(ctx: ActionContext, tx?: Tx): Promise<Map<string, string>> {
+  const read = async (t: Tx) => new Map((await listChannels(t, ctx.tenant.id)).map((c) => [c.code.toUpperCase(), c.kind as string]));
+  return tx ? read(tx) : ctx.data.module(read);
+}
+
+/**
+ * NT-BH-067 (C3): đơn mang dòng khuyến mại của chương trình có điều kiện kênh (BH18 "Kênh bán") mà kênh của đơn không khớp. Điều kiện đọc ở
+ * `core.policy.list` tại ngày bán; Core không trả lời → không kiểm (cửa nạp Core còn kiểm bản chính sách). Gọi trong giao dịch module (`tx`).
+ */
+export async function promoChannelIssues(ctx: ActionContext, tx: Tx, date: string, keys: readonly string[], channel: string): Promise<PromoChannelIssue[]> {
+  const list = [...new Set(keys)].sort();
+  if (!list.length) return [];
+  let items: { policyKey: string; params: Record<string, unknown> | null }[];
+  try {
+    items = (await ctx.actions.call<{ items: typeof items }>('core.policy.list', { domain: 'sale', at: date })).items;
+  } catch { return []; }
+  const conds = new Map<string, ChannelCond | null>(items.filter((i) => list.includes(i.policyKey)).map((i) => [i.policyKey, channelCondOf(i.params)]));
+  if (![...conds.values()].some(Boolean)) return [];
+  const kind = (await channelKinds(ctx, tx)).get(channel.toUpperCase()) ?? null;
+  return list.flatMap((key) => { const why = channelMismatch(conds.get(key), channel, kind); return why ? [{ key, channel, kind, why }] : []; });
+}
 
 /** Khoá theo giao dịch (như lockKey của order-service — chép lại để không import vòng). */
 const lockKey = async (tx: Tx, key: string) => { await sql`SELECT pg_advisory_xact_lock(hashtext(${key}))`.execute(tx); };
@@ -177,16 +203,19 @@ export async function overlapsFor(ctx: ActionContext, me: Omit<PromoShape, 'from
     for (const p of r.items) if (p.params && p.ruleContract.startsWith('sale.promo.') && !seen.has(p.policyKey)) seen.set(p.policyKey, p);
   }
   const out: Overlap[] = [];
+  // NT-BH-067 (C4): loại của từng kênh (danh mục Kênh bán hàng) — chương trình "chọn kênh" so với chương trình "theo loại kênh".
+  const kinds = await channelKinds(ctx);
+  const kindOf = (code: string) => kinds.get(code.toUpperCase());
   for (const p of seen.values()) {
     const other: PromoShape = { key: p.policyKey, contract: p.ruleContract, params: p.params!, branchCodes: p.scope?.branchCodes ?? [], ...windowOf(p.params!, p.effectiveFrom, p.effectiveTo ?? null) };
-    const o = overlapOf(shape, other);
+    const o = overlapOf(shape, other, kindOf);
     if (o) out.push({ key: other.key, source: 'published', status: 'published', name: String(p.params!.name ?? ''), branches: other.branchCodes, from: other.from, to: other.to, skus: o.skus });
   }
   const drafts = await ctx.data.module(async (tx) => (await sql<DraftRow>`SELECT ${COLS} FROM mod_pos.promo_drafts
     WHERE status IN ('pending', 'approved') ${excludeDraftId ? sql`AND draft_id <> ${excludeDraftId}::uuid` : sql``}`.execute(tx)).rows);
   for (const d of drafts) {
     const other: PromoShape = { key: d.policy_key, contract: d.rule_contract, params: d.params, branchCodes: d.branch_codes ?? [], ...windowOf(d.params, d.effective_from) };
-    const o = overlapOf(shape, other);
+    const o = overlapOf(shape, other, kindOf);
     if (o) out.push({ key: other.key, source: 'draft', status: d.status, name: d.reason ?? '', branches: other.branchCodes, from: other.from, to: other.to, skus: o.skus });
   }
   // Tên của chương trình đã phát hành: lý do của nháp đã phát hành gần nhất (màn lưu tên ở lý do).

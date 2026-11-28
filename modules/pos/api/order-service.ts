@@ -17,6 +17,9 @@ import { stockNeeds, stockShortages, stockShortMessage, type StockShort } from '
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: hạn mức lượt khuyến mại theo cửa hàng (đóng góp)
 import { usesOf } from './domain/promo.js';
 import { checkCustomerQuota, checkQuota, quotaMessage, recordUses } from './promo.js';
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C3): máy chủ kiểm lại điều kiện kênh của khuyến mại trên đơn (đóng góp)
+import { promoChannelIssues } from './promo.js';
+import { promoChannelMessage } from './domain/promo.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: voucher TGS / hãng, voucher lần mua sau tự phát (đóng góp)
 import type { QuotedVoucher } from './domain/voucher.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-031: kênh bán của đơn theo danh mục Kênh bán hàng (đóng góp)
@@ -254,6 +257,12 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
       throw Errors.validation(`Khách ${customerShort[0]!.customer} đã dùng hết lượt khuyến mại: ${customerShort.map((s) => `${s.key} (đã dùng ${s.used}/${s.quota})`).join('; ')} — bỏ khuyến mại đó khỏi đơn rồi thanh toán lại`,
         { reason: 'POS_PROMO_QUOTA', items: customerShort });
     }
+    // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C3): dòng mang chương trình có điều kiện kênh (BH18 "Kênh bán") phải khớp kênh của đơn — máy bán tính theo kênh đang chọn,
+    // đổi kênh sau khi tính thì không nhận; đơn mất mạng gửi bù → nhận, đánh dấu cho kế toán xem (như hạn mức lượt) (đóng góp)
+    const channelShort = await promoChannelIssues(ctx, tx, draft.businessDate, promoKeys, saleSource.code);
+    if (channelShort.length && !draft.offlineCreatedAt) {
+      throw Errors.validation(promoChannelMessage(channelShort), { reason: 'POS_PROMO_CHANNEL', items: channelShort });
+    }
 
     // Mã phiếu: dùng số máy đã được cấp trước (đúng khuôn, đã cấp, chưa dùng); không thì cấp số mới. Khoá theo số để hai máy
     // cùng dùng một số đã cấp không cùng qua bước "chưa dùng".
@@ -268,17 +277,19 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
       if (!used) code = draft.reservedCode!;
     }
     code ??= (await issueCodes(tx, ctx.tenant.id, branch.code, 'sale', draft.businessDate, 1, scheme))[0]!;
-    return { kind: 'new', computed, branch, code, loyalty, stockShort, priceOffline, quotaShort, issuedVouchers: vq.issue, warehouses, saleSource } as const;
+    return { kind: 'new', computed, branch, code, loyalty, stockShort, priceOffline, quotaShort, issuedVouchers: vq.issue, warehouses, saleSource, channelShort } as const;
   });
   if (prepared.kind === 'replay') return { order: prepared.snapshot, nextReservedCodes: [], einvoiceReview: EINVOICE_NONE, replayed: true };
 
-  const { computed, branch, code, loyalty, stockShort, priceOffline, quotaShort, issuedVouchers, warehouses, saleSource } = prepared;
+  const { computed, branch, code, loyalty, stockShort, priceOffline, quotaShort, issuedVouchers, warehouses, saleSource, channelShort } = prepared;
   const doc = toSaleDocument(computed, { draft, branchCode: branch.code, code, ...(warehouses ? { warehouses } : {}) });
   const submitted = await ctx.ledger.submit(doc);
   const order = toOrderSnapshot(computed, { draft, code, branch, createdAt: new Date().toISOString(), ...(loyalty?.snapshot ? { loyalty: loyalty.snapshot } : {}), ...(loyalty?.input.voucher ? { usedVouchers: [loyalty.input.voucher.code] } : {}), issuedVouchers, ...(warehouses ? { warehouses } : {}), saleSource });
   if (stockShort.length) Object.assign(order, { stockShortOffline: stockShort });
   if (priceOffline.length) Object.assign(order, { priceChangedOffline: priceOffline });
   if (quotaShort.length) Object.assign(order, { promoQuotaOffline: quotaShort });
+  // NT-BH-067 (C3): đơn mất mạng gửi bù mang khuyến mại sai kênh — nhận (khách đã trả tiền), đánh dấu.
+  if (channelShort.length) Object.assign(order, { promoChannelOffline: channelShort });
   // [2026-11-28 05:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-060: phần chưa thuế của voucher đổi điểm: Nợ chiết khấu thương mại / Có doanh thu (doanh thu ghi đủ giá) (đóng góp)
   const pvNet = computed.lines.reduce((t, l) => t + (l.pointVoucherNet ?? 0), 0);
   const pvDoc = loyalty?.input.voucher ? pointVoucherJournal({ branchCode: branch.code, orderId: draft.id, orderCode: code, businessDate: draft.businessDate, voucherCode: loyalty.input.voucher.code, amountNet: pvNet }) : null;

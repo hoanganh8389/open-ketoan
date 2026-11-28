@@ -162,9 +162,25 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
     },
   });
   const lotCol: Col<FixedRow> = { k: 'lot', h: 'Số lô', w: 200, cell: (r, i) => inp(r.hsdValue, (v) => upd('fixedRows', i, { hsdMode: 'lot', hsdValue: v }), { ph: 'số lô, cách dấu phẩy' }) };
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (F1): ô Lọc HSD / lô dùng chung cho hàng mua của Mua X tặng Y (mọi combo) và hàng tính tổng đơn của quà theo giá trị đơn (đóng góp)
+  const hsdPick = (r: { hsdMode?: string; hsdValue?: string }, onPatch: (p: { hsdMode: string; hsdValue?: string }) => void, title: string) => {
+    const mode = r.hsdMode ?? '';
+    const m = HSD_MODES.find((x) => x.v === mode) ?? HSD_MODES[0]!;
+    return (
+      <div className="row" style={{ gap: 4 }}>
+        <select className="input" style={{ width: mode ? 140 : '100%' }} value={mode} title={title}
+          onChange={(e) => onPatch({ hsdMode: e.target.value, ...(e.target.value ? {} : { hsdValue: '' }) })}>
+          {HSD_MODES.map((x) => <option key={x.v} value={x.v}>{x.label}</option>)}
+        </select>
+        {mode && inp(r.hsdValue ?? '', (v) => onPatch({ hsdMode: mode, hsdValue: v }), { ph: m.ph })}
+      </div>
+    );
+  };
+  const buyHsdTitle = 'Chỉ đếm phần hàng mua xuất từ lô khớp (máy chủ tự chọn lô hạn gần trước); quà không lọc lô';
   const qtyRows = (k: 'buyRows' | 'giftRows', qtyLabel: string, addLabel: string) => (
     <Grid<QtyRow> rows={f[k]} pasteTarget={k} addLabel={addLabel} onAdd={() => add(k, emptyQty)} onDel={(i) => del(k, i)}
-      cols={[skuCol(k), nameCol(), { k: 'qty', h: qtyLabel, w: 100, cell: (r, i) => inp(r.qty, (v) => upd(k, i, { qty: v }), { right: true }) }, unitCol(k)]} />
+      cols={[skuCol(k), nameCol(), { k: 'qty', h: qtyLabel, w: 100, cell: (r, i) => inp(r.qty, (v) => upd(k, i, { qty: v }), { right: true }) }, unitCol(k),
+        ...(k === 'buyRows' && f.type === 'bxgy' ? [{ k: 'hsd', h: 'Lọc HSD / lô', w: 260, opt: true, cell: (r: QtyRow, i: number) => hsdPick(r, (pp) => upd(k, i, pp), buyHsdTitle) } as Col<QtyRow>] : [])]} />
   );
 
   const applyPaste = () => {
@@ -395,6 +411,10 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
                 ...(f.type === 'batch' ? [lotCol] : [hsdCol<FixedRow>('fixedRows')]),
               ]} />
             )}
+            {/* [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: câu nhắc lọc lô cho Mua X tặng Y / quà theo tổng đơn (đóng góp) */}
+            {(f.type === 'bxgy' || f.type === 'order_gift') && (
+              <span className="muted" style={{ fontSize: 12 }}>Lọc HSD / lô: máy chủ tự chọn lô xuất theo hạn gần trước; chỉ hàng thuộc lô khớp được tính vào {f.type === 'bxgy' ? 'điều kiện mua' : 'tổng đơn xét quà'}; quà không lọc lô. Máy bán mất mạng không áp chương trình có lọc lô.</span>
+            )}
             {(f.type === 'ck' || f.type === 'fixed' || f.type === 'batch') && (
               <span className="muted" style={{ fontSize: 12 }}>Lọc HSD / lô: máy chủ tự chọn lô xuất theo hạn gần trước và chỉ giảm phần hàng thuộc lô khớp; phiếu bán ghi lô đó. Máy bán mất mạng không áp chương trình có lọc lô.</span>
             )}
@@ -415,6 +435,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
                         nameCol(),
                         { k: 'qty', h: qtyLabel, w: 100, cell: (r, i) => inp(r.qty, (v) => setC({ [k]: c[k].map((x, j) => (j === i ? { ...x, qty: v } : x)) }), { right: true }) },
                         { k: 'unit', h: 'Đơn vị', w: 150, opt: true, cell: (r, i) => unitSel(r, (pp) => setC({ [k]: c[k].map((x, j) => (j === i ? { ...x, ...pp } : x)) })) },
+                        ...(k === 'buyRows' ? [{ k: 'hsd', h: 'Lọc HSD / lô', w: 260, opt: true, cell: (r: QtyRow, i: number) => hsdPick(r, (pp) => setC({ [k]: c[k].map((x, j) => (j === i ? { ...x, ...pp } : x)) }), buyHsdTitle) } as Col<QtyRow>] : []),
                       ]} />
                   );
                   return (
@@ -440,6 +461,11 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
               <div style={{ display: 'grid', gap: 8 }}>
                 <div className="alert alert-info" style={{ margin: 0 }}>Quà được áp dụng khi đơn đạt mức <b>Tổng giá trị đơn hàng</b> ở bước Thời gian & điều kiện ({f.minOrderTotal || '0'} đ); đủ mấy lần ngưỡng tặng mấy lần.</div>
                 {qtyRows('giftRows', 'Số lượng tặng', 'Thêm quà')}
+                {/* NT-BH-067 (F1): chỉ tiền hàng thuộc lô khớp được cộng vào tổng đơn xét quà. */}
+                <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <b style={{ fontSize: 13 }} title="Chỉ tiền phần hàng xuất từ lô khớp được cộng vào tổng đơn xét quà (máy chủ tự chọn lô hạn gần trước); quà không lọc lô">Lọc HSD / lô hàng tính tổng đơn</b>
+                  <div style={{ width: 300 }}>{hsdPick(f.orderHsd, (pp) => set({ orderHsd: { hsdMode: pp.hsdMode as OldForm['orderHsd']['hsdMode'], hsdValue: pp.hsdValue ?? f.orderHsd.hsdValue } }), 'Mọi HSD = cộng mọi hàng trong phạm vi')}</div>
+                </div>
               </div>
             )}
             {f.type === 'voucher' && (

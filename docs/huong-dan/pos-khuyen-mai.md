@@ -94,6 +94,9 @@ Thêm / sửa khuyến mại 6 loại ở màn này lưu thành **bản nháp**,
 
 Khi lưu nháp và khi duyệt, màn liệt kê các khuyến mại **đang áp / chờ duyệt** cùng mã hàng, cùng cửa hàng, trùng thời gian, ví dụ *Giảm 10 % SUA330 (KM10-SUA330; CN01; 20/11 – 30/11)*. Chỉ là cảnh báo: vẫn lưu / duyệt được; lúc bán, luật **Ưu tiên** và **Áp riêng** quyết định.
 
+<!-- [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: kiểm trùng theo kênh bán (đóng góp) -->
+Hai chương trình **khác kênh bán** không bị báo trùng: *Chỉ online* với *Chỉ offline*; *Chọn kênh* không chung kênh nào; *Chọn kênh Zalo* với *Chỉ offline* (Zalo là kênh online ở màn Kênh bán hàng). Chương trình *Tất cả kênh* vẫn trùng với mọi chương trình cùng mã.
+
 ## Hạn mức lượt theo cửa hàng
 
 Khai ở nháp (ô *Hạn mức lượt theo cửa hàng*), có hiệu lực khi duyệt. Một lượt = một đơn máy bán hoặc một phiếu bán BH10 đã duyệt áp chương trình đó ở cửa hàng.
@@ -125,4 +128,13 @@ Quản trị website chạy một lần: `wp tgs-pos promo-migrate --dry-run` (x
 - **Hàng dưới 24 tháng**: form cảnh báo khi chương trình có mã hàng dưới 24 tháng (NĐ100/2014 không cho khuyến mại sản phẩm dinh dưỡng cho trẻ dưới 24 tháng).
 - **Mẫu dựng sẵn** khi Thêm: Flash sale (giá riêng theo khung giờ, hạn mức lượt), Khai trương, Sinh nhật khách hàng.
 - **Nhân bản**: chọn một khuyến mại → Nhân bản → form Thêm điền sẵn, gõ mã mới.
-- Chưa có: lọc theo lô / hạn sử dụng, nhóm (bộ) chương trình, nhập cả chương trình từ Excel.
+- Chưa có: nhóm (bộ) chương trình, nhập cả chương trình từ Excel.
+
+## Lọc HSD / lô, kênh bán (từ 29/11/2026, phiếu NT-BH-064, 065, 067)
+<!-- [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: lọc lô cho Mua X tặng Y / quà theo tổng đơn; kênh ở BH10 / BH20; máy chủ kiểm lại kênh (đóng góp) -->
+- **Chiết khấu / Giảm giá cố định / Theo lô hàng**: cột **Lọc HSD / lô** trên từng dòng — chỉ phần hàng xuất từ lô khớp được giảm.
+- **Mua X tặng Y**: bảng **Hàng mua** (mọi combo) có cột **Lọc HSD / lô** — chỉ đếm phần hàng mua thuộc lô khớp vào điều kiện mua (vd *mua 2 lon HSD còn ≤ 30 ngày tặng 1*). Quà không lọc lô.
+- **Quà tặng theo giá trị đơn**: ô **Lọc HSD / lô hàng tính tổng đơn** — chỉ tiền hàng thuộc lô khớp được cộng vào tổng đơn xét quà.
+- Máy chủ tự chọn lô xuất theo hạn gần trước; thu ngân / kế toán không chọn lô. Máy bán mất mạng không áp chương trình có lọc lô.
+- **Kênh bán** (Tất cả / Chỉ offline / Chỉ online / Chọn kênh): máy bán, phiếu bán BH10 (nút Áp khuyến mại) và đơn đặt hàng BH20 (khi Ghi) đều tính theo kênh của chứng từ; không chọn kênh = *Gần shop* (offline).
+- Máy chủ kiểm lại khi ghi: dòng khuyến mại của chương trình theo kênh mà kênh của đơn / phiếu không khớp → báo `POS_PROMO_CHANNEL` (vd "KM-ONL — chỉ áp kênh online"), không ghi; đổi đúng kênh hoặc áp khuyến mại lại. Đơn máy bán mất mạng gửi bù vẫn nhận, đánh dấu cho kế toán xem.

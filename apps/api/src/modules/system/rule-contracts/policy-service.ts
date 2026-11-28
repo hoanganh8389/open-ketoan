@@ -143,8 +143,13 @@ async function withLots(trx: Db, tenantId: string, branchCode: string | undefine
     return { ...l, lots };
   });
 }
-const hasLotFilter = (params: unknown) => Array.isArray((params as { lines?: unknown } | null)?.lines)
-  && ((params as { lines: { lotFilter?: unknown }[] }).lines).some((x) => x && typeof x === 'object' && x.lotFilter);
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (K3): dự phân lô khi chương trình có lọc lô ở BẤT KỲ chỗ nào — dòng giá (price_lines@2),
+// mã hàng mua / combo (buy_x_get_y@2), hàng tính tổng đơn (order_gift@2) (đóng góp)
+const hasLotFilter = (params: unknown): boolean => {
+  if (!params || typeof params !== 'object') return false;
+  if (Array.isArray(params)) return params.some(hasLotFilter);
+  return Object.entries(params as Record<string, unknown>).some(([k, v]) => (k === 'lotFilter' ? Boolean(v) : hasLotFilter(v)));
+};
 
 export interface PolicyRefOut { key: string; version: number; hash: string; policyId: string }
 

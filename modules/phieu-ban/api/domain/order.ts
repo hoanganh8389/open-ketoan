@@ -70,6 +70,9 @@ export const orderInput = z.object({
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-032 Q1: thông tin giao trên đơn đặt hàng (đóng góp)
   /** Thông tin giao (NT-BH-032): người nhận, SĐT, địa chỉ, phí ship thu khách, hãng (SELF = tự giao), mã vận đơn, tiền COD. */
   shipping: shippingInput.optional(),
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): kênh bán của đơn (danh mục Kênh bán hàng của module pos) — khuyến mại tính theo kênh (đóng góp)
+  /** Mã kênh bán (hoặc tên) — máy chủ kiểm với danh mục, lưu mã + tên. Trống = kênh mặc định (Gần shop). */
+  saleChannel: z.string().trim().max(100).optional(),
 });
 export type OrderInput = z.infer<typeof orderInput>;
 
@@ -84,6 +87,9 @@ export type OrderBody = {
   totals: { beforeTax: number; tax: number; total: number };
   note?: string;
   policyRefs?: { key: string; version: number; hash: string }[];
+  /** NT-BH-067: kênh bán của đơn (mã + tên lúc lập); vắng = kênh mặc định. Giao hàng → phiếu bán mang kênh này. */
+  saleChannel?: string;
+  saleChannelName?: string;
   deliveries: Delivery[];
   rejection?: { by: string; at: string; note: string };
   /** NT-BH-032: đơn copy từ đơn / hoá đơn khác (loại + số gốc). */

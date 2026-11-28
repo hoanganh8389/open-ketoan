@@ -35,6 +35,8 @@ import {
   stockByWarehouse, warehousesOf, writeOf, type OrderFilter, type OrderRow, type ShipLog,
 } from './order-store.js';
 import { giftWarehouseOf, saveDraftIn, withChannel } from './service.js';
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: kênh bán của đơn / phiếu cho khuyến mại theo kênh (đóng góp)
+import { channelInfo, checkPromoChannel } from './service.js';
 import { activeMethods, branchExists, catalogFor, deleteDoc, getDoc, partnerByCode, saleByNo, serviceSkus, taxRates, type Tx } from './store.js';
 
 export const HOLD_WAREHOUSES = 'bizcity.phieu_ban.hold_warehouses';
@@ -80,14 +82,31 @@ async function prepareOrder(tx: Tx, input: OrderInput) {
   const customer = input.customer?.name || phone ? { ...(input.customer?.name ? { name: input.customer.name } : {}), ...(phone ? { phone } : {}) } : undefined;
   return {
     warehouseCode, phone, partnerCode: c.body.partner?.code ?? null, lines: c.body.lines, shipping: normShipping(input.shipping),
-    head: { partner: c.body.partner, customer, totals: c.body.totals, note: c.body.note, policyRefs: c.body.policyRefs },
+    head: { partner: c.body.partner, customer, totals: c.body.totals, note: c.body.note, policyRefs: c.body.policyRefs,
+      // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): kênh bán đã kiểm (orderChannel) — mã + tên (đóng góp)
+      saleChannel: input.saleChannel || undefined, saleChannelName: (input as { saleChannelName?: string }).saleChannelName },
   };
+}
+
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): kênh bán của đơn — mã / tên kiểm ở danh mục Kênh bán hàng (như phiếu BH10), kèm loại
+// kênh để tính khuyến mại theo kênh. `lenient` (Copy đơn): kênh gốc không còn dùng → về kênh mặc định thay vì báo lỗi (đóng góp)
+async function orderChannel(ctx: ActionContext, input: OrderInput, lenient = false): Promise<{ input: OrderInput; chan: { code: string; kind: 'online' | 'offline' | null } }> {
+  let out: OrderInput = { ...input, saleChannel: undefined };
+  if ((input.saleChannel ?? '').trim()) {
+    try {
+      out = (await withChannel(ctx, input as unknown as DocInput)) as unknown as OrderInput;
+    } catch (e) {
+      if (!lenient) throw e;
+    }
+  }
+  return { input: out, chan: await channelInfo(ctx, out.saleChannel) };
 }
 
 const bodyOf = (p: Awaited<ReturnType<typeof prepareOrder>>, lines: OrderLine[], deliveries: OrderBody['deliveries'], copiedFrom?: OrderBody['copiedFrom']): OrderBody => ({
   ...(p.head.partner ? { partner: p.head.partner } : {}), ...(p.head.customer ? { customer: p.head.customer } : {}),
   lines, totals: p.head.totals, ...(p.head.note ? { note: p.head.note } : {}), ...(p.head.policyRefs?.length ? { policyRefs: p.head.policyRefs } : {}), deliveries,
   ...(copiedFrom ? { copiedFrom } : {}),
+  ...(p.head.saleChannel ? { saleChannel: p.head.saleChannel, ...(p.head.saleChannelName ? { saleChannelName: p.head.saleChannelName } : {}) } : {}),
 });
 
 const headOf = (r: { partner_code: string | null; valid_until: string | null; warehouse_code: string; branch_code: string; order_date: string; phone: string | null; body: OrderBody }) => ({
@@ -227,6 +246,7 @@ async function mergeInto(ctx: ActionContext, targetId: string, add: OrderInput) 
     orderDate: t.order_date, branchCode: t.branch_code, warehouseCode: t.warehouse_code, validUntil: t.valid_until ?? undefined, source: t.source,
     ...(t.partner_code ? { partner: { code: t.partner_code } } : {}), ...(t.body.customer ? { customer: t.body.customer } : {}),
     lines: lines as OrderInput['lines'], note: t.body.note, policyRefs: t.body.policyRefs, shipping: shippingOf(t) ?? undefined,
+    ...(t.body.saleChannel ? { saleChannel: t.body.saleChannel } : {}),
   };
   return updateOrderFlow(ctx, targetId, input, 'merge');
 }
@@ -236,7 +256,10 @@ export async function updateOrderFlow(ctx: ActionContext, id: string, input: Ord
   // [2026-11-25 khanhtd] NGHIEM-THU — BH20: Nháp / Chờ duyệt → áp lại khuyến mại theo ngày đơn (withPromo); Đã gửi (đang giữ hàng) giữ nguyên
   //   dòng chương trình như màn gửi (không đổi quà / chiết khấu của đơn đã giữ hàng)
   const st = (await ctx.data.module(async (tx) => getOrder(tx, id))).status;
-  if (st === 'draft' || st === 'pending') input = await withPromo(ctx, input);
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): kênh bán kiểm ở danh mục; khuyến mại áp lại theo kênh của đơn (đóng góp)
+  const oc = await orderChannel(ctx, input);
+  input = oc.input;
+  if (st === 'draft' || st === 'pending') input = await withPromo(ctx, input, oc.chan);
   const plan = await ctx.data.module(async (tx) => {
     const cur = await getOrder(tx, id, true);
     if (!['draft', 'pending', 'open'].includes(cur.status)) throw stateError(cur, 'không sửa được');
@@ -400,6 +423,8 @@ export async function deliverOrder(ctx: ActionContext, id: string, input: { docD
       docDate: input.docDate || vnToday(), branchCode: r.branch_code, warehouseCode: r.hold_warehouse_code ?? r.warehouse_code, partner: { code: r.partner_code },
       lines: deliveryLines(r.body.lines, a.delivered, before), payments: [], note: `Giao theo đơn đặt hàng ${r.order_no}`,
       ...(r.body.policyRefs?.some((p) => used.has(p.key)) ? { policyRefs: r.body.policyRefs.filter((p) => used.has(p.key)) } : {}),
+      // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): phiếu bán của lần giao mang kênh của đơn (khuyến mại theo kênh kiểm lại lúc duyệt) (đóng góp)
+      ...(r.body.saleChannel ? { saleChannel: r.body.saleChannel, saleChannelName: r.body.saleChannelName } : {}),
     } as DocInput;
     const doc = await saveDraftIn(tx, ctx, 'sale', sale, undefined, { order: { id: r.order_id, no: r.order_no } });
     const done = fullyDelivered(a.lines);
@@ -497,6 +522,8 @@ async function syncLinkedEdit(tx: Tx, ctx: ActionContext, d: { docId: string; or
 export async function saveSaleDraft(ctx: ActionContext, kind: Kind, input0: DocInput, id?: string) {
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-031: kênh bán chọn từ danh mục của module pos (đóng góp)
   const input = await withChannel(ctx, input0, id);
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C3): khuyến mại theo kênh phải khớp kênh của phiếu khi Ghi (đóng góp)
+  if (kind === 'sale') await checkPromoChannel(ctx, input.docDate, input.saleChannel, input.lines);
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-028: dòng quà của phiếu bán tự vào kho quà (KKM) của cửa hàng — hỏi module pos ngoài giao dịch (đóng góp)
   const giftWarehouse = await giftWarehouseOf(ctx, kind, input.branchCode, input.lines);
   return ctx.data.module(async (tx) => saveDraftIn(tx, ctx, kind, input, id, { onLinkedEdit: (t, d) => syncLinkedEdit(t, ctx, d), giftWarehouse }));
@@ -715,6 +742,8 @@ export async function setShipmentStatus(ctx: ActionContext, id: string, shipment
         lines: [...deliveryLines(r.body.lines, sh.lines, before), ...extra], payments,
         note: `Giao theo đơn đặt hàng ${r.order_no} — chuyến ${sh.seq}${carrier !== SELF_CARRIER ? ` (${carrier}${trackingNo ? ` ${trackingNo}` : ''})` : ''}`,
         ...(r.body.policyRefs?.some((p) => used.has(p.key)) ? { policyRefs: r.body.policyRefs.filter((p) => used.has(p.key)) } : {}),
+        // NT-BH-067 (C2): phiếu bán của chuyến giao mang kênh của đơn.
+        ...(r.body.saleChannel ? { saleChannel: r.body.saleChannel, saleChannelName: r.body.saleChannelName } : {}),
       } as DocInput, undefined, { order: { id: r.order_id, no: r.order_no } });
       sale = { id: doc.id, docNo: doc.docNo };
       lines = shipmentDelivered(r.body.lines, sh.lines);
@@ -769,7 +798,7 @@ export async function copyOrder(ctx: ActionContext, input: CopyInput) {
       return {
         no: o.order_no, branchCode: o.branch_code, warehouseCode: o.warehouse_code, partnerCode: o.partner_code, customer: o.body.customer,
         lines: o.body.lines.filter((l) => !(l.isGift && l.policyRef)).map((l) => ({ sku: l.sku, qty: l.qty, isGift: l.isGift && !l.policyRef })),
-        shipping: ship ? { ...ship, trackingNo: undefined } : undefined, note: o.body.note,
+        shipping: ship ? { ...ship, trackingNo: undefined } : undefined, note: o.body.note, saleChannel: o.body.saleChannel,
       };
     }
     if (input.from === 'sale') {
@@ -779,7 +808,7 @@ export async function copyOrder(ctx: ActionContext, input: CopyInput) {
       return {
         no: d.doc_no, branchCode: d.branch_code, warehouseCode: undefined as string | undefined, partnerCode: d.partner_code, customer: undefined,
         lines: d.body.lines.filter((l) => !(l.isGift && l.policyRef) && l.lineKey !== SHIP_LINE_KEY && l.sku !== cfg?.feeSku).map((l) => ({ sku: l.sku, qty: l.qty, isGift: l.isGift })),
-        shipping: undefined, note: undefined,
+        shipping: undefined, note: undefined, saleChannel: d.body.saleChannel,
       };
     }
     const p = pos!;
@@ -790,7 +819,7 @@ export async function copyOrder(ctx: ActionContext, input: CopyInput) {
       no: p.code, branchCode: p.branchCode, warehouseCode: undefined as string | undefined, partnerCode,
       customer: !partnerCode && normPhone(raw) ? { phone: normPhone(raw) } : undefined,
       lines: p.lines.filter((l) => !l.isGift).map((l) => ({ sku: l.sku, qty: r4(l.unitQty * (l.ratio || 1)), isGift: false })),
-      shipping: undefined, note: undefined,
+      shipping: undefined, note: undefined, saleChannel: undefined as string | undefined,
     };
   });
   if (!src.lines.length) throw copyFail(`${src.no} không có dòng hàng để copy`);
@@ -803,7 +832,9 @@ export async function copyOrder(ctx: ActionContext, input: CopyInput) {
     merged.set(k, m ? { ...m, qty: r4(m.qty + l.qty) } : { ...l });
   }
   const lines = [...merged.values()].map((l, i) => ({ lineKey: `L${i + 1}`, sku: l.sku, qty: l.qty, ...(l.isGift ? { isGift: true } : {}) }));
-  const promo = await promoFor(ctx, branchCode, today, lines.filter((l) => !l.isGift));
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): đơn copy giữ kênh của đơn / phiếu gốc (kênh đã ngừng → kênh mặc định); khuyến mại theo kênh đó (đóng góp)
+  const oc = await orderChannel(ctx, { saleChannel: src.saleChannel } as OrderInput, true);
+  const promo = await promoFor(ctx, branchCode, today, lines.filter((l) => !l.isGift), oc.chan);
   const all = [...lines.map((l) => {
     const d = promo.discounts.get(l.lineKey);
     return d ? { ...l, discount: d.discount, policyRef: d.ref } : l;
@@ -813,6 +844,7 @@ export async function copyOrder(ctx: ActionContext, input: CopyInput) {
     ...(src.partnerCode ? { partner: { code: src.partnerCode } } : {}), ...(src.customer ? { customer: src.customer } : {}),
     lines: all as OrderInput['lines'], note: [`Copy từ ${src.no}`, src.note].filter(Boolean).join(' · '),
     ...(promo.policyRefs.length ? { policyRefs: promo.policyRefs } : {}), ...(src.shipping ? { shipping: src.shipping } : {}),
+    ...(oc.input.saleChannel ? { saleChannel: oc.input.saleChannel, saleChannelName: (oc.input as { saleChannelName?: string }).saleChannelName } : {}),
   };
   if (promo.skipped) ctx.meta('promoSkipped', promo.skipped);
   const r = await createOrder(ctx, orderInput, { onDuplicate: 'keep', copiedFrom: { kind: input.from, no: src.no } });
@@ -838,7 +870,8 @@ async function posLinesOf(ctx: ActionContext, input: CopyInput): Promise<PosLine
  * giá trước thuế như đơn sẽ tính × (1 + thuế suất), quy theo đơn vị nhỏ nhất). Tiền giảm gồm thuế → chiết khấu trước thuế của dòng; quà →
  * dòng quà 0đ. Core không trả lời (thiếu quyền, chưa có chính sách) → không áp, báo `promoSkipped`.
  */
-async function promoFor(ctx: ActionContext, branch: string, date: string, lines: { lineKey: string; sku: string; qty: number }[]) {
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): gửi kênh của đơn (mã + loại) — chương trình theo kênh bán (NT-BH-065) áp đúng kênh (đóng góp)
+async function promoFor(ctx: ActionContext, branch: string, date: string, lines: { lineKey: string; sku: string; qty: number }[], chan?: { code: string; kind: 'online' | 'offline' | null }) {
   const none = { discounts: new Map<string, { discount: number; ref: { key: string; version: number; line: 'discount' } }>(), gifts: [] as Evaluated['gifts'], policyRefs: [] as { key: string; version: number; hash: string }[] };
   if (!lines.length) return { ...none, skipped: null as string | null };
   const info = await ctx.data.module(async (tx) => ({
@@ -852,7 +885,8 @@ async function promoFor(ctx: ActionContext, branch: string, date: string, lines:
   if (!evalLines.length) return { ...none, skipped: null };
   let ev: Evaluated;
   try {
-    ev = await ctx.actions.call<Evaluated>('core.policy.evaluate', { docDate: date, branchCode: branch, lines: evalLines });
+    ev = await ctx.actions.call<Evaluated>('core.policy.evaluate', { docDate: date, branchCode: branch, lines: evalLines,
+      ...(chan ? { channel: chan.code, ...(chan.kind ? { channelKind: chan.kind } : {}) } : {}) });
   } catch (e) {
     return { ...none, skipped: `Chưa tính được khuyến mại: ${(e as Error).message}` };
   }
@@ -877,13 +911,13 @@ async function promoFor(ctx: ActionContext, branch: string, date: string, lines:
  * thắng), quà thành dòng G… 0đ, policyRefs chỉ giữ chương trình thật sự dùng. Core không trả lời → giữ nguyên đơn như người dùng gửi,
  * báo `promoSkipped` (không xoá khuyến mại cũ chỉ vì Core lỗi).
  */
-async function withPromo(ctx: ActionContext, input: OrderInput): Promise<OrderInput> {
+async function withPromo(ctx: ActionContext, input: OrderInput, chan?: { code: string; kind: 'online' | 'offline' | null }): Promise<OrderInput> {
   const base = input.lines.filter((l) => !(l.isGift && l.policyRef)).map((l) => {
     if (!l.policyRef) return l;
     const { policyRef: _ref, discount: _discount, ...rest } = l;
     return rest as OrderInput['lines'][number];
   });
-  const promo = await promoFor(ctx, input.branchCode, input.orderDate, base.filter((l) => !l.isGift));
+  const promo = await promoFor(ctx, input.branchCode, input.orderDate, base.filter((l) => !l.isGift), chan);
   if (promo.skipped) { ctx.meta('promoSkipped', promo.skipped); return input; }
   const lines: OrderInput['lines'] = base.map((l) => {
     const d = promo.discounts.get(l.lineKey);
@@ -902,7 +936,9 @@ async function withPromo(ctx: ActionContext, input: OrderInput): Promise<OrderIn
 
 /** Lập đơn từ màn / API: áp khuyến mại theo ngày đơn rồi lập (Copy đơn đã tự áp, gọi thẳng createOrder). */
 export async function createOrderWithPromo(ctx: ActionContext, input: OrderInput, dup: DupMode = { onDuplicate: 'ask' }) {
-  return createOrder(ctx, await withPromo(ctx, input), dup);
+  // NT-BH-067 (C2): kênh bán kiểm ở danh mục, khuyến mại theo kênh của đơn.
+  const oc = await orderChannel(ctx, input);
+  return createOrder(ctx, await withPromo(ctx, oc.input, oc.chan), dup);
 }
 
 // ------------------------------------------------------------------ chuyển kho cho đơn thiếu hàng (NT-BH-041)

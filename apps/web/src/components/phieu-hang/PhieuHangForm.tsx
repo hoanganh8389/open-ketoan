@@ -47,7 +47,8 @@ const docCot = (): Record<string, boolean> => { try { return JSON.parse(localSto
 interface PaymentMethod { code: string; name: string; isActive?: boolean }
 // [2026-11-21 Võ Hoàng] NGHIEM-THU — NT-BH-035 §3.1: BH10 có ô Kênh bán (danh mục Kênh bán hàng của module pos) và ô Mã voucher (đóng góp)
 /** Kênh bán hàng (GET /api/v1/m/pos/channels). */
-interface SaleChannel { code: string; name: string; active: boolean }
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C1): loại kênh (online / offline) — gửi kèm khi tính khuyến mại cho chương trình theo kênh bán (đóng góp)
+interface SaleChannel { code: string; name: string; active: boolean; kind?: 'online' | 'offline' }
 /** Voucher đã áp (phiếu đã duyệt) / kết quả kiểm (POST /api/v1/m/phieu-ban/vouchers/check). */
 interface AppliedVoucher { code: string; campaignName: string; issuer: 'tgs' | 'brand'; kind: 'discount' | 'payment'; amount: number }
 interface VoucherCheck { vouchers: AppliedVoucher[]; before: { total: number }; after: { total: number }; discount: number; payment: number }
@@ -134,7 +135,8 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
   const [promoErr, setPromoErr] = useState('');
   const [promoBusy, setPromoBusy] = useState(false);
   /** Dấu của giỏ (mã, SL, giá, cửa hàng, ngày) — đổi sau khi áp thì nhắc áp lại. */
-  const sigOf = (d: TradeDoc) => JSON.stringify([d.branchCode, d.docDate, d.lines.filter((l) => !(l.isGift && l.policyRef)).map((l) => [l.sku, l.qty, l.unitPrice, l.unit])]);
+  // NT-BH-067 (C1): đổi kênh bán sau khi áp cũng nhắc áp lại (chương trình theo kênh).
+  const sigOf = (d: TradeDoc) => JSON.stringify([d.branchCode, d.docDate, (d as TradeDoc & SaleExtra).saleChannel ?? '', d.lines.filter((l) => !(l.isGift && l.policyRef)).map((l) => [l.sku, l.qty, l.unitPrice, l.unit])]);
   const ratioOf = (l: TradeLine) => (quotes[l.sku] && quotes[l.sku]!.unit === l.unit ? quotes[l.sku]!.ratio : 1);
   const giftOf = (gifts: Record<string, PromoGiftInfo>) => (sku: string) => gifts[sku] ?? { name: sku, unit: '' };
   const runPromo = async () => {
@@ -144,7 +146,11 @@ export function PhieuHangForm({ value, readOnly, saving, error, onSave, onClose,
     setPromoBusy(true);
     try {
       const coupons = coupon.split(/[\s,;]+/).filter(Boolean);
-      const result = await api.post<PromoResult>('/api/v1/policies/evaluate', { docDate: v.docDate, branchCode: v.branchCode, lines, ...(coupons.length ? { coupons } : {}) });
+      // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C1): gửi kênh của phiếu (trống = kênh mặc định Gần shop) + loại kênh theo danh mục — như máy bán (NT-BH-065) (đóng góp)
+      const chCode = ((v as TradeDoc & SaleExtra).saleChannel || 'GAN_SHOP').toUpperCase();
+      const chKind = channels.find((c) => c.code.toUpperCase() === chCode)?.kind;
+      const result = await api.post<PromoResult>('/api/v1/policies/evaluate', { docDate: v.docDate, branchCode: v.branchCode, lines, ...(coupons.length ? { coupons } : {}),
+        channel: chCode, ...(chKind ? { channelKind: chKind } : {}) });
       // Tên, ĐVT nhỏ nhất, thuế của hàng tặng: theo danh mục (Core tính quà theo đơn vị nhỏ nhất).
       const gifts: Record<string, PromoGiftInfo> = {};
       for (const sku of [...new Set(result.gifts.map((g) => g.sku))]) {
