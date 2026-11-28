@@ -1,4 +1,6 @@
 # `bizcity_authorization@1` — Hợp đồng phân quyền (nháp)
+<!-- [2026-11-28 03:44 PM Johnny Chu - Chu Hoàng Anh] FLOW — NC-004 D1 / D2 (chủ chốt Q-PIL-10 ngày 2026-11-28): bản chủ đã dời sang open-platform; tệp này là bản chép giữ cho bộ kiểm của repo (SC-CON-4 / SC-CON-5 / SC-DOC-4) tới khi bộ kiểm đọc bản chủ (C6). -->
+> **Bản chủ:** [open-platform — BIZCITY-AUTHORIZATION-v1.md](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-AUTHORIZATION-v1.md) (từ 2026-11-28). **Sửa văn bản này ⇒ PR vào bizcity-platform trước** (luật đổi chuẩn của bizcity-platform), rồi chép lại đây cùng nội dung; không sửa riêng ở đây.
 <!-- [2026-11-06 00:50 AM Johnny Chu - Chu Hoàng Anh] PHASE-028 — chữ chốt hình dạng bộ tính quyền (W3 đợt 1): mô hình Cho / Nới / Cấm, phạm vi, mục đích, điều kiện, mã lý do; bám ADR-0027 đã chấp nhận -->
 <!-- [2026-11-09 03:05 PM kiennt] PHASE-028 — 1.1.0-draft (D-AUTH-22, thi hành PHASE-030 / 22 §3 #1–#4 đã duyệt 06/11): bỏ hiệu lực Nới; điều kiện 8 → 5 (bỏ doc_date_back_days, doc_date_forward_days, respect_lock_date, status_in); amount_max = hạn mức duyệt cá nhân -->
 <!-- [2026-11-11 09:30 AM kiennt] PHASE-028 — 1.2.0-draft (chữ chốt đề xuất D-AUTH-19, D-AUTH-24 — 80 §3.4): §3a quyền theo loại chứng từ và quyền kéo theo -->
