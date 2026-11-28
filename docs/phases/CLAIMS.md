@@ -24,9 +24,9 @@ Luật: [R-FLOW](../rules/RULE-FLOW.md). **Đọc bản trên `origin/main`** (`
 | Từ ngày | `YYYY-MM-DD`; quá 3 ngày không có commit thì coi là nhả (R-FLOW-6) |
 
 ## Đang có
-<!-- [2026-11-29 05:40 PM Võ Hoàng] NGHIEM-THU — trả chỗ NT-BH-064 / 065 (feat/nt-bh-064-065-km-lo-kenh): đã merge vào dev (#760); `modules/pos/api/domain/order.ts` trả lại dòng NT-BH-061 như đã hẹn; lịch sử còn trong git (đóng góp) -->
 <!-- [2026-11-28 04:46 PM Johnny Chu - Chu Hoàng Anh] FLOW — trả chỗ NC-003 / NC-004 · 00-CANON (docs/canon-open-core): §0b vị trí trong ba vai nền trong cùng PR; lịch sử còn trong git -->
 <!-- [2026-11-28 04:21 PM Johnny Chu - Chu Hoàng Anh] FLOW — trả chỗ NC-004 · D1 / D2 (docs/doi-chuan-sang-open-platform): 15 văn bản ghi bản chủ ở open-platform trong cùng PR; lịch sử còn trong git -->
+<!-- [2026-11-29 05:40 PM Võ Hoàng] NGHIEM-THU — trả chỗ NT-BH-064 / 065 (feat/nt-bh-064-065-km-lo-kenh): đã merge vào dev (#760); `modules/pos/api/domain/order.ts` trả lại dòng NT-BH-061 như đã hẹn; lịch sử còn trong git (đóng góp) -->
 <!-- [2026-11-29 02:30 PM Võ Hoàng] NGHIEM-THU — trả chỗ NT-BH-063 (feat/nt-bh-063-form-theo-buoc): đã merge vào dev; NT-BH-061 nhường tạm `modules/pos/api/domain/order.ts` cho NT-BH-064 / 065; lịch sử còn trong git (đóng góp) -->
 <!-- [2026-11-29 12:30 AM Võ Hoàng] NGHIEM-THU — trả chỗ NT-BH-062 (feat/nt-bh-062-danh-muc-ve-website): đã merge vào dev; `docs/standard/bizcity-standard.json` không trả lại NT-HT-003 tự động — dòng đó nhận lại khi cần; lịch sử còn trong git (đóng góp) -->
 <!-- [2026-11-28 11:30 PM Võ Hoàng] NGHIEM-THU — NT-HT-003 nhường `docs/standard/bizcity-standard.json` cho NT-BH-062 (người giữ đồng ý): thêm `bizcity.masterdata.catalog.changed` vào coreEvents (đóng góp) -->
