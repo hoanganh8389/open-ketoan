@@ -10,6 +10,16 @@
      Thiếu dòng này mà PR chạm trụ cột → bộ chấm ghi việc tiếp "khai tiêu chí" và trụ cột không được tính tiến độ. -->
 **Trụ cột / tiêu chí:** <mã, ví dụ X/DC-3 — hoặc "không">
 
+<!-- [2026-11-29 01:19 AM Johnny Chu - Chu Hoàng Anh] R-CORE-10 — bizcity:loi-truoc@1 (chuẩn bizcity_core_first@1, khối Lõi trước ở cuối AGENTS.md) -->
+## Lõi hay app? (R-CORE-10)
+
+- [ ] **A — vào lõi:** đã / sẽ mở PR ở open-core: <!-- link -->
+- [ ] **B — ứng viên lõi:** viết ở `src/core-candidate/`, có dấu `@bizcity-core-candidate`
+- [ ] **C — nghiệp vụ riêng của kế toán** — lý do: <!-- vì sao chỉ kế toán cần -->
+- [ ] Không thêm thứ phổ thông (danh sách, form, nhập / xuất, cài đặt, quyền, chứng từ, sự kiện, đồng bộ, thông báo, báo cáo…)
+
+Đã tra lõi bằng: <!-- `bizcity doctor --tim …` hoặc tệp open-core đã đọc -->
+
 ## Tầng bị đụng
 
 - [ ] T0 Nhân (`core/`, `modules/{documents,posting,ledger}`, `packages/contracts`, trigger sổ cái) → **1 người duyệt**; ghi mức K0–K3 và (K2 / K3) mục **K**: đụng gì, số đo, đường lui
