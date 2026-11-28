@@ -185,7 +185,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
       <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 12 }}>
         <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
           { label: 'Thông tin chung', warn: out.problems.some((x) => /Mã chương trình|tên chương trình/i.test(x)) },
-          { label: 'Thời gian & điều kiện', warn: out.problems.some((x) => /ngày|giờ|Tổng giá trị|đơn hàng được áp/i.test(x)) },
+          { label: 'Thời gian & điều kiện', warn: out.problems.some((x) => /ngày|giờ|Tổng giá trị|đơn hàng được áp|kênh/i.test(x)) }, // NT-BH-065: ô Kênh bán ở bước 2
           { label: 'Đối tượng áp dụng', warn: out.problems.some((x) => /cửa hàng|mỗi khách|hạng/i.test(x)) },
           { label: 'Hàng & quà', warn: out.problems.some((x) => /SKU|mã|quà|Pool|giá|chiết khấu|Hàng mua|Combo/i.test(x)) },
         ]} />
