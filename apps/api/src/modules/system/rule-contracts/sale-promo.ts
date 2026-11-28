@@ -39,6 +39,11 @@ export const promoConditions = z.object({
   birthdayScope: z.enum(['day', 'week', 'month']).optional(),
   /** Loại đơn được áp: retail (bán lẻ), wholesale (bán sỉ), so (đơn đặt hàng). Nguồn không gửi loại đơn = bán lẻ. */
   orderTypes: z.array(z.enum(['retail', 'wholesale', 'so'])).min(1).max(3).optional(),
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: điều kiện kênh bán (online / offline theo loại kênh khai ở Kênh bán hàng, hoặc mã kênh cụ thể) (đóng góp)
+  /** Loại kênh được áp (online / offline — loại của kênh bán, NT-BH-031). Vắng = mọi kênh. */
+  channelKinds: z.array(z.enum(['online', 'offline'])).min(1).max(2).optional(),
+  /** Mã kênh bán cụ thể được áp (vd GAN_SHOP, ZALO). Vắng = mọi kênh (trong loại `channelKinds` nếu có). */
+  channels: z.array(z.string().trim().min(1).max(32)).min(1).max(50).optional(),
 }).strict();
 
 const common = {
@@ -61,6 +66,9 @@ export interface PromoContext {
   coupons?: string[];
   /** Loại đơn (NT-BH-049): retail / wholesale / so; vắng = retail. */
   orderType?: string;
+  /** NT-BH-065: mã kênh bán của đơn (vd GAN_SHOP) và loại kênh (online / offline) do nguồn bán tra ở danh mục kênh. */
+  channel?: string;
+  channelKind?: string;
   /** Cửa nạp tính lại: điều kiện không biết được coi như đạt. */
   lenient?: boolean;
 }
@@ -150,9 +158,29 @@ export function conditionsBlock(c: z.infer<typeof promoConditions> | undefined, 
     const ot = ctx?.orderType ?? 'retail';
     if (!c.orderTypes.includes(ot as 'retail')) return `chỉ áp đơn ${c.orderTypes.map((x) => ({ retail: 'bán lẻ', wholesale: 'bán sỉ', so: 'đặt hàng' })[x]).join(', ')}`;
   }
+  const ch = channelBlock(c, ctx);
+  if (ch) return ch;
   if (c.memberLevels) {
     const lv = ctx?.customer?.memberLevel;
     if (!lv || !c.memberLevels.includes(lv)) return `chỉ áp hạng ${c.memberLevels.join(', ')}`;
+  }
+  return null;
+}
+
+// [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: chương trình có điều kiện kênh mà đơn không mang kênh (máy bán mất mạng, nguồn chưa gửi) → KHÔNG áp (Hoàng chốt C7 29/11) (đóng góp)
+/** Điều kiện kênh bán (NT-BH-065). Trả lý do không đạt, hoặc null. Gọi sau nhánh `lenient` (cửa nạp tính lại coi như đạt). */
+export function channelBlock(c: { channelKinds?: string[]; channels?: string[] } | undefined, ctx: PromoContext | undefined): string | null {
+  if (!c || (!c.channelKinds?.length && !c.channels?.length)) return null;
+  const code = ctx?.channel?.trim().toUpperCase();
+  const kind = ctx?.channelKind;
+  const kindLabel = (k: string) => (k === 'online' ? 'online' : 'tại cửa hàng (offline)');
+  if (c.channelKinds?.length) {
+    if (kind !== 'online' && kind !== 'offline') return 'chương trình theo kênh bán — đơn chưa xác định kênh (online / offline)';
+    if (!c.channelKinds.includes(kind)) return `chỉ áp kênh ${c.channelKinds.map(kindLabel).join(', ')}`;
+  }
+  if (c.channels?.length) {
+    if (!code) return 'chương trình theo kênh bán — đơn chưa có mã kênh';
+    if (!c.channels.some((x) => x.trim().toUpperCase() === code)) return `chỉ áp kênh ${c.channels.join(', ')}`;
   }
   return null;
 }
@@ -369,7 +397,7 @@ const commonDocs = [
   { name: 'validFrom / validTo', type: 'YYYY-MM-DD', required: false, doc: 'Thời gian chương trình' },
   { name: 'priority', type: 'số nguyên', required: false, doc: 'Mặc định 0; lớn tính trước' },
   { name: 'exclusive', type: 'boolean', required: false, doc: 'Áp riêng: dòng đã dùng thì chương trình sau không áp' },
-  { name: 'conditions', type: 'object', required: false, doc: 'weekdays[1..7], timeFrom / timeTo (HH:MM; bắt đầu sau kết thúc = qua đêm), minOrderAmount, couponCodes[], birthdayMonth, birthdayScope (day|week|month), orderTypes[retail|wholesale|so], memberLevels[]' },
+  { name: 'conditions', type: 'object', required: false, doc: 'weekdays[1..7], timeFrom / timeTo (HH:MM; bắt đầu sau kết thúc = qua đêm), minOrderAmount, couponCodes[], birthdayMonth, birthdayScope (day|week|month), orderTypes[retail|wholesale|so], channelKinds[online|offline], channels[mã kênh], memberLevels[]' },
   { name: 'legalCapPct', type: 'số 0–100 | null', required: false, doc: 'Trần NĐ81 (mặc định 50 % tiền dòng); null = miễn' },
 ];
 const dateIssues = (p: { validFrom?: string; validTo?: string }) => (p.validFrom && p.validTo && p.validTo < p.validFrom ? [{ path: 'validTo', message: 'Ngày kết thúc trước ngày bắt đầu' }] : []);

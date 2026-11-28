@@ -10,7 +10,7 @@ import { M } from '../../lib';
 import { OverlapList, approveAndPublish, type Draft, type Overlap } from './Drafts';
 import { NutBuoc, ThanhBuoc } from './ThanhBuoc';
 import {
-  OLD_TYPES, OLD_TYPE, PASTE_COLS, emptyCk, emptyFixed, emptyOld, emptyQty, emptyUnit, oldToParams, parsePaste, reasonOf,
+  OLD_TYPES, OLD_TYPE, PASTE_COLS, HSD_MODES, emptyCk, emptyFixed, emptyOld, emptyQty, emptyUnit, oldToParams, parsePaste, reasonOf,
   type CkRow, type FixedRow, type OldForm, type OldType, type QtyRow, type UnitRow,
 } from './old-types';
 
@@ -63,6 +63,9 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   const units = useQuery({ queryKey: ['km', 'dvt', allSkus.join(',')], enabled: allSkus.length > 0, staleTime: 60_000,
     queryFn: () => api.get<Record<string, Unit[]>>('/api/v1/purchase/units', { skus: allSkus.join(',') }) });
   const branches = useQuery({ queryKey: ['km', 'branches'], queryFn: () => api.get<Branch[]>('/api/v1/branches'), staleTime: 300_000 });
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: danh sách kênh bán (Kênh bán hàng) cho ô "Chọn kênh" (đóng góp)
+  const channelList = useQuery({ queryKey: ['pos-kenh-ban'], staleTime: 300_000,
+    queryFn: () => api.get<{ items: { code: string; name: string; kind: 'online' | 'offline'; active: boolean }[] }>(`${M}/channels`) });
   const groups = useQuery({ queryKey: ['km', 'item-classes', 'group'], queryFn: () => api.get<ItemClass[]>('/api/v1/item-classes/group'), staleTime: 300_000 });
   const tiers = useQuery({ queryKey: ['km', 'hang'], retry: false, staleTime: 300_000,
     queryFn: () => api.get<{ tiers?: { key: string; name: string }[]; content?: { tiers?: { key: string; name: string }[] } }>('/api/v1/m/loyalty/program') });
@@ -143,6 +146,23 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   const skuCol = <R extends UnitRow>(k: keyof OldForm, h = 'Mã SKU'): Col<R> => ({ k: 'sku', h, w: 130, cell: (r, i) => inp(r.sku, (v) => upd(k, i, { sku: v }), { ph: 'Mã…' }) });
   const nameCol = <R extends UnitRow>(): Col<R> => ({ k: 'name', h: 'Tên sản phẩm', opt: true, cell: (r) => nameCell(r.sku) });
   const unitCol = <R extends UnitRow>(k: keyof OldForm): Col<R> => ({ k: 'unit', h: 'Đơn vị', w: 150, opt: true, cell: (r, i) => unitSel(r, (p) => upd(k, i, p)) });
+  // [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064: cột "Lọc HSD" của dòng giá (như hsd_filter plugin cũ, thêm còn ≤ N ngày); loại "Theo lô hàng"
+  // chỉ có ô số lô. Máy chủ tự chọn lô hạn gần trước, chỉ phần thuộc lô khớp được giảm; thu ngân không chọn lô (đóng góp)
+  const hsdCol = <R extends CkRow | FixedRow>(k: 'ckRows' | 'fixedRows'): Col<R> => ({
+    k: 'hsd', h: 'Lọc HSD / lô', w: 260, opt: true, cell: (r, i) => {
+      const m = HSD_MODES.find((x) => x.v === r.hsdMode) ?? HSD_MODES[0]!;
+      return (
+        <div className="row" style={{ gap: 4 }}>
+          <select className="input" style={{ width: r.hsdMode ? 140 : '100%' }} value={r.hsdMode} title="Chỉ giảm phần hàng xuất từ lô khớp (máy chủ tự chọn lô hạn gần trước)"
+            onChange={(e) => upd(k, i, { hsdMode: e.target.value, ...(e.target.value ? {} : { hsdValue: '' }) })}>
+            {HSD_MODES.map((x) => <option key={x.v} value={x.v}>{x.label}</option>)}
+          </select>
+          {r.hsdMode && inp(r.hsdValue, (v) => upd(k, i, { hsdValue: v }), { ph: m.ph })}
+        </div>
+      );
+    },
+  });
+  const lotCol: Col<FixedRow> = { k: 'lot', h: 'Số lô', w: 200, cell: (r, i) => inp(r.hsdValue, (v) => upd('fixedRows', i, { hsdMode: 'lot', hsdValue: v }), { ph: 'số lô, cách dấu phẩy' }) };
   const qtyRows = (k: 'buyRows' | 'giftRows', qtyLabel: string, addLabel: string) => (
     <Grid<QtyRow> rows={f[k]} pasteTarget={k} addLabel={addLabel} onAdd={() => add(k, emptyQty)} onDel={(i) => del(k, i)}
       cols={[skuCol(k), nameCol(), { k: 'qty', h: qtyLabel, w: 100, cell: (r, i) => inp(r.qty, (v) => upd(k, i, { qty: v }), { right: true }) }, unitCol(k)]} />
@@ -155,7 +175,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
     const mk = (c: string[]): object => {
       switch (t) {
         case 'ckRows': return { ...emptyCk(), sku: c[0] ?? '', fromQty: c[1] || '1', pct: c[2] ?? '', amount: c[3] ?? '', maxDiscount: c[4] ?? '' } satisfies CkRow;
-        case 'fixedRows': return { ...emptyFixed(), sku: c[0] ?? '', fromQty: c[1] || '1', price: c[2] ?? '' } satisfies FixedRow;
+        case 'fixedRows': return { ...emptyFixed(), sku: c[0] ?? '', fromQty: c[1] || '1', price: c[2] ?? '', ...(f.type === 'batch' && c[3] ? { hsdMode: 'lot' as const, hsdValue: c[3] } : {}) } satisfies FixedRow;
         case 'buyRows': case 'giftRows': return { ...emptyQty(), sku: c[0] ?? '', qty: c[1] || '1' } satisfies QtyRow;
         default: return { ...emptyUnit(), sku: c[0] ?? '' };
       }
@@ -182,7 +202,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
       <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 12 }}>
         <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
           { label: 'Thông tin chung', warn: out.problems.some((x) => /Mã chương trình|tên chương trình/i.test(x)) },
-          { label: 'Thời gian & điều kiện', warn: out.problems.some((x) => /ngày|giờ|Tổng giá trị|đơn hàng được áp/i.test(x)) },
+          { label: 'Thời gian & điều kiện', warn: out.problems.some((x) => /ngày|giờ|Tổng giá trị|đơn hàng được áp|kênh/i.test(x)) }, // NT-BH-065: ô Kênh bán ở bước 2
           { label: 'Đối tượng áp dụng', warn: out.problems.some((x) => /cửa hàng|mỗi khách|hạng/i.test(x)) },
           { label: 'Hàng & quà', warn: out.problems.some((x) => /SKU|mã|quà|Pool|giá|chiết khấu|Hàng mua|Combo/i.test(x)) },
         ]} />
@@ -249,11 +269,29 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
           </div>
 
           <Panel title="Chỉ áp dụng cho những đơn hàng thỏa mãn điều kiện">
+            {f.channelMode === 'pick' && (
+              <div className="row" role="group" aria-label="Chọn kênh bán" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+                <span className="muted">Kênh được áp:</span>
+                {(channelList.data?.items ?? []).filter((c) => c.active || f.channels.includes(c.code)).map((c) => (
+                  <Check key={c.code} label={`${c.name} (${c.kind === 'online' ? 'online' : 'offline'})`} checked={f.channels.includes(c.code)}
+                    onChange={(v) => set({ channels: v ? [...f.channels, c.code] : f.channels.filter((x) => x !== c.code) })} />
+                ))}
+                {channelList.isLoading && <span className="muted">Đang tải kênh bán…</span>}
+              </div>
+            )}
             <div className="row" style={{ gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
               <b>Áp dụng cho</b>
               <Check label="Hóa đơn bán lẻ" checked={f.retail} onChange={(v) => set({ retail: v })} title="Máy bán POS, phiếu bán lẻ" />
               <Check label="Hóa đơn bán buôn" checked={f.wholesale} onChange={(v) => set({ wholesale: v })} />
               <Check label="Đơn đặt hàng (SO)" checked={f.so} onChange={(v) => set({ so: v })} />
+              <b title="Loại kênh theo màn Kênh bán hàng (online / offline); đơn không xác định được kênh thì chương trình có điều kiện kênh không áp">Kênh bán</b>
+              <select className="input" style={{ width: 170 }} aria-label="Kênh bán" value={f.channelMode}
+                onChange={(e) => set({ channelMode: e.target.value as OldForm['channelMode'] })}>
+                <option value="all">Tất cả kênh</option>
+                <option value="offline">Chỉ offline (tại cửa hàng)</option>
+                <option value="online">Chỉ online</option>
+                <option value="pick">Chọn kênh…</option>
+              </select>
               <span>{f.type === 'order_gift' ? 'Tổng giá trị đơn hàng ≥ (ngưỡng tặng quà)' : 'Tổng giá trị đơn hàng ≥'}</span>{inp(f.minOrderTotal, (v) => set({ minOrderTotal: v }), { w: 150, right: true })}
               <span title="Mỗi cửa hàng tối đa bao nhiêu đơn được áp; 0 = không giới hạn">Số lượng đơn hàng được áp dụng</span>{inp(f.maxUsage, (v) => set({ maxUsage: v }), { w: 110, right: true, title: 'Mỗi cửa hàng; 0 = không giới hạn' })}
             </div>
@@ -311,7 +349,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
           {under24.length > 0 && (
             <div className="alert alert-warn">⚠ NĐ100/2014: không khuyến mại sản phẩm dinh dưỡng cho trẻ dưới 24 tháng — kiểm lại: {under24.map((x) => `${x.sku} ${x.name}`).join('; ')}</div>
           )}
-          {(f.type === 'ck' || f.type === 'fixed' || f.type === 'bxgy' || f.type === 'order_gift') && (
+          {(f.type === 'ck' || f.type === 'fixed' || f.type === 'batch' || f.type === 'bxgy' || f.type === 'order_gift') && (
             <Panel title="Phạm vi Nhóm hàng (HCL)">
               <div className="row" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'end' }}>
                 <Lbl label="Kiểu phạm vi">
@@ -336,7 +374,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
               <button type="button" className="btn btn-sm" onClick={() => setColMenu((x) => !x)} title="Ẩn / hiện cột phụ của bảng">Chọn cột</button>
               {colMenu && (
                 <div className="card card-body" style={{ position: 'absolute', right: 0, top: 32, zIndex: 5, display: 'grid', gap: 4, minWidth: 180 }}>
-                  {[['name', 'Tên sản phẩm'], ['unit', 'Đơn vị'], ['max', 'Tối đa (đ)']].map(([k, l]) => <Check key={k} label={l!} checked={showCol(k!)} onChange={() => toggleCol(k!)} />)}
+                  {[['name', 'Tên sản phẩm'], ['unit', 'Đơn vị'], ['max', 'Tối đa (đ)'], ['hsd', 'Lọc HSD / lô']].map(([k, l]) => <Check key={k} label={l!} checked={showCol(k!)} onChange={() => toggleCol(k!)} />)}
                 </div>
               )}
             </div>
@@ -348,14 +386,19 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
                 { k: 'pct', h: 'Chiết khấu %', w: 110, cell: (r, i) => inp(r.pct, (v) => upd('ckRows', i, { pct: v }), { right: true }) },
                 { k: 'amt', h: 'Chiết khấu đ', w: 120, cell: (r, i) => inp(r.amount, (v) => upd('ckRows', i, { amount: v }), { right: true, ph: 'VNĐ / đơn vị' }) },
                 { k: 'max', h: 'Tối đa (đ)', w: 120, opt: true, cell: (r, i) => inp(r.maxDiscount, (v) => upd('ckRows', i, { maxDiscount: v }), { right: true, title: 'Trần tiền giảm của cả mã trên một đơn' }) },
+                hsdCol<CkRow>('ckRows'),
               ]} />
             )}
-            {f.type === 'fixed' && (
-              <Grid<FixedRow> rows={f.fixedRows} pasteTarget="fixedRows" onAdd={() => add('fixedRows', emptyFixed)} onDel={(i) => del('fixedRows', i)} cols={[
+            {(f.type === 'fixed' || f.type === 'batch') && (
+              <Grid<FixedRow> rows={f.fixedRows} pasteTarget="fixedRows" onAdd={() => add('fixedRows', f.type === 'batch' ? () => ({ ...emptyFixed(), hsdMode: 'lot' as const }) : emptyFixed)} onDel={(i) => del('fixedRows', i)} cols={[
                 skuCol('fixedRows'), nameCol(), unitCol('fixedRows'),
                 { k: 'from', h: 'Từ SL', w: 90, cell: (r, i) => inp(r.fromQty, (v) => upd('fixedRows', i, { fromQty: v }), { right: true }) },
                 { k: 'price', h: 'Giá mới', w: 140, cell: (r, i) => inp(r.price, (v) => upd('fixedRows', i, { price: v }), { right: true, ph: 'VNĐ / đơn vị' }) },
+                ...(f.type === 'batch' ? [lotCol] : [hsdCol<FixedRow>('fixedRows')]),
               ]} />
+            )}
+            {(f.type === 'ck' || f.type === 'fixed' || f.type === 'batch') && (
+              <span className="muted" style={{ fontSize: 12 }}>Lọc HSD / lô: máy chủ tự chọn lô xuất theo hạn gần trước và chỉ giảm phần hàng thuộc lô khớp; phiếu bán ghi lô đó. Máy bán mất mạng không áp chương trình có lọc lô.</span>
             )}
             {f.type === 'bxgy' && (
               <div style={{ display: 'grid', gap: 10 }}>
@@ -468,7 +511,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
 /** Đổi loại giữ lại phần "Thông tin chương trình" đã nhập. */
 function pickInfo(f: OldForm): Partial<OldForm> {
   const { key, name, description, allowStack, dateOn, validFrom, validTo, timeOn, timeFrom, timeTo, weekdaysOn, weekdays, retail, wholesale, so, minOrderTotal, maxUsage,
-    memberLevels, birthday, branchCodes, effectiveFrom, priority, legalCapPct, noCap, perCustomer } = f;
+    memberLevels, birthday, branchCodes, effectiveFrom, priority, legalCapPct, noCap, perCustomer, channelMode, channels } = f;
   return { key, name, description, allowStack, dateOn, validFrom, validTo, timeOn, timeFrom, timeTo, weekdaysOn, weekdays, retail, wholesale, so, minOrderTotal, maxUsage,
-    memberLevels, birthday, branchCodes, effectiveFrom, priority, legalCapPct, noCap, perCustomer };
+    memberLevels, birthday, branchCodes, effectiveFrom, priority, legalCapPct, noCap, perCustomer, channelMode, channels };
 }

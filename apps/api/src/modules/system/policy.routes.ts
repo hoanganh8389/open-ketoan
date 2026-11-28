@@ -86,6 +86,8 @@ const evaluate = defineAction({
     // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049: quà lựa chọn theo chương trình (khuôn @2: chưa chọn → pendingChoices) và loại đơn (đóng góp)
     giftChoice: z.record(code, z.array(code).max(20)).optional(),
     orderType: z.enum(['retail', 'wholesale', 'so']).optional(),
+    // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-065: loại kênh bán của `channel` (online / offline) cho điều kiện kênh của chương trình (đóng góp)
+    channelKind: z.enum(['online', 'offline']).optional(),
   }),
   output: anyOut,
   expose: { http: { method: 'POST', path: '/api/v1/policies/evaluate' }, mcp: false, ai: 'deny' },

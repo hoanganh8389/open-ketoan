@@ -39,7 +39,7 @@
 
 ## 4. Số liệu mong đợi
 
-Bộ ca mẫu của khuôn (`apps/api/test/sale-promo-v2.test.ts`), test API `apps/api/test/nt-bh-064-km-lo-hsd.test.ts`, module `modules/pos/test/km-lo-hsd.test.ts` + `km-lo-hsd-form.test.ts`: (đề xuất — tệp test ở nhánh code)
+Bộ ca mẫu của khuôn (`apps/api/test/sale-promo-v2.test.ts`), test API `apps/api/test/nt-bh-064-km-lo-hsd.test.ts`, module `modules/pos/test/km-lo-hsd.test.ts` + `km-lo-hsd-form.test.ts`:
 
 | Ca | Kết quả |
 |---|---|

@@ -12,6 +12,7 @@ import type { ManualDiscount, OrderDraft, OrderLineDraft } from './schema.js';
 import { customerInvoiceInfoOf } from './schema.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: voucher TGS (chiết khấu) / hãng (dòng thanh toán) trên đơn (đóng góp)
 import { planDiscounts, planPayments, type QuotedVoucher, type VoucherUse } from './voucher.js';
+import { splitLineByLots } from './lot-split.js';
 
 /**
  * Mặt hàng đọc từ bizcity_read.products. `variant` (ô Biến thể) chỉ dùng cho giá 0đ của hàng Nội bộ; `sendTax` (ô Gửi lên thuế)
@@ -391,6 +392,32 @@ export function saleDocKey(branchCode: string, orderId: string): string {
 }
 
 /** Chứng từ sale (bizcity_ledger_intake@1). Không số tài khoản, không reasonCode (mặc định của loại). */
+// [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064 (C2): dòng giảm theo lô → mỗi lô một dòng phiếu (lotNo / expDate), tiền giảm theo chương trình
+// chỉ ở phần lô được giảm; phần thiếu tồn lô không ghi lô. Không có kế hoạch lô → dòng như cũ (Kernel tự phân lô hạn gần trước) (đóng góp)
+type SaleDocLine = Record<string, unknown> & { lineKey: string; qty: number; unitQty: number; unitRatio: number; unitPrice: number; amountBeforeTax: number; discount: number; taxAmount: number };
+function lotLines(l: PricedLine, line: SaleDocLine): SaleDocLine[] {
+  if (l.draft.isGift || !l.draft.lotPlan?.length || !l.draft.promoLots?.length) return [line];
+  const parts = splitLineByLots({
+    qty: line.qty, base: roundMoney(l.draft.clientUnitPrice * l.draft.unitQty), promo: l.draft.promoDiscount ?? 0,
+    money: { gross: l.money.gross, net: l.money.net, tax: l.money.tax, discountNet: l.money.discountNet },
+    lotPlan: l.draft.lotPlan, promoLots: l.draft.promoLots,
+  });
+  if (!parts || parts.length < 1) return [line];
+  return parts.map((p, i) => {
+    const unitQty = p.qty / l.unitRatio;
+    const { policyRef, ...rest } = line as SaleDocLine & { policyRef?: unknown };
+    return {
+      ...rest,
+      lineKey: i === 0 ? line.lineKey : `${line.lineKey}~${i + 1}`,
+      qty: p.qty, unitQty,
+      unitPrice: roundMoney((p.money.net + p.money.discountNet) / unitQty),
+      amountBeforeTax: p.money.net, discount: p.money.discountNet, taxAmount: p.money.tax,
+      ...(p.lotNo || p.expDate ? { lotNo: p.lotNo, ...(p.expDate ? { expDate: p.expDate } : {}) } : {}),
+      ...(p.promoted && policyRef ? { policyRef } : {}),
+    };
+  });
+}
+
 export function toSaleDocument(o: ComputedOrder, meta: { draft: OrderDraft; branchCode: string; code: string; warehouses?: LineWarehouses }) {
   const { draft } = meta;
   return {
@@ -403,7 +430,7 @@ export function toSaleDocument(o: ComputedOrder, meta: { draft: OrderDraft; bran
     description: `Bán lẻ máy POS ${meta.code}`,
     sourceRef: { type: 'pos.order', id: draft.id, label: meta.code },
     ...(o.customer ? { partner: { code: o.customer.code, name: o.customer.name, ...(o.customer.phone ? { phone: o.customer.phone } : {}) } } : {}),
-    lines: o.lines.map((l) => ({
+    lines: o.lines.flatMap((l) => lotLines(l, {
       lineKey: l.draft.lineId,
       sku: l.item.sku,
       // Kế toán khớp dòng theo định danh, mã chỉ để đọc. Riêng dòng quà theo chương trình: chỉ gửi mã (NT-BH-003) — khuôn BH12 chỉ biết
