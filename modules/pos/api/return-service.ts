@@ -20,6 +20,8 @@ import { approvalsOfOrder, markApprovalUsed, verifyApprovalForReturn } from './r
 import type { BranchRow } from './domain/order.js';
 import { isUniqueViolation, lockKey, raise } from './order-service.js';
 import { releaseUses } from './promo.js';
+import { pointVoucherReturnJournal, returnedPointVoucherNet } from './domain/point-voucher.js';
+import { submitPointVoucherJournal } from './point-voucher.js';
 
 type Tx = Parameters<Parameters<ActionContext['data']['module']>[0]>[0];
 
@@ -260,6 +262,11 @@ export async function createReturn(ctx: ActionContext, draft: ReturnDraft, opts:
     ...(order.branch_code !== branch.code ? { orderBranchCode: order.branch_code } : {}),
     ...(opts.exchangeOrderId ? { exchangeOrderId: opts.exchangeOrderId } : {}),
   };
+  // [2026-11-28 05:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-060: trả hàng → đảo phần chiết khấu voucher đổi điểm của các dòng trả (Có chiết khấu thương mại, Nợ theo lý do POS-VOUCHER-DIEM-TRA) (đóng góp)
+  const orderSnap = order.snapshot as { lines?: { lineId?: string; unitQty?: number; pointVoucherNet?: number }[]; zBill?: { lines?: { lineId?: string; unitQty?: number; pointVoucherNet?: number }[] } };
+  const pvBack = returnedPointVoucherNet([...(orderSnap.lines ?? []), ...(orderSnap.zBill?.lines ?? [])], computed.lines.map((l) => ({ lineId: l.lineId, qty: l.qty })));
+  const pvDoc = pointVoucherReturnJournal({ branchCode: branch.code, returnId: draft.id, returnCode: code, orderCode: order.code, businessDate: today, amountNet: pvBack });
+  if (pvDoc) Object.assign(snapshot, { pointVoucherJournal: await submitPointVoucherJournal(ctx, pvDoc) });
   let orderFullyReturned = false;
   try {
     orderFullyReturned = await ctx.data.module(async (tx) => {

@@ -4,7 +4,7 @@
  * khác có quyền duyệt = phát hành (dòng programs mới, phiên bản = băm nội dung); áp nhiều cửa hàng một lần; website đẩy bản cũ hơn bị từ chối;
  * điều chỉnh điểm tay có duyệt. 9 ca §3 của docs/nghiem-thu/ban-hang/NT-BH-039-tich-diem-khai-o-ke-toan.md + bản đồ lỗi R-REV-17.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
@@ -21,7 +21,8 @@ import { khaiGia, nhapTon } from './pos-nhap-ton.js';
 const POS = fileURLToPath(new URL('../../../modules/pos/', import.meta.url));
 const LOY = fileURLToPath(new URL('../../../modules/loyalty/', import.meta.url));
 const HAS = existsSync(path.join(POS, 'bizcity.module.json')) && existsSync(path.join(LOY, 'bizcity.module.json'));
-const POS_READS = ['bizcity_read.branches', 'bizcity_read.products', 'bizcity_read.tax_codes', 'bizcity_read.payment_methods', 'bizcity_read.partners', 'bizcity_read.stock_on_hand', 'bizcity_read.warehouses'];
+// [2026-11-28 03:10 PM Võ Hoàng] NGHIEM-THU — NT-BH-059: quyền đọc POS lấy theo manifest (thiếu branch_prices làm đơn POS hỏng) (đóng góp)
+const POS_READS: string[] = HAS ? (JSON.parse(readFileSync(path.join(POS, 'bizcity.module.json'), 'utf8')) as { data: { reads: string[] } }).data.reads : [];
 const L = '/api/v1/m/loyalty';
 const SKU = '100021001';
 const GIFT = '100099001Z';
@@ -162,7 +163,8 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     expect((await current('CN02')).version).toBe('web-1');
   });
 
-  it('ca 3: A tự duyệt (không có quyền duyệt) → 403; chủ đơn vị lập rồi tự duyệt → 403 FORBIDDEN (người lập không tự duyệt)', async () => {
+  // [2026-11-28 02:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-059: người có quyền duyệt tự lập tự duyệt chương trình (Hoàng 28/11, như khuyến mại) — ca 3 đổi theo (đóng góp)
+  it('ca 3: A tự duyệt (không có quyền duyệt) → 403; chủ đơn vị (có quyền duyệt) lập rồi tự duyệt → được (NT-BH-059)', async () => {
     const self = await req(A, 'POST', `${L}/program-drafts/approve`, { ids: [draftId] });
     expect(self.statusCode, self.body).toBe(403);
     expect((await current('CN02')).version).toBe('web-1');
@@ -170,10 +172,8 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     expect(own.statusCode, own.body).toBe(200);
     const ownId = own.json().data.items[0].id;
     const r = await req(owner, 'POST', `${L}/program-drafts/approve`, { ids: [ownId] });
-    expect(r.statusCode, r.body).toBe(403);
-    expect(r.json().error.code).toBe('FORBIDDEN');
-    // Người khác (B) duyệt được nháp của chủ đơn vị: CN01 chuyển sang bản kế toán phát hành (nội dung như bản website).
-    expect((await approve([ownId]))[0].status).toBe('published');
+    expect(r.statusCode, r.body).toBe(200);
+    expect(r.json().data.items[0].status).toBe('published');
   });
 
   it('ca 2: B duyệt → programs CN02 có phiên bản mới (băm nội dung, người nhận = B); đơn 325.000 có khách → +32 điểm', async () => {
@@ -197,7 +197,7 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     expect(await points(PHONE)).toMatchObject({ balance: 32, tierKey: 'member' });
   });
 
-  it('ca 4: bật nhân điểm theo hạng; khách tổng tích 1.200 (hạng Bạc ×1,2) mua 325.000 → +38,4 điểm', async () => {
+  it('ca 4: bật nhân điểm theo hạng; khách tổng tích 1.200 (hạng Bạc ×1,2) mua 325.000 → +38 điểm (38,4 làm tròn xuống — NT-BH-059)', async () => {
     const d = await draftFor('CN02', (c) => ({ ...c, settings: { ...c.settings, enableTierMultiplier: true } }));
     await approve([d.id]);
     const op = await req(owner, 'POST', `${L}/opening`, { asOf: vnDate(-1), rows: [{ customerCode: SILVER, totalEarned: 1200, balance: 1200 }] });
@@ -207,8 +207,8 @@ describe.skipIf(!HAS)('NT-BH-039 — khai chính sách tích điểm ở kế to
     expect(r.statusCode, r.body).toBe(201);
     await deliver();
     const earn = (await sql<{ points: string }>`SELECT points FROM mod_loyalty.entries WHERE tenant_id = ${tenantId} AND partner_code = ${SILVER} AND kind = 'earn' AND ref_type = 'order'`.execute(db)).rows;
-    expect(earn.map((e) => Number(e.points))).toEqual([38.4]);
-    expect((await points(SILVER)).balance).toBe(1238.4);
+    expect(earn.map((e) => Number(e.points))).toEqual([38]);
+    expect((await points(SILVER)).balance).toBe(1238);
   });
 
   it('ca 5: thêm quà "Bình sữa" 200 điểm, hạng tối thiểu Bạc → khách hạng Thành viên đổi bị từ chối "chưa đủ hạng"', async () => {

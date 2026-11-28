@@ -190,6 +190,8 @@ function evaluatePolicy(p: LoyaltyPolicy, total: number, items: EarnContext['ite
     }
   }
   if (points > 0 && multiplier > 1 && p.type !== 3) points = phpRound(points * multiplier, 2)
+  // [2026-11-28 04:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-059: điểm tích làm tròn XUỐNG số nguyên (Hoàng chốt 28/11: 7,5 → 7), không cộng điểm lẻ (đóng góp)
+  points = Math.floor(points + 1e-9)
   const max = intval(cfg.max_points_per_order)
   if (max > 0 && points > max) points = max
   return points > 0 ? { points, description: desc } : null
