@@ -5,10 +5,9 @@
  */
 // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (S-CD-15…17): form chính sách như plugin cũ (đóng góp)
 import { useMemo, useState, type ReactNode } from 'react';
-import { Modal, errorText, useApi, useCan, useMutation, useQuery } from '@bizcity/ui-kit';
+import { FormPage, Modal, errorText, useApi, useCan, useMutation, useQuery } from '@bizcity/ui-kit';
 import { M } from '../../lib';
 import { OverlapList, approveAndPublish, type Draft, type Overlap } from './Drafts';
-import { NutBuoc, ThanhBuoc } from './ThanhBuoc';
 import {
   OLD_TYPES, OLD_TYPE, PASTE_COLS, HSD_MODES, emptyCk, emptyFixed, emptyOld, emptyQty, emptyUnit, oldToParams, parsePaste, reasonOf,
   type CkRow, type FixedRow, type OldForm, type OldType, type QtyRow, type UnitRow,
@@ -190,22 +189,21 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
   const allBranches = allBr;
 
   return (
-    <Modal wide title={<span>{editing ? 'Sửa chương trình' : 'Tạo chương trình mới'}{f.key.trim() ? ` ${f.key.trim()}` : ''} <span className="badge badge-info">{typeInfo.label}</span></span>} onClose={close}
-      footer={<div className="row" style={{ gap: 8, width: '100%', alignItems: 'center' }}>
-        <span className="muted" style={{ flex: 1, fontSize: 12.5 }}>{save.error ? <span className="mh-bad">{errorText(save.error)}</span> : out.problems.length ? `Chưa lưu được: ${out.problems.slice(0, 3).join(' · ')}${out.problems.length > 3 ? ` (+${out.problems.length - 3})` : ''}` : (approver ? 'Ghi = nháp · Gửi duyệt = chờ người duyệt · Duyệt = phát hành ngay.' : 'Ghi = nháp · Gửi duyệt = chờ người có quyền Duyệt khuyến mại.')}</span>
-        <button type="button" className="btn" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ') || 'Ghi bản nháp — chưa áp ở máy bán'} onClick={() => save.mutate('draft')}>Ghi</button>
+    // [2026-11-29 04:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-066: form trong trang (FormPage dùng chung — như MH29), bỏ hộp thoại; nút ở đầu trang, câu báo dưới đầu trang (đóng góp)
+    <FormPage title={<span>{editing ? 'Sửa chương trình' : 'Tạo chương trình mới'}{f.key.trim() ? ` ${f.key.trim()}` : ''} <span className="badge badge-info">{typeInfo.label}</span></span>} onBack={close}
+      actions={<><button type="button" className="btn" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ') || 'Ghi bản nháp — chưa áp ở máy bán'} onClick={() => save.mutate('draft')}>Ghi</button>
         <button type="button" className="btn" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ') || 'Ghi và gửi người có quyền Duyệt khuyến mại'} onClick={() => save.mutate('submit')}>Gửi duyệt</button>
         {approver && <button type="button" className="btn btn-primary" disabled={out.problems.length > 0 || save.isPending} title={out.problems.join('; ') || 'Ghi, duyệt và phát hành ngay — máy bán áp từ ngày áp dụng'}
           onClick={() => save.mutate('approve')}>Duyệt (phát hành)</button>}
-        <button type="button" className="btn" onClick={close}>Thoát</button>
-      </div>}>
-      <div style={{ gridColumn: '1 / -1', display: 'grid', gap: 12 }}>
-        <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
+        <button type="button" className="btn" onClick={close}>Thoát</button></>}
+      note={<span className="muted" style={{ fontSize: 12.5 }}>{save.error ? <span className="mh-bad">{errorText(save.error)}</span> : out.problems.length ? `Chưa lưu được: ${out.problems.slice(0, 3).join(' · ')}${out.problems.length > 3 ? ` (+${out.problems.length - 3})` : ''}` : (approver ? 'Ghi = nháp · Gửi duyệt = chờ người duyệt · Duyệt = phát hành ngay.' : 'Ghi = nháp · Gửi duyệt = chờ người có quyền Duyệt khuyến mại.')}</span>}
+      current={buoc} onStep={setBuoc} steps={[
           { label: 'Thông tin chung', warn: out.problems.some((x) => /Mã chương trình|tên chương trình/i.test(x)) },
           { label: 'Thời gian & điều kiện', warn: out.problems.some((x) => /ngày|giờ|Tổng giá trị|đơn hàng được áp|kênh/i.test(x)) }, // NT-BH-065: ô Kênh bán ở bước 2
           { label: 'Đối tượng áp dụng', warn: out.problems.some((x) => /cửa hàng|mỗi khách|hạng/i.test(x)) },
           { label: 'Hàng & quà', warn: out.problems.some((x) => /SKU|mã|quà|Pool|giá|chiết khấu|Hàng mua|Combo/i.test(x)) },
-        ]} />
+        ]}>
+      <div style={{ display: 'grid', gap: 12 }}>
 
         {buoc === 0 && <>
           <div style={{ display: 'grid', gridTemplateColumns: '170px minmax(0, 420px)', gap: 8, alignItems: 'center' }}>
@@ -489,8 +487,6 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
           </Panel>
         </>}
 
-        <NutBuoc current={buoc} total={4} onPick={setBuoc} />
-
         {paste && (
           <div className="card card-body" style={{ display: 'grid', gap: 6 }}>
             <b>Import Excel</b>
@@ -504,7 +500,7 @@ export function PolicyForm({ initial, editing, draftId, onClose, onDone }: { ini
           </div>
         )}
       </div>
-    </Modal>
+    </FormPage>
   );
 }
 

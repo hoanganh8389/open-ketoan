@@ -18,7 +18,7 @@
 
 | # | Việc | Chỗ |
 |---|---|---|
-| 1 | Khung **FormPage** dùng chung: đầu trang (← về danh sách, tiêu đề, dòng phụ, nút bên phải), câu báo dưới đầu trang, thanh bước **ngang** (bấm / ← → chuyển bước, ⚠ bước còn lỗi), thẻ thân, Bước trước / Bước tiếp; cột phải tuỳ chọn (trợ lý); Esc về danh sách, Ctrl + S ghi. **FormGrid**: lưới 3 cột kín như MH29. **useFormParam**: giữ `?…=` trên URL để tải lại / Back của trình duyệt về đúng chỗ (không cần router). Vẽ bằng lớp sẵn có (`.card`, `.btn`, `.nx-steps`), không thêm CSS | `packages/ui-kit/src/form-page.tsx` (đề xuất — tệp ở nhánh code), `packages/ui-kit/src/index.tsx` |
+| 1 | Khung **FormPage** dùng chung: đầu trang (← về danh sách, tiêu đề, dòng phụ, nút bên phải), câu báo dưới đầu trang, thanh bước **ngang** (bấm / ← → chuyển bước, ⚠ bước còn lỗi), thẻ thân, Bước trước / Bước tiếp; cột phải tuỳ chọn (trợ lý); Esc về danh sách, Ctrl + S ghi. **FormGrid**: lưới 3 cột kín như MH29. **useFormParam**: giữ `?…=` trên URL để tải lại / Back của trình duyệt về đúng chỗ (không cần router). Vẽ bằng lớp sẵn có (`.card`, `.btn`, `.nx-steps`), không thêm CSS | `packages/ui-kit/src/form-page.tsx`, `packages/ui-kit/src/index.tsx` |
 | 2 | BH18: Thêm / bấm đúp / Nhân bản / mở nháp → form ngay trên màn (`?ct=<mã>` / `?ct=moi`); Ghi · Gửi duyệt · Duyệt (phát hành) · Thoát ở đầu trang | `modules/pos/web/screens/KhuyenMaiPage.tsx`, `modules/pos/web/screens/khuyen-mai/PolicyForm.tsx` |
 | 3 | BH19: Thêm / Sửa / bấm đúp chương trình tích điểm (và danh mục đổi điểm) → form ngay trên thẻ (`?ct=`); Ghi · Gửi duyệt · Duyệt · Thoát ở đầu trang | `modules/loyalty/web/screens/diem/ChuongTrinhTab.tsx`, `modules/loyalty/web/screens/diem/ChuongTrinhModal.tsx` |
 | 4 | BH21: Thêm đợt / Sửa đợt → form ngay trên thẻ Đợt phát (`?dot=<id>` / `?dot=moi`), bỏ khung DocSheet; ô xếp lưới 3 cột kín; Trợ lý (Kiểm tra / Tóm tắt) ở cột phải; Ghi · Huỷ ở đầu trang | `modules/voucher/web/screens/VoucherPage.tsx` |
@@ -35,7 +35,7 @@
 
 ## 4. Kết quả chạy
 
-- Test: `modules/pos/test/form-trong-trang.test.ts` (đề xuất — tệp test ở nhánh code) (trạng thái bước, đọc tham số URL); module pos / loyalty / voucher chạy đủ.
+- Test: `modules/pos/test/form-trong-trang.test.ts` (trạng thái bước, đọc tham số URL); module pos / loyalty / voucher chạy đủ.
 - Thử giao diện: xem báo cáo `docs123/docs/module-pos/98-KET-QUA-THU-066.md` (máy local).
 
 ## 5. Mặc định đã áp (rà khi nghiệm thu)

@@ -114,3 +114,5 @@ export { LibraryPicker, type LibraryPickerProps, type LibraryRow, type LibraryIt
 
 // [2026-11-14 07:40 PM Johnny Chu - Chu Hoàng Anh] PHASE-036 — S036-5: thanh chỉ báo bước (thêm, không đổi phần cũ)
 export { Steps, stepState, type StepsProps } from './steps';
+// [2026-11-29 04:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-066: khung form trong trang dùng chung BH18 / BH19 / BH21 (đóng góp)
+export { FormGrid, FormPage, formStepState, readParam, useFormParam, type FormPageProps, type FormStep } from './form-page';

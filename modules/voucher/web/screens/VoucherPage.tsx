@@ -8,12 +8,13 @@
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: màn Voucher (đóng góp)
 // [2026-11-22 Võ Hoàng] NGHIEM-THU — NT-BH-037: form đợt voucher dựng lại bằng DocSheet cùng mẫu phiếu mua (đóng góp)
 // [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: giảm % có trần, lô mã không SĐT, mỗi khách tối đa, cửa hàng áp dụng (như chính sách voucher cũ) (đóng góp)
+// [2026-11-29 05:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-066: Thêm / Sửa đợt mở form ngay trên màn (FormPage dùng chung, như MH29), không còn hộp DocSheet;
+//   ô xếp lưới 3 cột kín (FormGrid), Trợ lý Kiểm tra / Tóm tắt giữ ở cột phải, ?dot=<id> | ?dot=moi để tải lại / Back (đóng góp)
 // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-050: giao diện theo lớp chung của Core — thẻ gạch chân (tabs), thanh nút catalog-toolbar trong card,
 //   bộ lọc FilterLayout, khối card / card-body (đóng góp)
-import { NutBuoc, ThanhBuoc } from './ThanhBuoc';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  BranchCheckList, DataGrid, DocSheet, DocSheetPanel, ErrorBox, Field, FilterLayout, Loading, Modal, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient, type GridColumn,
+  BranchCheckList, DataGrid, DocSheetPanel, ErrorBox, Field, FilterLayout, FormGrid, FormPage, useFormParam, Loading, Modal, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient, type GridColumn,
 } from '@bizcity/ui-kit';
 
 const M = '/api/v1/m/voucher';
@@ -128,14 +129,19 @@ function CampaignForm({ initial, id, onClose }: { initial: Form; id?: string; on
   const vnd = (x: string) => (Number(x) || 0).toLocaleString('vi-VN');
   const scope = [...list(f.skus), ...list(f.brandCodes).map((b) => `nhãn ${b}`)];
   return (
-    <DocSheet title={id ? `Sửa đợt voucher ${initial.code}` : 'Đợt phát voucher (mới)'} onClose={onClose}
-      badges={id ? <span className={`badge ${f.status === 'active' ? 'badge-ok' : 'badge-gray'}`}>{f.status === 'active' ? 'Đang dùng' : 'Ngừng'}</span> : undefined}
-      total={{ label: f.discountType === 'percent' ? 'Giảm tối đa' : 'Mệnh giá', value: (f.discountType === 'percent' ? Number(f.maxDiscount) : Number(f.faceValue)) || 0 }}
-      sideTitle="Trợ lý voucher"
-      keys="Ctrl + S - Lưu · Esc - Thoát"
-      footNote={save.error ? <span className="mh-bad">{errorText(save.error)}</span> : null}
-      footer={<><button type="button" className="btn" onClick={onClose}>Đóng</button><button type="button" className="btn btn-primary" disabled={save.isPending} onClick={() => save.mutate()}>Lưu</button></>}
-      side={<>
+    <FormPage title={<>{id ? <>Sửa đợt voucher <span className="mono">{initial.code}</span></> : 'Đợt phát voucher mới'}
+        {id && <span className={`badge ${f.status === 'active' ? 'badge-ok' : 'badge-gray'}`} style={{ marginLeft: 8 }}>{f.status === 'active' ? 'Đang dùng' : 'Ngừng'}</span>}</>}
+      sub={<>{f.discountType === 'percent' ? 'Giảm tối đa' : 'Mệnh giá'}: <b>{vnd(f.discountType === 'percent' ? f.maxDiscount : f.faceValue)}đ</b> · Ctrl + S ghi · Esc về danh sách</>}
+      onBack={onClose} onSave={() => !save.isPending && save.mutate()}
+      actions={<><button type="button" className="btn btn-primary" disabled={save.isPending} title="Ghi đợt (Ctrl + S)" onClick={() => save.mutate()}>Ghi</button><button type="button" className="btn" onClick={onClose}>Huỷ</button></>}
+      note={save.error ? <span className="mh-bad">{errorText(save.error)}</span> : null}
+      current={buoc} onStep={setBuoc} steps={[
+        { label: 'Thông tin đợt', warn: checks.some((c) => /mã đợt|tên đợt/.test(c)) },
+        { label: 'Thời gian & cửa hàng', warn: checks.some((c) => /ngày|Hết hạn/.test(c)) },
+        { label: 'Giá trị & điều kiện', warn: checks.some((c) => /Mệnh giá|Phần trăm|Giảm tối đa|Hãng phát/.test(c)) },
+        { label: 'Cách phát' },
+      ]}
+      aside={<div style={{ display: 'grid', gap: 10 }}>
         <DocSheetPanel title="Kiểm tra" badge={checks.length ? <span className="badge badge-warn">{checks.length}</span> : <span className="badge badge-ok">ổn</span>}>
           {checks.length ? checks.map((c) => <div key={c} className="mh-check warn">⚠ {c}</div>) : <div className="mh-check ok">✓ Đủ thông tin — bấm Lưu</div>}
           <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>Đợt đã phát mã thì không đổi loại, người phát, mệnh giá / % / trần, đơn tối thiểu, phạm vi — lập đợt mới. Mỗi mã dùng một lần, phần dư mất.</div>
@@ -153,39 +159,33 @@ function CampaignForm({ initial, id, onClose }: { initial: Form; id?: string; on
             <span>Số lượng</span><span>{f.issueMode === 'auto' ? `Tự phát khi mua ≥ ${f.autoMinQty || 1}` : 'Sinh / nạp mã ở chi tiết đợt'}</span>
           </div>
         </DocSheetPanel>
-      </>}>
+</div>}>
       {/* [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: 4 bước ngang như MH29 (thanh bước ở trên); các ô giữ nguyên, chỉ xếp theo bước (đóng góp) */}
-      <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
-        { label: 'Thông tin đợt', warn: checks.some((c) => /mã đợt|tên đợt/.test(c)) },
-        { label: 'Thời gian & cửa hàng', warn: checks.some((c) => /ngày|Hết hạn/.test(c)) },
-        { label: 'Giá trị & điều kiện', warn: checks.some((c) => /Mệnh giá|Phần trăm|Giảm tối đa|Hãng phát/.test(c)) },
-        { label: 'Cách phát' },
-      ]} />
       {buoc === 0 && (
-        <div className="mh-head">
+        <FormGrid>
           <Field label="Mã đợt"><input className="input" value={f.code} onChange={set('code')} placeholder="ABBOTT50K" /></Field>
-          <div className="span2"><Field label="Tên đợt"><input className="input" value={f.name} onChange={set('name')} /></Field></div>
-          <div className="span2"><Field label="Loại">
+          <Field label="Tên đợt"><input className="input" value={f.name} onChange={set('name')} /></Field>
+          <div><Field label="Loại">
             <select className="input" value={f.kind} onChange={set('kind')}>{Object.entries(KIND).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           </Field></div>
           {id ? (
             <Field label="Trạng thái">
               <select className="input" value={f.status} onChange={set('status')}><option value="active">Đang dùng</option><option value="stopped">Ngừng</option></select>
             </Field>
-          ) : <div />}
-          <div className="span4"><Field label="Ghi chú"><input className="input" value={f.note} onChange={set('note')} /></Field></div>
-        </div>
+          ) : null}
+          <div style={{ gridColumn: '1 / -1' }}><Field label="Ghi chú"><input className="input" value={f.note} onChange={set('note')} /></Field></div>
+        </FormGrid>
       )}
       {buoc === 1 && (
-        <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+        <FormGrid>
           <Field label="Từ ngày"><input className="input" type="date" value={f.validFrom} onChange={set('validFrom')} /></Field>
           <Field label="Hết hạn ngày"><input className="input" type="date" value={f.validTo} onChange={set('validTo')} /></Field>
-          <div className="span2"><Field label="Hạn mỗi mã (ngày từ ngày phát)"><input className="input" type="number" value={f.validDays} onChange={set('validDays')} /></Field></div>
+          <div><Field label="Hạn mỗi mã (ngày từ ngày phát)"><input className="input" type="number" value={f.validDays} onChange={set('validDays')} /></Field></div>
           <Field label="Cửa hàng áp dụng" hint="Không chọn = mọi cửa hàng"><BranchCheckList value={f.branchCodes} onChange={(branchCodes) => setF({ ...f, branchCodes })} /></Field>
-        </div>
+        </FormGrid>
       )}
       {buoc === 2 && (
-        <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+        <FormGrid>
           <Field label="Người phát" hint="TGS = chiết khấu trên hoá đơn (giảm doanh thu + thuế); hãng = hình thức thanh toán (phải thu hãng)">
             <select className="input" value={f.issuer} onChange={set('issuer')}>{Object.entries(ISSUER).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           </Field>
@@ -205,23 +205,22 @@ function CampaignForm({ initial, id, onClose }: { initial: Form; id?: string; on
           <Field label="Đơn tối thiểu (đồng)"><input className="input" type="number" value={f.minOrder} onChange={set('minOrder')} /></Field>
           {f.kind === 'next_purchase' && <Field label="Mã hàng áp dụng (cách nhau dấu phẩy)"><input className="input" value={f.skus} onChange={set('skus')} /></Field>}
           {f.kind === 'next_purchase' && <Field label="Nhãn áp dụng (mã nhãn)"><input className="input" value={f.brandCodes} onChange={set('brandCodes')} /></Field>}
-        </div>
+        </FormGrid>
       )}
       {buoc === 3 && (
-        <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+        <FormGrid>
           <Field label="Kiểu phát">
             <select className="input" value={f.issueMode} onChange={set('issueMode')}><option value="manual">Thủ công (sinh / nạp mã)</option><option value="auto">Tự động khi mua đủ điều kiện</option></select>
           </Field>
           {f.issueMode === 'auto' && <Field label="Điều kiện: mã hàng mua"><input className="input" value={f.autoSkus} onChange={set('autoSkus')} /></Field>}
           {f.issueMode === 'auto' && <Field label="Điều kiện: nhãn mua"><input className="input" value={f.autoBrands} onChange={set('autoBrands')} /></Field>}
           {f.issueMode === 'auto' && <Field label="Số lượng tối thiểu (đơn vị nhỏ nhất)"><input className="input" type="number" value={f.autoMinQty} onChange={set('autoMinQty')} /></Field>}
-          <div className="span2"><Field label="Cửa hàng tự phát" hint="Trống = mọi cửa hàng; dùng khi Kiểu phát = Tự động">
+          <div><Field label="Cửa hàng tự phát" hint="Trống = mọi cửa hàng; dùng khi Kiểu phát = Tự động">
             <input className="input" value={f.autoBranches} disabled={f.issueMode !== 'auto'} onChange={set('autoBranches')} />
           </Field></div>
-        </div>
+        </FormGrid>
       )}
-      <NutBuoc current={buoc} total={4} onPick={setBuoc} />
-    </DocSheet>
+    </FormPage>
   );
 }
 
@@ -298,7 +297,22 @@ function CampaignTab() {
   const q = useQuery({ queryKey: ['voucher', 'campaigns'], queryFn: () => api.get<Campaign[]>(`${M}/campaigns`) });
   const [pick, setPick] = useState<Campaign | null>(null);
   const [sel, setSel] = useState<Campaign | null>(null);
-  const [form, setForm] = useState<{ initial: Form; id?: string } | null>(null);
+  const [form, setFormState] = useState<{ initial: Form; id?: string } | null>(null);
+  const [dot, setDot] = useFormParam('dot');
+  const setForm = (x: { initial: Form; id?: string } | null) => { setFormState(x); setDot(x ? x.id ?? 'moi' : null); };
+  // Back của trình duyệt (URL hết ?dot) → về danh sách; tải lại khi đang mở form → mở lại đúng đợt.
+  const reopened = useRef(false);
+  useEffect(() => {
+    if (!dot) { if (form) setFormState(null); return; }
+    if (form || reopened.current || !q.data) return;
+    reopened.current = true;
+    if (!can('voucher:write')) return setDot(null);
+    if (dot === 'moi') return setForm({ initial: emptyForm() });
+    const c = q.data.find((x) => x.id === dot);
+    if (c) setForm({ initial: toForm(c), id: c.id }); else setDot(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi URL / dữ liệu đổi
+  }, [dot, q.data]);
+  if (form) return <CampaignForm initial={form.initial} {...(form.id ? { id: form.id } : {})} onClose={() => { setForm(null); setPick(null); }} />;
   return (
     <section className="card">
       <div className="catalog-toolbar">
@@ -312,7 +326,6 @@ function CampaignTab() {
           exportName="dot-phat-voucher" exportTitle="Đợt phát voucher" emptyText='Chưa có đợt phát — bấm "+ Thêm đợt"' />
       )}
       {pick && !form && <CampaignDetail campaign={(q.data ?? []).find((c) => c.id === pick.id) ?? pick} onClose={() => setPick(null)} onEdit={() => setForm({ initial: toForm(pick), id: pick.id })} />}
-      {form && <CampaignForm initial={form.initial} {...(form.id ? { id: form.id } : {})} onClose={() => { setForm(null); setPick(null); }} />}
     </section>
   );
 }
