@@ -259,6 +259,30 @@ Tất cả site dùng chung mã mới
 5. **Ranh giới:** MDG giữ định danh đối tượng; trụ cột X giữ chuỗi chứng từ; trụ cột III giữ chuỗi con số sau khi vào sổ. Ba chuỗi nối nhau ở liên kết `ledger` (`doc_ref` = `doc_key`).
 6. **Tiền tố mã:** `STD-DOC-*` = chuẩn dữ liệu (hợp đồng), `R-DOC-CONT-*` = luật nghiệp vụ, `DOC-nnn` = dòng ma trận chứng từ, `SC-DOC-*` = kiểm tài liệu, `IN-DOC-*` = mã lỗi cho người dùng, `DC-n` = tiêu chí trụ cột X ở HT10.
 
+## 0b. Vị trí trong ba vai nền — open-ketoan = open-core + module kế toán
+<!-- [2026-11-28 04:44 PM Johnny Chu - Chu Hoàng Anh] FLOW — NC-003 / NC-004: vị trí của open-ketoan trong ba vai nền (chủ chốt 2026-11-27 / 28) -->
+
+Canon hệ ([open-hub §2.2, §3.4b](https://github.com/hoanganh8389/open-hub/blob/main/docs/canon/BIZCITY-OPEN-CANON-v1.md)) chia nền làm ba vai, một chiều phụ thuộc:
+
+| Vai | Repo | Giữ |
+|---|---|---|
+| **open-platform** (luật) | [bizcity-platform](https://github.com/hoanganh8389/bizcity-platform) | chuẩn `docs/standard/BIZCITY-*`, schema hợp đồng nền, bộ kiểm (`standard-check`, `spine-check`, `failure-check`…) |
+| **open-core** (lõi) | [open-core](https://github.com/hoanganh8389/open-core) | mã lõi `@bizcity/platform`, `@bizcity/contracts` (và `server`, `web-shell`, `module-sdk`… về sau), một số phiên bản chung |
+| **open-setup** (cấp instance) | [bizcity-open-setup](https://github.com/hoanganh8389/bizcity-open-setup) | registry Workspace × app, gọi `/_sites/v1`, ghi `core_version` |
+
+**Hệ quả ở repo này:**
+
+1. **`packages/platform` và `packages/contracts` ở đây là bản cũ của lõi.** Bản chủ ở open-core (đã gom mọi thay đổi nền của repo này tới `4e5cbc8` vào bản 0.3.1). Từ nay **sửa nền ⇒ PR vào open-core trước**, rồi chép lại đây cùng nội dung; không sửa riêng ở đây. Kế hoạch bỏ hẳn bản cũ, cài lõi từ bản phát hành: [open-core PHASE-001](https://github.com/hoanganh8389/open-core/blob/main/docs/phases/PHASE-001-OPEN-KETOAN-TREN-OPEN-CORE/README.md) (đo: 646 / 646 import khớp; 7 lỗi kiểu cần sửa phía app; 11 vấn đề lúc chạy).
+2. **Văn bản chuẩn nền** (DOCUMENT, LINEAGE, MCP, SECRETS, SITE-PROVISIONING, API, EVENT, EVIDENCE, AUTHORIZATION, SETTINGS-MATRIX, MASTER-DATA, ITEM-MASTER, FINDINGS, REMEDY, POLICY) — **bản chủ ở open-platform** `docs/standard/`; tệp ở `docs/contracts/` là bản chép giữ cho bộ kiểm, có dòng "Bản chủ". ACTION, ERRORS, MODULE, EXTENSION, DATA dời sau khi các dòng giữ chỗ đang sửa chúng trả chỗ. Văn bản nghiệp vụ kế toán ở lại đây.
+3. **Trụ cột xuyên doanh nghiệp** (canon §3.4b, [NC-004](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/research/NC-004-TRU-COT-XUYEN-DOANH-NGHIEP.md)) — mọi app trên open-core (POS, HRM, MRP, mua, kho, CRM) dùng **đúng** trụ của repo này; chủ đã chốt:
+   - số lượng trên dòng chứng từ **luôn quy về đơn vị nhỏ nhất** (tỷ lệ 1); `unit` / `unitQty` / `unitRatio` chỉ để hiện — khớp cửa nạp hiện tại;
+   - **`tenant ↔ blog_id` một-một**, một chuỗi nhiều cửa hàng = nhiều tenant; chi nhánh / kho / phòng ban là cây `branches` trong một tenant;
+   - khách open-cake ↔ đối tượng ở đây qua `partner.code` (SĐT đã xác minh → `CAKE-<contact_id>` → `KHACH-LE`);
+   - `doc_ref` một khuôn `<module>.<loại>:<id>` (id ký tự an toàn, ≤ 200) — **trước khi áp:** truy vấn bản sao dữ liệu tìm id ngoài bộ ký tự;
+   - thang phạm vi cài đặt: `install → site → tenant → branch → user` + bậc repo này khai (`accounting_unit`, `period`, `doc_type`, `record`);
+   - bốn bước kết nối open-hub (`bizcity_hub_setup@1`) là màn chung của open-core; bước ④ Guru khoanh phạm vi: ở đây là **module + phạm vi dữ liệu theo vai**.
+4. **Thứ chỉ của kế toán** còn trong lõi (`masterdata/*`, `ctx.ledger`, tên `ketoan` / `kt_<slug>`, lược đồ kế toán trong `db/types.ts`) sẽ về gói của repo này sau khi đã chạy trên lõi (NC-003 C4); không thêm nghiệp vụ mới vào `packages/platform`.
+
 ## 1. Bốn câu không thương lượng
 
 1. **Không chứng từ thì không có bút toán.** Mọi dòng sổ cái trỏ về một `accounting_events` (R-EVENT-1).

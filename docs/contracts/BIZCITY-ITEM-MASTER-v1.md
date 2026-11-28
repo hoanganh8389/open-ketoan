@@ -1,4 +1,6 @@
 # `bizcity_item_master@1` — Item Master: định danh bất biến, mã có phiên bản, phân loại theo ngày
+<!-- [2026-11-28 03:44 PM Johnny Chu - Chu Hoàng Anh] FLOW — NC-004 D1 / D2 (chủ chốt Q-PIL-10 ngày 2026-11-28): bản chủ đã dời sang open-platform; tệp này là bản chép giữ cho bộ kiểm của repo (SC-CON-4 / SC-CON-5 / SC-DOC-4) tới khi bộ kiểm đọc bản chủ (C6). -->
+> **Bản chủ:** [open-platform — BIZCITY-ITEM-MASTER-v1.md](https://github.com/hoanganh8389/bizcity-platform/blob/main/docs/standard/BIZCITY-ITEM-MASTER-v1.md) (từ 2026-11-28). **Sửa văn bản này ⇒ PR vào bizcity-platform trước** (luật đổi chuẩn của bizcity-platform), rồi chép lại đây cùng nội dung; không sửa riêng ở đây.
 <!-- [2026-11-03 10:30 PM Johnny Chu - Chu Hoàng Anh] PHASE-024 — B2a (S024-4 / 5 / 6): hợp đồng Item Master phần dữ liệu + Item Resolver; chạy song song với products (ADR-0017, R-ITEM) -->
 
 <!-- [2026-11-04 12:10 AM Johnny Chu - Chu Hoàng Anh] PHASE-024 — B2b: 0.2.0-draft — item_id trên bảng sổ / kho (0066) -->
