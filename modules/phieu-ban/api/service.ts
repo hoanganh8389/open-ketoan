@@ -9,6 +9,8 @@
 import { randomUUID } from 'node:crypto';
 import { Errors, type ActionContext } from '@bizcity/module-sdk';
 import { findChannel, type ChannelItem } from './domain/doc.js';
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: kiểm điều kiện kênh của khuyến mại trên phiếu (đóng góp)
+import { DEFAULT_CHANNEL, promoChannelIssues, promoChannelMessage, type ChannelCond } from './domain/doc.js';
 import { computeDoc, docKeyOf, lockReturnLines, returnableByLine, returnableBySku, stockShortByWarehouse, stockShortOf, toLedgerDoc, withGiftWarehouse, type Body, type DocInput, type Kind } from './domain/doc.js';
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-026: voucher TGS / hãng (đóng góp)
 import { applyVouchers, stripVouchers, type QuotedVoucher, type VoucherBody } from './domain/voucher.js';
@@ -99,6 +101,41 @@ export async function withChannel(ctx: ActionContext, input: DocInput, id?: stri
   return { ...rest, saleChannel: c.code, saleChannelName: c.name } as DocInput;
 }
 
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C1, C3): loại kênh của phiếu / đơn cho khuyến mại theo kênh; máy chủ kiểm lại điều kiện kênh
+// của chương trình trên phiếu bán khi Ghi và khi Duyệt (đóng góp)
+/**
+ * Mã + loại kênh của phiếu / đơn: trống → kênh mặc định (Gần shop). Loại đọc ở danh mục Kênh bán hàng (action đọc `pos.channel.list`, gọi NGOÀI
+ * ctx.data.module); module pos chưa bật → loại null (chương trình theo loại kênh không áp — NT-BH-065 C7).
+ */
+export async function channelInfo(ctx: ActionContext, raw: string | undefined | null): Promise<{ code: string; kind: 'online' | 'offline' | null }> {
+  const code = (raw ?? '').trim() ? (raw ?? '').trim().toUpperCase() : DEFAULT_CHANNEL;
+  try {
+    const list = (await ctx.actions.call<{ items: ChannelItem[] }>('pos.channel.list', {})).items;
+    return { code, kind: findChannel(list, code)?.kind ?? null };
+  } catch (e) {
+    if ((e as { code?: string }).code !== 'NOT_FOUND') throw e;
+    return { code, kind: null };
+  }
+}
+
+/**
+ * Phiếu bán mang dòng khuyến mại (policyRef) của chương trình có điều kiện kênh (BH18 "Kênh bán") mà kênh của phiếu không khớp → không ghi /
+ * không duyệt (lỗi kiểm dữ liệu, field saleChannel). Điều kiện đọc ở `core.policy.list` tại ngày phiếu; Core không trả lời → bỏ qua (cửa nạp còn kiểm bản chính sách).
+ */
+export async function checkPromoChannel(ctx: ActionContext, docDate: string, saleChannel: string | undefined | null, lines: readonly { policyRef?: { key: string } }[]) {
+  const keys = [...new Set(lines.map((l) => l.policyRef?.key).filter((k): k is string => Boolean(k)))];
+  if (!keys.length) return;
+  let items: { policyKey: string; params: { conditions?: ChannelCond } | null }[];
+  try {
+    items = (await ctx.actions.call<{ items: typeof items }>('core.policy.list', { domain: 'sale', at: docDate })).items;
+  } catch { return; }
+  const conds = new Map(items.filter((i) => keys.includes(i.policyKey)).map((i) => [i.policyKey, i.params?.conditions ?? null] as const));
+  if (![...conds.values()].some((c) => c?.channelKinds?.length || c?.channels?.length)) return;
+  const ch = await channelInfo(ctx, saleChannel);
+  const issues = promoChannelIssues(keys, conds, ch.code, ch.kind);
+  if (issues.length) throw Errors.validation(promoChannelMessage(issues), { field: 'saleChannel', items: issues });
+}
+
 // [2026-11-26 07:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: phiếu trả BẮT BUỘC nối phiếu bán gốc đã duyệt của module (cùng cửa hàng); dòng trả khoá
 // theo dòng gốc (giá, thuế, chiết khấu theo tỉ lệ), kiểm còn trả TỪNG DÒNG ở cả lúc Ghi và lúc Duyệt (trước: chỉ lúc duyệt, cộng theo mã) (đóng góp)
 /** Kiểm + tính một phiếu (nháp hoặc lúc duyệt). Phiếu trả: phải nối phiếu bán gốc của module theo số (cùng cửa hàng), dòng trả theo dòng gốc. */
@@ -129,6 +166,8 @@ async function prepare(tx: Tx, kind: Kind, input0: DocInput, selfId?: string) {
 /** Lưu nháp: thêm (id trống) hoặc sửa phiếu nháp. Số trống → cấp theo cửa hàng; số gõ tay → không trùng trong cửa hàng + loại. */
 export async function saveDraft(ctx: ActionContext, kind: Kind, input0: DocInput, id?: string) {
   const input = await withChannel(ctx, input0, id);
+  // NT-BH-067 (C3): dòng khuyến mại theo kênh phải khớp kênh của phiếu ngay khi Ghi.
+  if (kind === 'sale') await checkPromoChannel(ctx, input.docDate, input.saleChannel, input.lines);
   const giftWarehouse = await giftWarehouseOf(ctx, kind, input.branchCode, input.lines);
   return ctx.data.module(async (tx) => saveDraftIn(tx, ctx, kind, input, id, { giftWarehouse }));
 }
@@ -280,6 +319,8 @@ export async function approve(ctx: ActionContext, id: string) {
   });
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-025: chương trình khuyến mại có hạn mức lượt theo cửa hàng — hỏi lượt còn ở module pos (đóng góp)
   if (prepared.r.kind === 'sale') await checkPromoQuota(ctx, prepared.r.branch_code, prepared.body.lines, id);
+  // NT-BH-067 (C3): phiếu sinh từ đơn đặt hàng (giao) không qua bước Ghi — kiểm kênh lần cuối lúc duyệt.
+  if (prepared.r.kind === 'sale') await checkPromoChannel(ctx, prepared.r.doc_date, prepared.body.saleChannel, prepared.body.lines);
   const body = await applyDocVouchers(ctx, prepared.r, prepared.body);
   // Đã từng nộp rồi bỏ duyệt: chứng từ trong sổ phải đã huỷ xong (chế độ chờ duyệt: kế toán duyệt huỷ ở ACC14) mới nộp lại.
   if (prepared.r.ledger_version > 0) {

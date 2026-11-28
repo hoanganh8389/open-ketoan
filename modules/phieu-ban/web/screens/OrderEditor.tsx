@@ -26,19 +26,21 @@ type DraftLine = { lineKey: string; sku: string; qty: string; unitPrice: string;
 type Draft = {
   orderDate: string; validUntil: string; branchCode: string; warehouseCode: string; partnerCode: string; customerName: string; phone: string;
   source: 'manual' | 'livestream'; note: string; lines: DraftLine[]; policyRefs: NonNullable<Order['policyRefs']>;
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): ô Kênh bán như BH10 — khuyến mại máy chủ tính theo kênh của đơn (đóng góp)
+  saleChannel: string;
   receiver: string; shipPhone: string; address: string; fee: string; carrier: string; trackingNo: string; cod: string;
 };
 
 const fromOrder = (o: Order): Draft => ({
   orderDate: o.orderDate, validUntil: o.validUntil ?? '', branchCode: o.branchCode, warehouseCode: o.warehouseCode, partnerCode: o.partner?.code ?? '',
-  customerName: o.customer?.name ?? '', phone: o.customer?.phone ?? o.phone ?? '', source: o.source, note: o.note ?? '', policyRefs: o.policyRefs ?? [],
+  customerName: o.customer?.name ?? '', phone: o.customer?.phone ?? o.phone ?? '', source: o.source, note: o.note ?? '', policyRefs: o.policyRefs ?? [], saleChannel: o.saleChannel ?? '',
   lines: o.lines.map((l) => ({ lineKey: l.lineKey, sku: l.sku, qty: String(l.qty), unitPrice: String(l.unitPrice), discount: l.discount ? String(l.discount) : '', isGift: l.isGift,
     ...(l.policyRef ? { policyRef: l.policyRef } : {}) })),
   receiver: o.shipping?.receiver ?? '', shipPhone: o.shipping?.phone ?? '', address: o.shipping?.address ?? '', fee: o.shipping?.fee ? String(o.shipping.fee) : '',
   carrier: o.shipping?.carrier ?? '', trackingNo: o.shipping?.trackingNo ?? '', cod: o.shipping?.cod ? String(o.shipping.cod) : '',
 });
 const blank = (): Draft => ({
-  orderDate: today(), validUntil: today(3), branchCode: '', warehouseCode: '', partnerCode: '', customerName: '', phone: '', source: 'manual', note: '', policyRefs: [],
+  orderDate: today(), validUntil: today(3), branchCode: '', warehouseCode: '', partnerCode: '', customerName: '', phone: '', source: 'manual', note: '', policyRefs: [], saleChannel: '',
   lines: [{ lineKey: 'L1', sku: '', qty: '1', unitPrice: '', discount: '', isGift: false }],
   receiver: '', shipPhone: '', address: '', fee: '', carrier: '', trackingNo: '', cod: '',
 });
@@ -53,7 +55,7 @@ function toInput(d: Draft) {
     orderDate: d.orderDate, validUntil: d.validUntil, branchCode: d.branchCode, ...(d.warehouseCode ? { warehouseCode: d.warehouseCode } : {}), source: d.source,
     ...(d.partnerCode ? { partner: { code: d.partnerCode } } : {}),
     ...(d.customerName || d.phone ? { customer: { ...(d.customerName ? { name: d.customerName } : {}), ...(d.phone ? { phone: d.phone } : {}) } } : {}),
-    ...(d.note ? { note: d.note } : {}),
+    ...(d.note ? { note: d.note } : {}), ...(d.saleChannel ? { saleChannel: d.saleChannel } : {}),
     ...(d.receiver || d.shipPhone || d.address || d.carrier || d.trackingNo || n(d.fee) || n(d.cod) ? { shipping: {
       ...(d.receiver ? { receiver: d.receiver } : {}), ...(d.shipPhone ? { phone: d.shipPhone } : {}), ...(d.address ? { address: d.address } : {}),
       ...(d.carrier ? { carrier: d.carrier } : {}), ...(d.trackingNo ? { trackingNo: d.trackingNo } : {}), fee: n(d.fee) ?? 0, cod: n(d.cod) ?? 0,
@@ -86,6 +88,10 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
   // Danh sách không kèm chuyến giao — mở đơn thì đọc chi tiết (có chuyến giao).
   const detail = useQuery({ queryKey: ['phieu-ban', 'order', order?.id], enabled: Boolean(order), queryFn: () => api.get<Order>(`${M}/orders/${order!.id}`) });
   useEffect(() => { if (detail.data) setCur(detail.data); }, [detail.data]);
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): danh mục Kênh bán hàng (module pos) cho ô Kênh bán (đóng góp)
+  const channels = useQuery({ queryKey: ['pos-channels'], staleTime: 300_000,
+    // nuot-loi: module pos chưa bật → ô Kênh bán chỉ còn "Mặc định", máy chủ vẫn kiểm kênh khi Ghi
+    queryFn: () => api.get<{ items: { code: string; name: string; active: boolean; kind: 'online' | 'offline' }[] }>('/api/v1/m/pos/channels').then((r) => r.items).catch(() => []) }).data ?? [];
   const history = useQuery({ queryKey: ['phieu-ban', 'order-history', cur?.id], enabled: Boolean(cur) && tab === 'history',
     queryFn: () => api.get<{ events: HistoryEvent[] }>(`${M}/orders/${cur!.id}/history`) });
 
@@ -303,6 +309,14 @@ export function OrderEditor({ order, onClose }: { order: Order | null; onClose: 
         <Field label="Nguồn">
           <select className="input" value={d.source} disabled={Boolean(cur)} title={cur ? 'Nguồn chọn lúc lập đơn' : ''} onChange={(e) => setD({ ...d, source: e.target.value as Draft['source'] })}>
             <option value="manual">Lập tay</option><option value="livestream">Livestream</option>
+          </select>
+        </Field>
+        <Field label="Kênh bán" hint="Trống = kênh mặc định (Gần shop). Khuyến mại theo kênh tính khi Ghi">
+          <select className="input" value={d.saleChannel} disabled={!editable} title="Chương trình khuyến mại có điều kiện Kênh bán (Chỉ online / Chỉ offline / chọn kênh) áp theo kênh này"
+            onChange={(e) => setD({ ...d, saleChannel: e.target.value })}>
+            <option value="">— Mặc định (Gần shop) —</option>
+            {channels.filter((c) => c.active || c.code === d.saleChannel).map((c) => <option key={c.code} value={c.code}>{c.name} ({c.kind === 'online' ? 'online' : 'offline'}){c.active ? '' : ' (đã ngừng)'}</option>)}
+            {d.saleChannel && !channels.some((c) => c.code === d.saleChannel) && <option value={d.saleChannel}>{cur?.saleChannelName ?? d.saleChannel}</option>}
           </select>
         </Field>
         <Field label="Mã khách"><input className="input" value={d.partnerCode} disabled={!editable || lockedHead} title={lockedHead ? 'Đơn đang giữ hàng — không đổi khách' : ''} onChange={on('partnerCode')} /></Field>

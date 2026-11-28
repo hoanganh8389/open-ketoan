@@ -73,9 +73,53 @@ export function windowOf(p: Record<string, unknown>, effectiveFrom: string | nul
 export type PromoShape = { key: string; contract: string; params: Record<string, unknown>; branchCodes: string[]; from: string; to: string | null };
 export type Overlap = { key: string; source: 'published' | 'draft'; status: string; name: string; branches: string[]; from: string; to: string | null; skus: string[] | null };
 
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C3, C4): điều kiện kênh của chương trình — máy chủ kiểm lại khi nhận đơn (cùng luật
+// channelBlock của khuôn Core, NT-BH-065) và kiểm trùng theo kênh: hai chương trình không có kênh chung thì không trùng (đóng góp)
+/** Điều kiện kênh của chương trình (`params.conditions`). */
+export type ChannelCond = { channelKinds?: string[]; channels?: string[] };
+export const channelCondOf = (p: Record<string, unknown> | null | undefined): ChannelCond | null => {
+  const c = (p?.conditions ?? null) as ChannelCond | null;
+  return c && (c.channelKinds?.length || c.channels?.length) ? { ...(c.channelKinds?.length ? { channelKinds: c.channelKinds } : {}), ...(c.channels?.length ? { channels: c.channels } : {}) } : null;
+};
+/** Lý do kênh của đơn (`channel` mã, `kind` loại) không đạt điều kiện kênh; null = đạt / không có điều kiện. */
+export function channelMismatch(c: ChannelCond | null | undefined, channel: string | null | undefined, kind: string | null | undefined): string | null {
+  if (!c || (!c.channelKinds?.length && !c.channels?.length)) return null;
+  const code = (channel ?? '').trim().toUpperCase();
+  if (c.channelKinds?.length) {
+    if (kind !== 'online' && kind !== 'offline') return 'chương trình theo kênh bán — đơn chưa xác định kênh (online / offline)';
+    if (!c.channelKinds.includes(kind)) return `chỉ áp kênh ${c.channelKinds.map((k) => (k === 'online' ? 'online' : 'tại cửa hàng (offline)')).join(', ')}`;
+  }
+  if (c.channels?.length) {
+    if (!code) return 'chương trình theo kênh bán — đơn chưa có mã kênh';
+    if (!c.channels.some((x) => x.trim().toUpperCase() === code)) return `chỉ áp kênh ${c.channels.join(', ')}`;
+  }
+  return null;
+}
+export type PromoChannelIssue = { key: string; channel: string; kind: string | null; why: string };
+export const promoChannelMessage = (xs: readonly PromoChannelIssue[]) =>
+  `Khuyến mại không áp được cho kênh bán ${xs[0]!.channel}: ${xs.map((x) => `${x.key} — ${x.why}`).join('; ')} — chọn đúng kênh trên hoá đơn rồi tính lại khuyến mại`;
+/**
+ * Hai điều kiện kênh không bao giờ cùng đạt một đơn. Vắng điều kiện = mọi kênh. Kênh chọn cụ thể so loại qua `kindOf` (danh mục Kênh bán hàng);
+ * kênh không tra được loại → coi như có thể trùng (nhắc thừa hơn bỏ sót — chọn tạm T6).
+ */
+export function channelsDisjoint(a: ChannelCond | null | undefined, b: ChannelCond | null | undefined, kindOf: (code: string) => string | undefined = () => undefined): boolean {
+  if (!a || !b) return false;
+  const ka = a.channelKinds?.length ? a.channelKinds : null, kb = b.channelKinds?.length ? b.channelKinds : null;
+  const up = (xs?: string[]) => (xs?.length ? xs.map((x) => x.trim().toUpperCase()) : null);
+  const ca = up(a.channels), cb = up(b.channels);
+  if (!ca && !cb) return Boolean(ka && kb && !ka.some((k) => kb.includes(k)));
+  const codes = ca && cb ? ca.filter((x) => cb.includes(x)) : (ca ?? cb)!;
+  return !codes.some((code) => {
+    const k = kindOf(code);
+    return !k || ((!ka || ka.includes(k)) && (!kb || kb.includes(k)));
+  });
+}
+
 /** Hai chương trình trùng: cùng mã hàng (cả đơn coi như trùng mọi mã), cùng cửa hàng (rỗng = mọi cửa hàng), thời gian giao nhau. */
-export function overlapOf(a: PromoShape, b: PromoShape): { skus: string[] | null; branches: string[] } | null {
+export function overlapOf(a: PromoShape, b: PromoShape, kindOf?: (code: string) => string | undefined): { skus: string[] | null; branches: string[] } | null {
   if (a.key === b.key) return null;
+  // NT-BH-067 (C4): khác kênh (Chỉ online ↔ Chỉ offline, chọn kênh không chung) → không bao giờ cùng áp một đơn → không trùng.
+  if (channelsDisjoint(channelCondOf(a.params), channelCondOf(b.params), kindOf)) return null;
   const sa = skusOf(a.contract, a.params);
   const sb = skusOf(b.contract, b.params);
   let skus: string[] | null = null;

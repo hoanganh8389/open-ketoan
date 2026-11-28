@@ -24,7 +24,7 @@
 | F1 | BH18: bảng **Hàng mua** của Mua X tặng Y (mọi combo) thêm cột **Lọc HSD / lô** (như cột của Chiết khấu); Quà theo giá trị đơn thêm ô **Lọc HSD / lô hàng tính tổng đơn**; mở lại chương trình ra đúng ô | `modules/pos/web/screens/khuyen-mai/old-types.ts`, `PolicyForm.tsx` |
 | C1 | BH10: nút **Áp khuyến mại** gửi kênh của phiếu (`channel` = mã kênh, trống = kênh mặc định Gần shop) và loại kênh (`channelKind` lấy từ danh mục Kênh bán hàng) | `apps/web/src/components/phieu-hang/PhieuHangForm.tsx` |
 | C2 | BH20: thêm ô **Kênh bán** (như BH10, trống = kênh mặc định); máy chủ tính khuyến mại khi Ghi / Copy đơn theo kênh của đơn; Giao hàng → phiếu bán nháp mang kênh của đơn; Copy đơn / phiếu bán giữ kênh | `modules/phieu-ban/api/domain/order.ts`, `order-service.ts`, `modules/phieu-ban/web/screens/OrderEditor.tsx` |
-| C3 | Máy chủ kiểm lại kênh khi ghi: dòng mang chương trình có điều kiện kênh (`channelKinds` / `channels`) mà kênh của chứng từ không khớp → **không nhận**, lý do `POS_PROMO_CHANNEL` (kèm `items: [{ key, channel, kind, why }]`). Máy bán: lúc nhận đơn (đơn mất mạng gửi bù → nhận, đánh dấu `promoChannelOffline`). BH10: lúc Ghi và lúc Duyệt | `modules/pos/api/order-service.ts`, `modules/pos/api/domain/promo.ts`, `modules/phieu-ban/api/service.ts`, `modules/phieu-ban/api/domain/doc.ts`; mã lỗi `packages/contracts/src/errors.ts`, `docs/contracts/BIZCITY-ERRORS-v1.md` §4c |
+| C3 | Máy chủ kiểm lại kênh khi ghi: dòng mang chương trình có điều kiện kênh (`channelKinds` / `channels`) mà kênh của chứng từ không khớp → **không nhận**, lỗi kiểm dữ liệu `field: saleChannel` (kèm `items: [{ key, channel, kind, why }]`; mã lỗi riêng để sau, xem T4). Máy bán: lúc nhận đơn (đơn mất mạng gửi bù → nhận, đánh dấu `promoChannelOffline`). BH10: lúc Ghi và lúc Duyệt | `modules/pos/api/order-service.ts`, `modules/pos/api/domain/promo.ts`, `modules/phieu-ban/api/service.ts`, `modules/phieu-ban/api/domain/doc.ts` |
 | C4 | Kiểm trùng (BH18 Ghi / Duyệt): hai chương trình có tập kênh không giao nhau (Chỉ online ↔ Chỉ offline; chọn kênh không chung mã; chọn kênh mà mọi kênh khác loại với chương trình kia) → **không** coi là trùng | `modules/pos/api/domain/promo.ts` (`channelsDisjoint`), `modules/pos/api/promo.ts` |
 
 **Không làm (đợt này):** lọc lô cho **quà Y** / quà theo tổng đơn (§5 T1); ghi lô trên phiếu bán cho dòng hàng mua X (§5 T2); `promo-migrate` của open-pos chuyển `hsd_filter` dòng mua (PR riêng ở open-pos); Woo / sàn gửi kênh.
@@ -42,13 +42,13 @@
 
 | Ca | Kết quả | Test |
 |---|---|---|
-| Mua 2 A (lọc HSD ≤ 30 ngày) tặng 1 Q; 2 lon thuộc lô L1 (còn 6 ngày) | tặng 1 Q, `detail.buyLots` = L1 × 2 | ca mẫu `sale-promo-v2.ts`, `apps/api/test/nt-bh-067-km-lo-kenh.test.ts` | (đề xuất — tệp test ở nhánh code)
+| Mua 2 A (lọc HSD ≤ 30 ngày) tặng 1 Q; 2 lon thuộc lô L1 (còn 6 ngày) | tặng 1 Q, `detail.buyLots` = L1 × 2 | ca mẫu `sale-promo-v2.ts`, `apps/api/test/nt-bh-067-km-lo-kenh.test.ts` |
 | Cùng chương trình, 4 lon: L1 1 lon + L2 (HSD xa) 3 lon | không tặng — "chưa đủ điều kiện mua … mới mua 1" | như trên |
 | Dòng mua chưa biết lô (không có chi nhánh) | chặn "chưa biết lô"; cửa nạp `indeterminate` | như trên |
 | Quà theo tổng đơn ≥ 300.000, lọc lô L1: 3 lon × 100.000 (L1 1 lon) | không tặng (tổng xét quà 100.000); 3 lon L1 → tặng | như trên |
 | Evaluate qua API, chi nhánh có tồn lô thật (dự phân lô hạn gần trước) | đúng như hai ca đầu | `nt-bh-067-km-lo-kenh.test.ts` |
-| Kênh: chương trình Chỉ online, phiếu kênh Gần shop (offline) | `channelMismatch` trả lý do "chỉ áp kênh online" | `modules/pos/test/km-kenh-may-chu.test.ts`, `modules/phieu-ban/test/km-kenh.test.ts` | (đề xuất — tệp test ở nhánh code)
-| Kiểm trùng: Chỉ online ↔ Chỉ offline cùng mã | không trùng; Tất cả ↔ Chỉ online → trùng; chọn ZALO ↔ Chỉ offline (ZALO online) → không trùng | `modules/pos/test/km-kenh-may-chu.test.ts` | (đề xuất — tệp test ở nhánh code)
+| Kênh: chương trình Chỉ online, phiếu kênh Gần shop (offline) | `channelMismatch` trả lý do "chỉ áp kênh online" | `modules/pos/test/km-kenh-may-chu.test.ts`, `modules/phieu-ban/test/km-kenh.test.ts` |
+| Kiểm trùng: Chỉ online ↔ Chỉ offline cùng mã | không trùng; Tất cả ↔ Chỉ online → trùng; chọn ZALO ↔ Chỉ offline (ZALO online) → không trùng | `modules/pos/test/km-kenh-may-chu.test.ts` |
 | Form: hàng mua lọc HSD ⇄ `buy.items[].lotFilter`; quà theo đơn ⇄ `lotFilter` | mở lại đúng ô | `modules/pos/test/km-lo-hsd-form.test.ts` |
 
 ## 5. Chọn tạm, chờ Hoàng chốt
@@ -58,7 +58,7 @@
 | T1 | **Quà Y** (Mua X tặng Y) và quà theo tổng đơn **không lọc lô** — quà xuất kho quà (KKM), Kernel tự phân lô hạn gần trước | (b) quà cũng có ô Lọc HSD, máy chủ dự phân lô ở kho quà và tặng đúng lô | Quà đi kho riêng (NT-BH-064 D1); lọc lô quà mà kho quà không đủ lô khớp thì không rõ tặng hay không — an toàn là giữ như cũ |
 | T2 | Dòng **hàng mua X** có lọc lô: chỉ dùng lô để **đếm** điều kiện mua, phiếu bán **không** tách / ghi lô cho dòng này (Kernel tự phân lô hạn gần trước — cùng thứ tự bộ tính đã dự) | (b) phiếu bán ghi lô cho dòng mua như dòng giảm giá (cần máy bán chép `plan` sang dòng — PR open-pos + sửa `order.ts`) | Không có tiền giảm trên dòng; tránh sửa `order.ts` đang có dòng giữ chỗ khác và máy bán. Rủi ro: lô cận date vừa bị đơn khác lấy hết giữa lúc tính và lúc ghi → quà vẫn tặng, kho xuất lô khác |
 | T3 | Quà theo tổng đơn: lọc lô áp cho **tiền hàng tính tổng đơn** (một ô cho cả chương trình) | (b) chỉ áp khi có phạm vi nhóm hàng | Một ô, dễ khai; không chọn thì như cũ |
-| T4 | Máy chủ thấy kênh không khớp → **không nhận** chứng từ (lý do `POS_PROMO_CHANNEL`, như hết lượt); đơn máy bán mất mạng gửi bù → nhận, đánh dấu `promoChannelOffline` | (b) tự bỏ khuyến mại rồi ghi (đổi tiền khách phải trả); (c) chỉ cảnh báo | Không tự đổi tiền đã báo khách; như cách làm hạn mức lượt (NT-BH-025) |
+| T4 | Máy chủ thấy kênh không khớp → **không nhận** chứng từ (lỗi kiểm dữ liệu `field: saleChannel` — chưa thêm mã lỗi riêng vì SC-SIG-2 (Hoàng chốt 29/11), như hết lượt); đơn máy bán mất mạng gửi bù → nhận, đánh dấu `promoChannelOffline` | (b) tự bỏ khuyến mại rồi ghi (đổi tiền khách phải trả); (c) chỉ cảnh báo | Không tự đổi tiền đã báo khách; như cách làm hạn mức lượt (NT-BH-025) |
 | T5 | BH20 có ô Kênh bán; **trống = kênh mặc định Gần shop** (offline) như BH10 | (b) đơn đặt hàng mặc định là online; (c) đơn livestream tự là kênh Livestream | Giữ một quy ước với BH10 / máy bán (NT-BH-031) |
 | T6 | Kiểm trùng: chương trình "theo loại kênh" so với "chọn kênh" — tra loại của từng kênh ở danh mục; kênh không tra được loại → vẫn coi là có thể trùng (nhắc thừa hơn bỏ sót) | — | Cảnh báo trùng chỉ là nhắc, không chặn |
 

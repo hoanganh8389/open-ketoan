@@ -92,12 +92,45 @@ export type Body = {
 // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-031: kênh mặc định của phiếu không mang kênh — trùng kênh mặc định của module pos (đóng góp)
 /** Mã kênh mặc định (module pos: "Gần shop") — phiếu cũ / phiếu không chọn kênh tính vào kênh này khi lọc và báo cáo. */
 export const DEFAULT_CHANNEL = 'GAN_SHOP';
-export type ChannelItem = { code: string; name: string; active: boolean };
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: loại kênh (online / offline) đi kèm danh mục — dùng cho điều kiện kênh của khuyến mại (đóng góp)
+export type ChannelItem = { code: string; name: string; active: boolean; kind?: 'online' | 'offline' };
 const fold = (s: string) => s.normalize('NFC').trim().toLowerCase().replace(/\s+/g, ' ');
 /** Kênh theo mã (không phân biệt hoa thường) hoặc tên; không có → null. */
 export function findChannel(list: readonly ChannelItem[], input: string): ChannelItem | null {
   return list.find((c) => c.code === input.trim().toUpperCase()) ?? list.find((c) => fold(c.name) === fold(input)) ?? null;
 }
+
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C3): máy chủ kiểm lại điều kiện kênh của khuyến mại trên phiếu / đơn — cùng luật
+// channelBlock của khuôn Core (NT-BH-065): loại kênh / mã kênh; chứng từ không xác định được loại kênh → không giữ khuyến mại theo loại kênh (đóng góp)
+/** Điều kiện kênh của chương trình (`params.conditions`). */
+export type ChannelCond = { channelKinds?: string[]; channels?: string[] };
+/** Lý do kênh của chứng từ (`channel` mã, `kind` loại) không đạt điều kiện kênh của chương trình; null = đạt / không có điều kiện. */
+export function promoChannelMismatch(c: ChannelCond | null | undefined, channel: string | null | undefined, kind: string | null | undefined): string | null {
+  if (!c || (!c.channelKinds?.length && !c.channels?.length)) return null;
+  const code = (channel ?? '').trim().toUpperCase();
+  if (c.channelKinds?.length) {
+    if (kind !== 'online' && kind !== 'offline') return 'chương trình theo kênh bán — chưa xác định loại kênh (online / offline) của chứng từ';
+    if (!c.channelKinds.includes(kind)) return `chỉ áp kênh ${c.channelKinds.map((k) => (k === 'online' ? 'online' : 'tại cửa hàng (offline)')).join(', ')}`;
+  }
+  if (c.channels?.length) {
+    if (!code) return 'chương trình theo kênh bán — chứng từ chưa có mã kênh';
+    if (!c.channels.some((x) => x.trim().toUpperCase() === code)) return `chỉ áp kênh ${c.channels.join(', ')}`;
+  }
+  return null;
+}
+export type PromoChannelIssue = { key: string; channel: string; kind: string | null; why: string };
+/**
+ * Các chương trình trên chứng từ (`keys`) có điều kiện kênh không khớp kênh của chứng từ. `conds` = điều kiện theo mã chương trình (đọc ở
+ * `core.policy.list`); chương trình không có trong danh sách (đã ngừng / khác ngày) → bỏ qua (cửa nạp Core kiểm bản chính sách).
+ */
+export function promoChannelIssues(keys: readonly string[], conds: ReadonlyMap<string, ChannelCond | null>, channel: string, kind: string | null): PromoChannelIssue[] {
+  return [...new Set(keys)].sort().flatMap((key) => {
+    const why = promoChannelMismatch(conds.get(key), channel, kind);
+    return why ? [{ key, channel, kind, why }] : [];
+  });
+}
+export const promoChannelMessage = (xs: readonly PromoChannelIssue[]) =>
+  `Khuyến mại không áp được cho kênh bán ${xs[0]!.channel}: ${xs.map((x) => `${x.key} — ${x.why}`).join('; ')} — đổi kênh bán hoặc bấm Áp khuyến mại lại theo kênh đang chọn`;
 
 /**
  * Tính lại phiếu ở máy chủ. Tên / ĐVT / mã thuế lấy theo danh mục khi dòng để trống; tiền dòng = SL × đơn giá − chiết khấu (làm tròn

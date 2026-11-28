@@ -37,6 +37,9 @@ export type Order = {
   shipping?: Shipping | null; copiedFrom?: string | null; shipments?: Shipment[];
   /** Bản chương trình khuyến mại đã áp (kèm băm) — căn cứ của các dòng có policyRef. */
   policyRefs?: { key: string; version: number; hash: string }[];
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (C2): kênh bán của đơn (đóng góp)
+  /** Mã + tên kênh bán (danh mục Kênh bán hàng); vắng = kênh mặc định (Gần shop). */
+  saleChannel?: string; saleChannelName?: string;
   // [2026-11-25 Võ Hoàng] NGHIEM-THU — NT-BH-041: phiếu chuyển kho lập từ đơn, mã còn thiếu để giữ (đóng góp)
   /** Phiếu chuyển kho KHO01 lập từ đơn (trạng thái lúc lập — trạng thái hiện tại đọc ở KHO01). */
   transfers?: OrderTransfer[];

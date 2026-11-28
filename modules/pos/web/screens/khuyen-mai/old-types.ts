@@ -38,7 +38,8 @@ export const HSD_MODES: { v: HsdMode; label: string; ph: string }[] = [
 ];
 export type CkRow = UnitRow & HsdCols & { fromQty: string; pct: string; amount: string; maxDiscount: string };
 export type FixedRow = UnitRow & HsdCols & { fromQty: string; price: string };
-export type QtyRow = UnitRow & { qty: string };
+// [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (F1): dòng hàng mua của Mua X tặng Y có lọc HSD / lô (như hsd_filter dòng mua của plugin cũ); quà không lọc (chọn tạm T1) (đóng góp)
+export type QtyRow = UnitRow & Partial<HsdCols> & { qty: string };
 export type PoolTier = { minQty: string; pct: string };
 
 export type OldForm = {
@@ -65,6 +66,9 @@ export type OldForm = {
   // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: Mua X tặng Y nhiều combo — combo 1 là buyRows / giftRows, combo 2.. ở đây (đóng góp)
   /** Combo thứ 2 trở đi (plugin cũ: nhiều rule mua – tặng trong một chương trình). */
   moreCombos: { buyRows: QtyRow[]; giftRows: QtyRow[] }[];
+  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 (F1): quà theo giá trị đơn — lọc HSD / lô của hàng tính tổng đơn (đóng góp)
+  /** Lọc HSD / lô hàng tính tổng đơn (loại Quà tặng theo giá trị đơn); Mọi HSD = không lọc. */
+  orderHsd: HsdCols;
   vcCodes: string; vcType: 'percent' | 'fixed'; vcValue: string; vcMax: string; vcMinOrder: string; vcPerCustomer: string;
   poolRows: UnitRow[]; poolTiers: PoolTier[]; poolMinDistinct: string; poolPct: string;
   lowRequired: string; lowGift: string; lowRows: UnitRow[];
@@ -113,7 +117,7 @@ export function emptyOld(type: OldType, today: string): OldForm {
     dateOn: false, validFrom: today, validTo: '', timeOn: false, timeFrom: '', timeTo: '', weekdaysOn: false, weekdays: [],
     retail: true, wholesale: false, so: false, channelMode: 'all', channels: [], minOrderTotal: '0', maxUsage: '0', memberLevels: '', birthday: '', branchCodes: [],
     scopeMode: 'all', groupCodes: [],
-    ckRows: rows5(emptyCk), fixedRows: rows5(emptyFixed), buyRows: [emptyQty()], giftRows: [emptyQty()], moreCombos: [],
+    ckRows: rows5(emptyCk), fixedRows: rows5(emptyFixed), buyRows: [emptyQty()], giftRows: [emptyQty()], moreCombos: [], orderHsd: { hsdMode: '', hsdValue: '' },
     vcCodes: '', vcType: 'percent', vcValue: '', vcMax: '', vcMinOrder: '', vcPerCustomer: '1',
     poolRows: [emptyUnit()], poolTiers: [{ minQty: '2', pct: '' }], poolMinDistinct: '2', poolPct: '',
     lowRequired: '4', lowGift: '1', lowRows: [emptyUnit()],
@@ -220,7 +224,11 @@ export function oldToParams(f: OldForm): { contract: string; params: Params; quo
         if (!gift.length) problems.push(`${tag(k)}Chưa nhập quà tặng`);
         dupSku(buy, `${tag(k)}Hàng mua`); dupSku(gift, `${tag(k)}Quà tặng`);
         return {
-          buy: { items: buy.map((r, i) => ({ sku: r.sku.trim(), qty: (need(num(r.qty), `${tag(k)}Hàng mua dòng ${i + 1}: số lượng`, { gt0: true }) ?? 1) * ratioOf(r) })), mode: 'each' as const },
+          // NT-BH-067 (F1): lọc HSD / lô của mã mua → buy.items[].lotFilter.
+          buy: { items: buy.map((r, i) => {
+            const lf = lotFilterOf({ hsdMode: r.hsdMode ?? '', hsdValue: r.hsdValue ?? '' }, `${tag(k)}Hàng mua ${r.sku.trim()}`, problems);
+            return { sku: r.sku.trim(), qty: (need(num(r.qty), `${tag(k)}Hàng mua dòng ${i + 1}: số lượng`, { gt0: true }) ?? 1) * ratioOf(r), ...(lf ? { lotFilter: lf } : {}) };
+          }), mode: 'each' as const },
           get: { options: gift.map((r, i) => ({ sku: r.sku.trim(), qty: (need(num(r.qty), `${tag(k)}Quà dòng ${i + 1}: số lượng`, { gt0: true }) ?? 1) * ratioOf(r) })), choose: 1 },
         };
       });
@@ -259,7 +267,9 @@ export function oldToParams(f: OldForm): { contract: string; params: Params; quo
       if (!gift.length) problems.push('Chưa nhập quà');
       dupSku(gift, 'Quà');
       const threshold = minOrder && minOrder > 0 ? minOrder : 0;
-      own = {
+      // NT-BH-067 (F1): lọc HSD / lô hàng tính tổng đơn → lotFilter của chương trình.
+      const olf = lotFilterOf(f.orderHsd, 'Lọc HSD / lô hàng tính tổng đơn', problems);
+      own = { ...(olf ? { lotFilter: olf } : {}),
         tiers: [{ minOrder: threshold, gifts: gift.map((r, i) => ({ sku: r.sku.trim(), qty: (need(num(r.qty), `Quà dòng ${i + 1}: số lượng tặng`, { gt0: true }) ?? 1) * ratioOf(r) })) }],
         multiply: threshold > 0, ...(gift.length > 1 ? { choose: 1 } : {}), ...scope,
       };
@@ -358,13 +368,16 @@ export function oldFromParams(contract: string, p: Params, meta: { key: string; 
     }), emptyFixed);
   }
   if (type === 'bxgy') {
-    const b = (p.buy ?? {}) as { items?: { sku: string; qty?: number }[] }, g = (p.get ?? {}) as { options?: { sku: string; qty: number }[] };
-    f.buyRows = pad((b.items ?? []).map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty ?? 1) })), emptyQty);
+    // NT-BH-067 (F1): mã mua có lọc lô → ô Lọc HSD / lô của dòng.
+    type Item = { sku: string; qty?: number; lotFilter?: Record<string, unknown> };
+    const b = (p.buy ?? {}) as { items?: Item[] }, g = (p.get ?? {}) as { options?: { sku: string; qty: number }[] };
+    const buyRow = (x: Item): QtyRow => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty ?? 1), ...(x.lotFilter ? hsdOf(x.lotFilter) : {}) });
+    f.buyRows = pad((b.items ?? []).map(buyRow), emptyQty);
     f.giftRows = pad((g.options ?? []).map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty) })), emptyQty);
     // NT-BH-063: combo 2.. (combos[0] trùng buy / get)
-    const combos = (Array.isArray(p.combos) ? p.combos : []) as { buy?: { items?: { sku: string; qty?: number }[] }; get?: { options?: { sku: string; qty: number }[] } }[];
+    const combos = (Array.isArray(p.combos) ? p.combos : []) as { buy?: { items?: Item[] }; get?: { options?: { sku: string; qty: number }[] } }[];
     f.moreCombos = combos.slice(1).map((c) => ({
-      buyRows: pad((c.buy?.items ?? []).map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty ?? 1) })), emptyQty),
+      buyRows: pad((c.buy?.items ?? []).map(buyRow), emptyQty),
       giftRows: pad((c.get?.options ?? []).map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty) })), emptyQty),
     }));
   }
@@ -384,6 +397,7 @@ export function oldFromParams(contract: string, p: Params, meta: { key: string; 
   if (type === 'order_gift') {
     const t = ((p.tiers ?? []) as { minOrder: number; gifts: { sku: string; qty: number }[] }[])[0]!;
     f.minOrderTotal = s(t.minOrder);
+    f.orderHsd = hsdOf(p.lotFilter as Record<string, unknown> | undefined);
     f.giftRows = pad(t.gifts.map((x) => ({ ...emptyUnit(), sku: x.sku, qty: s(x.qty) })), emptyQty);
   }
   if (type === 'lowest') {

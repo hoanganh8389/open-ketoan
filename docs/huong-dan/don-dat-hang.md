@@ -25,6 +25,12 @@ Menu trái → **Phần riêng** → **Phiếu bán nhập tay** → **Đơn đ�
 4. Dòng hàng: mã, số lượng; **đơn giá** để trống = giá bán của cửa hàng; chiết khấu, quà như phiếu bán. Bấm **Ghi** — máy chủ tính lại tiền, thuế.
 5. **Thông tin giao** (tuỳ chọn): người nhận, SĐT, địa chỉ giao, **phí ship thu khách**, **hãng vận chuyển** (`SELF` = tự giao, hoặc mã hãng: GHN, GHTK…), mã vận đơn, **tiền COD**. Hiện trên đơn và trên phiếu **In báo giá**. Phí ship và COD là mặc định của chuyến giao đầu tiên.
 
+### Kênh bán (từ 29/11/2026, phiếu NT-BH-067)
+<!-- [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: ô Kênh bán của đơn đặt hàng (đóng góp) -->
+- Ô **Kênh bán** chọn từ danh mục [Kênh bán hàng](pos-kenh-ban.md); trống = *Gần shop* (offline).
+- Khi Ghi, máy chủ tính khuyến mại theo kênh của đơn: chương trình *Chỉ online* chỉ áp cho đơn kênh online (vd Zalo, Livestream). Copy đơn giữ kênh của đơn gốc.
+- Giao hàng (tại quầy / chuyến giao) → phiếu bán nháp mang kênh của đơn; duyệt phiếu kiểm lại kênh với khuyến mại trên phiếu.
+
 ## Gửi, duyệt
 - **Gửi**: phần mềm kiểm
   - **hạn mức nợ** của khách (danh mục đối tượng): nợ hiện tại + các đơn đang mở chưa giao + đơn này > hạn mức → **Chờ duyệt** ("Vượt hạn mức …: nợ … + đơn mở … + đơn này …"); hạn mức trống / 0 = không giới hạn;
