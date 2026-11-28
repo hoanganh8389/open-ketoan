@@ -8,11 +8,13 @@
 import { list, num } from './model';
 
 /** Loại chương trình theo plugin cũ (mã số = selling_policy_type cũ). */
-export type OldType = 'ck' | 'bxgy' | 'fixed' | 'voucher' | 'pool' | 'order_gift' | 'lowest';
+export type OldType = 'ck' | 'bxgy' | 'fixed' | 'batch' | 'voucher' | 'pool' | 'order_gift' | 'lowest';
 export const OLD_TYPES: { id: OldType; oldId: number; label: string; contract: string; hint: string }[] = [
   { id: 'ck', oldId: 5, label: 'Chiết khấu', contract: 'sale.promo.price_lines@2', hint: 'Mỗi mã một dòng: từ số lượng, chiết khấu % hoặc tiền / đơn vị, tối đa (đ)' },
   { id: 'bxgy', oldId: 2, label: 'Mua X tặng Y', contract: 'sale.promo.buy_x_get_y@2', hint: 'Bảng hàng mua (mỗi mã đủ số lượng của dòng) → bảng quà; nhiều quà thì khách chọn 1' },
   { id: 'fixed', oldId: 1, label: 'Giảm giá cố định', contract: 'sale.promo.price_lines@2', hint: 'Mỗi mã một dòng: từ số lượng, giá mới' },
+  // [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064: hiện lại loại 4 "Theo lô hàng" — khuôn price_lines@2 có lọc lô (lotFilter.lotNos) (đóng góp)
+  { id: 'batch', oldId: 4, label: 'Theo lô hàng', contract: 'sale.promo.price_lines@2', hint: 'Mỗi dòng: mã, số lô (nhiều lô cách dấu phẩy), giá mới — chỉ phần hàng xuất từ các lô đó được giá mới (máy chủ tự chọn lô hạn gần trước)' },
   { id: 'voucher', oldId: 10, label: 'Voucher / Mã giảm giá', contract: 'sale.promo.order_discount@1', hint: 'Khách đọc mã: giảm % (có trần) hoặc tiền, đơn tối thiểu, tối đa mỗi khách' },
   { id: 'pool', oldId: 13, label: 'Combo bộ sản phẩm', contract: 'sale.promo.pool_combo@2', hint: 'Mua đủ N mã khác nhau trong pool giảm % cả pool; chưa đủ thì giảm theo số lượng từng mã' },
   { id: 'order_gift', oldId: 14, label: 'Quà tặng theo giá trị đơn hàng', contract: 'sale.promo.order_gift@2', hint: 'Đơn đạt "Tổng giá trị đơn hàng ≥" tặng quà (nhân theo bội số); nhiều quà thì khách chọn 1' },
@@ -21,14 +23,21 @@ export const OLD_TYPES: { id: OldType; oldId: number; label: string; contract: s
 export const OLD_TYPE: Record<OldType, (typeof OLD_TYPES)[number]> = Object.fromEntries(OLD_TYPES.map((t) => [t.id, t])) as never;
 /** Loại cũ không hiện ở màn mới và lý do — ghi ở phiếu NT-BH-049 §6. */
 export const OLD_HIDDEN = [
-  { oldId: 4, label: 'Theo lô hàng', why: 'chưa có khuôn lọc lô / HSD ở Core (K8) — làm sau' },
   { oldId: 12, label: 'Trường hợp đặc biệt (IT)', why: 'JSON thủ công của IT, không dùng ở kế toán' },
 ];
 
 /** Dòng mặt hàng chung: mã, đơn vị (tên + tỉ lệ về đơn vị nhỏ nhất). */
 export type UnitRow = { sku: string; unitName: string; unitRatio: string };
-export type CkRow = UnitRow & { fromQty: string; pct: string; amount: string; maxDiscount: string };
-export type FixedRow = UnitRow & { fromQty: string; price: string };
+// [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064: lọc HSD trên từng dòng như hsd_filter plugin cũ, thêm "còn ≤ N ngày" (đóng góp)
+/** Lọc lô / HSD của dòng: '' mọi HSD · days còn ≤ N ngày · month tháng HSD (MM/YYYY) · year năm HSD · lot số lô cụ thể. */
+export type HsdMode = '' | 'days' | 'month' | 'year' | 'lot';
+export type HsdCols = { hsdMode: HsdMode; hsdValue: string };
+export const HSD_MODES: { v: HsdMode; label: string; ph: string }[] = [
+  { v: '', label: 'Mọi HSD', ph: '' }, { v: 'days', label: 'HSD còn ≤ N ngày', ph: 'vd 30' }, { v: 'month', label: 'Theo tháng/năm HSD', ph: 'MM/YYYY' },
+  { v: 'year', label: 'Theo năm HSD', ph: 'YYYY' }, { v: 'lot', label: 'Lô cụ thể', ph: 'số lô, cách dấu phẩy' },
+];
+export type CkRow = UnitRow & HsdCols & { fromQty: string; pct: string; amount: string; maxDiscount: string };
+export type FixedRow = UnitRow & HsdCols & { fromQty: string; price: string };
 export type QtyRow = UnitRow & { qty: string };
 export type PoolTier = { minQty: string; pct: string };
 
@@ -63,8 +72,35 @@ export type OldForm = {
 };
 
 export const emptyUnit = (): UnitRow => ({ sku: '', unitName: '', unitRatio: '' });
-export const emptyCk = (): CkRow => ({ ...emptyUnit(), fromQty: '1', pct: '', amount: '', maxDiscount: '' });
-export const emptyFixed = (): FixedRow => ({ ...emptyUnit(), fromQty: '1', price: '' });
+export const emptyCk = (): CkRow => ({ ...emptyUnit(), hsdMode: '', hsdValue: '', fromQty: '1', pct: '', amount: '', maxDiscount: '' });
+export const emptyFixed = (): FixedRow => ({ ...emptyUnit(), hsdMode: '', hsdValue: '', fromQty: '1', price: '' });
+
+/** Ô lọc HSD → lotFilter của khuôn; undefined = không lọc; sai → ghi lỗi, trả null. */
+export function lotFilterOf(r: HsdCols, label: string, problems: string[]): Record<string, unknown> | undefined | null {
+  const v = (r.hsdValue ?? '').trim();
+  switch (r.hsdMode ?? '') {
+    case '': return undefined;
+    case 'days': { const n = Number(v); if (!v || !Number.isInteger(n) || n < 0 || n > 3650) { problems.push(`${label}: HSD còn ≤ N ngày — nhập số nguyên 0–3650`); return null; } return { expWithinDays: n }; }
+    case 'month': {
+      const a = /^(\d{1,2})\/(\d{4})$/.exec(v), b = /^(\d{4})-(\d{2})$/.exec(v);
+      if (!a && !b) { problems.push(`${label}: tháng HSD dạng MM/YYYY`); return null; }
+      const mm = a ? a[1]! : b![2]!, yy = a ? a[2]! : b![1]!;
+      const n = Number(mm); if (n < 1 || n > 12) { problems.push(`${label}: tháng HSD 1–12`); return null; }
+      return { expMonth: `${yy}-${String(n).padStart(2, '0')}` };
+    }
+    case 'year': if (!/^\d{4}$/.test(v)) { problems.push(`${label}: năm HSD dạng YYYY`); return null; } return { expYear: v };
+    case 'lot': { const lots = list(v); if (!lots.length) { problems.push(`${label}: chưa nhập số lô`); return null; } return { lotNos: [...new Set(lots)] }; }
+  }
+}
+/** lotFilter của khuôn → ô lọc HSD của form. */
+export function hsdOf(lf: Record<string, unknown> | undefined): HsdCols {
+  if (!lf) return { hsdMode: '', hsdValue: '' };
+  if (Array.isArray(lf.lotNos) && lf.lotNos.length) return { hsdMode: 'lot', hsdValue: (lf.lotNos as string[]).join(', ') };
+  if (lf.expWithinDays != null) return { hsdMode: 'days', hsdValue: String(lf.expWithinDays) };
+  if (typeof lf.expMonth === 'string') return { hsdMode: 'month', hsdValue: `${lf.expMonth.slice(5, 7)}/${lf.expMonth.slice(0, 4)}` };
+  if (typeof lf.expYear === 'string') return { hsdMode: 'year', hsdValue: lf.expYear };
+  return { hsdMode: '', hsdValue: '' };
+}
 export const emptyQty = (): QtyRow => ({ ...emptyUnit(), qty: '1' });
 const rows5 = <T,>(f: () => T) => [f(), f(), f(), f(), f()];
 
@@ -131,7 +167,8 @@ export function oldToParams(f: OldForm): { contract: string; params: Params; quo
   };
   switch (f.type) {
     case 'ck':
-    case 'fixed': {
+    case 'fixed':
+    case 'batch': {
       const rows = f.type === 'ck' ? used(f.ckRows) : used(f.fixedRows);
       if (!rows.length) problems.push('Chưa nhập mã SKU nào ở bảng "Cách tính chương trình"');
       const bySku = new Map<string, (CkRow | FixedRow)[]>();
@@ -141,8 +178,13 @@ export function oldToParams(f: OldForm): { contract: string; params: Params; quo
         if (units.size > 1) problems.push(`${s}: các dòng của cùng một mã phải cùng đơn vị`);
         const froms = rs.map((r, i) => need(num(r.fromQty || '1'), `${s} dòng ${i + 1}: từ SL`, { gt0: true }) ?? 1);
         if (new Set(froms).size !== froms.length) problems.push(`${s}: hai dòng trùng "Từ SL"`);
+        // NT-BH-064: lọc lô / HSD theo mã (mọi dòng của một mã phải cùng bộ lọc); loại "Theo lô hàng" bắt buộc số lô.
+        if (f.type === 'batch' && rs.some((r) => !(r.hsdValue ?? '').trim())) problems.push(`${s}: loại "Theo lô hàng" phải nhập số lô`);
+        const lfs = rs.map((r) => (f.type === 'batch' ? { ...r, hsdMode: 'lot' as const } : r)).map((r) => lotFilterOf(r, s, problems));
+        if (new Set(lfs.map((x) => JSON.stringify(x ?? null))).size > 1) problems.push(`${s}: các dòng của cùng một mã phải cùng lọc HSD / lô`);
+        const lot = lfs[0] ? { lotFilter: lfs[0] } : {};
         const way = (r: CkRow | FixedRow, i: number): Params => {
-          if (f.type === 'fixed') return { unitPrice: need(num((r as FixedRow).price), `${s} dòng ${i + 1}: giá mới`) };
+          if (f.type === 'fixed' || f.type === 'batch') return { unitPrice: need(num((r as FixedRow).price), `${s} dòng ${i + 1}: giá mới`) };
           const k = r as CkRow;
           const hasPct = k.pct.trim() !== '' && num(k.pct) !== 0, hasAmt = k.amount.trim() !== '' && num(k.amount) !== 0;
           if (hasPct === hasAmt) { problems.push(`${s} dòng ${i + 1}: nhập Chiết khấu % HOẶC Chiết khấu đ (một trong hai)`); return {}; }
@@ -155,11 +197,11 @@ export function oldToParams(f: OldForm): { contract: string; params: Params; quo
         const unit = ratioOf(r0) !== 1 && r0.unitName.trim() ? { unit: { name: r0.unitName.trim(), ratio: ratioOf(r0) } } : {};
         if (rs.length === 1 && froms[0] === 1) {
           const w = way(r0, 0);
-          return { sku: s, ...w, ...unit };
+          return { sku: s, ...w, ...unit, ...lot };
         }
         const order = rs.map((r, i) => ({ r, i, min: froms[i]! })).sort((a, b) => a.min - b.min);
         const tiers = order.map(({ r, i, min }) => ({ min, ...way(r, i) }));
-        return { sku: s, tiers, ...unit };
+        return { sku: s, tiers, ...unit, ...lot };
       });
       own = { basis: 'qty', lines, ...scope };
       break;
@@ -263,7 +305,9 @@ export function oldFromParams(contract: string, p: Params, meta: { key: string; 
   switch (contract) {
     case 'sale.promo.price_lines@2':
       if (!lines.length) return null;
-      if (ways.every((w) => w.unitPrice != null)) type = 'fixed';
+      // NT-BH-064: giá mới + mọi dòng lọc theo số lô = loại "Theo lô hàng".
+      if (ways.every((w) => w.unitPrice != null) && lines.every((l) => ((l.lotFilter as { lotNos?: unknown[] } | undefined)?.lotNos?.length ?? 0) > 0)) type = 'batch';
+      else if (ways.every((w) => w.unitPrice != null)) type = 'fixed';
       else if (ways.every((w) => w.unitPrice == null && (w.pct != null || w.amountPerUnit != null))) type = 'ck';
       else return null;
       break;
@@ -299,13 +343,13 @@ export function oldFromParams(contract: string, p: Params, meta: { key: string; 
   if (type === 'ck') {
     f.ckRows = pad(lines.flatMap((l) => {
       const ts = (l.tiers as Record<string, unknown>[] | undefined) ?? [{ ...l, min: 1 }];
-      return ts.map((t) => ({ sku: s(l.sku), ...unitOf(l), fromQty: s(t.min ?? 1), pct: s(t.pct), amount: s(t.amountPerUnit), maxDiscount: s(t.maxDiscount ?? (l.tiers ? '' : l.maxDiscount)) }));
+      return ts.map((t) => ({ sku: s(l.sku), ...unitOf(l), ...hsdOf(l.lotFilter as Record<string, unknown> | undefined), fromQty: s(t.min ?? 1), pct: s(t.pct), amount: s(t.amountPerUnit), maxDiscount: s(t.maxDiscount ?? (l.tiers ? '' : l.maxDiscount)) }));
     }), emptyCk);
   }
-  if (type === 'fixed') {
+  if (type === 'fixed' || type === 'batch') {
     f.fixedRows = pad(lines.flatMap((l) => {
       const ts = (l.tiers as Record<string, unknown>[] | undefined) ?? [{ ...l, min: 1 }];
-      return ts.map((t) => ({ sku: s(l.sku), ...unitOf(l), fromQty: s(t.min ?? 1), price: s(t.unitPrice) }));
+      return ts.map((t) => ({ sku: s(l.sku), ...unitOf(l), ...hsdOf(l.lotFilter as Record<string, unknown> | undefined), fromQty: s(t.min ?? 1), price: s(t.unitPrice) }));
     }), emptyFixed);
   }
   if (type === 'bxgy') {
@@ -348,6 +392,7 @@ export function oldFromParams(contract: string, p: Params, meta: { key: string; 
 export const PASTE_COLS: Record<OldType, string> = {
   ck: 'Mã SKU | Từ SL | Chiết khấu % | Chiết khấu đ | Tối đa (đ)',
   fixed: 'Mã SKU | Từ SL | Giá mới',
+  batch: 'Mã SKU | Từ SL | Giá mới | Số lô',
   bxgy: 'Mã SKU | Số lượng',
   voucher: '',
   pool: 'Mã SKU',

@@ -51,7 +51,15 @@ export interface PromoLineV2 {
   groupCodes?: string[];
   /** Nhãn của mặt hàng; null = không có nhãn; vắng = chưa biết. */
   brandCode?: string | null;
+  // [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064: lô dự kiến xuất của dòng (bộ tính dự phân lô hạn gần trước — đúng thứ tự Kernel tự
+  // chọn khi phiếu không ghi lô); chỉ điền khi có chương trình lọc lô / HSD (đóng góp)
+  /** Lô dự kiến xuất (hạn gần trước), tổng = qty; lô trống (lotNo '') = phần thiếu tồn lô; vắng = chưa biết. */
+  lots?: LotPart[];
 }
+/** Một phần số lượng của dòng thuộc một lô. `expDate` YYYY-MM-DD hoặc null (lô không HSD). */
+export interface LotPart { lotNo: string; expDate: string | null; qty: number }
+/** Tiền giảm theo dòng; dòng giảm theo lô / HSD mang các phần lô được giảm (phiếu bán ghi lô để kho xuất đúng lô đã giảm). */
+export type PromoDiscountV2 = PromoDiscount & { lots?: LotPart[] };
 export interface PromoContextV2 extends PromoContext {
   /** Mã quà đã chọn cho chương trình này (buy_x_get_y@2). */
   giftChoice?: string[];
@@ -69,7 +77,7 @@ export interface PendingChoice {
   problem?: string;
 }
 export interface PromoOutputV2 {
-  discounts: PromoDiscount[];
+  discounts: PromoDiscountV2[];
   gifts: GiftOut[];
   total: number;
   touched: string[];
@@ -114,6 +122,40 @@ const unknownOut = (ctx: PromoContextV2 | undefined, unknown: string[]) => (ctx?
 
 // ── a) Giá riêng từng dòng (K1) ─────────────────────────────────────────────────────────────────────────────────────
 const way = { pct: z.number().positive().max(100).nullish(), amountPerUnit: pos.nullish(), unitPrice: money.nullish() };
+// [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064 (CL-9): lọc lô / hạn dùng trên dòng giá — HSD còn ≤ N ngày (đẩy hàng cận date), tháng / năm
+// HSD và lô cụ thể (plugin cũ: hsd_filter, loại 4 "Theo lô hàng"). Khai nhiều tiêu chí = phải khớp cả. Chỉ phần số lượng thuộc lô khớp được giảm (đóng góp)
+export const lotFilter = z.object({
+  /** HSD còn từ 0 tới N ngày kể từ ngày chứng từ (lô đã hết hạn không khớp). */
+  expWithinDays: z.number().int().min(0).max(3650).optional(),
+  /** Tháng HSD (YYYY-MM) — hsd_filter "Theo tháng/năm" cũ. */
+  expMonth: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'YYYY-MM').optional(),
+  /** Năm HSD (YYYY) — hsd_filter "Theo năm" cũ. */
+  expYear: z.string().regex(/^\d{4}$/, 'YYYY').optional(),
+  /** Số lô cụ thể (loại 4 "Theo lô hàng" cũ). */
+  lotNos: z.array(code).min(1).max(50).optional(),
+}).strict().refine((f) => f.expWithinDays !== undefined || !!f.expMonth || !!f.expYear || !!f.lotNos?.length, 'Lọc lô / HSD phải có ít nhất một tiêu chí');
+export type LotFilter = z.infer<typeof lotFilter>;
+const dayNo = (d: string) => Math.floor(Date.parse(`${d}T00:00:00Z`) / 86_400_000);
+/** Lô có khớp bộ lọc không (lô trống / không HSD không khớp tiêu chí HSD). */
+export function lotMatches(lot: LotPart, f: LotFilter, docDate: string | undefined): boolean {
+  if (!lot.lotNo && !lot.expDate) return false;
+  if (f.lotNos?.length && !f.lotNos.includes(lot.lotNo)) return false;
+  if (f.expYear && lot.expDate?.slice(0, 4) !== f.expYear) return false;
+  if (f.expMonth && lot.expDate?.slice(0, 7) !== f.expMonth) return false;
+  if (f.expWithinDays !== undefined) {
+    if (!lot.expDate || !docDate) return false;
+    const left = dayNo(lot.expDate) - dayNo(docDate);
+    if (left < 0 || left > f.expWithinDays) return false;
+  }
+  return true;
+}
+/** Phần của dòng thuộc lô khớp; `null` = chưa biết lô (bộ tính chưa dự phân lô). */
+export function lotShare(l: PromoLineV2, f: LotFilter, docDate: string | undefined): { qty: number; lots: LotPart[] } | null {
+  if (!l.lots) return null;
+  const lots = l.lots.filter((x) => x.qty > 0 && lotMatches(x, f, docDate));
+  return { qty: r4(Math.min(l.qty, lots.reduce((s, x) => s + x.qty, 0))), lots };
+}
+
 export const priceLinesParams = z.object({
   ...common,
   scope: promoScope.optional(),
@@ -129,6 +171,8 @@ export const priceLinesParams = z.object({
     // [2026-11-27 10:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-049 (K7): khai theo đơn vị quy đổi (vd Thùng = 48): bậc số lượng, số lượng tối đa, giá / giảm
     // tiền mỗi cái tính theo đơn vị này; bộ tính quy về đơn vị nhỏ nhất (giỏ gửi theo đơn vị nhỏ nhất) (đóng góp)
     unit: z.object({ name: z.string().trim().min(1).max(32), ratio: pos }).strict().optional(),
+    /** NT-BH-064: chỉ giảm phần số lượng thuộc lô khớp (lô dự kiến xuất của dòng). */
+    lotFilter: lotFilter.optional(),
   }).strict()).min(1).max(500),
 }).strict();
 export type PriceLinesParams = z.infer<typeof priceLinesParams>;
@@ -153,11 +197,24 @@ export function evaluatePriceLines(p: PriceLinesParams, input: PromoInputV2): Pr
   const hit = sc.lines.filter((l) => owner.has(l.lineKey));
   if (!hit.length) return empty({ blocked: 'giỏ không có mã nào của chương trình' });
   if (hit.some((l) => !hasPrice(l)) && ctx?.lenient) return empty({ indeterminate: true });
-  const discounts: PromoDiscount[] = [];
+  // NT-BH-064: dòng chương trình lọc lô / HSD cần lô dự kiến của dòng giỏ — chưa biết thì không đoán.
+  const lotUnknown = hit.filter((l) => { const e = p.lines[owner.get(l.lineKey)!]!; return e.lotFilter && !l.lots; }).map((l) => l.lineKey);
+  if (lotUnknown.length) {
+    return ctx?.lenient ? empty({ indeterminate: true }) : empty({ blocked: `chương trình theo lô / hạn dùng — chưa biết lô của ${lotUnknown.length} dòng (bộ tính dự phân lô theo chi nhánh)`, detail: { lotUnknown } });
+  }
+  const discounts: PromoDiscountV2[] = [];
   const noPrice = hit.filter((l) => !hasPrice(l)).map((l) => l.lineKey);
   const entries: Record<string, unknown>[] = [];
   p.lines.forEach((e, i) => {
-    const ls = hit.filter((l) => owner.get(l.lineKey) === i && hasPrice(l));
+    // Lọc lô: mỗi dòng giỏ chỉ còn phần số lượng thuộc lô khớp (kèm các lô đó).
+    const share = new Map<string, LotPart[]>();
+    const ls = hit.filter((l) => owner.get(l.lineKey) === i && hasPrice(l)).flatMap((l) => {
+      if (!e.lotFilter) return [l];
+      const sh = lotShare(l, e.lotFilter, ctx?.docDate);
+      if (!sh || sh.qty <= EPS) return [];
+      share.set(l.lineKey, sh.lots);
+      return [{ ...l, qty: sh.qty }];
+    });
     if (!ls.length) return;
     const base = p.basis === 'qty' ? r4(ls.reduce((s, l) => s + l.qty, 0)) : ls.reduce((s, l) => s + Math.round(l.qty * l.price!), 0);
     // K7: đơn vị quy đổi — ngưỡng số lượng × tỉ lệ, giá / giảm tiền mỗi cái ÷ tỉ lệ (về đơn vị nhỏ nhất).
@@ -174,7 +231,7 @@ export function evaluatePriceLines(p: PriceLinesParams, input: PromoInputV2): Pr
       if (room <= EPS || cash <= 0) break;
       const q = Math.min(l.qty, room); room = r4(room - q);
       const amount = Math.min(cash, discountOf(q, l.price!, w)); cash -= amount;
-      if (amount > 0) discounts.push({ lineKey: l.lineKey, sku: l.sku, qty: l.qty, amount });
+      if (amount > 0) discounts.push({ lineKey: l.lineKey, sku: l.sku, qty: l.qty, amount, ...(share.has(l.lineKey) ? { lots: share.get(l.lineKey)! } : {}) });
     }
   });
   const total = discounts.reduce((s, d) => s + d.amount, 0);
@@ -371,6 +428,22 @@ export const priceLinesVectors: V<PriceLinesParams>[] = [
   { name: 'phạm vi nhóm SUA-BOT: dòng thuộc nhóm con (nhóm cha SUA-BOT) → áp',
     params: { ...base, basis: 'qty', scope: { groupCodes: ['SUA-BOT'] }, lines: [{ sku: 'A', pct: 10 }] }, input: { lines: [L('a', 'A', 1, 100_000, { groupCodes: ['SUA-BOT-1', 'SUA-BOT'], brandCode: 'VNM' })] },
     output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 10_000 }], gifts: [], total: 10_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 1 }] } } },
+  // [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064: ca lọc lô / hạn dùng (đóng góp)
+  { name: 'lô cận date: 3 lon A, lô L1 HSD 05/12 (còn 6 ngày) 1 lon + lô L2 HSD 01/06/2027 2 lon; HSD còn ≤ 30 ngày giảm 20 % → giảm 1 lon 20.000, ghi lô L1',
+    params: { ...base, basis: 'qty', lines: [{ sku: 'A', pct: 20, lotFilter: { expWithinDays: 30 } }] },
+    input: { lines: [L('a', 'A', 3, 100_000, { lots: [{ lotNo: 'L1', expDate: '2026-12-05', qty: 1 }, { lotNo: 'L2', expDate: '2027-06-01', qty: 2 }] })], context: { docDate: '2026-11-29' } },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 1, amount: 20_000, lots: [{ lotNo: 'L1', expDate: '2026-12-05', qty: 1 }] }], gifts: [], total: 20_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 1 }] } } },
+  { name: 'lô cụ thể (loại "Theo lô hàng" cũ): lô L2 giá 80.000 — 3 lon A (1 L1, 2 L2) → giảm 2 lon × 20.000',
+    params: { ...base, basis: 'qty', lines: [{ sku: 'A', unitPrice: 80_000, lotFilter: { lotNos: ['L2'] } }] },
+    input: { lines: [L('a', 'A', 3, 100_000, { lots: [{ lotNo: 'L1', expDate: '2026-12-05', qty: 1 }, { lotNo: 'L2', expDate: '2027-06-01', qty: 2 }] })], context: { docDate: '2026-11-29' } },
+    output: { discounts: [{ lineKey: 'a', sku: 'A', qty: 2, amount: 40_000, lots: [{ lotNo: 'L2', expDate: '2027-06-01', qty: 2 }] }], gifts: [], total: 40_000, touched: ['a'], noPrice: [], detail: { entries: [{ sku: 'A', base: 2 }] } } },
+  { name: 'tháng HSD 2027-06 (hsd_filter cũ): không lô nào khớp → không áp',
+    params: { ...base, basis: 'qty', lines: [{ sku: 'A', pct: 10, lotFilter: { expMonth: '2027-07' } }] },
+    input: { lines: [L('a', 'A', 2, 100_000, { lots: [{ lotNo: 'L2', expDate: '2027-06-01', qty: 2 }] })], context: { docDate: '2026-11-29' } },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chưa dòng nào đạt mức giảm của chương trình', detail: { entries: [] } } },
+  { name: 'chưa biết lô của dòng (bộ tính chưa dự phân lô) → chặn, không đoán',
+    params: { ...base, basis: 'qty', lines: [{ sku: 'A', pct: 20, lotFilter: { expWithinDays: 30 } }] }, input: { lines: [L('a', 'A', 1, 100_000)], context: { docDate: '2026-11-29' } },
+    output: { discounts: [], gifts: [], total: 0, touched: [], noPrice: [], blocked: 'chương trình theo lô / hạn dùng — chưa biết lô của 1 dòng (bộ tính dự phân lô theo chi nhánh)', detail: { lotUnknown: ['a'] } } },
 ];
 
 const any3: BuyXGetYV2Params = {

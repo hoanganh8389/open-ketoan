@@ -101,8 +101,9 @@ describe('NT-BH-049 — form kiểu plugin cũ', () => {
   const D0 = '2026-11-27';
   const base = (t: OldForm['type'], p: Partial<OldForm> = {}): OldForm => ({ ...emptyOld(t, D0), key: 'TGS_1127_01', name: 'Thử', ...p });
   const U = { unitName: '', unitRatio: '' };
-  it('chỉ 7 loại plugin cũ cho tạo (5, 2, 1, 10, 13, 14, 15) theo thứ tự ô chọn cũ', () => {
-    expect(OLD_TYPES.map((t) => t.oldId)).toEqual([5, 2, 1, 10, 13, 14, 15]);
+  // [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064: thêm loại 4 "Theo lô hàng" (khuôn có lọc lô) — 8 loại cũ (đóng góp)
+  it('chỉ các loại plugin cũ cho tạo (5, 2, 1, 4, 10, 13, 14, 15) theo thứ tự ô chọn cũ', () => {
+    expect(OLD_TYPES.map((t) => t.oldId)).toEqual([5, 2, 1, 4, 10, 13, 14, 15]);
   });
   it('Chiết khấu: nhiều dòng, từ SL → bậc theo mã, % / tiền, Tối đa (đ), ĐVT', () => {
     const f = base('ck', { ckRows: [

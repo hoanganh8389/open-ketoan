@@ -9,6 +9,7 @@
  * evaluate nhận `lines[].price`, trả thêm `discounts[]`; chính sách của module có bộ kiểm áp được (hạn mức chi nhánh) thì lọc trước.
  */
 import { createHash } from 'node:crypto';
+import { sql } from 'kysely';
 import type { Db } from '@bizcity/platform/db/client';
 import { Errors } from '@bizcity/platform/core/errors';
 import { settingsToday } from '@bizcity/platform/core/settings';
@@ -75,7 +76,11 @@ export async function listPolicies(trx: Db, tenantId: string, q: { at?: string; 
 }
 
 /** `price`: đơn giá trọn (gồm thuế, trước giảm) trên một đơn vị nhỏ nhất — cần cho chương trình giảm giá. */
-export interface EvalLine { lineKey: string; sku: string; qty: number; itemId?: string; price?: number; groupCodes?: string[]; brandCode?: string | null }
+export interface EvalLine {
+  lineKey: string; sku: string; qty: number; itemId?: string; price?: number; groupCodes?: string[]; brandCode?: string | null;
+  /** NT-BH-064: lô dự kiến xuất — bộ tính tự điền (dự phân lô hạn gần trước) khi có chương trình lọc lô / HSD; nguồn bán không gửi. */
+  lots?: { lotNo: string; expDate: string | null; qty: number }[];
+}
 /** [2026-11-13 10:20 AM Võ Hoàng] POS-KM2 — 00 §18 mục 3: ngữ cảnh cho điều kiện của khuôn khuyến mại (giờ / thứ, khách, mã giảm giá). */
 export interface EvaluateRequest {
   docDate: string; branchCode?: string; channel?: string; lines: EvalLine[]; policies?: { key: string; version?: number }[];
@@ -101,6 +106,44 @@ async function withClasses(trx: Db, tenantId: string, lines: EvalLine[]): Promis
   const by = new Map(prods.map((x) => [x.sku, x]));
   return lines.map((l) => ({ ...l, groupCodes: l.groupCodes ?? chain(by.get(l.sku)?.group_code ?? null), brandCode: l.brandCode !== undefined ? l.brandCode : (by.get(l.sku)?.brand_code ?? null) }));
 }
+// [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064 (C2): dự phân lô cho dòng giỏ — lô còn tồn ở kho mặc định của chi nhánh, hạn dùng sớm trước,
+// cùng hạn thì nhập trước: đúng thứ tự Kernel tự phân lô khi phiếu không ghi lô (lot.service availableLots, GET /api/v1/lots/suggest). Nhiều dòng
+// cùng mã lấy nối tiếp nhau. Phần thiếu tồn lô = lô trống (không khớp lọc lô nào). Không có chi nhánh → không điền (khuôn báo chưa biết lô) (đóng góp)
+async function withLots(trx: Db, tenantId: string, branchCode: string | undefined, docDate: string, lines: EvalLine[]): Promise<EvalLine[]> {
+  if (!branchCode) return lines;
+  const branch = (await sql<{ id: string }>`SELECT id::text FROM branches WHERE tenant_id = ${tenantId} AND code = ${branchCode}`.execute(trx)).rows[0];
+  if (!branch) return lines;
+  const wh = (await sql<{ code: string }>`SELECT code FROM warehouses WHERE tenant_id = ${tenantId} AND branch_id = ${branch.id} AND is_default ORDER BY id LIMIT 1`.execute(trx)).rows[0]?.code ?? '';
+  const pool = new Map<string, { lotNo: string; expDate: string | null; avail: number }[]>();
+  for (const sku of [...new Set(lines.map((l) => l.sku))]) {
+    const key = (await sql<{ k: string }>`SELECT COALESCE(bizcity_item_at(${tenantId}::bigint, ${sku}, ${docDate}::date), 'sku:' || ${sku}) AS k`.execute(trx)).rows[0]!.k;
+    pool.set(sku, (await sql<{ lot_no: string; exp_date: string | null; avail: string }>`
+      SELECT l.lot_no, l.exp_date::text, sum(m.qty)::text AS avail
+        FROM item_lots l JOIN inventory_lot_moves m ON m.lot_id = l.id
+       WHERE l.tenant_id = ${tenantId} AND l.item_key = ${key} AND m.branch_id = ${branch.id} AND m.warehouse_code = ${wh} AND m.doc_date <= ${docDate}::date
+       GROUP BY l.id, l.lot_no, l.exp_date, l.first_date
+      HAVING sum(m.qty) > 0
+       ORDER BY l.exp_date NULLS LAST, l.first_date NULLS LAST, l.id`.execute(trx)).rows.map((r) => ({ lotNo: r.lot_no, expDate: r.exp_date, avail: Number(r.avail) })));
+  }
+  const r4 = (n: number) => Math.round(n * 10_000) / 10_000;
+  return lines.map((l) => {
+    if (l.lots) return l;
+    const lots: { lotNo: string; expDate: string | null; qty: number }[] = [];
+    let left = l.qty;
+    for (const a of pool.get(l.sku) ?? []) {
+      if (left <= 0) break;
+      const take = r4(Math.min(left, a.avail));
+      if (take <= 0) continue;
+      lots.push({ lotNo: a.lotNo, expDate: a.expDate, qty: take });
+      a.avail = r4(a.avail - take); left = r4(left - take);
+    }
+    if (left > 0) lots.push({ lotNo: '', expDate: null, qty: left });
+    return { ...l, lots };
+  });
+}
+const hasLotFilter = (params: unknown) => Array.isArray((params as { lines?: unknown } | null)?.lines)
+  && ((params as { lines: { lotFilter?: unknown }[] }).lines).some((x) => x && typeof x === 'object' && x.lotFilter);
+
 export interface PolicyRefOut { key: string; version: number; hash: string; policyId: string }
 
 /**
@@ -115,7 +158,7 @@ export async function evaluatePolicies(trx: Db, tenantId: string, req: EvaluateR
   const applied: { policyRef: PolicyRefOut; ruleContract: string; result: unknown; explain: string; treatment: Treatment[]; quota?: unknown }[] = [];
   const skipped: { key: string; version?: number; reason: string }[] = [];
   const gifts: { sku: string; itemId?: string; qty: number; isGift: true; policyRef: { key: string; version: number; line: 'gift' } }[] = [];
-  const discounts: { lineKey: string; sku: string; qty: number; amount: number; policyRef: { key: string; version: number; line: 'discount' } }[] = [];
+  const discounts: { lineKey: string; sku: string; qty: number; amount: number; lots?: { lotNo: string; expDate: string | null; qty: number }[]; plan?: { lotNo: string; expDate: string | null; qty: number }[]; policyRef: { key: string; version: number; line: 'discount' } }[] = [];
   const envelopes = new Map((await listPublishedPolicies(trx, tenantId, { at: req.docDate, ruleContractPrefix: 'sale.' })).map((e) => [`${e.policyId}@${e.version}`, e]));
 
   if (wanted) {
@@ -130,7 +173,9 @@ export async function evaluatePolicies(trx: Db, tenantId: string, req: EvaluateR
   // NT-BH-049: chương trình @2 có phạm vi nhóm / nhãn → điền nhóm / nhãn của dòng trước khi tính.
   const needClasses = items.some((i) => i.ruleContract.endsWith('@2') && i.params && typeof i.params === 'object'
     && (((i.params as { scope?: { groupCodes?: unknown[]; brandCodes?: unknown[] } }).scope?.groupCodes?.length ?? 0) + ((i.params as { scope?: { brandCodes?: unknown[] } }).scope?.brandCodes?.length ?? 0)) > 0);
-  const lines = needClasses ? await withClasses(trx, tenantId, req.lines) : req.lines;
+  const classed = needClasses ? await withClasses(trx, tenantId, req.lines) : req.lines;
+  // NT-BH-064: có chương trình lọc lô / HSD → dự phân lô cho các dòng (một lần cho cả giỏ).
+  const lines = items.some((i) => i.ruleContract.endsWith('@2') && hasLotFilter(i.params)) ? await withLots(trx, tenantId, req.branchCode, req.docDate, classed) : classed;
   const pendingChoices: { key: string; version: number; choose: number; times: number; options: { sku: string; qty: number }[]; problem?: string }[] = [];
   const paramOf = (i: PolicyView) => (i.params && typeof i.params === 'object' ? (i.params as { priority?: number; exclusive?: boolean; legalCapPct?: number | null }) : {});
   const ordered = [...items].sort((a, b) => Number(paramOf(b).priority ?? 0) - Number(paramOf(a).priority ?? 0) || a.policyKey.localeCompare(b.policyKey));
@@ -161,7 +206,7 @@ export async function evaluatePolicies(trx: Db, tenantId: string, req: EvaluateR
     if (pc) { pendingChoices.push({ key: i.policyKey, version: i.version, ...pc }); skipped.push({ key: i.policyKey, version: i.version, reason: pc.problem ?? `chờ chọn ${pc.choose} món quà` }); continue; }
     if ((result as { indeterminate?: boolean }).indeterminate) { skipped.push({ key: i.policyKey, version: i.version, reason: contract.explain(i.params, result) }); continue; }
     const gift = (result as { gifts?: { sku: string; itemId?: string; qty: number }[] }).gifts ?? [];
-    const disc = (result as { discounts?: { lineKey: string; sku: string; qty: number; amount: number }[] }).discounts ?? [];
+    const disc = (result as { discounts?: { lineKey: string; sku: string; qty: number; amount: number; lots?: { lotNo: string; expDate: string | null; qty: number }[] }[] }).discounts ?? [];
     if (!gift.length && !disc.length) {
       const by = [...new Set(req.lines.filter((l) => taken.has(l.lineKey)).map((l) => taken.get(l.lineKey)!))];
       skipped.push({ key: i.policyKey, version: i.version, reason: contract.explain(i.params, result) + (by.length ? ` (dòng đã được chương trình áp riêng ${by.join(', ')} dùng)` : '') });
@@ -173,7 +218,10 @@ export async function evaluatePolicies(trx: Db, tenantId: string, req: EvaluateR
     const policyRef = { key: i.policyKey, version: i.version, hash: i.contentHash, policyId: i.policyId };
     applied.push({ policyRef, ruleContract: i.ruleContract, result, explain: contract.explain(i.params, result), treatment: contract.treatment(result), ...(avail.info?.quota ? { quota: avail.info.quota } : {}) });
     for (const g of gift) gifts.push({ ...g, isGift: true, policyRef: { key: i.policyKey, version: i.version, line: 'gift' } });
-    for (const x of disc) discounts.push({ ...x, policyRef: { key: i.policyKey, version: i.version, line: 'discount' } });
+    // NT-BH-064: dòng giảm theo lô mang thêm kế hoạch lô CẢ dòng (`plan`) — phiếu bán ghi lô từng phần, kể cả phần không được giảm, để Kernel
+    // không tự chọn lại đúng lô cận date đã ghi cho phần được giảm (phân lô trong cùng chứng từ không trừ lẫn nhau).
+    const planOf = new Map(lines.map((l) => [l.lineKey, l.lots]));
+    for (const x of disc) discounts.push({ ...x, ...(x.lots && planOf.get(x.lineKey) ? { plan: planOf.get(x.lineKey)! } : {}), policyRef: { key: i.policyKey, version: i.version, line: 'discount' } });
   }
   // Trần NĐ81 (00 §18 mục 3): tổng giảm của các chương trình có trần trên một dòng ≤ trần % tiền dòng; kẹp chương trình tính sau trước.
   const capped: { lineKey: string; key: string; before: number; after: number; capPct: number }[] = [];
