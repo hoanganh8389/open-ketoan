@@ -120,7 +120,7 @@ export async function channelInfo(ctx: ActionContext, raw: string | undefined | 
 
 /**
  * Phiếu bán mang dòng khuyến mại (policyRef) của chương trình có điều kiện kênh (BH18 "Kênh bán") mà kênh của phiếu không khớp → không ghi /
- * không duyệt (POS_PROMO_CHANNEL). Điều kiện đọc ở `core.policy.list` tại ngày phiếu; Core không trả lời → bỏ qua (cửa nạp còn kiểm bản chính sách).
+ * không duyệt (lỗi kiểm dữ liệu, field saleChannel). Điều kiện đọc ở `core.policy.list` tại ngày phiếu; Core không trả lời → bỏ qua (cửa nạp còn kiểm bản chính sách).
  */
 export async function checkPromoChannel(ctx: ActionContext, docDate: string, saleChannel: string | undefined | null, lines: readonly { policyRef?: { key: string } }[]) {
   const keys = [...new Set(lines.map((l) => l.policyRef?.key).filter((k): k is string => Boolean(k)))];
@@ -133,7 +133,7 @@ export async function checkPromoChannel(ctx: ActionContext, docDate: string, sal
   if (![...conds.values()].some((c) => c?.channelKinds?.length || c?.channels?.length)) return;
   const ch = await channelInfo(ctx, saleChannel);
   const issues = promoChannelIssues(keys, conds, ch.code, ch.kind);
-  if (issues.length) throw Errors.validation(promoChannelMessage(issues), { reason: 'POS_PROMO_CHANNEL', items: issues });
+  if (issues.length) throw Errors.validation(promoChannelMessage(issues), { field: 'saleChannel', items: issues });
 }
 
 // [2026-11-26 07:45 PM Võ Hoàng] NGHIEM-THU — NT-BH-046: phiếu trả BẮT BUỘC nối phiếu bán gốc đã duyệt của module (cùng cửa hàng); dòng trả khoá

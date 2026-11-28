@@ -270,8 +270,6 @@ Module thêm mã chi tiết của mình ở mục này (tiền tố = key module
 | **Kênh bán hàng** (1.20.0-draft) <!-- [2026-11-18 11:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-031 kênh bán hàng (đóng góp) --> | | | |
 | `POS_SALE_SOURCE` | `VALIDATION_ERROR` | Đơn máy bán / phiếu bán BH10 mang kênh bán (mã, hoặc tên với máy bán cũ) không có trong danh mục Kênh bán hàng hoặc kênh đã ngừng dùng; kèm `saleSource`, `cause` (`unknown` / `inactive`). Đơn không gửi kênh → kênh mặc định (Gần shop), không lỗi; đơn bán lúc mất mạng gửi bù → nhận | module `pos`, `phieu-ban` (đề xuất, chưa gộp) |
 | `POS_SALE_SOURCE_EXISTS` | `CONFLICT` | Thêm / sửa kênh bán hàng trùng mã hoặc tên kênh đã có (kênh đã ngừng thì Dùng lại); kèm `field` | module `pos` (đề xuất, chưa gộp) |
-<!-- [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: POS_PROMO_CHANNEL (1.24.0-draft, đóng góp) -->
-| `POS_PROMO_CHANNEL` | `VALIDATION_ERROR` | Đơn máy bán / phiếu bán BH10 mang dòng khuyến mại của chương trình có điều kiện kênh bán (`conditions.channelKinds` / `channels`) mà kênh của chứng từ không khớp (hoặc không xác định được loại kênh); đơn mất mạng gửi bù vẫn nhận, đánh dấu `promoChannelOffline`; kèm `items: [{ key, channel, kind, why }]` | module `pos`, `phieu-ban` (đề xuất, chưa gộp) |
 | **Giao hàng đơn đặt hàng, copy đơn** (1.21.0-draft) <!-- [2026-11-18 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-032 giao hàng đơn đặt hàng + copy đơn (đóng góp) --> | | | |
 | `PHIEU_BAN_NO_SHIP_WAREHOUSE` | `VALIDATION_ERROR` | Lập chuyến giao / đi giao mà cửa hàng chưa khai kho KHG "Kho hàng gửi bán" (`bizcity.phieu_ban.ship_warehouses`, BH17) hoặc kho khai không thuộc cửa hàng / ngừng dùng / trùng kho bán, kho giữ hàng; kèm `branchCode` | module `phieu-ban` (đề xuất, chưa gộp) |
 | `PHIEU_BAN_NO_SHIP_FEE_ITEM` | `VALIDATION_ERROR` | Chuyến giao có phí ship thu khách mà chưa khai mã dịch vụ phí ship (`bizcity.phieu_ban.ship_fee_sku`, BH17) hoặc mã không có / ngừng / không bán; kèm `fee` hoặc `sku` | module `phieu-ban` (đề xuất, chưa gộp) |
@@ -326,8 +324,6 @@ Quy tắc đọc bảng §5 (chữ chốt S029-33, 1.3.0-draft):
 ## 7. Changelog
 
 <!-- [2026-11-11 03:30 PM Võ Hoàng] POS-W2 — 1.8.0-draft (đóng góp, chờ chủ dự án duyệt) -->
-<!-- [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: 1.24.0-draft (đóng góp, chờ chủ dự án duyệt) -->
-- **1.24.0-draft (2026-11-29, khuyến mại theo kênh bán):** §4c thêm `POS_PROMO_CHANNEL` (module pos, phieu-ban — phiếu NT-BH-067). Không thêm `code`, không đổi HTTP.
 <!-- [2026-11-23 10:30 AM Johnny Chu - Chu Hoàng Anh] OKT-SET-1 — 1.23.0-draft (chờ chủ dự án duyệt cùng PR) -->
 - **1.23.0-draft (2026-11-23, khoá cài đặt open-pos — ADR-0037):** §4c thêm `BLOG_UNKNOWN`, `BLOG_NOT_LINKED`, `BLOG_REQUIRED`, `POS_LINK_CODE_INVALID`, `TENANT_ALREADY_LINKED`. Không thêm `code`, không đổi HTTP.
 <!-- [2026-11-19 03:30 PM Võ Hoàng] NGHIEM-THU — 1.22.0-draft (đóng góp, chờ chủ dự án duyệt) -->

@@ -137,4 +137,4 @@ Quản trị website chạy một lần: `wp tgs-pos promo-migrate --dry-run` (x
 - **Quà tặng theo giá trị đơn**: ô **Lọc HSD / lô hàng tính tổng đơn** — chỉ tiền hàng thuộc lô khớp được cộng vào tổng đơn xét quà.
 - Máy chủ tự chọn lô xuất theo hạn gần trước; thu ngân / kế toán không chọn lô. Máy bán mất mạng không áp chương trình có lọc lô.
 - **Kênh bán** (Tất cả / Chỉ offline / Chỉ online / Chọn kênh): máy bán, phiếu bán BH10 (nút Áp khuyến mại) và đơn đặt hàng BH20 (khi Ghi) đều tính theo kênh của chứng từ; không chọn kênh = *Gần shop* (offline).
-- Máy chủ kiểm lại khi ghi: dòng khuyến mại của chương trình theo kênh mà kênh của đơn / phiếu không khớp → báo `POS_PROMO_CHANNEL` (vd "KM-ONL — chỉ áp kênh online"), không ghi; đổi đúng kênh hoặc áp khuyến mại lại. Đơn máy bán mất mạng gửi bù vẫn nhận, đánh dấu cho kế toán xem.
+- Máy chủ kiểm lại khi ghi: dòng khuyến mại của chương trình theo kênh mà kênh của đơn / phiếu không khớp → báo lỗi kiểm dữ liệu ở ô Kênh bán (`field: saleChannel`) (vd "KM-ONL — chỉ áp kênh online"), không ghi; đổi đúng kênh hoặc áp khuyến mại lại. Đơn máy bán mất mạng gửi bù vẫn nhận, đánh dấu cho kế toán xem.

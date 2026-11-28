@@ -261,7 +261,7 @@ export async function createOrder(ctx: ActionContext, draft: OrderDraft, opts: {
     // đổi kênh sau khi tính thì không nhận; đơn mất mạng gửi bù → nhận, đánh dấu cho kế toán xem (như hạn mức lượt) (đóng góp)
     const channelShort = await promoChannelIssues(ctx, tx, draft.businessDate, promoKeys, saleSource.code);
     if (channelShort.length && !draft.offlineCreatedAt) {
-      throw Errors.validation(promoChannelMessage(channelShort), { reason: 'POS_PROMO_CHANNEL', items: channelShort });
+      throw Errors.validation(promoChannelMessage(channelShort), { field: 'saleChannel', items: channelShort });
     }
 
     // Mã phiếu: dùng số máy đã được cấp trước (đúng khuôn, đã cấp, chưa dùng); không thì cấp số mới. Khoá theo số để hai máy

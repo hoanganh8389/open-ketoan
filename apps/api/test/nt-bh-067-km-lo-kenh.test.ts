@@ -5,8 +5,8 @@
  *   1. Nhập 2 lô LO67 ở CN01: CAN (HSD 05/12/2026) 2 lon, XA (HSD 01/06/2027) 5 lon.
  *   2. Mua 2 LO67 HSD còn ≤ 30 ngày tặng 1 QUA67: 2 lon → tặng 1; 4 lon (2 CAN + 2 XA) → vẫn 1; không chi nhánh → "chưa biết lô".
  *   3. Quà theo tổng đơn ≥ 200.000 chỉ tính lô CAN: 3 lon × 100.000 → CAN 2 lon = 200.000 → tặng.
- *   4. Chiết khấu 10 % SUA67 "Chỉ online": máy bán đơn kênh Gần shop → POS_PROMO_CHANNEL; kênh Zalo → nhận.
- *   5. BH10: phiếu kênh Gần shop mang khuyến mại đó → không ghi (POS_PROMO_CHANNEL); kênh Zalo → ghi, duyệt được.
+ *   4. Chiết khấu 10 % SUA67 "Chỉ online": máy bán đơn kênh Gần shop → từ chối (field saleChannel); kênh Zalo → nhận.
+ *   5. BH10: phiếu kênh Gần shop mang khuyến mại đó → không ghi (từ chối, field saleChannel); kênh Zalo → ghi, duyệt được.
  *   6. BH20: đơn kênh Zalo → máy chủ áp 10 %; kênh Gần shop → không áp; giao → phiếu bán mang kênh Zalo.
  *   7. Kiểm trùng: "Chỉ offline" cùng mã không trùng với "Chỉ online"; "Tất cả kênh" thì trùng.
  */
@@ -114,7 +114,7 @@ describe.skipIf(!HAS)('NT-BH-067 — khuyến mại theo lô (Mua X tặng Y, qu
     promotionSelections: [], payment: { mode: 'cash', cashGiven: 90_000 }, clientTotal: 90_000, coreVersion: '0.1.0', promotionsVersion: '', policyRefs: refs,
   });
 
-  it('§4 máy chủ kiểm lại kênh: Chỉ online — đơn máy bán kênh Gần shop → POS_PROMO_CHANNEL; kênh Zalo → nhận', async () => {
+  it('§4 máy chủ kiểm lại kênh: Chỉ online — đơn máy bán kênh Gần shop → từ chối (field saleChannel); kênh Zalo → nhận', async () => {
     ok(await call(ctx, 'POST', '/api/v1/policies', {
       key: 'KM67-ONL', ruleContract: 'sale.promo.price_lines@2', effectiveFrom: vnDate(-1), reason: 'NT-BH-067 chỉ online',
       params: { basis: 'qty', conditions: { channelKinds: ['online'] }, lines: [{ sku: 'SUA67', pct: 10 }] },
@@ -126,7 +126,7 @@ describe.skipIf(!HAS)('NT-BH-067 — khuyến mại theo lô (Mua X tặng Y, qu
     expect((await req('GET', '/api/v1/m/pos/channels')).statusCode).toBe(200);
     const bad = await req('POST', '/api/v1/m/pos/orders', posOrder('GAN_SHOP'));
     expect(bad.statusCode, bad.body).toBe(400);
-    expect(bad.json().error.details).toMatchObject({ reason: 'POS_PROMO_CHANNEL', items: [{ key: 'KM67-ONL', channel: 'GAN_SHOP', kind: 'offline', why: 'chỉ áp kênh online' }] });
+    expect(bad.json().error.details).toMatchObject({ field: 'saleChannel', items: [{ key: 'KM67-ONL', channel: 'GAN_SHOP', kind: 'offline', why: 'chỉ áp kênh online' }] });
     const good = await req('POST', '/api/v1/m/pos/orders', posOrder('ZALO'));
     expect(good.statusCode, good.body).toBe(201);
   });
@@ -138,7 +138,7 @@ describe.skipIf(!HAS)('NT-BH-067 — khuyến mại theo lô (Mua X tặng Y, qu
     });
     const bad = await req('POST', '/api/v1/m/phieu-ban/docs', doc('GAN_SHOP'));
     expect(bad.statusCode, bad.body).toBe(400);
-    expect(bad.json().error.details).toMatchObject({ reason: 'POS_PROMO_CHANNEL', items: [{ key: 'KM67-ONL', channel: 'GAN_SHOP' }] });
+    expect(bad.json().error.details).toMatchObject({ field: 'saleChannel', items: [{ key: 'KM67-ONL', channel: 'GAN_SHOP' }] });
     expect(bad.json().error.message).toContain('chỉ áp kênh online');
     const good = await req('POST', '/api/v1/m/phieu-ban/docs', doc('ZALO'));
     expect(good.statusCode, good.body).toBe(200);

@@ -21,7 +21,7 @@ Dùng cho bán buôn, bán nợ, bán ngoài quầy — những phiếu kế to�
 - Ô chọn kênh trên khung màn BH10 đang chờ sửa khung giao diện phiếu hàng; hiện kênh gửi qua API phiếu bán (`saleChannel`).
 <!-- [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067: khuyến mại theo kênh trên phiếu bán (đóng góp) -->
 - **Áp khuyến mại** tính theo kênh của phiếu (không chọn = *Gần shop*, offline): chương trình *Chỉ online* chỉ áp khi phiếu chọn kênh online (vd Zalo). Đổi kênh sau khi áp → màn nhắc áp lại.
-- Ghi / Duyệt: phiếu mang khuyến mại theo kênh mà kênh của phiếu không khớp → báo `POS_PROMO_CHANNEL`, không ghi; đổi kênh hoặc áp khuyến mại lại.
+- Ghi / Duyệt: phiếu mang khuyến mại theo kênh mà kênh của phiếu không khớp → báo lỗi kiểm dữ liệu ở ô Kênh bán (`field: saleChannel`), không ghi; đổi kênh hoặc áp khuyến mại lại.
 
 ## Khuyến mại trên phiếu bán
 <!-- [2026-11-14 11:55 PM Võ Hoàng] NGHIEM-THU — NT-BH-015 §5 dòng 4: khuyến mại trên phiếu bán nhập tay (đóng góp) -->

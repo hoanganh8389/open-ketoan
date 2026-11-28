@@ -193,8 +193,6 @@ export const ERROR_REASONS = {
   // [2026-11-18 11:00 PM Võ Hoàng] NGHIEM-THU — NT-BH-031 kênh bán hàng (BIZCITY-ERRORS 1.20.0-draft §4c, đóng góp)
   POS_SALE_SOURCE: 'Đơn máy bán / phiếu bán BH10 mang mã kênh bán không có trong danh mục Kênh bán hàng hoặc kênh đã ngừng dùng; kèm saleSource, cause (unknown / inactive)',
   POS_SALE_SOURCE_EXISTS: 'Thêm / sửa kênh bán hàng trùng mã hoặc tên kênh đã có (kênh đã ngừng thì dùng lại, không thêm mới); kèm field',
-  // [2026-11-29 06:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-067 khuyến mại theo kênh — máy chủ kiểm lại (BIZCITY-ERRORS 1.24.0-draft §4c, đóng góp)
-  POS_PROMO_CHANNEL: 'Đơn máy bán / phiếu bán BH10 mang khuyến mại có điều kiện kênh bán không khớp kênh của chứng từ; items: [{ key, channel, kind, why }]',
   // [2026-11-18 11:30 PM Võ Hoàng] NGHIEM-THU — NT-BH-032 giao hàng đơn đặt hàng + copy đơn (BIZCITY-ERRORS 1.21.0-draft §4c, đóng góp)
   PHIEU_BAN_NO_SHIP_WAREHOUSE: 'Cửa hàng chưa khai kho KHG (hàng gửi bán) nhận hàng đang giao của đơn đặt hàng (bizcity.phieu_ban.ship_warehouses, BH17) hoặc kho khai không dùng được; kèm branchCode',
   PHIEU_BAN_NO_SHIP_FEE_ITEM: 'Chuyến giao có phí ship mà chưa khai mã dịch vụ phí ship (bizcity.phieu_ban.ship_fee_sku, BH17) hoặc mã không có / ngừng / không bán; kèm fee hoặc sku',
