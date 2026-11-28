@@ -35,7 +35,7 @@
 
 | Ca | Kết quả | Test |
 |---|---|---|
-| Chỉ online, đơn Gần shop (offline) | không áp — "chỉ áp kênh online" | `apps/api/test/nt-bh-065-km-kenh-ban.test.ts`, ca mẫu `sale-promo-v2.ts` | (đề xuất — tệp test ở nhánh code)
+| Chỉ online, đơn Gần shop (offline) | không áp — "chỉ áp kênh online" | `apps/api/test/nt-bh-065-km-kenh-ban.test.ts`, ca mẫu `sale-promo-v2.ts` |
 | Chỉ online, đơn Zalo (online), 100.000 | giảm 10.000 | như trên |
 | Chỉ offline, đơn không mang kênh | không áp — "đơn chưa xác định kênh (online / offline)" | như trên |
 | Chọn kênh ZALO, đơn mã `zalo` / FACEBOOK | áp / không áp | như trên |

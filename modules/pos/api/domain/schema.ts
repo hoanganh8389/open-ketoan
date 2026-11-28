@@ -11,6 +11,8 @@ export const manualDiscountSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('percent'), value: z.number().gt(0).max(100, 'Giảm % tối đa 100') }),
 ]);
 
+const lotPart = z.object({ lotNo: z.string().max(64), expDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(), qty: z.number().gt(0) });
+
 export const orderLineDraftSchema = z.object({
   lineId: z.string().min(1).max(64),
   productId: z.string().max(64).optional(),
@@ -33,6 +35,12 @@ export const orderLineDraftSchema = z.object({
   promoDiscount: vnd.min(0, 'Tiền giảm không được âm').optional(),
   // [2026-11-18 Võ Hoàng] NGHIEM-THU — NT-BH-028: kho của dòng máy đọc từ bootstrap (quà → kho quà) — chỉ để máy hiển thị; máy chủ quyết theo cài đặt (đóng góp)
   warehouseCode: z.string().trim().max(64).optional(),
+  // [2026-11-29 02:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-064: dòng giảm theo lô / hạn dùng — chép nguyên `discounts[].lots` / `discounts[].plan` Core trả;
+  // thu ngân không chọn lô (C3). Phiếu bán ghi lô từng phần để kho xuất đúng lô đã giảm (đóng góp)
+  /** Lô được giảm (đơn vị nhỏ nhất) — `discounts[].lots` của Core. */
+  promoLots: z.array(lotPart).max(50).optional(),
+  /** Lô dự kiến xuất của cả dòng — `discounts[].plan` của Core. */
+  lotPlan: z.array(lotPart).max(50).optional(),
 }).passthrough();
 
 export const paymentDraftSchema = z.discriminatedUnion('mode', [
