@@ -119,7 +119,7 @@
     "types": [
       "bizcity.clock.daily", "bizcity.clock.hourly",
       "bizcity.ledger.entry.posted", "bizcity.ledger.entry.reversed", "bizcity.ledger.event.received", "bizcity.ledger.event.failed",
-      "bizcity.masterdata.partner.changed", "bizcity.masterdata.product.changed",
+      "bizcity.masterdata.partner.changed", "bizcity.masterdata.product.changed", "bizcity.masterdata.catalog.changed",
       "bizcity.module.enabled", "bizcity.period.locked",
       "bizcity.intake.rejected", "bizcity.intake.resolved",
       "bizcity.policy.published", "bizcity.policy.retired"
