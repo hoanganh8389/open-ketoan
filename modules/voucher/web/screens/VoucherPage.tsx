@@ -10,6 +10,7 @@
 // [2026-11-27 09:00 AM Võ Hoàng] NGHIEM-THU — NT-BH-050: giảm % có trần, lô mã không SĐT, mỗi khách tối đa, cửa hàng áp dụng (như chính sách voucher cũ) (đóng góp)
 // [2026-11-27 Võ Hoàng] NGHIEM-THU — NT-BH-050: giao diện theo lớp chung của Core — thẻ gạch chân (tabs), thanh nút catalog-toolbar trong card,
 //   bộ lọc FilterLayout, khối card / card-body (đóng góp)
+import { NutBuoc, ThanhBuoc } from './ThanhBuoc';
 import { useState } from 'react';
 import {
   BranchCheckList, DataGrid, DocSheet, DocSheetPanel, ErrorBox, Field, FilterLayout, Loading, Modal, PageHeader, errorText, useApi, useCan, useMutation, useQuery, useQueryClient, type GridColumn,
@@ -106,6 +107,7 @@ function CampaignForm({ initial, id, onClose }: { initial: Form; id?: string; on
   const api = useApi();
   const qc = useQueryClient();
   const [f, setF] = useState(initial);
+  const [buoc, setBuoc] = useState(0);
   const set = (k: keyof Form) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const save = useMutation({
     mutationFn: () => (id ? api.put(`${M}/campaigns/${id}`, { ...toBody(f), status: f.status }) : api.post(`${M}/campaigns`, toBody(f))),
@@ -152,53 +154,73 @@ function CampaignForm({ initial, id, onClose }: { initial: Form; id?: string; on
           </div>
         </DocSheetPanel>
       </>}>
-      <div className="mh-head">
-        <Field label="Mã đợt"><input className="input" value={f.code} onChange={set('code')} placeholder="ABBOTT50K" /></Field>
-        <div className="span2"><Field label="Tên đợt"><input className="input" value={f.name} onChange={set('name')} /></Field></div>
-        <div className="span2"><Field label="Loại">
-          <select className="input" value={f.kind} onChange={set('kind')}>{Object.entries(KIND).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        </Field></div>
-        {id ? (
-          <Field label="Trạng thái">
-            <select className="input" value={f.status} onChange={set('status')}><option value="active">Đang dùng</option><option value="stopped">Ngừng</option></select>
+      {/* [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: 4 bước ngang như MH29 (thanh bước ở trên); các ô giữ nguyên, chỉ xếp theo bước (đóng góp) */}
+      <ThanhBuoc current={buoc} onPick={setBuoc} steps={[
+        { label: 'Thông tin đợt', warn: checks.some((c) => /mã đợt|tên đợt/.test(c)) },
+        { label: 'Thời gian & cửa hàng', warn: checks.some((c) => /ngày|Hết hạn/.test(c)) },
+        { label: 'Giá trị & điều kiện', warn: checks.some((c) => /Mệnh giá|Phần trăm|Giảm tối đa|Hãng phát/.test(c)) },
+        { label: 'Cách phát' },
+      ]} />
+      {buoc === 0 && (
+        <div className="mh-head">
+          <Field label="Mã đợt"><input className="input" value={f.code} onChange={set('code')} placeholder="ABBOTT50K" /></Field>
+          <div className="span2"><Field label="Tên đợt"><input className="input" value={f.name} onChange={set('name')} /></Field></div>
+          <div className="span2"><Field label="Loại">
+            <select className="input" value={f.kind} onChange={set('kind')}>{Object.entries(KIND).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+          </Field></div>
+          {id ? (
+            <Field label="Trạng thái">
+              <select className="input" value={f.status} onChange={set('status')}><option value="active">Đang dùng</option><option value="stopped">Ngừng</option></select>
+            </Field>
+          ) : <div />}
+          <div className="span4"><Field label="Ghi chú"><input className="input" value={f.note} onChange={set('note')} /></Field></div>
+        </div>
+      )}
+      {buoc === 1 && (
+        <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+          <Field label="Từ ngày"><input className="input" type="date" value={f.validFrom} onChange={set('validFrom')} /></Field>
+          <Field label="Hết hạn ngày"><input className="input" type="date" value={f.validTo} onChange={set('validTo')} /></Field>
+          <div className="span2"><Field label="Hạn mỗi mã (ngày từ ngày phát)"><input className="input" type="number" value={f.validDays} onChange={set('validDays')} /></Field></div>
+          <Field label="Cửa hàng áp dụng" hint="Không chọn = mọi cửa hàng"><BranchCheckList value={f.branchCodes} onChange={(branchCodes) => setF({ ...f, branchCodes })} /></Field>
+        </div>
+      )}
+      {buoc === 2 && (
+        <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+          <Field label="Người phát" hint="TGS = chiết khấu trên hoá đơn (giảm doanh thu + thuế); hãng = hình thức thanh toán (phải thu hãng)">
+            <select className="input" value={f.issuer} onChange={set('issuer')}>{Object.entries(ISSUER).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           </Field>
-        ) : <div />}
-        <Field label="Từ ngày"><input className="input" type="date" value={f.validFrom} onChange={set('validFrom')} /></Field>
-        <Field label="Hết hạn ngày"><input className="input" type="date" value={f.validTo} onChange={set('validTo')} /></Field>
-        <div className="span2"><Field label="Hạn mỗi mã (ngày từ ngày phát)"><input className="input" type="number" value={f.validDays} onChange={set('validDays')} /></Field></div>
-        <div className="span2"><Field label="Cửa hàng tự phát" hint="Trống = mọi cửa hàng; dùng khi Kiểu phát = Tự động">
-          <input className="input" value={f.autoBranches} disabled={f.issueMode !== 'auto'} onChange={set('autoBranches')} />
-        </Field></div>
-        <div className="span4"><Field label="Ghi chú"><input className="input" value={f.note} onChange={set('note')} /></Field></div>
-      </div>
-      <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
-        <Field label="Người phát" hint="TGS = chiết khấu trên hoá đơn (giảm doanh thu + thuế); hãng = hình thức thanh toán (phải thu hãng)">
-          <select className="input" value={f.issuer} onChange={set('issuer')}>{Object.entries(ISSUER).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        </Field>
-        {f.issuer === 'brand' && <Field label="Hãng / NCC (mã đối tượng)"><input className="input" value={f.issuerPartnerCode} onChange={set('issuerPartnerCode')} /></Field>}
-        {f.issuer === 'brand' && (
-          <Field label="Hình thức thanh toán" hint="Kế toán khai tài khoản phải thu hãng ở Danh mục hình thức thanh toán">
-            <input className="input" value={f.paymentMethodCode} onChange={set('paymentMethodCode')} placeholder="VC-ABBOTT" />
+          {f.issuer === 'brand' && <Field label="Hãng / NCC (mã đối tượng)"><input className="input" value={f.issuerPartnerCode} onChange={set('issuerPartnerCode')} /></Field>}
+          {f.issuer === 'brand' && (
+            <Field label="Hình thức thanh toán" hint="Kế toán khai tài khoản phải thu hãng ở Danh mục hình thức thanh toán">
+              <input className="input" value={f.paymentMethodCode} onChange={set('paymentMethodCode')} placeholder="VC-ABBOTT" />
+            </Field>
+          )}
+          <Field label="Loại giảm" hint="Giảm cố định = mệnh giá tiền; giảm % = phần trăm tổng đơn (tương đương tiền) hoặc tiền dòng áp dụng (lần mua sau)">
+            <select className="input" value={f.discountType} onChange={set('discountType')} title="Kiểu giá trị của voucher"><option value="amount">Giảm cố định (đ)</option><option value="percent">Giảm %</option></select>
           </Field>
-        )}
-        <Field label="Loại giảm" hint="Giảm cố định = mệnh giá tiền; giảm % = phần trăm tổng đơn (tương đương tiền) hoặc tiền dòng áp dụng (lần mua sau)">
-          <select className="input" value={f.discountType} onChange={set('discountType')} title="Kiểu giá trị của voucher"><option value="amount">Giảm cố định (đ)</option><option value="percent">Giảm %</option></select>
-        </Field>
-        {f.discountType === 'amount' && <Field label="Mệnh giá (đồng)"><input className="input" type="number" min={0} value={f.faceValue} onChange={set('faceValue')} title="Số tiền trừ tối đa của mỗi mã" /></Field>}
-        {f.discountType === 'percent' && <Field label="Giảm (%)"><input className="input" type="number" min={0} max={100} step="0.5" value={f.discountPercent} onChange={set('discountPercent')} title="Phần trăm giảm, từ trên 0 tới 100" /></Field>}
-        {f.discountType === 'percent' && <Field label="Giảm tối đa (đồng)" hint="Trần tiền giảm mỗi mã; trống = không trần"><input className="input" type="number" min={0} step={1000} value={f.maxDiscount} onChange={set('maxDiscount')} title="Trần tiền giảm của mỗi mã" /></Field>}
-        <Field label="Mỗi khách dùng tối đa (mã)" hint="Đếm theo SĐT / mã khách của đơn; trống = không giới hạn"><input className="input" type="number" min={0} value={f.perCustomer} onChange={set('perCustomer')} title="Mỗi khách dùng tối đa bao nhiêu mã của đợt" /></Field>
-        <Field label="Cửa hàng áp dụng" hint="Không chọn = mọi cửa hàng"><BranchCheckList value={f.branchCodes} onChange={(branchCodes) => setF({ ...f, branchCodes })} /></Field>
-        <Field label="Đơn tối thiểu (đồng)"><input className="input" type="number" value={f.minOrder} onChange={set('minOrder')} /></Field>
-        {f.kind === 'next_purchase' && <Field label="Mã hàng áp dụng (cách nhau dấu phẩy)"><input className="input" value={f.skus} onChange={set('skus')} /></Field>}
-        {f.kind === 'next_purchase' && <Field label="Nhãn áp dụng (mã nhãn)"><input className="input" value={f.brandCodes} onChange={set('brandCodes')} /></Field>}
-        <Field label="Kiểu phát">
-          <select className="input" value={f.issueMode} onChange={set('issueMode')}><option value="manual">Thủ công (sinh / nạp mã)</option><option value="auto">Tự động khi mua đủ điều kiện</option></select>
-        </Field>
-        {f.issueMode === 'auto' && <Field label="Điều kiện: mã hàng mua"><input className="input" value={f.autoSkus} onChange={set('autoSkus')} /></Field>}
-        {f.issueMode === 'auto' && <Field label="Điều kiện: nhãn mua"><input className="input" value={f.autoBrands} onChange={set('autoBrands')} /></Field>}
-        {f.issueMode === 'auto' && <Field label="Số lượng tối thiểu (đơn vị nhỏ nhất)"><input className="input" type="number" value={f.autoMinQty} onChange={set('autoMinQty')} /></Field>}
-      </div>
+          {f.discountType === 'amount' && <Field label="Mệnh giá (đồng)"><input className="input" type="number" min={0} value={f.faceValue} onChange={set('faceValue')} title="Số tiền trừ tối đa của mỗi mã" /></Field>}
+          {f.discountType === 'percent' && <Field label="Giảm (%)"><input className="input" type="number" min={0} max={100} step="0.5" value={f.discountPercent} onChange={set('discountPercent')} title="Phần trăm giảm, từ trên 0 tới 100" /></Field>}
+          {f.discountType === 'percent' && <Field label="Giảm tối đa (đồng)" hint="Trần tiền giảm mỗi mã; trống = không trần"><input className="input" type="number" min={0} step={1000} value={f.maxDiscount} onChange={set('maxDiscount')} title="Trần tiền giảm của mỗi mã" /></Field>}
+          <Field label="Mỗi khách dùng tối đa (mã)" hint="Đếm theo SĐT / mã khách của đơn; trống = không giới hạn"><input className="input" type="number" min={0} value={f.perCustomer} onChange={set('perCustomer')} title="Mỗi khách dùng tối đa bao nhiêu mã của đợt" /></Field>
+          <Field label="Đơn tối thiểu (đồng)"><input className="input" type="number" value={f.minOrder} onChange={set('minOrder')} /></Field>
+          {f.kind === 'next_purchase' && <Field label="Mã hàng áp dụng (cách nhau dấu phẩy)"><input className="input" value={f.skus} onChange={set('skus')} /></Field>}
+          {f.kind === 'next_purchase' && <Field label="Nhãn áp dụng (mã nhãn)"><input className="input" value={f.brandCodes} onChange={set('brandCodes')} /></Field>}
+        </div>
+      )}
+      {buoc === 3 && (
+        <div className="grid-form" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
+          <Field label="Kiểu phát">
+            <select className="input" value={f.issueMode} onChange={set('issueMode')}><option value="manual">Thủ công (sinh / nạp mã)</option><option value="auto">Tự động khi mua đủ điều kiện</option></select>
+          </Field>
+          {f.issueMode === 'auto' && <Field label="Điều kiện: mã hàng mua"><input className="input" value={f.autoSkus} onChange={set('autoSkus')} /></Field>}
+          {f.issueMode === 'auto' && <Field label="Điều kiện: nhãn mua"><input className="input" value={f.autoBrands} onChange={set('autoBrands')} /></Field>}
+          {f.issueMode === 'auto' && <Field label="Số lượng tối thiểu (đơn vị nhỏ nhất)"><input className="input" type="number" value={f.autoMinQty} onChange={set('autoMinQty')} /></Field>}
+          <div className="span2"><Field label="Cửa hàng tự phát" hint="Trống = mọi cửa hàng; dùng khi Kiểu phát = Tự động">
+            <input className="input" value={f.autoBranches} disabled={f.issueMode !== 'auto'} onChange={set('autoBranches')} />
+          </Field></div>
+        </div>
+      )}
+      <NutBuoc current={buoc} total={4} onPick={setBuoc} />
     </DocSheet>
   );
 }

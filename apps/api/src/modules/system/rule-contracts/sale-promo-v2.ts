@@ -185,26 +185,58 @@ export function evaluatePriceLines(p: PriceLinesParams, input: PromoInputV2): Pr
 
 // ── b) Mua nhiều mã, quà lựa chọn (K2a, K2b) ──────────────────────────────────────────────────────────────────────────
 const target = z.object({ sku, itemId: itemId.optional(), qty: pos.optional() }).strict();
+const bxgyBuy = z.object({
+  /** Mã phải mua. Trống = mọi dòng trong phạm vi (cần `scope`). */
+  items: z.array(target).max(50).default([]),
+  /** any: Σ số lượng các mã ≥ qty; all: đủ `items[].qty` từng mã; each (plugin cũ, NT-BH-049): mỗi mã tính riêng, số lần = Σ floor(SL mã / items[].qty). */
+  mode: z.enum(['any', 'all', 'each']).default('any'),
+  qty: pos.optional(),
+}).strict();
+const bxgyGet = z.object({
+  options: z.array(z.object({ sku, itemId: itemId.optional(), qty: pos }).strict()).min(1).max(20),
+  choose: z.number().int().min(1).max(20).default(1),
+}).strict();
+// [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: nhiều combo mua – tặng trong một chương trình (plugin cũ loại 2: mỗi rule một bộ hàng mua + quà
+// riêng). `combos` có thì tính từng combo, cộng quà; `buy` / `get` giữ bằng combo đầu cho bản cũ và chỗ đọc mã hàng (đóng góp)
 export const buyXGetYV2Params = z.object({
   ...common,
   scope: promoScope.optional(),
-  buy: z.object({
-    /** Mã phải mua. Trống = mọi dòng trong phạm vi (cần `scope`). */
-    items: z.array(target).max(50).default([]),
-    /** any: Σ số lượng các mã ≥ qty; all: đủ `items[].qty` từng mã; each (plugin cũ, NT-BH-049): mỗi mã tính riêng, số lần = Σ floor(SL mã / items[].qty). */
-    mode: z.enum(['any', 'all', 'each']).default('any'),
-    qty: pos.optional(),
-  }).strict(),
-  get: z.object({
-    options: z.array(z.object({ sku, itemId: itemId.optional(), qty: pos }).strict()).min(1).max(20),
-    choose: z.number().int().min(1).max(20).default(1),
-  }).strict(),
+  buy: bxgyBuy,
+  get: bxgyGet,
+  /** Nhiều combo (≥ 2): mỗi combo bộ hàng mua + quà riêng, tính độc lập rồi cộng quà; trống = một combo `buy` / `get`. */
+  combos: z.array(z.object({ buy: bxgyBuy, get: bxgyGet }).strict()).min(1).max(20).optional(),
   repeat: z.boolean().default(true),
   maxGiftQty: pos.optional(),
 }).strict();
 export type BuyXGetYV2Params = z.infer<typeof buyXGetYV2Params>;
 
+/** Nhiều combo: điều kiện chung xét một lần; mỗi combo tính như một chương trình một combo (quà chọn lọc theo quà của combo đó); cộng quà, gộp dòng chạm.
+ *  Combo chưa chọn quà → trả `pendingChoice` của combo đó (máy bán hỏi lần lượt). */
+function evaluateCombos(p: BuyXGetYV2Params, input: PromoInputV2): PromoOutputV2 {
+  const ctx = input.context;
+  const blocked = conditionsBlock(p.conditions, ctx, orderAmountOf(input.lines.filter((l) => okQty(l.qty))));
+  if (blocked) return empty({ blocked });
+  const gifts: GiftOut[] = [];
+  const touched = new Set<string>();
+  const reasons: string[] = [];
+  const combos: unknown[] = [];
+  for (const [i, c] of (p.combos ?? []).entries()) {
+    const choice = (ctx?.giftChoice ?? []).filter((s) => c.get.options.some((o) => o.sku === s.trim()));
+    const one = evaluateBuyXGetYV2({ ...p, buy: c.buy, get: c.get, combos: undefined, conditions: undefined },
+      { ...input, ...(ctx ? { context: { ...ctx, giftChoice: choice } } : {}) });
+    if (one.pendingChoice) return { ...one, touched: [...new Set([...touched, ...one.touched])], detail: { ...(one.detail ?? {}), combo: i + 1 } };
+    if (one.indeterminate) return one;
+    one.touched.forEach((k) => touched.add(k));
+    gifts.push(...one.gifts);
+    if (one.blocked) reasons.push(`combo ${i + 1}: ${one.blocked}`);
+    combos.push({ combo: i + 1, ...(one.detail ?? {}) });
+  }
+  if (!gifts.length) return empty({ blocked: reasons.join('; ') || 'chưa đủ điều kiện mua của combo nào', detail: { combos } });
+  return { discounts: [], gifts, total: 0, touched: [...touched], noPrice: [], detail: { combos } };
+}
+
 export function evaluateBuyXGetYV2(p: BuyXGetYV2Params, input: PromoInputV2): PromoOutputV2 {
+  if (p.combos && p.combos.length > 1) return evaluateCombos(p, input);
   const ctx = input.context;
   const blocked = conditionsBlock(p.conditions, ctx, orderAmountOf(input.lines.filter((l) => okQty(l.qty))));
   if (blocked) return empty({ blocked });
@@ -346,6 +378,28 @@ const any3: BuyXGetYV2Params = {
 };
 const AB = [L('a', 'A', 2), L('b', 'B', 1)];
 export const buyXGetYV2Vectors: V<BuyXGetYV2Params>[] = [
+  // [2026-11-29 01:30 AM Võ Hoàng] NGHIEM-THU — NT-BH-063: hai combo trong một chương trình (đóng góp)
+  { name: 'NT-BH-063: 2 combo — mua 2 A tặng 1 QA; mua 1 B tặng 2 QB (mỗi combo tính riêng, cộng quà)',
+    params: { ...base, buy: { items: [{ sku: 'A', qty: 2 }], mode: 'each' }, get: { options: [{ sku: 'QA', qty: 1 }], choose: 1 }, repeat: true,
+      combos: [{ buy: { items: [{ sku: 'A', qty: 2 }], mode: 'each' }, get: { options: [{ sku: 'QA', qty: 1 }], choose: 1 } },
+        { buy: { items: [{ sku: 'B', qty: 1 }], mode: 'each' }, get: { options: [{ sku: 'QB', qty: 2 }], choose: 1 } }] },
+    input: { lines: [L('a', 'A', 4), L('b', 'B', 1)] },
+    output: { discounts: [], gifts: [{ sku: 'QA', qty: 2 }, { sku: 'QB', qty: 2 }], total: 0, touched: ['a', 'b'], noPrice: [],
+      detail: { combos: [{ combo: 1, bought: 4, times: 2 }, { combo: 2, bought: 1, times: 1 }] } } },
+  { name: 'NT-BH-063: 2 combo — chỉ đủ combo 2 → chỉ quà combo 2',
+    params: { ...base, buy: { items: [{ sku: 'A', qty: 2 }], mode: 'each' }, get: { options: [{ sku: 'QA', qty: 1 }], choose: 1 }, repeat: true,
+      combos: [{ buy: { items: [{ sku: 'A', qty: 2 }], mode: 'each' }, get: { options: [{ sku: 'QA', qty: 1 }], choose: 1 } },
+        { buy: { items: [{ sku: 'B', qty: 1 }], mode: 'each' }, get: { options: [{ sku: 'QB', qty: 1 }], choose: 1 } }] },
+    input: { lines: [L('a', 'A', 1), L('b', 'B', 1)] },
+    output: { discounts: [], gifts: [{ sku: 'QB', qty: 1 }], total: 0, touched: ['b'], noPrice: [],
+      detail: { combos: [{ combo: 1, bought: 1, times: 0 }, { combo: 2, bought: 1, times: 1 }] } } },
+  { name: 'NT-BH-063: 2 combo, combo 2 có 2 quà lựa chọn, đã chọn QB2 → quà QA + QB2',
+    params: { ...base, buy: { items: [{ sku: 'A', qty: 1 }], mode: 'each' }, get: { options: [{ sku: 'QA', qty: 1 }], choose: 1 }, repeat: true,
+      combos: [{ buy: { items: [{ sku: 'A', qty: 1 }], mode: 'each' }, get: { options: [{ sku: 'QA', qty: 1 }], choose: 1 } },
+        { buy: { items: [{ sku: 'B', qty: 1 }], mode: 'each' }, get: { options: [{ sku: 'QB1', qty: 1 }, { sku: 'QB2', qty: 1 }], choose: 1 } }] },
+    input: { lines: [L('a', 'A', 1), L('b', 'B', 1)], context: { giftChoice: ['QB2'] } },
+    output: { discounts: [], gifts: [{ sku: 'QA', qty: 1 }, { sku: 'QB2', qty: 1 }], total: 0, touched: ['a', 'b'], noPrice: [],
+      detail: { combos: [{ combo: 1, bought: 1, times: 1 }, { combo: 2, bought: 1, times: 1 }] } } },
   { name: 'ca 2: any — mua 3 trong {A, B}, chọn Q2 → tặng 1 Q2', params: any3, input: { lines: AB, context: { giftChoice: ['Q2'] } },
     output: { discounts: [], gifts: [{ sku: 'Q2', qty: 1 }], total: 0, touched: ['a', 'b'], noPrice: [], detail: { bought: 3, times: 1 } } },
   { name: 'ca 3: như ca 2, chưa chọn quà → pendingChoice (Q1, Q2)', params: any3, input: { lines: AB },
